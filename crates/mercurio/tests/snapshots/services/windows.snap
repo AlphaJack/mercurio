@@ -1,0 +1,112 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 12
+        title: Mercurio Title
+  ok: true
+  valid: true
+duration_0:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 12
+        title: Mercurio Title
+  ok: true
+  valid: true
+duration_1:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 1
+        title: Mercurio Title
+  ok: true
+  valid: true
+duration_30:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 30
+        title: Mercurio Title
+  ok: true
+  valid: true
+duration_invalid:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 12
+        title: Mercurio Title
+  ok: true
+  valid: true
+duration_negative:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 12
+        title: Mercurio Title
+  ok: true
+  valid: true
+duration_spaces:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 7
+        title: Mercurio Title
+  ok: true
+  valid: true
+fails:
+  errors:
+    - "service error: powershell exited with status 1"
+  ok: false
+  valid: true
+failure_type:
+  events:
+    - balloon:
+        body: B
+        duration: 12
+        title: T
+  ok: true
+  valid: true
+image_false:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 12
+        title: Mercurio Title
+  ok: true
+  valid: true
+multiline:
+  events:
+    - balloon:
+        body: "1\r\n2"
+        duration: 12
+        title: Mercurio Title
+  ok: true
+  valid: true
+no_title:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 12
+        title: ""
+  ok: true
+  valid: true
+quotes:
+  events:
+    - balloon:
+        body: "a 'b' $c `d`\r\né"
+        duration: 12
+        title: "it's"
+  ok: true
+  valid: true
+underscore:
+  events:
+    - balloon:
+        body: Mercurio Body
+        duration: 12
+        title: Mercurio Title
+  ok: true
+  valid: true
