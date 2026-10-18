@@ -1,4 +1,4 @@
-# updates the mercurio-bin AUR package to the release tag.
+# pushes packaging/aur/PKGBUILD to the mercurio-bin AUR package, with pkgver set to the release tag.
 # Secrets:
 #   AUR_SSH_PRIVATE_KEY  private key registered on the AUR account that maintains mercurio-bin.
 name: AUR
@@ -9,23 +9,64 @@ on:
       plan:
         required: true
         type: string
+  # Republishes an existing release, e.g. when the release run failed at this step.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (e.g. v0.1.0)
+        required: true
+        type: string
 
 permissions: {}
 
 jobs:
   aur:
     name: Deploy to AUR
-    # pkgver can not contain `-`, so prereleases (v1.0.0-rc.1) are skipped.
-    if: ${{ !fromJson(inputs.plan).announcement_is_prerelease }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    env:
+      PLAN: ${{ inputs.plan }}
+      DISPATCH_TAG: ${{ inputs.tag }}
     steps:
-      - name: Update PKGBUILD
-        uses: aksh1618/update-aur-package@93d86c3ea6e57fb485881f5ce8b15375dcd23918 # v1.0.5
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          tag_version_prefix: v
-          package_name: mercurio-bin
-          commit_username: "Github Action"
-          commit_email: alphajack@aur.arch
+          persist-credentials: false
+
+      - name: Resolve tag and version
+        id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${DISPATCH_TAG}" ]; then
+            tag="${DISPATCH_TAG}"
+          else
+            tag="$(jq -r '.announcement_tag' <<<"${PLAN}")"
+            prerelease="$(jq -r '.announcement_is_prerelease' <<<"${PLAN}")"
+          fi
+          {
+            echo "tag=${tag}"
+            echo "version=${tag#v}"
+            echo "prerelease=${prerelease:-false}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set pkgver
+        # pkgver can not contain `-`, so prereleases (v1.0.0-rc.1) are skipped.
+        if: steps.v.outputs.prerelease != 'true'
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: sed -i "s/^pkgver=.*/pkgver=${VERSION}/; s/^pkgrel=.*/pkgrel=1/" packaging/aur/PKGBUILD
+
+      - name: Publish to AUR
+        if: steps.v.outputs.prerelease != 'true'
+        uses: KSXGitHub/github-actions-deploy-aur@084b0d9b15415bf9cdb65d44dad1efe37a354050 # v4.2.0
+        with:
+          pkgname: mercurio-bin
+          pkgbuild: packaging/aur/PKGBUILD
+          # Replaces the SKIP b2sums with the BLAKE2 hashes of the release archives.
+          updpkgsums: true
+          commit_username: AlphaJack
+          commit_email: 19962243+AlphaJack@users.noreply.github.com
+          commit_message: Update to ${{ steps.v.outputs.version }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
