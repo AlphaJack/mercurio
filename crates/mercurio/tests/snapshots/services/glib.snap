@@ -6,7 +6,7 @@ basic:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -24,7 +24,7 @@ failure_type:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - T
         - B
         - []
@@ -37,7 +37,7 @@ gio:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -65,7 +65,7 @@ image_yes:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -78,7 +78,7 @@ multiline:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - "1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10"
         - []
@@ -91,7 +91,7 @@ no_title:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Body
         - ""
         - []
@@ -104,7 +104,7 @@ priority_emergency:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -117,7 +117,7 @@ priority_low:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -130,7 +130,7 @@ priority_moderate:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -143,7 +143,7 @@ quotes:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - "it's \"q\" \\ x"
         - "line1\r\nline2\ttab é ☃"
         - []
@@ -156,7 +156,7 @@ underscore:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -169,7 +169,7 @@ urgency_0:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -182,7 +182,7 @@ urgency_2:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -195,7 +195,7 @@ urgency_invalid:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -208,7 +208,7 @@ urgency_over_priority:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -230,7 +230,7 @@ x_negative:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -248,7 +248,7 @@ xy:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -278,7 +278,7 @@ xy_spaces:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -293,7 +293,7 @@ xy_zero:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []
@@ -308,7 +308,7 @@ xy_zero_five:
     - notify:
         - Mercurio
         - 0
-        - "<tmp>/mercurio/logo.svg"
+        - "<tmp>/mercurio/icon.svg"
         - Mercurio Title
         - Mercurio Body
         - []

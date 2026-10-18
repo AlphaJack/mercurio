@@ -45,7 +45,8 @@ pub fn hex(data: &[u8]) -> String {
 
 /// Hex decoding; pairs that are not hex digits are skipped, as is an odd last digit.
 pub fn unhex(s: &str) -> Vec<u8> {
-    s.as_bytes().chunks_exact(2).filter_map(|p| u8::from_str_radix(std::str::from_utf8(p).ok()?, 16).ok()).collect()
+    let (pairs, _) = s.as_bytes().as_chunks::<2>();
+    pairs.iter().filter_map(|p| u8::from_str_radix(std::str::from_utf8(p).ok()?, 16).ok()).collect()
 }
 
 /// SHA-1 digest (legacy signatures only).

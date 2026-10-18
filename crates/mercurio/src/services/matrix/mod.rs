@@ -548,7 +548,7 @@ impl Notify for Matrix {
             c.mode_str().to_string(),
             if t2bot { token.as_deref().unwrap_or_default().to_string() } else { c.host.clone() },
             c.port.unwrap_or(if c.secure { 443 } else { 80 }).to_string(),
-            Some(c.webhook_path.as_str()).filter(|_| c.mode == Mode::Hookshot).unwrap_or_default().to_string(),
+            if c.mode == Mode::Hookshot { c.webhook_path.clone() } else { String::new() },
             c.user.as_deref().filter(|_| !t2bot).unwrap_or_default().to_string(),
             password.as_deref().filter(|_| !t2bot).unwrap_or_default().to_string(),
         ])

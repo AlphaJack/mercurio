@@ -156,7 +156,8 @@ fn load_case(case: &Value, dir: &Path) -> Result<Config, String> {
         ..ConfigOptions::default()
     };
     let t = FakeTransport::new();
-    let dirs = dir.to_string_lossy().to_string();
+    // Windows `canonicalize` adds the `\\?\` verbatim prefix, whose `?` would start a URL query.
+    let dirs = dir.to_string_lossy().trim_start_matches(r"\\?\").to_string();
     if let Some(files) = case["files"].as_object() {
         for (name, content) in files {
             std::fs::write(dir.join(name), content.as_str().unwrap().replace("{DIR}", &dirs)).unwrap();

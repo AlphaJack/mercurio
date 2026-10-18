@@ -46,7 +46,7 @@ escape_dash:
         - "-sender"
         - "\\Mercurio"
         - "-appIcon"
-        - "\\<tmp>/mercurio/logo.png"
+        - "\\<tmp>/mercurio/icon.png"
   ok: true
   valid: true
 image_false:
@@ -157,7 +157,7 @@ probe_v2:
         - "-sender"
         - "\\Mercurio"
         - "-appIcon"
-        - "\\<tmp>/mercurio/logo.png"
+        - "\\<tmp>/mercurio/icon.png"
   ok: true
   valid: true
 probe_v3:
@@ -280,7 +280,7 @@ version2:
         - "-sender"
         - "\\Mercurio"
         - "-appIcon"
-        - "\\<tmp>/mercurio/logo.png"
+        - "\\<tmp>/mercurio/icon.png"
   ok: true
   valid: true
 version2_noimage:
@@ -306,7 +306,7 @@ version2_sender:
         - "-sender"
         - "\\me"
         - "-appIcon"
-        - "\\<tmp>/mercurio/logo.png"
+        - "\\<tmp>/mercurio/icon.png"
   ok: true
   valid: true
 version3:
@@ -353,7 +353,7 @@ version_spaces:
         - "-sender"
         - "\\Mercurio"
         - "-appIcon"
-        - "\\<tmp>/mercurio/logo.png"
+        - "\\<tmp>/mercurio/icon.png"
   ok: true
   valid: true
 version_text:

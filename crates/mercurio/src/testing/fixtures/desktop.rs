@@ -44,10 +44,16 @@ fn argv(fake: &FakeTransport) -> Vec<Vec<String>> {
         .into_iter()
         .map(|c| {
             let mut v = vec![c.program];
-            v.extend(c.args.into_iter().map(|a| a.replace(&tmp, "<tmp>")));
+            v.extend(c.args.into_iter().map(|a| redact_tmp(&a, &tmp)));
             v
         })
         .collect()
+}
+
+/// Replace `tmp` with `<tmp>`, also when backslash-escaped (GVariant literals), and write the icon path below it with `/` so Windows matches.
+fn redact_tmp(arg: &str, tmp: &str) -> String {
+    let arg = arg.replace(tmp, "<tmp>").replace(&tmp.replace('\\', "\\\\"), "<tmp>");
+    arg.replace("<tmp>\\\\mercurio\\\\", "<tmp>/mercurio/").replace("<tmp>\\mercurio\\", "<tmp>/mercurio/")
 }
 
 fn macosx_normalise(events: Vec<Value>) -> Vec<Value> {
