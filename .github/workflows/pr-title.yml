@@ -17,6 +17,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          types: (feat|fix|perf|refactor|docs|test|build|ci|chore|revert)
-          scopes: (services|cli|serve|config|lib|xtask|docs|deps|release)
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            test
+          scopes: |
+            ci
+            cli
+            config
+            deps
+            docs
+            lib
+            release
+            serve
+            services
+            xtask
           subjectPattern: ^[a-z].+$

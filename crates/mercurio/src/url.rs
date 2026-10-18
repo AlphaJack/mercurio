@@ -292,10 +292,7 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
     }
 
     if opts.verify_host {
-        match is_hostname(&out.host, true, true, true) {
-            Some(h) => out.host = h,
-            None => return None,
-        }
+        out.host = is_hostname(&out.host, true, true, true)?;
         if let Some(p) = port_numeric
             && opts.strict_port
             && !(1..=65535).contains(&p)
