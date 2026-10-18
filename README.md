@@ -72,10 +72,23 @@ curl -X POST -d 'urls=ntfy://my-topic' -d 'title=Backup' -d 'body=Finished in 42
 
 ## Documentation
 
-- [M](https://alphajack.github.io/mercurio/) command line, URLs, configuration files, HTTP server, library guide and one generated page per service.
-- The API reference: `cargo doc -p mercurio --open`.
-- Adding or fixing a service, contributor guidelines: [CONTRIBUTING.md](CONTRIBUTING.md).
+- [Book](https://alphajack.github.io/mercurio/): guide for command line, library, server, URLs, configuration files.
+- [CONTRIBUTING.md](CONTRIBUTING.md): contributor guidelines
 
-## Credits
+## Credits
 
-- [Apprise](https://github.com/caronc/apprise)
+mercurio is a Rust port of [Apprise](https://github.com/caronc/apprise) by Chris Caron.
+Its URL schemes, service behaviour, defaults and much of the documentation follow Apprise.
+mercurio is an independent project, not affiliated with or endorsed by Apprise.
+
+Apprise is licensed under the BSD 2-Clause License:
+
+> Copyright (c) 2026, Chris Caron <lead2gold@gmail.com>
+> All rights reserved.
+>
+> Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+>
+> 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+> 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+>
+> THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
