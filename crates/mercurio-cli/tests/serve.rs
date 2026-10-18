@@ -95,6 +95,36 @@ fn tmpdir(name: &str) -> std::path::PathBuf {
     d
 }
 
+#[cfg(unix)]
+#[expect(clippy::disallowed_methods, reason = "polling a real child process requires wall-clock waits")]
+fn stops_on_signal(signal: &str) {
+    let mut server = start(&tmpdir(signal));
+    // An idle client must not prevent shutdown either.
+    let _idle = TcpStream::connect(&server.addr).unwrap();
+    assert!(Command::new("kill").args([signal, &server.child.id().to_string()]).status().unwrap().success());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    loop {
+        if let Some(status) = server.child.try_wait().unwrap() {
+            assert!(status.success(), "server exited unsuccessfully: {status}");
+            break;
+        }
+        assert!(std::time::Instant::now() < deadline, "server did not stop on {signal}");
+        thread::sleep(std::time::Duration::from_millis(10));
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn stops_on_sigint() {
+    stops_on_signal("-INT");
+}
+
+#[cfg(unix)]
+#[test]
+fn stops_on_sigterm() {
+    stops_on_signal("-TERM");
+}
+
 #[test]
 fn status_and_details() {
     let s = start(&tmpdir("status"));

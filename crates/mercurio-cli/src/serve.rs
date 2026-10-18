@@ -355,6 +355,14 @@ pub fn healthcheck(bind: &str) -> Result<(), String> {
 pub fn run(bind: &str, args: &ServeArgs, transport: Arc<dyn Transport>) -> Result<(), String> {
     let s = Settings::from_args(args)?;
     let listener = TcpListener::bind(bind).map_err(|e| format!("bind {bind}: {e}"))?;
+    listener.set_nonblocking(true).map_err(|e| format!("listener: {e}"))?;
+    // Install before announcing readiness, including when running as container PID 1.
+    // The termination feature also handles SIGTERM (and SIGHUP) on Unix.
+    let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel();
+    ctrlc::set_handler(move || {
+        shutdown_tx.send(()).ok();
+    })
+    .map_err(|e| format!("install shutdown handler: {e}"))?;
     let addr = listener.local_addr().map_err(|e| e.to_string())?;
     let store = ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
     let s_slots = s.stream_slots;
@@ -368,8 +376,25 @@ pub fn run(bind: &str, args: &ServeArgs, transport: Arc<dyn Transport>) -> Resul
     });
     outln!("listening on http://{addr}");
     let active = Arc::new(AtomicUsize::new(0));
-    for stream in listener.incoming() {
-        let Ok(stream) = stream else { continue };
+    loop {
+        if shutdown_rx.try_recv().is_ok() {
+            break;
+        }
+        let stream = match listener.accept() {
+            Ok((stream, _)) => {
+                // Accepted sockets may inherit the listener's nonblocking mode.
+                stream.set_nonblocking(false).map_err(|e| format!("connection: {e}"))?;
+                stream
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                if shutdown_rx.recv_timeout(Duration::from_millis(50)).is_ok() {
+                    break;
+                }
+                continue;
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(e) => return Err(format!("accept: {e}")),
+        };
         let server = server.clone();
         let active = active.clone();
         std::thread::spawn(move || server.connection(stream, &active));
