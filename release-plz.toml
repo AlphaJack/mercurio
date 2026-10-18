@@ -10,3 +10,16 @@ name = "mercurio-cli"
 git_tag_enable = true
 git_tag_name = "v{{ version }}"
 changelog_include = ["mercurio"]
+
+# Setting commit_parsers replaces release-plz's defaults, so they are restated below the skip rule.
+[changelog]
+commit_parsers = [
+    # The release PR bumps the version, so release-plz counts it as a change in the next release.
+    { message = "^chore: release", skip = true },
+    { message = "^feat", group = "added" },
+    { message = "^changed", group = "changed" },
+    { message = "^deprecated", group = "deprecated" },
+    { message = "^fix", group = "fixed" },
+    { message = "^security", group = "security" },
+    { message = "^.*", group = "other" },
+]
