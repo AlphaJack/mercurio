@@ -1,10 +1,10 @@
 [workspace]
 git_release_enable = false
 git_tag_enable = false
-# cargo-semver-checks compares the library API with the last published version; a breaking change forces a breaking version bump in the release PR.
+release_always = false
+release_commits = "^(feat|fix|perf)"
 semver_check = true
 
-# The library is published first (release-plz follows dependency order), then the CLI. Only the CLI release creates the single `vX.Y.Z` tag.
 [[package]]
 name = "mercurio-cli"
 git_tag_enable = true
