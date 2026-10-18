@@ -1,0 +1,129 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+retry_skips_posted_container:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              data:
+                message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer mytoken
+            Content-Type: application/json
+          method: POST
+          url: "https://hostname/api/v1/post/container/1"
+        - body:
+            json:
+              data:
+                message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer mytoken
+            Content-Type: application/json
+          method: POST
+          url: "https://hostname/api/v1/post/container/2"
+        - body:
+            json:
+              data:
+                message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer mytoken
+            Content-Type: application/json
+          method: POST
+          url: "https://hostname/api/v1/post/container/2"
+  url_id: c863bb03
+  valid: true
+retry_uploads_missing_attachment_only:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              data:
+                message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Type: application/json
+          method: POST
+          url: "https://hostname/api/v1/post/container/1"
+        - body:
+            multipart:
+              - b64: aGVsbG8=
+                filename: a.txt
+                name: "files[]"
+          headers:
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Type: multipart/form-data
+          method: POST
+          url: "https://hostname/api/v1/post/77/upload-files"
+        - body:
+            multipart:
+              - b64: iVBORw0KGgo=
+                filename: b.png
+                name: "files[]"
+          headers:
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Type: multipart/form-data
+          method: POST
+          url: "https://hostname/api/v1/post/77/upload-files"
+        - body:
+            multipart:
+              - b64: iVBORw0KGgo=
+                filename: b.png
+                name: "files[]"
+          headers:
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Type: multipart/form-data
+          method: POST
+          url: "https://hostname/api/v1/post/77/upload-files"
+  url_id: 4446ffcb
+  valid: true
+retry_without_post_id:
+  sends:
+    - attempts: 1
+      errors:
+        - "service error: failed to parse the HumHub post id; attachments not sent"
+      ok: false
+      requests:
+        - body:
+            json:
+              data:
+                message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer mytoken
+            Content-Type: application/json
+          method: POST
+          url: "https://hostname/api/v1/post/container/1"
+  url_id: 6c24997d
+  valid: true
+two_sends_post_again:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              data:
+                message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer mytoken
+            Content-Type: application/json
+          method: POST
+          url: "https://hostname/api/v1/post/container/1"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              data:
+                message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer mytoken
+            Content-Type: application/json
+          method: POST
+          url: "https://hostname/api/v1/post/container/1"
+  url_id: 6c24997d
+  valid: true

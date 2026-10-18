@@ -1,0 +1,20 @@
+{
+"cases":[
+{"name":"empty","url":"smsmgr://"},
+{"name":"no_key","url":"smsmgr://123456789"},
+{"name":"basic","url":"smsmgr://apikey@123456789"},
+{"name":"alias_scheme","url":"smsmanager://apikey@+420123456789/+420987654321"},
+{"name":"key_query","url":"smsmgr://123456789?key=other"},
+{"name":"key_overrides_user","url":"smsmgr://apikey@123456789?key=other&to=987654321,bad"},
+{"name":"no_targets","url":"smsmgr://apikey@invalid"},
+{"name":"from","url":"smsmgr://apikey@123456789?from=MyLongSenderName"},
+{"name":"sender","url":"smsmgr://apikey@123456789?sender=Me"},
+{"name":"from_wins","url":"smsmgr://apikey@123456789?sender=Me&from=You"},
+{"name":"gateway","url":"smsmgr://apikey@123456789?gateway=ECONOMY"},
+{"name":"gateway_bad","url":"smsmgr://apikey@123456789?gateway=fast"},
+{"name":"batch","url":"smsmgr://apikey@123456789/987654321/+420111222333?batch=yes"},
+{"name":"no_batch_multi","url":"smsmgr://apikey@123456789/987654321?batch=no","responses":[{"status":500},{"status":200}]},
+{"name":"http_201","url":"smsmgr://apikey@123456789","responses":[{"status":201}]},
+{"name":"conn_error","url":"smsmgr://apikey@123456789","responses":[{"error":true}]},
+{"name":"body","url":"smsmgr://apikey@123456789","title":"Hi & bye","body":"ü 100%","type":"success"}
+]}

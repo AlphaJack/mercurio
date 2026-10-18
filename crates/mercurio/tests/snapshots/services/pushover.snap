@@ -1,0 +1,1589 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_e2ee:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: "<ignored>"
+          - name: message
+            value: "<ignored>"
+          - name: sound
+            value: pushover
+          - name: encrypted
+            value: "1"
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: ALL_DEVICES
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: "<ignored>"
+          - name: message
+            value: "<ignored>"
+          - name: sound
+            value: none
+          - name: encrypted
+            value: "1"
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: ALL_DEVICES
+          - b64: R0lGODlhAQABAAAAACw=
+            filename: b.gif
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+attach_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: Mercurio Title
+          - name: message
+            value: Mercurio Body
+          - name: sound
+            value: pushover
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: ALL_DEVICES
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: ""
+          - name: message
+            value: b.gif
+          - name: sound
+            value: none
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: ALL_DEVICES
+          - b64: R0lGODlhAQABAAAAACw=
+            filename: b.gif
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+attach_image:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: Mercurio Title
+          - name: message
+            value: Mercurio Body
+          - name: sound
+            value: pushover
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: ALL_DEVICES
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+attach_multi_no_body:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: Mercurio Title
+          - name: message
+            value: a.png
+          - name: sound
+            value: pushover
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: dev
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: ""
+          - name: message
+            value: b.gif
+          - name: sound
+            value: none
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: dev
+          - b64: R0lGODlhAQABAAAAACw=
+            filename: b.gif
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - ""
+          - - message
+            - c.txt
+          - - sound
+            - none
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - dev
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: Mercurio Title
+          - name: message
+            value: a.png
+          - name: sound
+            value: pushover
+          - name: user
+            value: g1
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: ""
+          - name: message
+            value: b.gif
+          - name: sound
+            value: none
+          - name: user
+            value: g1
+          - b64: R0lGODlhAQABAAAAACw=
+            filename: b.gif
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - ""
+          - - message
+            - c.txt
+          - - sound
+            - none
+          - - user
+            - g1
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+attach_too_small:
+  errors:
+    - "invalid message: Pushover attachment size exceeds the limit"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: token
+            value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - name: priority
+            value: "0"
+          - name: title
+            value: ""
+          - name: message
+            value: a.png
+          - name: sound
+            value: none
+          - name: user
+            value: uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - name: device
+            value: ALL_DEVICES
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: attachment
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+blank:
+  error: "Pushover: an invalid Pushover Access Token was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+custom_sound:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - mysound
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+device_and_group:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - DEVICE
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - grp
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - other
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+device_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - DEVICE
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+device_to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - DEVICE
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+devices_and_invalid:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - "DEVICE1,Device-with-dash"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+e2ee:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - "<ignored>"
+          - - message
+            - "<ignored>"
+          - - sound
+            - pushover
+          - - url
+            - "<ignored>"
+          - - url_title
+            - "<ignored>"
+          - - encrypted
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+e2ee_bad_key:
+  error: "Pushover: the encryption key must be exactly 64 hex characters"
+  valid: false
+e2ee_disabled:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+emergency_bad_expire:
+  error: "Pushover: expire must reside in the range of 0 to 10800 seconds"
+  valid: false
+emergency_bad_interval:
+  error: "Pushover: the emergency interval must be at least 30 seconds"
+  valid: false
+emergency_custom:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "2"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - retry
+            - "60"
+          - - expire
+            - "7200"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+emergency_defaults:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "2"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - retry
+            - "900"
+          - - expire
+            - "3600"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+emergency_invalid_numbers:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "2"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - retry
+            - "900"
+          - - expire
+            - "3600"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+empty:
+  error: "Pushover: an invalid Pushover Access Token was specified"
+  valid: false
+empty_title_uses_app_desc:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+group_encoded:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - gggggggggggggggggggggggggggggg
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+group_fail_continues:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - dev
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - g1
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - g2
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+groups_hash:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - gggggggggggggggggggggggggggggg
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - group2
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+http_401:
+  errors:
+    - "HTTP 401: Unauthorized - Invalid Token."
+  ok: false
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+invalid_group_only:
+  errors:
+    - "invalid message: there were no Pushover targets to notify"
+  ok: false
+  requests: []
+  valid: true
+markdown_declared:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "-1"
+          - - title
+            - Mercurio Title
+          - - message
+            - plain words
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+markdown_passthrough:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+no_user:
+  error: "Pushover: an invalid Pushover User Key was specified"
+  valid: false
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - "<b>Release</b><br>Hello <b>bold</b> &amp; <i>it</i> <u>u</u> <a href=\"http://example.com\">link</a><br>- one<br>- two<br>x  y<br>z<br>end"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - "<b>Release notes</b><br>This has <b>bold</b>, <i>italic</i>, code and a <a href=\"http://example.com/a_b\">link</a>.<br>- first item<br>- second <i>item</i><br>quoted * text &amp; more <br>gone :smile:"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - A title that is long enough to be interesting for counters and amalgamation A title that is long enough to be interesting for counters and amalgamation
+          - - message
+            - "<b>Section 1</b><br>Paragraph 1 has <b>bold 1</b> and <i>italic</i> words, a <a href=\"http://example.com/1\">link 1</a> and code 1. Sentences keep going so splitting has to pick a boundary.<br>- point 1a<br>- point 1b<br><b>Section 2</b><br>Paragraph 2 has <b>bold 2</b> and <i>italic</i> words, a <a href=\"http://example.com/2\">link 2</a> and code 2. Sentences keep going so splitting has to pick a boundary.<br>- point 2a<br>- point 2b<br><b>Section 3</b><br>Paragraph 3 has <b>bold 3</b> and <i>italic</i> words, a <a href=\"http://example.com/3\">link 3</a> and code 3. Sentences keep going so splitting has to pick a boundary.<br>- point 3a<br>- point 3b<br><b>Section 4</b><br>Paragraph 4 has <b>bold 4</b> and <i>italic</i> words, a <a href=\"http://example.com/4\">link 4</a> and code 4. Sentences keep going so splitting has to pick a boundary.<br>- point 4a<br>- point 4b<br><b>Section 5</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 5 has <b>bold 5</b> and <i>italic</i> words, a <a href=\"http://example.com/5\">link 5</a> and code 5. Sentences keep going so splitting has to pick a boundary.<br>- point 5a<br>- point 5b<br><b>Section 6</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 6 has <b>bold 6</b> and <i>italic</i> words, a <a href=\"http://example.com/6\">link 6</a> and code 6. Sentences keep going so splitting has to pick a boundary.<br>- point 6a<br>- point 6b<br><b>Section 7</b><br>Paragraph 7 has <b>bold 7</b> and <i>italic</i> words, a <a href=\"http://example.com/7\">link 7</a> and code 7. Sentences keep going so splitting has to pick a boundary.<br>- point 7a<br>- point 7b<br><b>Section 8</b><br>Paragraph 8 has <b>bold 8</b> and <i>italic</i> words, a <a href=\"http://example.com/8\">link 8</a> and code 8. Sentences keep going so splitting has to pick a boundary.<br>- point 8a<br>- point 8b<br><b>Section 9</b><br>Paragraph 9 has <b>bold 9</b> and <i>italic</i> words, a <a href=\"http://example.com/9\">link 9</a> and code 9. Sentences keep going so splitting has to pick a boundary.<br>- point 9a<br>- point 9b<br><b>Section 10</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 10 has <b>bold 10</b> and <i>italic</i> words, a <a href=\"http://example.com/10\">link 10</a> and code 10. Sentences keep going so splitting has to pick a boundary.<br>- point 10a<br>- point 10b<br><b>Section 11</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 11 has <b>bold 11</b> and <i>italic</i> words, a <a href=\"http://example.com/11\">link 11</a> and code 11. Sentences keep going so splitting has to pick a boundary.<br>- point 11a<br>- point 11b<br><b>Section 12</b><br>Paragraph 12 has <b>bold 12</b> and <i>italic</i> words, a <a href=\"http://example.com/12\">link 12</a> and code 12. Sentences keep going so splitting has to pick a boundary.<br>- point 12a<br>- point 12b<br><b>Section 13</b><br>Paragraph 13 has <b>bold 13</b> and <i>italic</i> words, a <a href=\"http://example.com/13\">link 13</a> and code 13. Sentences keep going so splitting has to pick a boundary.<br>- point 13a<br>- point 13b<br><b>Section 14</b><br>Paragraph 14 has <b>bold 14</b> and <i>italic</i> words, a <a href=\"http://example.com/14\">link 14</a> and code 14. Sentences keep going so splitting has to pick a boundary.<br>- point 14a<br>- point 14b<br><b>Section 15</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 15 has <b>bold 15</b> and <i>italic</i> words, a <a href=\"http://example.com/15\">link 15</a> and code 15. Sentences keep going so splitting has to pick a boundary.<br>- point 15a<br>- point 15b<br><b>Section 16</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 16 has <b>bold 16</b> and <i>italic</i> words, a <a href=\"http://example.com/16\">link 16</a> and code 16. Sentences keep going so splitting has to pick a boundary.<br>- point 16a<br>- point 16b<br><b>Section 17</b><br>Paragraph 17 has <b>bold 17</b> and <i>italic</i> words, a <a href=\"http://example.com/17\">link 17</a> and code 17. Sentences keep going so splitting has to pick a boundary.<br>- point 17a<br>- point 17b<br><b>Section 18</b><br>Paragraph 18 has <b>bold 18</b> and <i>italic</i> words, a <a href=\"http://example.com/18\">link 18</a> and code 18. Sentences keep going so splitting has to pick a boundary.<br>- point 18a<br>- point 18b<br><b>Section 19</b><br>Paragraph 19 has <b>bold 19</b> and <i>italic</i> words, a <a href=\"http://example.com/19\">link 19</a> and code 19. Sentences keep going so splitting has to pick a boundary.<br>- point 19a<br>- point 19b<br><b>Section 20</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 20 has <b>bold 20</b> and <i>italic</i> words, a <a href=\"http://example.com/20\">link 20</a> and code 20. Sentences keep going so splitting has to pick a boundary.<br>- point 20a<br>- point 20b<br><b>Section 21</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 21 has <b>bold 21</b> and <i>italic</i> words, a <a href=\"http://example.com/21\">link 21</a> and code 21. Sentences keep going so splitting has to pick a boundary.<br>- point 21a<br>- point 21b<br><b>Section 22</b><br>Paragraph 22 has <b>bold 22</b> and <i>italic</i> words, a <a href=\"http://example.com/22\">link 22</a> and code 22. Sentences keep going so splitting has to pick a boundary.<br>- point 22a<br>- point 22b<br><b>Section 23</b><br>Paragraph 23 has <b>bold 23</b> and <i>italic</i> words, a <a href=\"http://example.com/23\">link 23</a> and code 23. Sentences keep going so splitting has to pick a boundary.<br>- point 23a<br>- point 23b<br><b>Section 24</b><br>Paragraph 24 has <b>bold 24</b> and <i>italic</i> words, a <a href=\"http://example.com/24\">link 24</a> and code 24. Sentences keep going so splitting has to pick a boundary.<br>- point 24a<br>- point 24b<br><b>Section 25</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 25 has <b>bold 25</b> and <i>italic</i> words, a <a href=\"http://example.com/25\">link 25</a> and code 25. Sentences keep going so splitting has to pick a boundary.<br>- point 25a<br>- point 25b<br><b>Section 26</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 26 has <b>bold 26</b> and <i>italic</i> words, a <a href=\"http://example.com/26\">link 26</a> and code 26. Sentences keep going so splitting has to pick a boundary.<br>- point 26a<br>- point 26b<br><b>Section 27</b><br>Paragraph 27 has <b>bold 27</b> and <i>italic</i> words, a <a href=\"http://example.com/27\">link 27</a> and code 27. Sentences keep going so splitting has to pick a boundary.<br>- point 27a<br>- point 27b<br><b>Section 28</b><br>Paragraph 28 has <b>bold 28</b> and <i>italic</i> words, a <a href=\"http://example.com/28\">link 28</a> and code 28. Sentences keep going so splitting has to pick a boundary.<br>- point 28a<br>- point 28b<br><b>Section 29</b><br>Paragraph 29 has <b>bold 29</b> and <i>italic</i> words, a <a href=\"http://example.com/29\">link 29</a> and code 29. Sentences keep going so splitting has to pick a boundary.<br>- point 29a<br>- point 29b<br><b>Section 30</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 30 has <b>bold 30</b> and <i>italic</i> words, a <a href=\"http://example.com/30\">link 30</a> and code 30. Sentences keep going so splitting has to pick a boundary.<br>- point 30a<br>- point 30b<br><b>Section 31</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - "Paragraph 31 has <b>bold 31</b> and <i>italic</i> words, a <a href=\"http://example.com/31\">link 31</a> and code 31. Sentences keep goi"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - "lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit \n sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing \n elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur"
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - " adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet \n consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit \n amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. \n sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum \n dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem \n ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor"
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - " lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod \n tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do \n eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed \n do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit \n sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing \n elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur."
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - " adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet \n consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit \n amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor \n sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum \n dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem \n ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor"
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - " lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod \n tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do \n eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. \n do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit \n sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing \n elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur"
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - " adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet \n consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit \n amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor \n sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum \n dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem \n ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor."
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Notifications
+          - - message
+            - " lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci"
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - "Plain <text> & *stars* _under_ [x](y)\nsecond line"
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - "<b>Section 1</b><br>Paragraph 1 has <b>bold 1</b> and <i>italic</i> words, a <a href=\"http://example.com/1\">link 1</a> and code 1. Sentences keep going so splitting has to pick a boundary.<br>- point 1a<br>- point 1b<br><b>Section 2</b><br>Paragraph 2 has <b>bold 2</b> and <i>italic</i> words, a <a href=\"http://example.com/2\">link 2</a> and code 2. Sentences keep going so splitting has to pick a boundary.<br>- point 2a<br>- point 2b<br><b>Section 3</b><br>Paragraph 3 has <b>bold 3</b> and <i>italic</i> words, a <a href=\"http://example.com/3\">link 3</a> and code 3. Sentences keep going so splitting has to pick a boundary.<br>- point 3a<br>- point 3b<br><b>Section 4</b><br>Paragraph 4 has <b>bold 4</b> and <i>italic</i> words, a <a href=\"http://example.com/4\">link 4</a> and code 4. Sentences keep going so splitting has to pick a boundary.<br>- point 4a<br>- point 4b<br><b>Section 5</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+priority_high_html:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "1"
+          - - title
+            - Mercurio Title
+          - - message
+            - "<b>bold</b>"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+priority_invalid:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+supplemental_url:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - sound
+            - pushover
+          - - url
+            - my-url
+          - - url_title
+            - Hello World
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+title_body_type:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - T
+          - - message
+            - B
+          - - sound
+            - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true

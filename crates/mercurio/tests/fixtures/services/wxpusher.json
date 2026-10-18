@@ -1,0 +1,24 @@
+{
+"cases":[
+{"name":"topic","url":"wxpusher://AT_appid/123/","responses":[{"body":{"code":1000,"msg":"ok"}}]},
+{"name":"default_response_fails","url":"wxpusher://AT_appid/123/"},
+{"name":"user","url":"wxpusher://AT_appid/UID_abcd/","responses":[{"body":{"code":1000}}]},
+{"name":"mixed","url":"wxpusher://AT_appid//UID_123/UID_abc/123456789/abc","responses":[{"body":{"code":1000}}]},
+{"name":"token_param_host_target","url":"wxpusher://123?token=AT_abc1234","responses":[{"body":{"code":1000}}]},
+{"name":"token_param_no_targets","url":"wxpusher://?token=AT_abc1234"},
+{"name":"token_param_to","url":"wxpusher://?token=AT_abc1234&to=UID_abc","responses":[{"body":{"code":1000}}]},
+{"name":"to_list","url":"wxpusher://AT_appid/?to=22222222222,33333333333,555","responses":[{"body":{"code":1000}}]},
+{"name":"blank_targets","url":"wxpusher://AT_appid/%20/%20/"},
+{"name":"invalid_targets","url":"wxpusher://AT_appid/@/#/,/"},
+{"name":"topic_zero_prefix","url":"wxpusher://AT_appid/0123/","responses":[{"body":{"code":1000}}]},
+{"name":"markdown","url":"wxpusher://AT_appid/UID_345/?format=markdown","title":"","body":"**x**","responses":[{"body":{"code":1000}}]},
+{"name":"html","url":"wxpusher://AT_appid/UID_345/?format=html","type":"failure","responses":[{"body":{"code":1000}}]},
+{"name":"empty","url":"wxpusher://"},
+{"name":"empty_userinfo","url":"wxpusher://:@/"},
+{"name":"invalid_token","url":"wxpusher://invalid"},
+{"name":"api_error_msg","url":"wxpusher://AT_appid/123/","responses":[{"body":{"code":1002,"msg":"bad token"}}]},
+{"name":"api_error_no_msg","url":"wxpusher://AT_appid/123/","responses":[{"body":{"code":1006}}]},
+{"name":"http_error_good_code","url":"wxpusher://AT_appid/123/","responses":[{"status":500,"body":{"code":1000}}]},
+{"name":"not_json","url":"wxpusher://AT_appid/123/","responses":[{"body":"server error"}]},
+{"name":"connection_error","url":"wxpusher://AT_appid/123/","responses":[{"error":true}]}
+]}

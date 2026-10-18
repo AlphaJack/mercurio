@@ -1,0 +1,24 @@
+{
+"cases":[
+{"name":"empty","url":"goalert://"},
+{"name":"no_targets","url":"goalerts://localhost"},
+{"name":"invalid_target_only","url":"goalerts://localhost/?to=invalid"},
+{"name":"invalid_action","url":"goalerts://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890?action=invalid"},
+{"name":"basic","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890"},
+{"name":"two_keys_path_port","url":"goalerts://localhost:8443/goalert/a1b2c3d4-e5f6-7890-abcd-ef1234567890/B1B2C3D4-E5F6-7890-ABCD-EF123456789C"},
+{"name":"token_close_dedup","url":"goalerts://localhost/?token=a1b2c3d4-e5f6-7890-abcd-ef1234567890&action=close&dedup=disk"},
+{"name":"trigger_meta","url":"goalerts://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890?action=trigger&+env=prod&+Region=eu%20west"},
+{"name":"map_success_closes","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","type":"success"},
+{"name":"trigger_success_no_close","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890?action=t","type":"success"},
+{"name":"action_prefix","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890?action=CL"},
+{"name":"no_title_summary","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","title":"","body":"disk \\_full\\_ at C:\\Users"},
+{"name":"no_title_markdown_input","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","title":"","body":"disk \\_full\\_ at C:\\Users","format":"markdown"},
+{"name":"to_list_mixed","url":"goalert://localhost:8080/a/b/?to=a1b2c3d4-e5f6-7890-abcd-ef1234567890,invalid,c1b2c3d4-e5f6-7890-abcd-ef1234567890"},
+{"name":"status_201","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","responses":[{"status":201}]},
+{"name":"status_204","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","responses":[{"status":204,"body":""}]},
+{"name":"status_206_fails","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","responses":[{"status":206}]},
+{"name":"status_401","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","responses":[{"status":401}]},
+{"name":"first_fails_second_sent","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890/c1b2c3d4-e5f6-7890-abcd-ef1234567890","responses":[{"status":500},{"status":200}]},
+{"name":"connection_error","url":"goalert://localhost/a1b2c3d4-e5f6-7890-abcd-ef1234567890","responses":[{"error":true}]},
+{"name":"quoted_path","url":"goalert://localhost/my%20path/a1b2c3d4-e5f6-7890-abcd-ef1234567890","type":"failure"}
+]}

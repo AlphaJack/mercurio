@@ -1,0 +1,212 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+email_lookup_cached:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/x-www-form-urlencoded
+          method: GET
+          url: "https://slack.com/api/users.lookupByEmail?email=user%40example.com"
+        - body:
+            json:
+              attachments:
+                - color: "#3AA3E3"
+                  text: Mercurio Body
+                  title: Mercurio Title
+              channel: U1
+              icon_url: "https://example.org/info-72x72.png"
+              mrkdwn: true
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/chat.postMessage"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              attachments:
+                - color: "#3AA3E3"
+                  text: Mercurio Body
+                  title: Mercurio Title
+              channel: U1
+              icon_url: "https://example.org/info-72x72.png"
+              mrkdwn: true
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/chat.postMessage"
+  url_id: 8b474911
+  valid: true
+retry_attachment_reuses_channel_ids:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              attachments:
+                - color: "#3AA3E3"
+                  text: Mercurio Body
+                  title: Mercurio Title
+              channel: "#chan1"
+              icon_url: "https://example.org/info-72x72.png"
+              mrkdwn: true
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/chat.postMessage"
+        - body:
+            json:
+              attachments:
+                - color: "#3AA3E3"
+                  text: Mercurio Body
+                  title: Mercurio Title
+              channel: "#chan2"
+              icon_url: "https://example.org/info-72x72.png"
+              mrkdwn: true
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/chat.postMessage"
+        - body:
+            json: {}
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: GET
+          url: "https://slack.com/api/files.getUploadURLExternal?filename=a.png&length=8"
+        - body:
+            multipart:
+              - b64: iVBORw0KGgo=
+                filename: a.png
+                name: file
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: multipart/form-data
+          method: POST
+          url: "https://files.slack.com/upload/v1/abc"
+        - body:
+            json:
+              channel_id: C1
+              files:
+                - id: F1
+                  title: a.png
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/files.completeUploadExternal"
+        - body:
+            json:
+              channel_id: C2
+              files:
+                - id: F1
+                  title: a.png
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/files.completeUploadExternal"
+        - body:
+            json: {}
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: GET
+          url: "https://slack.com/api/files.getUploadURLExternal?filename=a.png&length=8"
+        - body:
+            multipart:
+              - b64: iVBORw0KGgo=
+                filename: a.png
+                name: file
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: multipart/form-data
+          method: POST
+          url: "https://files.slack.com/upload/v1/abc"
+        - body:
+            json:
+              channel_id: C2
+              files:
+                - id: F1
+                  title: a.png
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/files.completeUploadExternal"
+  url_id: 48b99d76
+  valid: true
+retry_message_failed_on_one_channel:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              attachments:
+                - color: "#3AA3E3"
+                  text: Mercurio Body
+                  title: Mercurio Title
+              channel: "#chan1"
+              icon_url: "https://example.org/info-72x72.png"
+              mrkdwn: true
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/chat.postMessage"
+        - body:
+            json:
+              attachments:
+                - color: "#3AA3E3"
+                  text: Mercurio Body
+                  title: Mercurio Title
+              channel: "#chan2"
+              icon_url: "https://example.org/info-72x72.png"
+              mrkdwn: true
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/chat.postMessage"
+        - body:
+            json:
+              attachments:
+                - color: "#3AA3E3"
+                  text: Mercurio Body
+                  title: Mercurio Title
+              channel: "#chan2"
+              icon_url: "https://example.org/info-72x72.png"
+              mrkdwn: true
+          headers:
+            Accept: application/json
+            Authorization: Bearer xoxb-1234-1234-abc124
+            Content-Type: application/json; charset=utf-8
+          method: POST
+          url: "https://slack.com/api/chat.postMessage"
+  url_id: 48b99d76
+  valid: true

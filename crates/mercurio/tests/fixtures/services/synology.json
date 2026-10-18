@@ -1,0 +1,24 @@
+{
+"cases":[
+{"name":"blank_auth","url":"synology://:@/"},
+{"name":"empty","url":"synology://"},
+{"name":"empty_secure","url":"synologys://"},
+{"name":"basic","url":"synology://localhost/token"},
+{"name":"file_url","url":"synology://localhost/token?file_url=http://reddit.com/test.jpg"},
+{"name":"auth","url":"synology://user:pass@localhost/token"},
+{"name":"no_token","url":"synology://user@localhost"},
+{"name":"user_only","url":"synology://user@localhost/token"},
+{"name":"port","url":"synology://localhost:8080/token","type":"warning"},
+{"name":"secure","url":"synologys://localhost/token"},
+{"name":"token_param","url":"synologys://localhost/?token=mytoken"},
+{"name":"token_param_no_path","url":"synologys://localhost?token=mytoken"},
+{"name":"token_path","url":"synologys://localhost:8080/token/path/"},
+{"name":"headers","url":"synology://localhost:8080/path?+HeaderKey=HeaderValue&+Accept=text/html"},
+{"name":"unicode_body","url":"synology://localhost/token","title":"Tïtle","body":"Body \"quoted\" \\ é 😀\ttab"},
+{"name":"quoted_token_slice","url":"synology://localhost/to%20ken/sub/dir"},
+{"name":"no_title","url":"synology://localhost/token","title":""},
+{"name":"status_500","url":"synology://user:pass@localhost:8081/token","responses":[{"status":500}]},
+{"name":"status_204_ok","url":"synology://localhost/token","responses":[{"status":204,"body":""}]},
+{"name":"status_301_fails","url":"synology://localhost/token","responses":[{"status":301}]},
+{"name":"connection_error","url":"synology://localhost/token","responses":[{"error":true}]}
+]}

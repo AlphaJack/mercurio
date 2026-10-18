@@ -1,0 +1,371 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+    - body:
+        multipart:
+          - b64: aGVsbG8=
+            filename: a.txt
+            name: "files[]"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://hostname/api/v1/post/42/upload-files"
+  valid: true
+attach_bad_json:
+  errors:
+    - "service error: failed to parse the HumHub post id; attachments not sent"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+  valid: true
+attach_basic_two_files:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+    - body:
+        multipart:
+          - b64: aGVsbG8=
+            filename: a.txt
+            name: "files[]"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://hostname/api/v1/post/77/upload-files"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: b.png
+            name: "files[]"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://hostname/api/v1/post/77/upload-files"
+  valid: true
+attach_no_id:
+  errors:
+    - "service error: failed to parse the HumHub post id; attachments not sent"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+  valid: true
+attach_post_fails:
+  errors:
+    - "post: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/2"
+    - body:
+        multipart:
+          - b64: aGVsbG8=
+            filename: a.txt
+            name: "files[]"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://hostname/api/v1/post/9/upload-files"
+  valid: true
+attach_upload_fails:
+  errors:
+    - "upload: HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+    - body:
+        multipart:
+          - b64: aGVsbG8=
+            filename: a.txt
+            name: "files[]"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://hostname/api/v1/post/5/upload-files"
+  valid: true
+basic_auth:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+  valid: true
+bearer:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/api/v1/post/container/1"
+  valid: true
+bearer_secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+  valid: true
+empty:
+  error: "HumHub: an invalid hostname or port was specified"
+  valid: false
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+  valid: true
+invalid_target:
+  error: "HumHub: no valid HumHub container ID(s) were specified"
+  valid: false
+multi_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/2"
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/3"
+  valid: true
+negative_target:
+  error: "HumHub: no valid HumHub container ID(s) were specified"
+  valid: false
+no_targets:
+  error: "HumHub: no valid HumHub container ID(s) were specified"
+  valid: false
+no_user:
+  error: "HumHub: a HumHub bearer token or username must be specified"
+  valid: false
+partial_failure:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/2"
+  valid: true
+port_and_mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname:8443/api/v1/post/container/5"
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname:8443/api/v1/post/container/7"
+  valid: true
+status_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+  valid: true
+title_merged:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Hello\r\nWorld"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/api/v1/post/container/1"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/1"
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/2"
+    - body:
+        json:
+          data:
+            message: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Bearer mytoken
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/v1/post/container/3"
+  valid: true
+zero_target:
+  error: "HumHub: no valid HumHub container ID(s) were specified"
+  valid: false

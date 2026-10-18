@@ -1,0 +1,462 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+client_key_only_qs:
+  errors:
+    - "service error: there are no Signalgrid channels to notify"
+  ok: false
+  requests: []
+  valid: true
+client_key_qs:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - REALKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+critical:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "true"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+critical_no:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+dup_channels:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - A
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - b
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+empty:
+  error: "Signalgrid: an invalid Signalgrid Client Key was specified"
+  valid: false
+err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+failure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - t
+          - - body
+            - b
+          - - type
+            - CRIT
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+no_channels:
+  errors:
+    - "service error: there are no Signalgrid channels to notify"
+  ok: false
+  requests: []
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - ""
+          - - body
+            - only
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+partial_fail:
+  errors:
+    - "HTTP 500: error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - A
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - B
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+quoted:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - KEY X
+          - - channel
+            - chan
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+    - body:
+        form:
+          - - client_key
+            - KEY X
+          - - channel
+            - x
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+status_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+success:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - SUCCESS
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL2
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL3
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+two_channels:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL1
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL2
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - INFO
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true
+warning:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - client_key
+            - CLIENTKEY
+          - - channel
+            - CHANNEL
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - WARN
+          - - critical
+            - "false"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.signalgrid.co/v1/push"
+  valid: true

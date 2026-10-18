@@ -1,0 +1,185 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_source:
+  error: "httpSMS: the Account (From) Phone # specified is invalid"
+  valid: false
+blank_key:
+  error: "httpSMS: an invalid API Key was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+empty:
+  error: "httpSMS: an invalid API Key was specified"
+  valid: false
+from_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232001"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+http_202:
+  errors:
+    - "HTTP 202: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+invalid_target:
+  errors:
+    - "httpSMS: there are no valid httpSMS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+key_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-key: thekey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+no_key:
+  error: "httpSMS: an invalid API Key was specified"
+  valid: false
+partial:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nx"
+          from: "+15551232000"
+          to: "+15551232001"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+    - body:
+        json:
+          content: "Mercurio Title\r\nx"
+          from: "+15551232000"
+          to: "+15551232002"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+self:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232001"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232002"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true
+to_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232003"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+    - body:
+        json:
+          content: "Mercurio Title\r\nMercurio Body"
+          from: "+15551232000"
+          to: "+15551232004"
+      headers:
+        Content-Type: application/json
+        x-api-key: apikey
+      method: POST
+      url: "https://api.httpsms.com/v1/messages/send"
+  valid: true

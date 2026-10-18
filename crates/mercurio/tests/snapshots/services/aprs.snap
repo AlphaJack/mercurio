@@ -1,0 +1,199 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title Mercurio Body"
+  ok: true
+  valid: true
+body_cleanup:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Gruesse aus Koeln  AeOeUe ss zweite Zeile dritte"
+  ok: true
+  valid: true
+body_truncated:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :0123456789012345678901234567890123456789012345678901234567890123456"
+  ok: true
+  valid: true
+callsign_mismatch:
+  errors:
+    - "service error: APRS-IS call signs differ: DF1XYZ"
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+  ok: false
+  valid: true
+delay_invalid:
+  error: "Aprs: Unsupported APRS-IS delay (invalid) specified."
+  valid: false
+delay_max_excluded:
+  error: "Aprs: Unsupported APRS-IS delay (5) specified."
+  valid: false
+delay_negative:
+  error: "Aprs: Unsupported APRS-IS delay (-3.0) specified."
+  valid: false
+delay_too_big:
+  error: "Aprs: Unsupported APRS-IS delay (40.0) specified."
+  valid: false
+empty:
+  error: "Aprs: An APRS user/pass was not provided."
+  valid: false
+empty_auth:
+  error: "Aprs: An APRS user/pass was not provided."
+  valid: false
+empty_password:
+  error: "Aprs: An APRS user/pass was not provided."
+  valid: false
+invalid_targets_only:
+  errors:
+    - "invalid message: there are no amateur radio call signs to notify"
+  events: []
+  ok: false
+  valid: true
+locale_euro:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title Mercurio Body"
+  ok: true
+  valid: true
+locale_invalid:
+  error: "Aprs: Unsupported APRS-IS server locale. Received: INVALID."
+  valid: false
+locale_noam_delay:
+  events:
+    - connect:
+        host: noam.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title Mercurio Body"
+  ok: true
+  valid: true
+lower_case:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title hello"
+  ok: true
+  valid: true
+malformed_response:
+  errors:
+    - "service error: received an invalid login response from APRS-IS"
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+  ok: false
+  valid: true
+mixed_targets:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title mixed"
+  ok: true
+  valid: true
+no_password:
+  error: "Aprs: An APRS user/pass was not provided."
+  valid: false
+no_target_host:
+  error: "Aprs: An APRS user/pass was not provided."
+  valid: false
+non_numeric_password:
+  error: "Aprs: Invalid APRS-IS password"
+  valid: false
+read_only_password:
+  error: "Aprs: APRS read-only passwords are not supported."
+  valid: false
+refused:
+  errors:
+    - "transport error: no scripted connection for euro.aprs2.net:10152"
+  events: []
+  ok: false
+  valid: true
+short_response:
+  errors:
+    - "service error: APRS-IS login response is too short"
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+  ok: false
+  valid: true
+ssid_targets:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC-1 :Mercurio Title ssid"
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title ssid"
+    - send: "DF1JSL-15>APPRIS::DF1ABC-15:Mercurio Title ssid"
+  ok: true
+  valid: true
+to_arg:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title to"
+    - send: "DF1JSL-15>APPRIS::DF1DEF   :Mercurio Title to"
+  ok: true
+  valid: true
+two_targets:
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+    - send: "DF1JSL-15>APPRIS::DF1ABC   :Mercurio Title two"
+    - send: "DF1JSL-15>APPRIS::DF1DEF   :Mercurio Title two"
+  ok: true
+  valid: true
+unverified:
+  errors:
+    - "service error: invalid APRS-IS password for the given call sign"
+  events:
+    - connect:
+        host: euro.aprs2.net
+        port: 10152
+        tls: false
+    - send: user DF1JSL-15 pass 12345 vers <software> <version>
+  ok: false
+  valid: true

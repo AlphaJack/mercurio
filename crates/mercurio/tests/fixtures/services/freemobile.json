@@ -1,0 +1,15 @@
+{
+"cases":[
+{"name":"empty","url":"freemobile://"},
+{"name":"blank_creds","url":"freemobile://:@/"},
+{"name":"basic","url":"freemobile://user@password"},
+{"name":"query_creds","url":"freemobile://?user=user&pass=password"},
+{"name":"user_pass_host","url":"freemobile://user:pass@ignoredhost"},
+{"name":"quoted","url":"freemobile://us%20er@pass%2Fword"},
+{"name":"no_user","url":"freemobile://password"},
+{"name":"http_500","url":"freemobile://user@password","responses":[{"status":500}]},
+{"name":"http_999","url":"freemobile://user@password","responses":[{"status":999}]},
+{"name":"http_201","url":"freemobile://user@password","responses":[{"status":201}]},
+{"name":"conn_error","url":"freemobile://user@password","responses":[{"error":true}]},
+{"name":"title_body","url":"freemobile://user@password","title":"","body":"only body ✓","type":"warning"}
+]}

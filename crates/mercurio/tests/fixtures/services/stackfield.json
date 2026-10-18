@@ -1,0 +1,22 @@
+{
+"cases":[
+{"name":"empty","url":"stackfield://"},
+{"name":"bad_uuid","url":"stackfield://not-a-valid-uuid"},
+{"name":"short_uuid","url":"stackfield://11111111-2222-3333-4444-55555555555"},
+{"name":"basic","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789"},
+{"name":"upper_uuid","url":"stackfield://ABCDEF01-2345-6789-ABCD-EF0123456789"},
+{"name":"token_param","url":"stackfield://?token=abcdef01-2345-6789-abcd-ef0123456789"},
+{"name":"token_param_overrides_host","url":"stackfield://11111111-2222-3333-4444-555555555555?token=abcdef01-2345-6789-abcd-ef0123456789"},
+{"name":"token_param_bad","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789?token=bad"},
+{"name":"native_www","url":"https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"},
+{"name":"native_bare","url":"https://stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789/"},
+{"name":"native_http_params","url":"http://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789?format=markdown"},
+{"name":"native_bad","url":"https://www.stackfield.com/apiwh/not-a-valid-uuid"},
+{"name":"title_merge","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789","title":"Hello","body":"World","type":"failure"},
+{"name":"no_title","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789","title":"","body":"just body"},
+{"name":"html_format","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789?format=html","title":"T","body":"B"},
+{"name":"http_500","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789","responses":[{"status":500}]},
+{"name":"http_201_fails","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789","responses":[{"status":201}]},
+{"name":"conn_error","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789","responses":[{"error":true}]},
+{"name":"truncate","url":"stackfield://abcdef01-2345-6789-abcd-ef0123456789?overflow=truncate","title":"","body":"x"}
+]}

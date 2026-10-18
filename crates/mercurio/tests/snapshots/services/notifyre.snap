@@ -1,0 +1,302 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_fail:
+  errors:
+    - "service error: Notifyre reported failure: \"server error\""
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+api_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+empty:
+  error: "Notifyre: a Notifyre API key must be specified"
+  valid: false
+fax:
+  ok: true
+  requests:
+    - body:
+        json:
+          campaignName: Mercurio
+          clientReference: R1
+          documents:
+            - base64Str: TWVyY3VyaW8gVGl0bGUNCk1lcmN1cmlvIEJvZHk=
+              contentType: text/plain
+          header: Hdr
+          isHighQuality: false
+          recipients:
+            - type: fax_number
+              value: "+15551232000"
+          scheduledDate: ~
+          sendFrom: "+15551239999"
+          subject: "Mercurio Title\r\nMercurio Body"
+          templateName: Tpl
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/fax/send"
+  valid: true
+fax_attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          campaignName: Mercurio
+          clientReference: ""
+          documents:
+            - base64Str: TWVyY3VyaW8gVGl0bGUNCk1lcmN1cmlvIEJvZHk=
+              contentType: text/plain
+            - base64Str: JVBERg==
+              contentType: application/pdf
+          header: ""
+          isHighQuality: true
+          recipients:
+            - type: fax_number
+              value: "+15551232000"
+          scheduledDate: ~
+          sendFrom: ""
+          subject: "Mercurio Title\r\nMercurio Body"
+          templateName: ""
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/fax/send"
+  valid: true
+fax_empty_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          campaignName: Mercurio
+          clientReference: ""
+          documents:
+            - base64Str: JVBERg==
+              contentType: application/pdf
+          header: ""
+          isHighQuality: true
+          recipients:
+            - type: fax_number
+              value: "+15551232000"
+          scheduledDate: ~
+          sendFrom: ""
+          subject: ""
+          templateName: ""
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/fax/send"
+  valid: true
+fax_hq_yes:
+  errors:
+    - "service error: Notifyre reported failure: "
+  ok: false
+  requests:
+    - body:
+        json:
+          campaignName: Mercurio
+          clientReference: ""
+          documents:
+            - base64Str: TWVyY3VyaW8gVGl0bGUNCk1lcmN1cmlvIEJvZHk=
+              contentType: text/plain
+          header: ""
+          isHighQuality: true
+          recipients:
+            - type: fax_number
+              value: "+15551232000"
+          scheduledDate: ~
+          sendFrom: ""
+          subject: "Mercurio Title\r\nMercurio Body"
+          templateName: ""
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/fax/send"
+  valid: true
+from:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Camp
+          from: "+15551239999"
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+from_bad:
+  error: "Notifyre: the Notifyre source (From) phone # is invalid"
+  valid: false
+http_400:
+  errors:
+    - "HTTP 400: {\"success\":true}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+mode_bad:
+  error: "Notifyre: the Notifyre mode specified is invalid"
+  valid: false
+mode_s:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+            - type: mobile_number
+              value: "+61412345678"
+            - type: mobile_number
+              value: "+15551232001"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+no_targets:
+  errors:
+    - "Notifyre: there are no valid Notifyre targets to notify"
+  ok: false
+  requests: []
+  valid: true
+not_json:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true
+sms_attach_ignored:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          campaignName: Mercurio
+          from: ""
+          recipients:
+            - type: mobile_number
+              value: "+15551232000"
+      headers:
+        Content-Type: application/json
+        x-api-token: apikey
+      method: POST
+      url: "https://api.notifyre.com/20220711/sms/send"
+  valid: true

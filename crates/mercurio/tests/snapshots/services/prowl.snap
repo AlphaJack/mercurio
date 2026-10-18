@@ -1,0 +1,407 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachments_unsupported:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+bad_provider:
+  error: "Prowl: an invalid Prowl Provider Key was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+empty:
+  error: "Prowl: an invalid Prowl API Key was specified"
+  valid: false
+http_204:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+http_406:
+  errors:
+    - "HTTP 406: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+http_409:
+  errors:
+    - "HTTP 409: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+no_key:
+  error: "Prowl: an invalid Prowl API Key was specified"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - ""
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_emergency:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "2"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_empty:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_high:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "1"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_invalid:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_low:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "-2"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_moderate:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "-1"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_num_10:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "1"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_num_2:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "2"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+priority_num_neg2:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "-2"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+provider:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+          - - providerkey
+            - bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+short_key:
+  error: "Prowl: an invalid Prowl API Key was specified"
+  valid: false
+title_body:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - application
+            - Mercurio
+          - - event
+            - Hello & world
+          - - description
+            - "line1\nline2"
+          - - priority
+            - "0"
+          - - providerkey
+            - bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true
+trailing_slashes:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - apikey
+            - wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+          - - application
+            - Mercurio
+          - - event
+            - Mercurio Title
+          - - description
+            - Mercurio Body
+          - - priority
+            - "0"
+      headers:
+        Content-type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.prowlapp.com/publicapi/add"
+  valid: true

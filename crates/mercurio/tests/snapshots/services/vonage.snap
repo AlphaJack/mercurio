@@ -1,0 +1,332 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+alpha_source:
+  error: "Vonage: the Account (From) Phone # specified is invalid"
+  valid: false
+blank:
+  error: "Vonage: an invalid Vonage API Key was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "66666666666"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "66666666666"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+created_is_error:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "66666666666"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "66666666666"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+empty:
+  error: "Vonage: an invalid Vonage API Key was specified"
+  valid: false
+http_error:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "66666666666"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "66666666666"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+invalid_targets_fallback:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACffffffff
+          - - api_secret
+            - gggggggggggggggg
+          - - ttl
+            - "900000"
+          - - from
+            - "33333333333"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "33333333333"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+nexmo_multi:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "t\r\nb"
+          - - to
+            - "66666666666"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "t\r\nb"
+          - - to
+            - "77777777777"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+no_secret:
+  error: "Vonage: an invalid Vonage API Secret was specified"
+  valid: false
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "66666666666"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "77777777777"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+qs_key_secret_from:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "55555555555"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+qs_source:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "55555555555"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+qs_to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACaaaaaaaa
+          - - api_secret
+            - bbbbbbbbbbbbbbbb
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "7777777777777"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+self:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - AChhhhhhhh
+          - - api_secret
+            - iiiiiiiiiiiiiiii
+          - - ttl
+            - "900000"
+          - - from
+            - "55555555555"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "55555555555"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+short_source:
+  error: "Vonage: the Account (From) Phone # specified is invalid"
+  valid: false
+ttl_custom:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACbbbbbbbb
+          - - api_secret
+            - cccccccccccccccc
+          - - ttl
+            - "30000"
+          - - from
+            - "33333333333"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "33333333333"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+ttl_invalid_default:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - api_key
+            - ACbbbbbbbb
+          - - api_secret
+            - cccccccccccccccc
+          - - ttl
+            - "900000"
+          - - from
+            - "33333333333"
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+          - - to
+            - "33333333333"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://rest.nexmo.com/sms/json"
+  valid: true
+ttl_max_plus:
+  error: "Vonage: the Vonage TTL specified is out of range"
+  valid: false
+ttl_zero:
+  error: "Vonage: the Vonage TTL specified is out of range"
+  valid: false

@@ -1,0 +1,24 @@
+{
+"cases":[
+{"name":"empty","url":"flock://"},
+{"name":"blank","url":"flock://:@/"},
+{"name":"bad_token","url":"flock://bad_token!"},
+{"name":"webhook","url":"flock://tttttttttttttttttttttttt"},
+{"name":"webhook_image_false","url":"flock://tttttttttttttttttttttttt?image=False"},
+{"name":"webhook_image_invalid","url":"flock://tttttttttttttttttttttttt?image=invalid"},
+{"name":"botname","url":"flock://mybot@tttttttttttttttttttttttt","type":"failure"},
+{"name":"to_param","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii?to=u:uuuuuuuuuuuu&format=markdown"},
+{"name":"escape_text","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii?format=text","title":"<T & 'q'>","body":"a < b \"c\"\nline 2"},
+{"name":"html_format","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii/u:uuuuuuuuuuuu?format=html","title":"<T>","body":"<i>b</i>"},
+{"name":"no_title","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii","title":""},
+{"name":"native","url":"https://api.flock.com/hooks/sendMessage/iiiiiiiiiiiiiiiiiiiiiiii/"},
+{"name":"native_params","url":"https://api.flock.com/hooks/sendMessage/iiiiiiiiiiiiiiiiiiiiiiii/?image=no&to=@abc"},
+{"name":"plain_user","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii/uuuuuuuuuuuu?format=text"},
+{"name":"multi","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii/g:gggggggggggg/u:uuuuuuuuuuuu/%23chan/%40user?format=text"},
+{"name":"all_invalid","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii/g:/u:?format=text"},
+{"name":"some_invalid","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii/g:/u:abc"},
+{"name":"multi_partial_fail","url":"flock://iiiiiiiiiiiiiiiiiiiiiiii/g:gggggggggggg/u:uuuuuuuuuuuu","responses":[{"status":500},{"status":200}]},
+{"name":"webhook_401","url":"flock://tttttttttttttttttttttttt/","responses":[{"status":401}]},
+{"name":"webhook_201_fails","url":"flock://tttttttttttttttttttttttt/","responses":[{"status":201}]},
+{"name":"conn_error","url":"flock://tttttttttttttttttttttttt/","responses":[{"error":true}]}
+]}

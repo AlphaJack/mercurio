@@ -1,0 +1,277 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+            - DG2XYZ
+            - DL3AB
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+body:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "T\r\na pager msg"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+default_200:
+  errors:
+    - "HTTP 200: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+empty:
+  error: "Dapnet: a Dapnet user/pass was not provided"
+  valid: false
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+invalid_callsign:
+  errors:
+    - "Dapnet: there are no valid Dapnet targets to notify"
+  ok: false
+  requests: []
+  valid: true
+multi_dedupe:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+    - body:
+        json:
+          callSignNames:
+            - DG2XYZ
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+    - body:
+        json:
+          callSignNames:
+            - DL3AB
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+no_password:
+  error: "Dapnet: a Dapnet user/pass was not provided"
+  valid: false
+no_user:
+  error: "Dapnet: a Dapnet user/pass was not provided"
+  valid: false
+priority_1:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: true
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+priority_bad:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+priority_emergency:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: true
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+priority_normal:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+txgroups:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+            - dl-bw
+            - dl-by
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true
+txgroups_empty:
+  ok: true
+  requests:
+    - body:
+        json:
+          callSignNames:
+            - DF1ABC
+          emergency: false
+          text: "Mercurio Title\r\nMercurio Body"
+          transmitterGroupNames:
+            - dl-all
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://www.hampager.de:8080/calls"
+  valid: true

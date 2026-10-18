@@ -1,0 +1,16 @@
+# injected by `dist generate` into release.yml's build-local-artifacts job
+- name: Install sccache
+  if: ${{ !(runner.os == 'Windows' && runner.arch == 'ARM64') }}
+  uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+- name: Use sccache when available
+  shell: bash
+  run: |
+    if command -v sccache >/dev/null 2>&1; then
+      { echo "SCCACHE_GHA_ENABLED=true"; echo "RUSTC_WRAPPER=sccache"; } >> "$GITHUB_ENV"
+    else
+      echo "sccache unavailable on this runner; building without it"
+    fi
+- name: Put LLVM clang on PATH (ring needs it on aarch64-pc-windows-msvc)
+  if: runner.os == 'Windows' && runner.arch == 'ARM64'
+  shell: bash
+  run: printf '%s\n' 'C:\Program Files\LLVM\bin' >> "$GITHUB_PATH"

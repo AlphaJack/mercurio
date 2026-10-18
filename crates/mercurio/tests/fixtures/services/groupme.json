@@ -1,0 +1,20 @@
+{
+"cases":[
+{"name":"invalid_empty","url":"groupme://"},
+{"name":"invalid_bot_id","url":"groupme://bad-bot!"},
+{"name":"basic","url":"groupme://botid123"},
+{"name":"title_merge","url":"groupme://botid123","title":"Hello","body":"World","type":"warning"},
+{"name":"with_token","url":"groupme://botid123/tokenabc"},
+{"name":"bot_id_param","url":"groupme://ignored/?bot_id=other1&token=tok"},
+{"name":"accepted_202","url":"groupme://botid123","responses":[{"status":202}]},
+{"name":"error_401","url":"groupme://botid123","responses":[{"status":401}]},
+{"name":"error_201","url":"groupme://botid123","responses":[{"status":201}]},
+{"name":"connection_error","url":"groupme://botid123","responses":[{"error":true}]},
+{"name":"attach_no_token","url":"groupme://botid123","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}]},
+{"name":"attach_upload","url":"groupme://botid123/tok","responses":[{"status":200,"body":{"payload":{"url":"https://i.groupme.com/abc"}}},{"status":200}],"attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}]},
+{"name":"attach_two_skip_text","url":"groupme://botid123/tok","responses":[{"status":200,"body":{"payload":{"url":"https://i.groupme.com/1"}}},{"status":200,"body":{"payload":{"url":"https://i.groupme.com/2"}}},{"status":200}],"attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="},{"name":"b.txt","mime":"text/plain","text":"x"},{"name":"c.gif","mime":"image/gif","b64":"iVBORw0KGgo="}]},
+{"name":"attach_upload_fail","url":"groupme://botid123/tok","responses":[{"status":500}],"attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}]},
+{"name":"attach_no_url","url":"groupme://botid123/tok","responses":[{"status":200,"body":{"payload":{}}}],"attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}]},
+{"name":"attach_bad_json","url":"groupme://botid123/tok","responses":[{"status":200,"body":"not json"}],"attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}]},
+{"name":"attach_only","url":"groupme://botid123/tok","body":"","title":"","responses":[{"status":200,"body":{"payload":{"url":"https://i.groupme.com/abc"}}},{"status":200}],"attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}]}
+]}

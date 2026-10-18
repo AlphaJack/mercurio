@@ -1,0 +1,369 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: "Mercurio Title\nMercurio Body"
+              type: text/plain
+            - b64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+              disposition: attachment
+              filename: a.png
+              type: image/png
+          type: multipart/mixed
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Mercurio Title Mercurio Body"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+basic:
+  events:
+    - host: smtp.example.com
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "Mercurio Title\nMercurio Body"
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Mercurio Title Mercurio Body"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+cc_header:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "Mercurio Title\nMercurio Body"
+          type: text/plain
+        headers:
+          - - cc
+            - other@example.org
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Mercurio Title Mercurio Body"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+          - - x-extra
+            - "1"
+      smtp: sendmail
+      to:
+        - friend@example.org
+        - other@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+empty:
+  error: "Delta Chat: an invalid ~From~ email was specified"
+  valid: false
+empty_title:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: short
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: short"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+fail_login:
+  errors:
+    - "service error: SMTP authentication failed: 535 bad credentials"
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - smtp: quit
+  ok: false
+  valid: true
+format_html_ignored:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "<b>Mercurio Title</b><br />\n<b>bold</b>"
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: <b>Mercurio Title</b><br /> <b>bold</b>"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+long_body:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "Alert\nThis is a fairly long message body that should be cut in the subject line\nwith a second line"
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Alert This is a fairly long message body that shou..."
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+pgp_invalid:
+  error: "Delta Chat: the Email PGP mode specified (invalid) is invalid"
+  valid: false
+pgp_sign:
+  errors:
+    - "unsupported: PGP signing/encryption of e-mail is not supported"
+  events: []
+  ok: false
+  valid: true
+secure:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "Mercurio Title\nMercurio Body"
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Mercurio Title Mercurio Body"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+secure_port:
+  events:
+    - host: smtp.example.com
+      port: 2525
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "Mercurio Title\nMercurio Body"
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Mercurio Title Mercurio Body"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true
+self:
+  events:
+    - host: smtp.example.com
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "Mercurio Title\nMercurio Body"
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Mercurio Title Mercurio Body"
+          - - to
+            - user@smtp.example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@smtp.example.com
+    - smtp: quit
+  ok: true
+  valid: true
+unicode:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@smtp.example.com
+      message:
+        body:
+          charset: utf-8
+          text: "Grüße\n✓ done"
+          type: text/plain
+        headers:
+          - - chat-version
+            - "1.0"
+          - - from
+            - Mercurio <user@smtp.example.com>
+          - - subject
+            - "Chat: Grüße ✓ done"
+          - - to
+            - friend@example.org
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - friend@example.org
+    - smtp: quit
+  ok: true
+  valid: true

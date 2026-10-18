@@ -1,0 +1,320 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+ack_tid:
+  ok: true
+  requests:
+    - body:
+        json:
+          event_type: acknowledge
+          id: abc
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+bad_action:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: abc
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+bad_short:
+  error: "PagerTree: an invalid PagerTree Integration ID was specified"
+  valid: false
+bad_url:
+  error: "PagerTree: an invalid PagerTree Integration ID was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+blank_tid:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+custom:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          env: prod
+          event_type: create
+          id: t1
+          meta:
+            m: v
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        pagertree-token: "123"
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+custom_override:
+  ok: true
+  requests:
+    - body:
+        text: "{\"description\":\"Mercurio Body\",\"event_type\":\"create\",\"id\":\"myid\",\"meta\":{},\"tags\":[],\"title\":\"forced\"}"
+      headers:
+        Content-Type: text/plain
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+empty:
+  error: "PagerTree: an invalid PagerTree Integration ID was specified"
+  valid: false
+http_201:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+http_204:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+id_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_zzzzzzzzzz"
+  valid: true
+id_urgency:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+          urgency: critical
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+integration_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_yyyyyyyyyy"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: x
+          meta: {}
+          tags: []
+          title: Mercurio Notifications
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+plus_id:
+  error: "PagerTree: an invalid PagerTree Integration ID was specified"
+  valid: false
+resolve_thirdparty:
+  ok: true
+  requests:
+    - body:
+        json:
+          event_type: resolve
+          id: "123"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+tags:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags:
+            - production
+            - web
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+urgency_bad:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+urgency_low:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+          urgency: low
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true

@@ -1,0 +1,152 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_token:
+  error: "Chanify: the Chanify token specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/abc123/"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/token/"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/token/"
+  valid: true
+created:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/token/"
+  valid: true
+empty:
+  error: "Chanify: the Chanify token specified is invalid"
+  valid: false
+empty_userinfo:
+  error: "Chanify: the Chanify token specified is invalid"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/abc123/"
+  valid: true
+quoted_token:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/abc.123/"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/token/"
+  valid: true
+title_merged:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - "My Title\r\nMy Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/abc123/"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/abc123/"
+  valid: true
+token_param_wins:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/abc.1_2-3/"
+  valid: true
+unicode:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - héllo & <world>
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.chanify.net/v1/sender/abc123/"
+  valid: true

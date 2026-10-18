@@ -1,0 +1,164 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_key:
+  error: "WeCom Bot: an invalid WeCom Bot Webhook Key was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=botkey"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=botkey"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=botkey"
+  valid: true
+empty:
+  error: "WeCom Bot: an invalid WeCom Bot Webhook Key was specified"
+  valid: false
+empty_userinfo:
+  error: "WeCom Bot: an invalid WeCom Bot Webhook Key was specified"
+  valid: false
+key_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=botkey"
+  valid: true
+key_param_wins:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=bot_key-2"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=BOTKEY"
+  valid: true
+native_extra_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=BOTKEY"
+  valid: true
+native_http_format:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=abc-123"
+  valid: true
+native_no_key:
+  error: "unsupported URL scheme: https://"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: Mercurio Body
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=botkey"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=botkey"
+  valid: true
+title_merged:
+  ok: true
+  requests:
+    - body:
+        json:
+          msgtype: text
+          text:
+            content: "Title\r\nBody é"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=botkey"
+  valid: true

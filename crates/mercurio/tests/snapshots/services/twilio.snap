@@ -1,0 +1,467 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+apikey:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876543"
+      headers:
+        Accept: application/json
+        Authorization: Basic U0tjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYzpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+apikey_invalid_ignored:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876543"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+bad_source:
+  error: "Twilio: the Account (From) Phone # or Short-code specified is invalid"
+  valid: false
+blank_creds:
+  error: "Twilio: an invalid Twilio Account SID was specified"
+  valid: false
+call:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Twiml
+            - "<Response><Say>A &amp; B</Say><Say>say &lt;this&gt;</Say></Response>"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876543"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Calls.json"
+  valid: true
+call_drops_whatsapp:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Twiml
+            - "<Response><Say>Mercurio Title</Say><Say>Mercurio Body</Say></Response>"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876544"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Calls.json"
+  valid: true
+call_no_targets:
+  ok: true
+  requests: []
+  valid: true
+call_no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Twiml
+            - "<Response><Say>Mercurio Body</Say></Response>"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876543"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Calls.json"
+  valid: true
+call_twiml:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Twiml
+            - "  <Response><Say>hi</Say></Response>"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876543"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Calls.json"
+  valid: true
+call_whatsapp_invalid:
+  error: "Twilio: the Account (From) Phone # or Short-code specified is invalid"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+66666666666"
+          - - To
+            - "+66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+created_201:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+66666666666"
+          - - To
+            - "+66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+empty:
+  error: "Twilio: an invalid Twilio Account SID was specified"
+  valid: false
+http_error:
+  errors:
+    - "HTTP 999: {\"code\": 21211, \"message\": \"bad\"}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+66666666666"
+          - - To
+            - "+66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+method_mms_invalid:
+  error: "Twilio: the Twilio notification method specified is invalid"
+  valid: false
+method_sms:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+55555555555"
+          - - To
+            - "+55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+mixed_targets:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "whatsapp:+33333333333"
+          - - To
+            - "whatsapp:+88888888888"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+no_token:
+  error: "Twilio: an invalid Twilio Authentication Token was specified"
+  valid: false
+partial_failure:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876543"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876544"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+qs_sid_token_from:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+55555555555"
+          - - To
+            - "+55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+qs_source:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+55555555555"
+          - - To
+            - "+55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+qs_to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+55555555555"
+          - - To
+            - "+7777777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+qs_to_whatsapp:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "whatsapp:+55555555555"
+          - - To
+            - "whatsapp:+66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+self_notify:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "+55555555555"
+          - - To
+            - "+55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+short_code:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "12345"
+          - - To
+            - "+44444444444"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+short_code_no_targets:
+  errors:
+    - "invalid message: there are no valid Twilio targets to notify"
+  ok: false
+  requests: []
+  valid: true
+short_code_whatsapp_dropped:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "98765"
+          - - To
+            - "+44444444444"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+six_digit_short:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "123456"
+          - - To
+            - "+44444444444"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+sms_title_merged:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "title\r\nbody"
+          - - From
+            - "+15551233456"
+          - - To
+            - "+15559876543"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+source_9_digits:
+  error: "Twilio: the Account (From) Phone # specified is invalid"
+  valid: false
+whatsapp_default_mode:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "whatsapp:+55555555555"
+          - - To
+            - "whatsapp:+66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+    - body:
+        form:
+          - - Body
+            - "Mercurio Title\r\nMercurio Body"
+          - - From
+            - "whatsapp:+55555555555"
+          - - To
+            - "whatsapp:+77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic QUNhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.twilio.com/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages.json"
+  valid: true
+whatsapp_short_code_source:
+  error: "Twilio: the Account (From) Phone # or Short-code specified is invalid"
+  valid: false

@@ -1,0 +1,230 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+auth:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+blank_auth:
+  error: "Synology Chat: an invalid hostname or port was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+empty:
+  error: "Synology Chat: an invalid hostname or port was specified"
+  valid: false
+empty_secure:
+  error: "Synology Chat: an invalid hostname or port was specified"
+  valid: false
+file_url:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"file_url\":\"http://reddit.com/test.jpg\",\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Accept: text/html
+        Content-Type: application/x-www-form-urlencoded
+        HeaderKey: HeaderValue
+      method: POST
+      url: "http://localhost:8080/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=path"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+no_token:
+  error: "Synology Chat: an invalid Synology token was specified"
+  valid: false
+port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:8080/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+quoted_token_slice:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhosten/sub/dir/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=to+ken"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+status_204_ok:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+status_301_fails:
+  errors:
+    - "HTTP 301: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+status_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:8081/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost//webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=mytoken"
+  valid: true
+token_param_no_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=mytoken"
+  valid: true
+token_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost:8080/path//webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+unicode_body:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Tïtle\\r\\nBody \\\"quoted\\\" \\\\ é 😀\\ttab\"}"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true
+user_only:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - payload
+            - "{\"text\":\"Mercurio Title\\r\\nMercurio Body\"}"
+      headers:
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=token"
+  valid: true

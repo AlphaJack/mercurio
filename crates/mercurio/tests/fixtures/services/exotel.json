@@ -1,0 +1,26 @@
+{
+"cases":[
+{"name":"empty","url":"exotel://"},
+{"name":"no_token","url":"exotel://sid@15551232000"},
+{"name":"no_sid","url":"exotel://:token@15551232000"},
+{"name":"self","url":"exotel://sid:token@15551232000"},
+{"name":"targets","url":"exotel://sid:token@15551232000/919876543210/+91 98765 43211"},
+{"name":"invalid_target","url":"exotel://sid:token@15551232000/12"},
+{"name":"mixed_invalid","url":"exotel://sid:token@15551232000/12/919876543210"},
+{"name":"sender_id","url":"exotel://sid:token@MYBRAND/919876543210"},
+{"name":"sender_numeric6","url":"exotel://sid:token@123456/919876543210"},
+{"name":"sender_numeric5","url":"exotel://sid:token@12345/919876543210"},
+{"name":"sender_bad","url":"exotel://sid:token@a!b/919876543210"},
+{"name":"query_overrides","url":"exotel://x:y@15551232000?sid=S1&token=T1&apikey=K1&from=MYBRAND&to=919876543210"},
+{"name":"key_alias","url":"exotel://sid:token@15551232000?key=K2&source=ALT.ID"},
+{"name":"region_in","url":"exotel://sid:token@15551232000?region=IN"},
+{"name":"region_bad","url":"exotel://sid:token@15551232000?region=eu"},
+{"name":"priority_high","url":"exotel://sid:token@15551232000?priority=h"},
+{"name":"priority_plus","url":"exotel://sid:token@15551232000?priority=%2B"},
+{"name":"priority_bad","url":"exotel://sid:token@15551232000?priority=urgent"},
+{"name":"unicode_no","url":"exotel://sid:token@15551232000?unicode=no"},
+{"name":"batch","url":"exotel://sid:token@15551232000/919876543210/919876543211/919876543212?batch=yes"},
+{"name":"http_500","url":"exotel://sid:token@15551232000/919876543210/919876543211","responses":[{"status":500},{"status":200}]},
+{"name":"http_202","url":"exotel://sid:token@15551232000","responses":[{"status":202}]},
+{"name":"conn_error","url":"exotel://sid:token@15551232000","responses":[{"error":true}]}
+]}

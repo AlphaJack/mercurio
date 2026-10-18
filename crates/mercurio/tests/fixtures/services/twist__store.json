@@ -1,0 +1,9 @@
+{
+"cases":[
+{"name":"session_and_channels_kept","url":"twist://password:user@example.com","sends":3,"responses":[{"status":200,"body":{"token":"tok123","default_workspace":5}},{"status":200,"body":[{"name":"General","id":999}]},{"status":200},{"status":200},{"status":200}]},
+{"name":"workspace_lookup_once","url":"twist://password:user@example.com/%23myteam:General/12345","sends":2,"responses":[{"status":200,"body":{"token":"tok123","default_workspace":5}},{"status":200,"body":[{"name":"general","id":7}]},{"status":200,"body":[{"name":"MyTeam","id":5}]},{"status":200},{"status":200},{"status":200},{"status":200}],"ignore":["form:channel_id"]},
+{"name":"missing_channel_dropped","url":"twist://password:user@example.com/%23missing","sends":2,"responses":[{"status":200,"body":{"token":"tok123","default_workspace":5}},{"status":200,"body":[{"name":"general","id":7}]}]},
+{"name":"login_fails_then_works","url":"twist://password:user@example.com/12345","sends":3,"responses":[{"status":500,"body":{}},{"status":200,"body":{"token":"t2","default_workspace":5}},{"status":200},{"status":200}]},
+{"name":"expired_session_relogin","url":"twist://password:user@example.com/12345","sends":2,"responses":[{"status":200,"body":{"token":"old","default_workspace":5}},{"status":200},{"status":401,"body":{"error_code":120}},{"status":200,"body":{"token":"new","default_workspace":5}},{"status":200}]},
+{"name":"retry_skips_delivered","url":"twist://password:user@example.com/111/222?retry=1","sends":1,"responses":[{"status":200,"body":{"token":"tok","default_workspace":5}},{"status":200},{"status":500,"body":{}},{"status":200}],"ignore":["form:channel_id"]}
+]}

@@ -1,0 +1,6 @@
+{
+"cases":[
+{"name":"expired_endpoint_retired","url":"vapid://user@example.com/qguqyavxutnmh8?keyfile={FIXTURES}/vapid_private_key.pem&subfile={FIXTURES}/vapid_single.json","sends":2,"ignore":["header:authorization","bytes","text"],"responses":[{"status":410},{"status":201}]},
+{"name":"two_sends","url":"vapid://user@example.com/qguqyavxutnmh8?keyfile={FIXTURES}/vapid_private_key.pem&subfile={FIXTURES}/vapid_single.json","sends":2,"ignore":["header:authorization","bytes","text"],"responses":[{"status":201},{"status":201}]},
+{"name":"server_error_not_retired","url":"vapid://user@example.com/qguqyavxutnmh8?keyfile={FIXTURES}/vapid_private_key.pem&subfile={FIXTURES}/vapid_single.json","sends":2,"ignore":["header:authorization","bytes","text"],"responses":[{"status":500},{"status":201}]}
+]}

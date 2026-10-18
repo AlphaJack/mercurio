@@ -1,0 +1,18 @@
+{
+"cases":[
+{"name":"empty","url":"telnyx://"},
+{"name":"no_key","url":"telnyx://15551232000"},
+{"name":"bad_source","url":"telnyx://apikey@123"},
+{"name":"self","url":"telnyx://apikey@15551232000"},
+{"name":"targets","url":"telnyx://apikey@15551232000/15551232001/+1 555 123 2002"},
+{"name":"invalid_target_only","url":"telnyx://apikey@15551232000/abc"},
+{"name":"mixed_invalid","url":"telnyx://apikey@15551232000/abc/15551232001"},
+{"name":"from_query","url":"telnyx://apikey@15551232001/15551232002?from=15551232000"},
+{"name":"from_query_bad","url":"telnyx://apikey@15551232001?from=abc"},
+{"name":"key_query","url":"telnyx://15551232000?key=thekey&to=15551232001"},
+{"name":"profile","url":"telnyx://apikey@15551232000?profile=prof-123"},
+{"name":"http_201","url":"telnyx://apikey@15551232000","responses":[{"status":201}]},
+{"name":"http_500","url":"telnyx://apikey@15551232000/15551232001/15551232002","responses":[{"status":500},{"status":200}]},
+{"name":"conn_error","url":"telnyx://apikey@15551232000","responses":[{"error":true}]},
+{"name":"body","url":"telnyx://apikey@15551232000","title":"","body":"héllo","type":"failure"}
+]}

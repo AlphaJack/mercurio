@@ -1,0 +1,381 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+expired_session_relogin:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+        - body:
+            form:
+              - - channel_id
+                - "12345"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer old
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - channel_id
+                - "12345"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer old
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Authorization: Bearer old
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+        - body:
+            form:
+              - - channel_id
+                - "12345"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer old
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+  url_id: 82b2ac8d
+  valid: true
+login_fails_then_works:
+  sends:
+    - attempts: 1
+      errors:
+        - "login: service error: Twist login failed"
+      ok: false
+      requests:
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+        - body:
+            form:
+              - - channel_id
+                - "12345"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer t2
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - channel_id
+                - "12345"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer t2
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+  url_id: 82b2ac8d
+  valid: true
+missing_channel_dropped:
+  sends:
+    - attempts: 1
+      errors:
+        - "channel lookup: service error: no Twist channels to notify"
+      ok: false
+      requests:
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+        - body:
+            form:
+              - - workspace_id
+                - "5"
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/channels/get"
+    - attempts: 1
+      errors:
+        - "channel lookup: service error: no Twist channels to notify"
+      ok: false
+      requests: []
+  url_id: 63efcd18
+  valid: true
+retry_skips_delivered:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+        - body:
+            form:
+              - - channel_id
+                - "<ignored>"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+        - body:
+            form:
+              - - channel_id
+                - "<ignored>"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+        - body:
+            form:
+              - - channel_id
+                - "<ignored>"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+  url_id: 973e88bc
+  valid: true
+session_and_channels_kept:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+        - body:
+            form:
+              - - workspace_id
+                - "5"
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/channels/get"
+        - body:
+            form:
+              - - channel_id
+                - "999"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - channel_id
+                - "999"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - channel_id
+                - "999"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+  url_id: 5c8d5ab6
+  valid: true
+workspace_lookup_once:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - email
+                - user@example.com
+              - - password
+                - password
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/users/login"
+        - body:
+            form:
+              - - workspace_id
+                - "5"
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/channels/get"
+        - body: ~
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/workspaces/get"
+        - body:
+            form:
+              - - channel_id
+                - "<ignored>"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+        - body:
+            form:
+              - - channel_id
+                - "<ignored>"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - channel_id
+                - "<ignored>"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+        - body:
+            form:
+              - - channel_id
+                - "<ignored>"
+              - - title
+                - Mercurio Title
+              - - content
+                - Mercurio Body
+          headers:
+            Authorization: Bearer tok123
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: POST
+          url: "https://api.twist.com/api/v3/threads/add"
+  url_id: 5594daf0
+  valid: true

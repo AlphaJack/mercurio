@@ -1,0 +1,300 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_error:
+  errors:
+    - "service error: SerwerSMS error: {\"code\":1,\"message\":\"bad\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+bad_sender:
+  error: "SerwerSMS: a SerwerSMS sender name is invalid"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+default_response:
+  errors:
+    - "service error: SerwerSMS reported failure"
+  ok: false
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+empty:
+  error: "SerwerSMS: a SerwerSMS username must be specified"
+  valid: false
+from_only:
+  ok: true
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: FromName
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+from_sender:
+  ok: true
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sndr X
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+groups:
+  errors:
+    - "service error: SerwerSMS reported failure"
+  ok: false
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+    - body:
+        json:
+          password: pass
+          phone: "+48500600701"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+    - body:
+        json:
+          group_id: "123"
+          password: pass
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+    - body:
+        json:
+          group_id: "456"
+          password: pass
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+hash_group:
+  ok: true
+  requests:
+    - body:
+        json:
+          group_id: "77"
+          password: pass
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+long_sender:
+  error: "SerwerSMS: a SerwerSMS sender name is invalid"
+  valid: false
+mms:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: username
+            value: user
+          - name: password
+            value: pass
+          - name: text
+            value: "Mercurio Title\r\nMercurio Body"
+          - name: sender
+            value: Sender
+          - name: phone
+            value: "+48500600700"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: file
+          - b64: /9j/4AA=
+            content_type: image/jpeg
+            filename: b.jpg
+            name: file
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_mms"
+  valid: true
+mms_fail:
+  errors:
+    - "service error: SerwerSMS reported failure"
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: username
+            value: user
+          - name: password
+            value: pass
+          - name: text
+            value: "Mercurio Title\r\nMercurio Body"
+          - name: sender
+            value: Sender
+          - name: phone
+            value: "+48500600700"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: file
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_mms"
+    - body:
+        multipart:
+          - name: username
+            value: user
+          - name: password
+            value: pass
+          - name: text
+            value: "Mercurio Title\r\nMercurio Body"
+          - name: sender
+            value: Sender
+          - name: group_id
+            value: "9"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: file
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_mms"
+  valid: true
+no_password:
+  error: "SerwerSMS: a SerwerSMS password must be specified"
+  valid: false
+no_targets:
+  errors:
+    - "SerwerSMS: there are no valid SerwerSMS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_user:
+  error: "SerwerSMS: a SerwerSMS username must be specified"
+  valid: false
+not_json:
+  errors:
+    - "service error: SerwerSMS reported failure"
+  ok: false
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true
+only_invalid:
+  errors:
+    - "SerwerSMS: there are no valid SerwerSMS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+phone_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          password: pass
+          phone: "+48500600700"
+          sender: Sender
+          text: "Mercurio Title\r\nMercurio Body"
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api2.serwersms.pl/messages/send_sms"
+  valid: true

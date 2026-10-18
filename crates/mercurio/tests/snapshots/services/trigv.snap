@@ -1,0 +1,438 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+bad_channel:
+  error: "Trigv: an invalid Trigv channel slug was specified"
+  valid: false
+bad_key:
+  error: "Trigv: an invalid Trigv API Key was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+custom_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "http://trigv-platform.test/api/v1/events"
+  valid: true
+custom_host_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "http://trigv-platform.test:8080/api/v1/events"
+  valid: true
+custom_host_secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://trigv-platform.test:8443/api/v1/events"
+  valid: true
+deploys:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: deploys
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+empty:
+  error: "Trigv: an invalid Trigv API Key was specified"
+  valid: false
+empty_s:
+  error: "Trigv: an invalid Trigv API Key was specified"
+  valid: false
+err_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+err_422:
+  errors:
+    - "HTTP 422: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: time_sensitive
+          description: b
+          level: error
+          title: t
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+general:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+long:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+          level: info
+          title: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+ok_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+partial:
+  errors:
+    - HTTP 500 Internal server error.
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: a
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+    - body:
+        json:
+          channel: b
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+priority_bad:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+priority_high:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: time_sensitive
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+priority_low:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+to:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: alerts
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+    - body:
+        json:
+          channel: escalation
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+    - body:
+        json:
+          channel: ops
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+two_channels:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: alerts
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+    - body:
+        json:
+          channel: ops
+          delivery_urgency: standard
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+urgency:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: time_sensitive
+          description: Mercurio Body
+          level: info
+          title: Mercurio Title
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+urgency_bad:
+  error: "Trigv: an invalid Trigv urgency was specified"
+  valid: false
+url_image_event:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: Mercurio Body
+          event_type: deploy
+          image_url: "https://i.com/a.png"
+          level: info
+          title: Mercurio Title
+          url: "https://example.com"
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true
+warning_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: general
+          delivery_urgency: standard
+          description: body
+          level: warning
+          title: Mercurio Notifications
+      headers:
+        Accept: application/json
+        Authorization: Bearer trgv_a1b2c3d4_0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "https://api.trigv.com/api/v1/events"
+  valid: true

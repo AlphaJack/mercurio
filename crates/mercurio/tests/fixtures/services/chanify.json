@@ -1,0 +1,17 @@
+{
+"cases":[
+{"name":"basic","url":"chanify://abc123"},
+{"name":"token_param","url":"chanify://?token=abc123"},
+{"name":"token_param_wins","url":"chanify://other/?token=abc.1_2-3"},
+{"name":"title_merged","url":"chanify://abc123","title":"My Title","body":"My Body","type":"warning"},
+{"name":"no_title","url":"chanify://abc123","title":""},
+{"name":"unicode","url":"chanify://abc123","title":"","body":"héllo & <world>"},
+{"name":"empty","url":"chanify://"},
+{"name":"empty_userinfo","url":"chanify://:@/"},
+{"name":"bad_token","url":"chanify://%badtoken%"},
+{"name":"quoted_token","url":"chanify://abc%2E123"},
+{"name":"server_error","url":"chanify://token","responses":[{"status":500}]},
+{"name":"bizarre_code","url":"chanify://token","responses":[{"status":999}]},
+{"name":"created","url":"chanify://token","responses":[{"status":201}]},
+{"name":"connection_error","url":"chanify://token","responses":[{"error":true}]}
+]}

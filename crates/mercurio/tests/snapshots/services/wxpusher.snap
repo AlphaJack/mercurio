@@ -1,0 +1,318 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_error_msg:
+  errors:
+    - "service error: WxPusher code=Some(1002): bad token"
+  ok: false
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+api_error_no_msg:
+  errors:
+    - "HTTP 200: {\"code\":1006}"
+  ok: false
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+blank_targets:
+  errors:
+    - "service error: WxPusher: there are no valid users or topics to notify"
+  ok: false
+  requests: []
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+default_response_fails:
+  errors:
+    - "HTTP 200: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+empty:
+  error: "WxPusher: an invalid WxPusher App Token was specified"
+  valid: false
+empty_userinfo:
+  error: "WxPusher: an invalid WxPusher App Token was specified"
+  valid: false
+html:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 2
+          summary: Mercurio Title
+          topicIds: []
+          uids:
+            - UID_345
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+http_error_good_code:
+  errors:
+    - "HTTP 500: {\"code\":1000}"
+  ok: false
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+invalid_targets:
+  errors:
+    - "service error: WxPusher: there are no valid users or topics to notify"
+  ok: false
+  requests: []
+  valid: true
+invalid_token:
+  error: "WxPusher: an invalid WxPusher App Token was specified"
+  valid: false
+markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: "**x**"
+          contentType: 3
+          summary: ""
+          topicIds: []
+          uids:
+            - UID_345
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123456789
+          uids:
+            - UID_123
+            - UID_abc
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+not_json:
+  errors:
+    - "HTTP 200: server error"
+  ok: false
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+to_list:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 22222222222
+            - 33333333333
+            - 555
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+token_param_host_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_abc1234
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+token_param_no_targets:
+  errors:
+    - "service error: WxPusher: there are no valid users or topics to notify"
+  ok: false
+  requests: []
+  valid: true
+token_param_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_abc1234
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds: []
+          uids:
+            - UID_abc
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+topic:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds:
+            - 123
+          uids: []
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true
+topic_zero_prefix:
+  errors:
+    - "service error: WxPusher: there are no valid users or topics to notify"
+  ok: false
+  requests: []
+  valid: true
+user:
+  ok: true
+  requests:
+    - body:
+        json:
+          appToken: AT_appid
+          content: Mercurio Body
+          contentType: 1
+          summary: Mercurio Title
+          topicIds: []
+          uids:
+            - UID_abcd
+          url: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://wxpusher.zjiecode.com/api/send/message"
+  valid: true

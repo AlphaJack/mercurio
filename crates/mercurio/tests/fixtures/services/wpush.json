@@ -1,0 +1,28 @@
+{
+"cases":[
+{"name":"empty","url":"wpush://"},
+{"name":"short_key","url":"wpush://short"},
+{"name":"basic_default_response_fails","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","ignore":["header:x-idempotency-key"]},
+{"name":"basic","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","title":"t","body":"b","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0,"message":"success","data":"1"}}]},
+{"name":"no_title_uses_body","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","title":"","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"apikey_param","url":"wpush://?apikey=WPUSHabcdefghijklmnopqrstuvwxyz0","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"channel_feishu","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?channel=FEISHU","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"channels_sorted","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?channel=qqbot,feishu,dingtalk,feishu","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"channel_invalid","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?channel=invalid"},
+{"name":"topics_path","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0/topic2/topic1","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}},{"status":200,"body":{"code":0}}]},
+{"name":"topics_to","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?to=topic1,topic2&topic_code=t3&topic=t4","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}},{"status":200,"body":{"code":0}},{"status":200,"body":{"code":0}},{"status":200,"body":{"code":0}}]},
+{"name":"group","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?channel=qqbot&group=123456","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"option","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?channel=qqbot&option=123456","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"group_overrides_option","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?option=a&group=b","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"group_with_topic","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?group=123456&topic_code=mytopic"},
+{"name":"click_url","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0?url=https://example.com/","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"native","url":"https://api.wpush.cn/api/v1/send?apikey=WPUSHabcdefghijklmnopqrstuvwxyz0&channel=mail","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]},
+{"name":"native_no_key","url":"https://api.wpush.cn/api/v1/send?channel=mail"},
+{"name":"api_error","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":401,"message":"API Key error"}}]},
+{"name":"code_false","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":false,"message":"server error"}}]},
+{"name":"not_json","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":"invalid"}]},
+{"name":"http_500","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","ignore":["header:x-idempotency-key"],"responses":[{"status":500,"body":{"code":0}}]},
+{"name":"partial_failure","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0/a/b","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":1}},{"status":200,"body":{"code":0}}]},
+{"name":"conn_error","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","ignore":["header:x-idempotency-key"],"responses":[{"error":true}]},
+{"name":"unicode","url":"wpush://WPUSHabcdefghijklmnopqrstuvwxyz0","title":"标题","body":"内容","ignore":["header:x-idempotency-key"],"responses":[{"status":200,"body":{"code":0}}]}
+]}

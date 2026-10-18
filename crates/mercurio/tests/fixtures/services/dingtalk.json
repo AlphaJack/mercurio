@@ -1,0 +1,24 @@
+{
+"cases":[
+{"name":"basic","url":"dingtalk://12345678"},
+{"name":"phone_target","url":"dingtalk://aaaaaaaa/11111111111111"},
+{"name":"invalid_targets_dropped","url":"dingtalk://aaaaaaaa/111/invalid/+1 (555) 123-45678"},
+{"name":"to_param","url":"dingtalk://aaaaaaaa/?to=11111111111111,22222222222"},
+{"name":"too_long_phone","url":"dingtalk://aaaaaaaa/123456789012345"},
+{"name":"secret_user","url":"dingtalk://secret@aaaaaaaa/?to=11111111111111","ignore":["query:timestamp","query:sign"]},
+{"name":"all_params","url":"dingtalk://?token=bbbbbbbb&to=11111111111111&secret=abc123","ignore":["query:timestamp","query:sign"]},
+{"name":"bad_secret","url":"dingtalk://aaaaaaaa/?to=11111111111111&secret=_"},
+{"name":"bad_secret_user","url":"dingtalk://a_b@aaaaaaaa"},
+{"name":"markdown","url":"dingtalk://aaaaaaaa?format=markdown","title":"## My  Title\there","body":"**bold**"},
+{"name":"markdown_no_title","url":"dingtalk://aaaaaaaa?format=markdown","title":"","body":"**bold**"},
+{"name":"markdown_hash_only_title","url":"dingtalk://aaaaaaaa?format=markdown","title":"# - #","body":"x"},
+{"name":"markdown_input","url":"dingtalk://aaaaaaaa","format":"markdown","title":"T","body":"# hi"},
+{"name":"text_no_title","url":"dingtalk://aaaaaaaa","title":"","body":"only body"},
+{"name":"text_title_type","url":"dingtalk://aaaaaaaa","title":"Title é","body":"Body\nmore","type":"warning"},
+{"name":"empty","url":"dingtalk://"},
+{"name":"invalid_token","url":"dingtalk://a_bd_/"},
+{"name":"bizarre_code","url":"dingtalk://aaaaaaaa","responses":[{"status":999}]},
+{"name":"server_error","url":"dingtalk://aaaaaaaa","responses":[{"status":500,"body":"err"}]},
+{"name":"created","url":"dingtalk://aaaaaaaa","responses":[{"status":201}]},
+{"name":"connection_error","url":"dingtalk://aaaaaaaa","responses":[{"error":true}]}
+]}

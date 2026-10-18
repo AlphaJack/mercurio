@@ -1,0 +1,23 @@
+{
+"cases":[
+{"name":"invalid_empty","url":"notifiarr://"},
+{"name":"invalid_blank_host","url":"notifiarr://:@/"},
+{"name":"no_channels","url":"notifiarr://apikey"},
+{"name":"basic","url":"notifiarr://apikey/1234"},
+{"name":"hash_channel","url":"notifiarr://apikey/#1234/#5678","type":"warning"},
+{"name":"invalid_channel_mixed","url":"notifiarr://apikey/abcd/1234"},
+{"name":"only_invalid_channel","url":"notifiarr://apikey/abcd"},
+{"name":"apikey_param_host_target","url":"notifiarr://123/?apikey=myapikey"},
+{"name":"key_param","url":"notifiarr://123/?key=myapikey&image=yes"},
+{"name":"to_param","url":"notifiarr://apikey/?to=123,%23456"},
+{"name":"event","url":"notifiarr://apikey/123?event=1234"},
+{"name":"event_zero","url":"notifiarr://apikey/123?event=0"},
+{"name":"event_invalid","url":"notifiarr://apikey/123?event=abc"},
+{"name":"source","url":"notifiarr://apikey/123?source=My%20App"},
+{"name":"from","url":"notifiarr://apikey/123?from=other&image=no"},
+{"name":"image","url":"notifiarr://apikey/123?image=yes","type":"success"},
+{"name":"mentions","url":"notifiarr://apikey/123","body":"hello <@123> <@&456> <@789> @everyone"},
+{"name":"error_500","url":"notifiarr://apikey/123/456","responses":[{"status":500},{"status":200}]},
+{"name":"connection_error","url":"notifiarr://apikey/123","responses":[{"error":true}]},
+{"name":"status_204_ok","url":"notifiarr://apikey/123","responses":[{"status":204,"body":""}]}
+]}

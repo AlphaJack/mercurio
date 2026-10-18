@@ -1,0 +1,205 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+empty:
+  error: "QQ Push: the QQ Push token is invalid"
+  valid: false
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+invalid_token:
+  error: "QQ Push: the QQ Push token is invalid"
+  valid: false
+long_token:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+native_legacy:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+native_upper:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/ABC123DEF456GHI789JKL012MNO345PQ"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+refused:
+  errors:
+    - "service error: Qmsg refused the message: bad key"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+short_token:
+  error: "QQ Push: the QQ Push token is invalid"
+  valid: false
+token_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+token_param_overrides:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "Mercurio Title\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+too_long_token:
+  error: "QQ Push: the QQ Push token is invalid"
+  valid: false
+type_failure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - msg
+            - "t & x\nb=1&c"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"
+  valid: true

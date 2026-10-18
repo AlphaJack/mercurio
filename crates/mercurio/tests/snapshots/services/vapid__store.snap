@@ -1,0 +1,86 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+expired_endpoint_retired:
+  sends:
+    - attempts: 1
+      errors:
+        - "HTTP 410: expired Vapid subscription"
+        - "service error: no Vapid subscriptions could be notified"
+      ok: false
+      requests:
+        - body:
+            bytes: "<ignored>"
+          headers:
+            Authorization: "<ignored>"
+            Content-Encoding: aes128gcm
+            Content-Type: application/octet-stream
+            TTL: "0"
+          method: POST
+          url: "https://web.push.apple.com/QGuQyavXutnMH8"
+    - attempts: 1
+      errors:
+        - "service error: no Vapid subscriptions could be notified"
+      ok: false
+      requests: []
+  url_id: 0ffc6ebb
+  valid: true
+server_error_not_retired:
+  sends:
+    - attempts: 1
+      errors:
+        - "HTTP 500: {}"
+        - "service error: no Vapid subscriptions could be notified"
+      ok: false
+      requests:
+        - body:
+            bytes: "<ignored>"
+          headers:
+            Authorization: "<ignored>"
+            Content-Encoding: aes128gcm
+            Content-Type: application/octet-stream
+            TTL: "0"
+          method: POST
+          url: "https://web.push.apple.com/QGuQyavXutnMH8"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            bytes: "<ignored>"
+          headers:
+            Authorization: "<ignored>"
+            Content-Encoding: aes128gcm
+            Content-Type: application/octet-stream
+            TTL: "0"
+          method: POST
+          url: "https://web.push.apple.com/QGuQyavXutnMH8"
+  url_id: 0ffc6ebb
+  valid: true
+two_sends:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            bytes: "<ignored>"
+          headers:
+            Authorization: "<ignored>"
+            Content-Encoding: aes128gcm
+            Content-Type: application/octet-stream
+            TTL: "0"
+          method: POST
+          url: "https://web.push.apple.com/QGuQyavXutnMH8"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            bytes: "<ignored>"
+          headers:
+            Authorization: "<ignored>"
+            Content-Encoding: aes128gcm
+            Content-Type: application/octet-stream
+            TTL: "0"
+          method: POST
+          url: "https://web.push.apple.com/QGuQyavXutnMH8"
+  url_id: 0ffc6ebb
+  valid: true

@@ -1,0 +1,164 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_token:
+  error: "Lark (Feishu): the Lark Bot Token specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+empty:
+  error: "Lark (Feishu): the Lark Bot Token specified is invalid"
+  valid: false
+empty_userinfo:
+  error: "Lark (Feishu): the Lark Bot Token specified is invalid"
+  valid: false
+long_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+native_underscore_invalid:
+  error: "Lark (Feishu): the Lark Bot Token specified is invalid"
+  valid: false
+native_upper:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/ABCD-1234"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: Mercurio Body
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+title_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Hello\nWorld\nline é"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true
+trailing_slash:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"
+  valid: true

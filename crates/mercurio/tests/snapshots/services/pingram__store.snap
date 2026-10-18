@@ -1,0 +1,118 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+retry_exhausted:
+  sends:
+    - attempts: 2
+      errors:
+        - "HTTP 500: {}"
+      ok: false
+      requests:
+        - body:
+            json:
+              email:
+                html: Mercurio&nbsp;Body
+                subject: Mercurio Title
+              to:
+                email: a@example.ca
+              type: Mercurio
+          headers:
+            Authorization: Bearer pingram_sk_abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.pingram.io/send"
+        - body:
+            json:
+              email:
+                html: Mercurio&nbsp;Body
+                subject: Mercurio Title
+              to:
+                email: a@example.ca
+              type: Mercurio
+          headers:
+            Authorization: Bearer pingram_sk_abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.pingram.io/send"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              email:
+                html: Mercurio&nbsp;Body
+                subject: Mercurio Title
+              to:
+                email: a@example.ca
+              type: Mercurio
+          headers:
+            Authorization: Bearer pingram_sk_abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.pingram.io/send"
+  url_id: 9666b7df
+  valid: true
+retry_skips_delivered:
+  sends:
+    - attempts: 3
+      errors:
+        - "HTTP 500: {}"
+      ok: false
+      requests:
+        - body:
+            json:
+              email:
+                html: Mercurio&nbsp;Body
+                subject: Mercurio Title
+              to:
+                email: a@example.ca
+              type: Mercurio
+          headers:
+            Authorization: Bearer pingram_sk_abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.pingram.io/send"
+        - body:
+            json:
+              email:
+                html: Mercurio&nbsp;Body
+                subject: Mercurio Title
+              to:
+                email: b@example.ca
+                number: "+15551234567"
+              type: Mercurio
+          headers:
+            Authorization: Bearer pingram_sk_abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.pingram.io/send"
+        - body:
+            json:
+              email:
+                html: Mercurio&nbsp;Body
+                subject: Mercurio Title
+              to:
+                email: b@example.ca
+                number: "+15551234567"
+              type: Mercurio
+          headers:
+            Authorization: Bearer pingram_sk_abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.pingram.io/send"
+        - body:
+            json:
+              email:
+                html: Mercurio&nbsp;Body
+                subject: Mercurio Title
+              to:
+                email: b@example.ca
+                number: "+15551234567"
+              type: Mercurio
+          headers:
+            Authorization: Bearer pingram_sk_abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.pingram.io/send"
+  url_id: 63e5947b
+  valid: true

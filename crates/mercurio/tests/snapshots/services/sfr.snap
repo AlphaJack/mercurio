@@ -1,0 +1,139 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_at:
+  error: "Société Française du Radiotéléphone: no receiver phone number has been provided"
+  valid: false
+bad_response:
+  errors:
+    - "service error: SFR notification was not sent: server_error=\"AUTHENTICATION_FAILED\""
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+blank:
+  error: "Société Française du Radiotéléphone: a SFR user (serviceId) and password (servicePassword) combination was not provided"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+default_response:
+  errors:
+    - "service error: SFR notification was not sent: server_error=\"UNKNOWN\""
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+empty:
+  error: "Société Française du Radiotéléphone: a SFR user (serviceId) and password (servicePassword) combination was not provided"
+  valid: false
+empty_sender_key:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22srv%22%2C%22servicePassword%22%3A%22pwd%22%2C%22spaceId%22%3A%2211111111%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A12%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+good:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22MyApp%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A30%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {\"success\":true}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+invalid_target:
+  error: "Société Française du Radiotéléphone: no receiver phone number has been provided"
+  valid: false
+media_sms:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMS%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+no_password:
+  error: "Société Française du Radiotéléphone: a SFR user (serviceId) and password (servicePassword) combination was not provided"
+  valid: false
+no_space:
+  error: "Société Française du Radiotéléphone: a SFR Space ID is required"
+  valid: false
+no_targets:
+  error: "Société Française du Radiotéléphone: no receiver phone number has been provided"
+  valid: false
+no_user:
+  error: "Société Française du Radiotéléphone: a SFR user (serviceId) and password (servicePassword) combination was not provided"
+  valid: false
+not_json:
+  errors:
+    - "service error: SFR notification was not sent: server_error=\"UNKNOWN\""
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+sender_wins:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22srv%22%2C%22servicePassword%22%3A%22pwd%22%2C%22spaceId%22%3A%2211111111%22%7D&messageUnitaire=%7B%22from%22%3A%22A%22%2C%22media%22%3A%22SMSUnicodeLong%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+status_204:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+to_from_unicode:
+  errors:
+    - "service error: SFR notification was not sent: server_error=\"UNKNOWN\""
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22srv%22%2C%22servicePassword%22%3A%22other_fjv%268password%22%2C%22spaceId%22%3A%2211111111%22%7D&messageUnitaire=%7B%22from%22%3A%22MyCustomUser%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5Cnh%C3%A9llo+%5C%22world%5C%22%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22fr_FR%22%2C%22serviceId%22%3A%22srv%22%2C%22servicePassword%22%3A%22other_fjv%268password%22%2C%22spaceId%22%3A%2211111111%22%7D&messageUnitaire=%7B%22from%22%3A%22MyCustomUser%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5Cnh%C3%A9llo+%5C%22world%5C%22%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000001%22%2C%22ttsVoice%22%3A%22claire08s%22%7D"
+  valid: true
+voice_lang:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://www.dmc.sfr-sh.fr/DmcWS/1.5.8/JsonService/MessagesUnitairesWS/addSingleCall?authenticate=%7B%22lang%22%3A%22en_US%22%2C%22serviceId%22%3A%22service_id%22%2C%22servicePassword%22%3A%22service_password%22%2C%22spaceId%22%3A%22000%22%7D&messageUnitaire=%7B%22from%22%3A%22%22%2C%22media%22%3A%22SMSUnicode%22%2C%22textMsg%22%3A%22Mercurio+Title%5Cr%5CnMercurio+Body%22%2C%22timeout%22%3A2880%2C%22to%22%3A%220000000000%22%2C%22ttsVoice%22%3A%22laura8k%22%7D"
+  valid: true

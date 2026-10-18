@@ -1,0 +1,140 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+alias_scheme:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=%2B420123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=%2B420987654321&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+batch:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789%3B987654321%3B%2B420111222333&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+body:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Hi+%26+bye%0D%0A%C3%BC+100%25"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+empty:
+  error: "SMS Manager: an invalid API Key was specified"
+  valid: false
+from:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body&sender=MyLongSende"
+  valid: true
+from_wins:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body&sender=You"
+  valid: true
+gateway:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=economy&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+gateway_bad:
+  error: "SMS Manager: the Gateway specified is invalid"
+  valid: false
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+key_overrides_user:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=other&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=other&gateway=high&number=987654321&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+key_query:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=other&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+no_batch_multi:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body"
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=987654321&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+no_key:
+  error: "SMS Manager: an invalid API Key was specified"
+  valid: false
+no_targets:
+  errors:
+    - "SMS Manager: there are no valid SMS Manager targets to notify"
+  ok: false
+  requests: []
+  valid: true
+sender:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://http-api.smsmanager.cz/Send?apikey=apikey&gateway=high&number=123456789&message=Mercurio+Title%0D%0AMercurio+Body&sender=Me"
+  valid: true

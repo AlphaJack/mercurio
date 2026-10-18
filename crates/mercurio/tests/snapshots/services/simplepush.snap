@@ -1,0 +1,762 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+alias_topic:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          files:
+            - checksumSha256: ARHbw5i5TqzaZ1mAnAUFMIaO5+MTszgcL5XOi1UzHFA=
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 10
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/upload-url"
+    - body:
+        text: jpeg-bytes
+      headers:
+        Content-Type: application/octet-stream
+      method: PUT
+      url: "https://s3.example/put"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/complete"
+  valid: true
+attach_complete_fails:
+  errors:
+    - "service error: Simplepush attachment could not be completed"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          files:
+            - checksumSha256: ARHbw5i5TqzaZ1mAnAUFMIaO5+MTszgcL5XOi1UzHFA=
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 10
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/upload-url"
+    - body:
+        text: jpeg-bytes
+      headers:
+        Content-Type: application/octet-stream
+      method: PUT
+      url: "https://s3.example/put"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/complete"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/failed"
+  valid: true
+attach_encrypted:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: ~
+          contentFormat: markdown
+          encryption:
+            keyFingerprint: CQaZgA2pRm0=
+            type: personal
+          files:
+            - checksumSha256: ~
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 50
+          title: ~
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/upload-url"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Content-Type: application/octet-stream
+      method: PUT
+      url: "https://s3.example/put"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/complete"
+  valid: true
+attach_names_as_content:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: photo.jpg
+          files:
+            - checksumSha256: ARHbw5i5TqzaZ1mAnAUFMIaO5+MTszgcL5XOi1UzHFA=
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 10
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/upload-url"
+    - body:
+        text: jpeg-bytes
+      headers:
+        Content-Type: application/octet-stream
+      method: PUT
+      url: "https://s3.example/put"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/complete"
+  valid: true
+attach_no_id:
+  errors:
+    - "service error: Simplepush returned no attachment id"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          files:
+            - checksumSha256: ARHbw5i5TqzaZ1mAnAUFMIaO5+MTszgcL5XOi1UzHFA=
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 10
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+attach_no_presign:
+  errors:
+    - "service error: Simplepush attachment could not be presigned"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          files:
+            - checksumSha256: ARHbw5i5TqzaZ1mAnAUFMIaO5+MTszgcL5XOi1UzHFA=
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 10
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/upload-url"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/failed"
+  valid: true
+attach_put_fails:
+  errors:
+    - "service error: Simplepush attachment upload failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          files:
+            - checksumSha256: ARHbw5i5TqzaZ1mAnAUFMIaO5+MTszgcL5XOi1UzHFA=
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 10
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/upload-url"
+    - body:
+        text: jpeg-bytes
+      headers:
+        Content-Type: application/octet-stream
+      method: PUT
+      url: "https://s3.example/put"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/failed"
+  valid: true
+attach_title_as_content:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Title
+          files:
+            - checksumSha256: ARHbw5i5TqzaZ1mAnAUFMIaO5+MTszgcL5XOi1UzHFA=
+              contentType: image/jpeg
+              filename: photo.jpg
+              size: 10
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/upload-url"
+    - body:
+        text: jpeg-bytes
+      headers:
+        Content-Type: application/octet-stream
+      method: PUT
+      url: "https://s3.example/put"
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+      method: POST
+      url: "https://api.simplepu.sh/v1/attachments/att_1/complete"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+broadcast_needs_spi:
+  error: "Simplepush: Simplepush members and broadcast require an organization integration token"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+critical:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          criticalVolume: 0.5
+          priority: 5
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+empty:
+  error: "Simplepush: an invalid Simplepush API Token was specified"
+  valid: false
+empty_member:
+  error: "Simplepush: an invalid Simplepush member was specified"
+  valid: false
+http_400:
+  errors:
+    - "HTTP 400: {\"msg\":\"bad\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+member_needs_spi:
+  error: "Simplepush: Simplepush members and broadcast require an organization integration token"
+  valid: false
+org_bad_wrap:
+  errors:
+    - "service error: could not open the Simplepush organization keys with this integration token"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+  valid: true
+org_broadcast:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+    - body:
+        json:
+          broadcast: true
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer spi_cred
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+org_broadcast_and_topic:
+  error: "Simplepush: a Simplepush broadcast can not be combined with topics or members"
+  valid: false
+org_enabled_no_keys:
+  errors:
+    - "service error: the Simplepush organization holds no keys for this integration token"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+  valid: true
+org_encrypted:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+    - body:
+        json:
+          content: ~
+          contentFormat: markdown
+          encryption:
+            type: org
+            v: 1
+          title: ~
+          topic: site
+      headers:
+        Authorization: Bearer spi_cred
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body:
+        json:
+          content: ~
+          contentFormat: markdown
+          encryption:
+            type: org
+            v: 1
+          member: Alice
+          title: ~
+      headers:
+        Authorization: Bearer spi_cred
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+org_keys_fail_twice:
+  errors:
+    - "HTTP 403: {}"
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+  valid: true
+org_members_topic:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+          topic: site
+      headers:
+        Authorization: Bearer spi_cred
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          member: Alice
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer spi_cred
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          member: Bob
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer spi_cred
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+org_no_scope:
+  errors:
+    - "service error: the Simplepush integration token lacks the send scope"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer spi_cred
+      method: GET
+      url: "https://api.simplepu.sh/v1/org/integration/keys"
+  valid: true
+org_nothing:
+  error: "Simplepush: a Simplepush organization send requires a topic, a member or broadcast"
+  valid: false
+org_password:
+  error: "Simplepush: Simplepush organization sends can not be encrypted with a password"
+  valid: false
+password_no_salt:
+  errors:
+    - "service error: Simplepush returned no password salt"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Accept: application/json
+      method: GET
+      url: "https://api.simplepu.sh/v1/user"
+  valid: true
+password_personal:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Accept: application/json
+      method: GET
+      url: "https://api.simplepu.sh/v1/user"
+    - body:
+        json:
+          content: ~
+          contentFormat: markdown
+          encryption:
+            keyFingerprint: sXUa6akNF9c=
+            type: personal
+          title: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+password_query:
+  errors:
+    - "invalid message: no message body or attachment was specified"
+  ok: false
+  requests: []
+  valid: true
+password_salt_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Accept: application/json
+      method: GET
+      url: "https://api.simplepu.sh/v1/user"
+  valid: true
+password_too_long:
+  errors:
+    - "invalid message: the Simplepush content is too long once encrypted"
+  ok: false
+  requests: []
+  valid: true
+password_topic:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: ~
+          contentFormat: markdown
+          encryption:
+            keyFingerprint: CQaZgA2pRm0=
+            type: personal
+          links: ~
+          tag: ~
+          title: ~
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+priority_10:
+  error: "Simplepush: an invalid Simplepush priority was specified"
+  valid: false
+priority_float:
+  error: "Simplepush: an invalid Simplepush priority was specified"
+  valid: false
+priority_invalid:
+  error: "Simplepush: an invalid Simplepush priority was specified"
+  valid: false
+priority_min:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          priority: 1
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+priority_word:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          priority: 5
+          shared: true
+          tag: db
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+spi_no_cred:
+  error: "Simplepush: an invalid Simplepush integration token was specified"
+  valid: false
+spi_no_seed:
+  error: "Simplepush: an invalid Simplepush integration token was specified"
+  valid: false
+spi_short_seed:
+  error: "Simplepush: an invalid Simplepush integration token was specified"
+  valid: false
+to:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+          topic: deploys
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+too_many_links:
+  error: "Simplepush: at most 25 Simplepush links can be specified"
+  valid: false
+topic_auth_links:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          links:
+            - "https://a.example"
+            - "https://b.example"
+          title: Mercurio Title
+          topic: alerts
+          topicAuthToken: abcd
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+two_topics_dup:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+          topic: deploys
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+    - body:
+        json:
+          content: Mercurio Body
+          contentFormat: markdown
+          title: Mercurio Title
+          topic: alerts
+      headers:
+        API-Token: AAAAAAAAAAAAAA
+        Content-Type: application/json
+      method: POST
+      url: "https://api.simplepu.sh/v1/tasks/json"
+  valid: true
+volume_needs_5:
+  error: "Simplepush: the Simplepush critical volume requires priority 5"
+  valid: false
+volume_too_big:
+  error: "Simplepush: an invalid Simplepush critical volume was specified; it must be greater than 0 and at most 1"
+  valid: false
+volume_word:
+  error: "Simplepush: an invalid Simplepush critical volume was specified; it must be greater than 0 and at most 1"
+  valid: false

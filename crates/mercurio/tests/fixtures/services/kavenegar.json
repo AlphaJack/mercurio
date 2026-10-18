@@ -1,0 +1,18 @@
+{
+"cases":[
+{"name":"empty","url":"kavenegar://"},
+{"name":"blank","url":"kavenegar://:@/"},
+{"name":"invalid_targets","url":"kavenegar://1111111111/222222222222222/aaaaaaaaaaaaa"},
+{"name":"basic","url":"kavenegar://aaaaaaaaaaaaaaaaaaaaaaaa/33333333333333","title":"t","body":"b"},
+{"name":"to_param","url":"kavenegar://aaaaaaaaaaaaaaaaaaaaaaaa?to=33333333333333"},
+{"name":"source","url":"kavenegar://11111111111111@bbbbbbbbbbbbbbbbbbbbbbbb/33333333333333"},
+{"name":"alpha_source","url":"kavenegar://aaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbb/33333333333333"},
+{"name":"short_source","url":"kavenegar://3333@bbbbbbbbbbbbbbbbbbbbbbbb/33333333333333"},
+{"name":"quoted_source","url":"kavenegar://%2B1111111111111@bbbbbbbbbbbbbbbbbbbbbbbb/33333333333333"},
+{"name":"from_param","url":"kavenegar://bbbbbbbbbbbbbbbbbbbbbbbb/33333333333333?from=11111111111111"},
+{"name":"multi","url":"kavenegar://bbbbbbbbbbbbbbbbbbbbbbbb/33333333333333/44444444444444"},
+{"name":"http_999","url":"kavenegar://bbbbbbbbbbbbbbbbbbbbbbbb/44444444444444","responses":[{"status":999,"body":"{\"message\": \"bad\"}"}]},
+{"name":"created_201","url":"kavenegar://bbbbbbbbbbbbbbbbbbbbbbbb/44444444444444","responses":[{"status":201}]},
+{"name":"partial","url":"kavenegar://bbbbbbbbbbbbbbbbbbbbbbbb/33333333333333/44444444444444","responses":[{"status":500,"body":"{}"}]},
+{"name":"connection_error","url":"kavenegar://cccccccccccccccccccccccc/55555555555555","responses":[{"error":true}]}
+]}

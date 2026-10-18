@@ -1,0 +1,46 @@
+[workspace]
+resolver = "3"
+members = ["crates/mercurio", "crates/mercurio-cli", "xtask"]
+
+[workspace.package]
+description = "Apprise-compatible Rust library, CLI and HTTP server to send notifications to 150+ services via a single URL."
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/AlphaJack/mercurio"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "allow", priority = -1 }
+allow_attributes_without_reason = "deny"
+allow_attributes = "warn"
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unreachable = "deny"
+dbg_macro = "deny"
+let_underscore_must_use = "deny"
+wildcard_enum_match_arm = "warn"
+string_slice = "warn"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+
+[workspace.dependencies]
+mercurio = { path = "crates/mercurio", version = "0.1.0", default-features = false }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+opt-level = "s"
+
+# Used by dist
+[profile.dist]
+inherits = "release"

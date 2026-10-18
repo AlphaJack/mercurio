@@ -1,0 +1,260 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+badges_data:
+  ok: true
+  requests:
+    - body:
+        json:
+          badges:
+            CPU: 95%
+          data:
+            region: eu-west
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+badges_max:
+  ok: true
+  requests:
+    - body:
+        json:
+          badges:
+            a: "1"
+            b: "2"
+            c: "3"
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+badges_truncated:
+  ok: true
+  requests:
+    - body:
+        json:
+          badges:
+            kkkkkkkkkkkkkkkkkkkkkkkk: vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+          data:
+            mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+blank:
+  error: "Pinglet: an invalid hostname or port was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+empty:
+  error: "Pinglet: an invalid hostname or port was specified"
+  valid: false
+http_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+no_namespace:
+  error: "Pinglet: an invalid Pinglet Namespace was specified"
+  valid: false
+no_path:
+  error: "Pinglet: an invalid Pinglet Namespace was specified"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: normal
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+no_token:
+  error: "Pinglet: an invalid Pinglet API Key was specified"
+  valid: false
+port:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname:8080/acme/deploys"
+  valid: true
+prefix:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: success
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/prefix/sub/acme/deploys"
+  valid: true
+priority_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: error
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/acme/deploys"
+  valid: true
+silent_short:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: silent
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: warning
+          message: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/acme/deploys"
+  valid: true
+urgent:
+  ok: true
+  requests:
+    - body:
+        json:
+          level: info
+          message: Mercurio Body
+          priority: urgent
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/acme/deploys"
+  valid: true

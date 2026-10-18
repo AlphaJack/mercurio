@@ -1,0 +1,2812 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+autoverify_implies_e2ee:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/sync?timeout=2000&filter=%7B%22presence%22%3A+%7B%22types%22%3A+%5B%5D%7D%2C+%22account_data%22%3A+%7B%22types%22%3A+%5B%5D%7D%2C+%22room%22%3A+%7B%22rooms%22%3A+%5B%5D%7D%7D&set_presence=offline"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+autoverify_no_request:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/sync?timeout=2000&filter=%7B%22presence%22%3A+%7B%22types%22%3A+%5B%5D%7D%2C+%22account_data%22%3A+%7B%22types%22%3A+%5B%5D%7D%2C+%22room%22%3A+%7B%22rooms%22%3A+%5B%5D%7D%7D&set_presence=offline"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+bad_otk_signature:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+claim_fail:
+  errors:
+    - "key claim: service error: encrypted message not sent"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+create_room_encrypted:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%23newroom%3Alocalhost"
+    - body:
+        json:
+          initial_state:
+            - content:
+                algorithm: m.megolm.v1.aes-sha2
+              state_key: ""
+              type: m.room.encryption
+          name: "#newroom - Mercurio Notifications"
+          preset: trusted_private_chat
+          room_alias_name: newroom
+          visibility: private
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/createRoom"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21new%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21new%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+dm_encrypted:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json:
+          initial_state:
+            - content:
+                algorithm: m.megolm.v1.aes-sha2
+              state_key: ""
+              type: m.room.encryption
+          invite:
+            - "@bob:localhost"
+          is_direct: true
+          preset: trusted_private_chat
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json:
+          "@bob:localhost":
+            - "!dm:localhost"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21dm%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21dm%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21dm%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+e2ee_disabled:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+encrypted_attachment_no_uri:
+  errors:
+    - "upload: service error: encrypted attachment post failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          messages:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV:
+                algorithm: m.olm.v1.curve25519-aes-sha2
+                ciphertext: ~
+                sender_key: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/sendToDevice/m.room.encrypted/1"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/1"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/octet-stream
+      method: POST
+      url: "https://localhost/_matrix/media/v3/upload?filename=a.png"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+encrypted_attachment_upload_fail:
+  errors:
+    - "upload: service error: encrypted attachment post failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          messages:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV:
+                algorithm: m.olm.v1.curve25519-aes-sha2
+                ciphertext: ~
+                sender_key: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/sendToDevice/m.room.encrypted/1"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/1"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/octet-stream
+      method: POST
+      url: "https://localhost/_matrix/media/v3/upload?filename=a.png"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+encrypted_attachments:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          messages:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV:
+                algorithm: m.olm.v1.curve25519-aes-sha2
+                ciphertext: ~
+                sender_key: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/sendToDevice/m.room.encrypted/1"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/1"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/octet-stream
+      method: POST
+      url: "https://localhost/_matrix/media/v3/upload?filename=a.png"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/2"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/octet-stream
+      method: POST
+      url: "https://localhost/_matrix/media/v3/upload?filename=n.txt"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/3"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+encrypted_room:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          messages:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV:
+                algorithm: m.olm.v1.curve25519-aes-sha2
+                ciphertext: ~
+                sender_key: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/sendToDevice/m.room.encrypted/1"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+encrypted_room_html:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          messages:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV:
+                algorithm: m.olm.v1.curve25519-aes-sha2
+                ciphertext: ~
+                sender_key: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/sendToDevice/m.room.encrypted/1"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+encrypted_send_fail:
+  errors:
+    - "send: service error: encrypted message not sent"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          messages:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV:
+                algorithm: m.olm.v1.curve25519-aes-sha2
+                ciphertext: ~
+                sender_key: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/sendToDevice/m.room.encrypted/1"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+insecure_no_e2ee:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+key_upload_fail:
+  errors:
+    - "key upload: HTTP 500: Matrix E2EE device key upload failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+members_fail:
+  errors:
+    - "member lookup: service error: encrypted message not sent"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+no_device_id:
+  errors:
+    - "service error: Matrix E2EE setup failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+no_members:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+no_otk:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+query_fail:
+  errors:
+    - "key query: service error: encrypted message not sent"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+tampered_device_keys:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+to_device_fail:
+  errors:
+    - "key share: service error: encrypted message not sent"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          messages:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV:
+                algorithm: m.olm.v1.curve25519-aes-sha2
+                ciphertext: ~
+                sender_key: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/sendToDevice/m.room.encrypted/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+token_whoami_upload:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+      method: GET
+      url: "https://localhost/_matrix/client/v3/account/whoami"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: D2
+            keys: ~
+            signatures: ~
+            user_id: "@me:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+  valid: true
+two_encrypted_rooms:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21other%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21other%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21other%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21other%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+unencrypted_room:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+unencrypted_room_404:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+unsigned_otk_string:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json:
+          device_keys:
+            algorithms:
+              - m.olm.v1.curve25519-aes-sha2
+              - m.megolm.v1.aes-sha2
+            device_id: DEVICE1
+            keys: ~
+            signatures: ~
+            user_id: "@apprise:localhost"
+          fallback_keys: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/upload"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/state/m.room.encryption"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/joined_members"
+    - body:
+        json:
+          device_keys:
+            "@apprise:localhost": []
+            "@bob:localhost": []
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/query"
+    - body:
+        json:
+          one_time_keys:
+            "@apprise:localhost": {}
+            "@bob:localhost":
+              BOBDEV: signed_curve25519
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/keys/claim"
+    - body:
+        json:
+          algorithm: m.megolm.v1.aes-sha2
+          ciphertext: ~
+          device_id: DEVICE1
+          sender_key: ~
+          session_id: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.encrypted/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true

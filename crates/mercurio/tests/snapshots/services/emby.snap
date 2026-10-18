@@ -1,0 +1,511 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+blank_auth:
+  error: "Emby: an invalid hostname or port was specified"
+  valid: false
+empty:
+  error: "Emby: an invalid hostname or port was specified"
+  valid: false
+empty_secure:
+  error: "Emby: an invalid hostname or port was specified"
+  valid: false
+full_flow:
+  ok: true
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=123abc"
+    - body:
+        json:
+          Header: T
+          Text: B
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/abc123/Message"
+    - body:
+        json:
+          Header: T
+          Text: B
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/def456/Message"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true
+login_201:
+  errors:
+    - "login: HTTP 201: {\"AccessToken\":\"0000-0000-0000-0000\",\"Id\":\"123abc\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+  valid: true
+login_connection_error:
+  errors:
+    - "login: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+  valid: true
+login_default_response:
+  errors:
+    - "login: service error: Emby authentication failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: ""
+          passwordMd5: ""
+          pw: ""
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+  valid: true
+login_http_error:
+  errors:
+    - "login: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+  valid: true
+login_missing_token:
+  errors:
+    - "login: service error: Emby authentication failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+  valid: true
+login_no_password:
+  ok: true
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: ""
+          passwordMd5: ""
+          pw: ""
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=123abc"
+    - body:
+        json:
+          Header: Mercurio Title
+          Text: Mercurio Body
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/s1/Message"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true
+login_not_json:
+  errors:
+    - "login: service error: Emby authentication failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+  valid: true
+message_connection_error:
+  errors:
+    - "send: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=123abc"
+    - body:
+        json:
+          Header: Mercurio Title
+          Text: Mercurio Body
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/a/Message"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true
+message_fail:
+  errors:
+    - "send: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=123abc"
+    - body:
+        json:
+          Header: Mercurio Title
+          Text: Mercurio Body
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/a/Message"
+    - body:
+        json:
+          Header: Mercurio Title
+          Text: Mercurio Body
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/b/Message"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true
+modal_secure_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"62f9c32a-4bdb-57d9-8f5e-26782f8d9e28\", Version=\"<version>\""
+      method: POST
+      url: "https://localhost:1234/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"62f9c32a-4bdb-57d9-8f5e-26782f8d9e28\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "https://localhost:1234/Sessions?ControllableByUserId=abcd123"
+    - body:
+        json:
+          Header: Mercurio Title
+          Text: Mercurio Body
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"62f9c32a-4bdb-57d9-8f5e-26782f8d9e28\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "https://localhost:1234/Sessions/s1/Message"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"62f9c32a-4bdb-57d9-8f5e-26782f8d9e28\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "https://localhost:1234/Sessions/Logout"
+  valid: true
+no_user:
+  error: "Emby: no username was specified"
+  valid: false
+numeric_ids:
+  ok: true
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: t
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=42"
+    - body:
+        json:
+          Header: Mercurio Title
+          Text: Mercurio Body
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: t
+      method: POST
+      url: "http://localhost:8096/Sessions/7/Message"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: t
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true
+quoted_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          Username: us@er
+          password: f1f8c603cd033ed50f2fd117da93555a872a8e5a
+          passwordMd5: 5a6b9d71b8b404f9f4f22b8b5d3e31c4
+          pw: p/w
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"4fcb4d86-e93b-5720-9cca-28a7b61dc31e\", Version=\"<version>\""
+      method: POST
+      url: "http://example.com:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"4fcb4d86-e93b-5720-9cca-28a7b61dc31e\", Version=\"<version>\", UserId=\"us@er\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://example.com:8096/Sessions?ControllableByUserId=123abc"
+    - body:
+        json:
+          Header: Mercurio Title
+          Text: Mercurio Body
+          TimeoutMs: 60000
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"4fcb4d86-e93b-5720-9cca-28a7b61dc31e\", Version=\"<version>\", UserId=\"us@er\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://example.com:8096/Sessions/a/Message"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"4fcb4d86-e93b-5720-9cca-28a7b61dc31e\", Version=\"<version>\", UserId=\"us@er\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://example.com:8096/Sessions/Logout"
+  valid: true
+sessions_empty_object:
+  ok: true
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=123abc"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true
+sessions_fail_is_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=123abc"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true
+sessions_nonempty_object:
+  errors:
+    - "session lookup: service error: unexpected Emby sessions response"
+  ok: false
+  requests:
+    - body:
+        json:
+          Username: l2g
+          password: 0ef0d114863da75e4b3382ebb9ccfde7c80ac937
+          passwordMd5: 6e91367d1f17ac820620de2c47d76da4
+          pw: l2gpass
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\""
+      method: POST
+      url: "http://localhost:8096/Users/AuthenticateByName"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: GET
+      url: "http://localhost:8096/Sessions?ControllableByUserId=123abc"
+    - body: ~
+      headers:
+        Content-Type: application/json
+        X-Emby-Authorization: "MediaBrowser Client=\"Mercurio\", Device=\"Mercurio\", DeviceId=\"a84ee264-1e1e-59ba-9608-4202e0586394\", Version=\"<version>\", UserId=\"l2g\""
+        X-MediaBrowser-Token: 0000-0000-0000-0000
+      method: POST
+      url: "http://localhost:8096/Sessions/Logout"
+  valid: true

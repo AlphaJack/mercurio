@@ -1,0 +1,6 @@
+**/target
+/docs/book/book
+/docs/book/src/SUMMARY.md
+/docs/book/src/services/
+/docs/book/src/generated/
+/docs/book/src/assets/

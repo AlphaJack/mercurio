@@ -1,0 +1,389 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_botname:
+  error: "Zulip: the Zulip botname specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+blank:
+  error: "Zulip: the Zulip botname specified is invalid"
+  valid: false
+bot_suffix:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90LW5hbWUtYm90QG1lcmN1cmlvLnp1bGlwY2hhdC5jb206YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+channels:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - channel1
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - channel2
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+custom_host:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - ""
+          - - content
+            - no subject
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbXlvcmcuY2hhdC5leGFtcGxlLm9yZzphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://myorg.chat.example.org/api/v1/messages"
+  valid: true
+emails:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - private
+          - - to
+            - user2@example.com
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - private
+          - - to
+            - user@example.com
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+empty:
+  error: "Zulip: the Zulip botname specified is invalid"
+  valid: false
+full_host:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+hash_stream:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - "#mystream"
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+http_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+long_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - "0123456789012345678901234567890123456789012345678901234567890123456789"
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - general
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+no_bot:
+  error: "Zulip: the Zulip botname specified is invalid"
+  valid: false
+no_token:
+  error: "Zulip: the Zulip token specified is invalid"
+  valid: false
+partial_fail:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - a
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - b
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+short_token:
+  error: "Zulip: the Zulip token specified is invalid"
+  valid: false
+to_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - chan3
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - channel1
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - channel2
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - channel1
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true
+token_param_path_targets:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - subject
+            - Mercurio Title
+          - - content
+            - Mercurio Body
+          - - type
+            - stream
+          - - to
+            - streamA
+      headers:
+        Authorization: Basic Ym90bmFtZS1ib3RAbWVyY3VyaW8uenVsaXBjaGF0LmNvbTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://mercurio.zulipchat.com/api/v1/messages"
+  valid: true

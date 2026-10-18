@@ -1,0 +1,559 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic_avatar:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+    - body:
+        json:
+          avatar: "https://example.org/failure-128x128.png"
+          channel: "#channel1"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body:
+        json:
+          avatar: "https://example.org/failure-128x128.png"
+          channel: "#channel2"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body: ~
+      headers:
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/logout"
+  valid: true
+basic_hash_channel:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost/api/v1/login"
+    - body:
+        json:
+          channel: "#channel"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/chat.postMessage"
+    - body: ~
+      headers:
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/logout"
+  valid: true
+basic_invalid_targets:
+  error: "Rocket.Chat: no Rocket.Chat room and/or channels specified to notify"
+  valid: false
+basic_mixed:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "@user"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "#channel"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          roomId: room
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body: ~
+      headers:
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/logout"
+  valid: true
+basic_no_targets:
+  error: "Rocket.Chat: no Rocket.Chat room and/or channels specified to notify"
+  valid: false
+basic_room_port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:8080/api/v1/login"
+    - body:
+        json:
+          roomId: room
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost:8080/api/v1/chat.postMessage"
+    - body: ~
+      headers:
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost:8080/api/v1/logout"
+  valid: true
+basic_rooms:
+  errors:
+    - "post: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+    - body:
+        json:
+          roomId: room1
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body:
+        json:
+          roomId: room2
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body: ~
+      headers:
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "http://localhost/api/v1/logout"
+  valid: true
+basic_slash_pass:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass/withslash
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost/api/v1/login"
+    - body:
+        json:
+          channel: "#channel"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/chat.postMessage"
+    - body: ~
+      headers:
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/logout"
+  valid: true
+basic_to_channel:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost/api/v1/login"
+    - body:
+        json:
+          channel: "#channel"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/chat.postMessage"
+    - body: ~
+      headers:
+        X-Auth-Token: abcd
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/logout"
+  valid: true
+blank:
+  error: "Rocket.Chat: invalid Rocket.Chat URL"
+  valid: false
+empty:
+  error: "Rocket.Chat: invalid Rocket.Chat URL"
+  valid: false
+empty_secure:
+  error: "Rocket.Chat: invalid Rocket.Chat URL"
+  valid: false
+host_only:
+  error: "Rocket.Chat: no Rocket.Chat user/password was specified"
+  valid: false
+login_bad_json:
+  errors:
+    - "login: service error: could not authenticate with Rocket.Chat"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+  valid: true
+login_fail_status:
+  errors:
+    - "login: HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+  valid: true
+login_int_token:
+  errors:
+    - "post: transport error: invalid Rocket.Chat auth header value"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+  valid: true
+login_no_data:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+    - body:
+        json:
+          roomId: room
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/chat.postMessage"
+    - body: ~
+      headers: {}
+      method: POST
+      url: "http://localhost/api/v1/logout"
+  valid: true
+login_not_success:
+  errors:
+    - "login: service error: could not authenticate with Rocket.Chat"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/api/v1/login"
+  valid: true
+mode_invalid:
+  error: "Rocket.Chat: the authentication mode specified is invalid"
+  valid: false
+no_password:
+  error: "Rocket.Chat: no Rocket.Chat user/password was specified"
+  valid: false
+no_user:
+  error: "Rocket.Chat: no Rocket.Chat user/password was specified"
+  valid: false
+token_auto:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "@bob"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: tttttttttttttttttttttttttttttttttttttttt
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/chat.postMessage"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "#channel"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: tttttttttttttttttttttttttttttttttttttttt
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/chat.postMessage"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          roomId: room1
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: tttttttttttttttttttttttttttttttttttttttt
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/chat.postMessage"
+  valid: true
+token_mode:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "#channel"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+        X-Auth-Token: token
+        X-User-Id: user
+      method: POST
+      url: "https://localhost/api/v1/chat.postMessage"
+  valid: true
+webhook_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+  valid: true
+webhook_conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+  valid: true
+webhook_encoded_slash:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8443/hooks/web/token"
+  valid: true
+webhook_no_avatar:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+  valid: true
+webhook_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "@user"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+  valid: true
+webhook_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "@user"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "#channel"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: roomid
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+  valid: true
+webhook_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "@user2"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "#channel2"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+  valid: true
+webhook_user_mode:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar: "https://example.org/info-128x128.png"
+          channel: "@user"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/hooks/web/token"
+  valid: true

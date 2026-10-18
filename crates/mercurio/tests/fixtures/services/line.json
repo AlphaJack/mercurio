@@ -1,0 +1,16 @@
+{
+"cases":[
+{"name":"invalid_empty","url":"line://"},
+{"name":"invalid_blank","url":"line://%20/"},
+{"name":"no_targets","url":"line://token"},
+{"name":"basic","url":"line://token=/target"},
+{"name":"image_off","url":"line://token/target?image=no","type":"failure"},
+{"name":"long_token","url":"line://a/very/long/token=/target?image=no"},
+{"name":"token_param_to","url":"line://?token=token&to=target1"},
+{"name":"multi_target","url":"line://token/target2/target1/target2","title":"","body":"just body"},
+{"name":"to_split","url":"line://token/a?to=b,%23c"},
+{"name":"title_merge","url":"line://token/target","title":"My Title","body":"My Body"},
+{"name":"error_500","url":"line://token/t1/t2","responses":[{"status":500},{"status":200}]},
+{"name":"error_201","url":"line://token/target","responses":[{"status":201}]},
+{"name":"connection_error","url":"line://token/target","responses":[{"error":true}]}
+]}

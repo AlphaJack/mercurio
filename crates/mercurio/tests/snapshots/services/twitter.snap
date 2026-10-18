@@ -1,0 +1,495 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+batch_empty_disables:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: /9j/4AAQ
+            filename: b.jpg
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        json:
+          media:
+            media_ids:
+              - "710511363345354753"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+    - body:
+        json:
+          media:
+            media_ids:
+              - "710511363345354753"
+          text: 02/02
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+blank:
+  error: "Twitter: an invalid Twitter Consumer Key was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+dm_attachments:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: media_category
+            value: dm_image
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        multipart:
+          - name: media_category
+            value: dm_image
+          - b64: R0lGODlhAQABAAAAACw=
+            filename: c.gif
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/by?usernames=usera"
+    - body:
+        json:
+          attachments:
+            - media_id: "710511363345354753"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/111/messages"
+    - body:
+        json:
+          attachments:
+            - media_id: "710511363345354753"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/222/messages"
+    - body:
+        json:
+          attachments:
+            - media_id: "99"
+          text: 02/02
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/111/messages"
+    - body:
+        json:
+          attachments:
+            - media_id: "99"
+          text: 02/02
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/222/messages"
+  valid: true
+dm_lookup_error:
+  errors:
+    - "service error: failed to acquire user(s) to Direct Message via Twitter"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/by?usernames=usera"
+  valid: true
+dm_lookup_not_found:
+  errors:
+    - "service error: failed to acquire user(s) to Direct Message via Twitter"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/by?usernames=usera"
+  valid: true
+dm_lookup_user_and_path:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/by?usernames=usera,userb,userc"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/111/messages"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/222/messages"
+  valid: true
+dm_whoami:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/me"
+    - body:
+        json:
+          text: "T\r\nB"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/12345/messages"
+  valid: true
+dm_whoami_default_fails:
+  errors:
+    - "service error: failed to acquire user(s) to Direct Message via Twitter"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/me"
+  valid: true
+dm_whoami_fail:
+  errors:
+    - "service error: failed to acquire user(s) to Direct Message via Twitter"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/me"
+  valid: true
+dm_whoami_x_scheme:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/me"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/12345/messages"
+  valid: true
+empty:
+  error: "Twitter: an invalid Twitter Consumer Key was specified"
+  valid: false
+invalid_and_valid_target:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/by?usernames=usera"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/111/messages"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/dm_conversations/with/222/messages"
+  valid: true
+invalid_mode:
+  error: "Twitter: the Twitter message mode specified is invalid"
+  valid: false
+invalid_targets_only:
+  errors:
+    - "invalid message: no valid Twitter targets to notify"
+  ok: false
+  requests: []
+  valid: true
+missing_asecret:
+  error: "Twitter: an invalid Twitter Access Secret was specified"
+  valid: false
+only_ckey:
+  error: "Twitter: an invalid Twitter Consumer Secret was specified"
+  valid: false
+tweet_attachments_batched:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: /9j/4AAQ
+            filename: b.jpg
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: R0lGODlhAQABAAAAACw=
+            filename: c.gif
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        json:
+          media:
+            media_ids:
+              - "710511363345354753"
+              - "2"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+    - body:
+        json:
+          media:
+            media_ids:
+              - "3"
+          text: 02/02
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+tweet_attachments_no_batch_no_body:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: /9j/4AAQ
+            filename: b.jpg
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        json:
+          media:
+            media_ids:
+              - "710511363345354753"
+          text: "Mercurio Title\r\n"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+    - body:
+        json:
+          media:
+            media_ids:
+              - "99"
+          text: 02/02
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+tweet_fail:
+  errors:
+    - "HTTP 403: {\"errors\":[{\"detail\":\"no\",\"title\":\"Forbidden\"}]}"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+tweet_mode_ignores_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+tweet_scheme:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+tweet_upload_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+  valid: true
+tweet_upload_no_media_id:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: media_category
+            value: tweet_image
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: media
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.x.com/2/media/upload"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.twitter.com/2/tweets"
+  valid: true
+uppercase_mode_invalid:
+  errors:
+    - "service error: failed to acquire user(s) to Direct Message via Twitter"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: "<ignored>"
+      method: GET
+      url: "https://api.twitter.com/2/users/me"
+  valid: true

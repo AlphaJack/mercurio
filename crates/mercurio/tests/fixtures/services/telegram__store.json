@@ -1,0 +1,8 @@
+{
+"cases":[
+{"name":"owner_detected_once","url":"tgram://123456789:abcdefg_hijklmnop/","sends":3,"responses":[{"status":200,"body":{"ok":true,"result":[{"update_id":1,"message":{"message_id":1,"from":{"id":532389719,"is_bot":false,"first_name":"Chris"},"chat":{"id":532389719,"type":"private"},"date":1,"text":"/start"}}]}},{"status":200},{"status":200},{"status":200}]},
+{"name":"detect_fails_then_succeeds","url":"tgram://123456789:abcdefg_hijklmnop/?topic=5","sends":3,"responses":[{"status":200,"body":{"ok":true,"result":[]}},{"status":200,"body":{"ok":true,"result":[{"update_id":1,"message":{"message_id":1,"from":{"id":77,"first_name":"A"},"chat":{"id":77,"type":"private"},"date":1,"text":"/start"}}]}},{"status":200},{"status":200}]},
+{"name":"store_no_still_caches_in_memory","url":"tgram://123456789:abcdefg_hijklmnop/?store=no","sends":2,"responses":[{"status":200,"body":{"ok":true,"result":[{"update_id":1,"message":{"message_id":1,"from":{"id":9,"first_name":"B"},"chat":{"id":9,"type":"private"},"date":1,"text":"/start"}}]}},{"status":200},{"status":200}]},
+{"name":"retry_skips_delivered_chat","url":"tgram://123456789:abcdefg_hijklmnop/111/222?retry=1","sends":1,"responses":[{"status":200},{"status":500,"body":{"ok":false,"description":"x"}},{"status":200}]},
+{"name":"explicit_chat_never_detects","url":"tgram://123456789:abcdefg_hijklmnop/12345","sends":2}
+]}

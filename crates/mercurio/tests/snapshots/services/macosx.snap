@@ -1,0 +1,361 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+click:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-open"
+        - "\\http://google.com"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+escape_dash:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\-body"
+        - "-title"
+        - "\\-title"
+        - "-sound"
+        - "\\-x"
+        - "-sender"
+        - "\\Mercurio"
+        - "-appIcon"
+        - "\\<tmp>/mercurio/logo.png"
+  ok: true
+  valid: true
+image_false:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+  ok: true
+  valid: true
+image_no:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+  ok: true
+  valid: true
+multiline:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10"
+        - "-title"
+        - "\\Mercurio Title"
+  ok: true
+  valid: true
+no_title:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+probe_fails:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+probe_spawn_error:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+probe_v1:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sender"
+        - "\\Mercurio"
+  ok: true
+  valid: true
+probe_v2:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sender"
+        - "\\Mercurio"
+        - "-appIcon"
+        - "\\<tmp>/mercurio/logo.png"
+  ok: true
+  valid: true
+probe_v3:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+send_exit_3:
+  errors:
+    - "service error: failed to send macOS notification: Notifications are not authorized for terminal-notifier. Run 'terminal-notifier -diagnose' to find out why."
+  ok: false
+  valid: true
+send_exit_99:
+  errors:
+    - "service error: failed to send macOS notification: terminal-notifier returned 99."
+  ok: false
+  valid: true
+send_spawn_error:
+  errors:
+    - "transport error: scripted spawn failure"
+  ok: false
+  valid: true
+sender_v3_ignored:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+sound:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sound"
+        - "\\default"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+sound_click_noimage:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-open"
+        - "\\http://google.com"
+        - "-sound"
+        - "\\default"
+  ok: true
+  valid: true
+types_failure:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\b"
+        - "-title"
+        - "\\t"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+underscore_host:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+version2:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sender"
+        - "\\Mercurio"
+        - "-appIcon"
+        - "\\<tmp>/mercurio/logo.png"
+  ok: true
+  valid: true
+version2_noimage:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sender"
+        - "\\Mercurio"
+  ok: true
+  valid: true
+version2_sender:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sender"
+        - "\\me"
+        - "-appIcon"
+        - "\\<tmp>/mercurio/logo.png"
+  ok: true
+  valid: true
+version3:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+version_empty:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-version"
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-contentImage"
+        - "<image>"
+  ok: true
+  valid: true
+version_float:
+  error: "MacOSX Notification: the terminal-notifier version specified is invalid"
+  valid: false
+version_invalid:
+  error: "MacOSX Notification: the terminal-notifier version specified is invalid"
+  valid: false
+version_spaces:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sender"
+        - "\\Mercurio"
+        - "-appIcon"
+        - "\\<tmp>/mercurio/logo.png"
+  ok: true
+  valid: true
+version_text:
+  error: "MacOSX Notification: the terminal-notifier version specified is invalid"
+  valid: false

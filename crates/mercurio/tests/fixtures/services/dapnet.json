@@ -1,0 +1,20 @@
+{
+"cases":[
+{"name":"empty","url":"dapnet://"},
+{"name":"no_user","url":"dapnet://:@/"},
+{"name":"no_password","url":"dapnet://user@DF1ABC"},
+{"name":"basic","url":"dapnet://user:pass@DF1ABC","responses":[{"status":201}]},
+{"name":"default_200","url":"dapnet://user:pass@DF1ABC"},
+{"name":"invalid_callsign","url":"dapnet://user:pass@abcdefghi","responses":[{"status":201}]},
+{"name":"multi_dedupe","url":"dapnet://user:pass@DF1ABC/df1abc/DF1ABC-1/DG2XYZ?to=DL3AB,DF1ABC","responses":[{"status":201},{"status":400},{"status":201}]},
+{"name":"batch","url":"dapnet://user:pass@DF1ABC/DG2XYZ/DL3AB?batch=yes","responses":[{"status":201}]},
+{"name":"priority_emergency","url":"dapnet://user:pass@DF1ABC?priority=emergency","responses":[{"status":201}]},
+{"name":"priority_1","url":"dapnet://user:pass@DF1ABC?priority=1","responses":[{"status":201}]},
+{"name":"priority_bad","url":"dapnet://user:pass@DF1ABC?priority=urgent","responses":[{"status":201}]},
+{"name":"priority_normal","url":"dapnet://user:pass@DF1ABC?priority=normal","responses":[{"status":201}]},
+{"name":"txgroups","url":"dapnet://user:pass@DF1ABC?txgroups=DL-BY,dl-all,DL-BW","responses":[{"status":201}]},
+{"name":"txgroups_empty","url":"dapnet://user:pass@DF1ABC?txgroups=","responses":[{"status":201}]},
+{"name":"http_500","url":"dapnet://user:pass@DF1ABC","responses":[{"status":500}]},
+{"name":"conn_error","url":"dapnet://user:pass@DF1ABC","responses":[{"error":true}]},
+{"name":"body","url":"dapnet://user:pass@DF1ABC","title":"T","body":"a pager msg","type":"failure","responses":[{"status":201}]}
+]}

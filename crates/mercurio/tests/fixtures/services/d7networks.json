@@ -1,0 +1,21 @@
+{
+"cases":[
+{"name":"empty","url":"d7sms://"},
+{"name":"blank","url":"d7sms://:@/"},
+{"name":"invalid_targets","url":"d7sms://token@111111111/222222222222222/aaaaaaaaaaaaa"},
+{"name":"batch","url":"d7sms://token1@33333333333333?batch=yes"},
+{"name":"user_pass_token","url":"d7sms://token:colon2@33333333333333?batch=yes"},
+{"name":"pass_only_token","url":"d7sms://:token3@33333333333333?batch=yes"},
+{"name":"qs_token","url":"d7sms://33333333333333?token=token6"},
+{"name":"unicode_no","url":"d7sms://token4@33333333333333?unicode=no"},
+{"name":"unicode_yes_multi","url":"d7sms://token8@33333333333333/44444444444444/?unicode=yes","title":"t","body":"b"},
+{"name":"batch_to","url":"d7sms://token@33333333333333?batch=yes&to=66666666666666"},
+{"name":"batch_from","url":"d7sms://token@33333333333333?batch=yes&from=mercurio"},
+{"name":"batch_source","url":"d7sms://token@33333333333333?batch=yes&source=mercurio"},
+{"name":"blank_source","url":"d7sms://token@33333333333333?source=%20%20"},
+{"name":"batch_no","url":"d7sms://token@33333333333333?batch=no"},
+{"name":"http_999","url":"d7sms://token@33333333333333","responses":[{"status":999,"body":"{\"message\": \"x\"}"}]},
+{"name":"batch_fail","url":"d7sms://token@33333333333333/44444444444444?batch=yes","responses":[{"status":500,"body":"{}"}]},
+{"name":"partial","url":"d7sms://token@33333333333333/44444444444444","responses":[{"status":500,"body":"{}"}]},
+{"name":"connection_error","url":"d7sms://token@33333333333333","responses":[{"error":true}]}
+]}

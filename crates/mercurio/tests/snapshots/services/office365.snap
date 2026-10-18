@@ -1,0 +1,915 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachment_small:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            attachments:
+              - "@odata.type": "#microsoft.graph.fileAttachment"
+                contentBytes: iVBORw0KGgo=
+                contentType: image/png
+                name: a.png
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+  valid: true
+auth_no_token:
+  errors:
+    - "token: service error: Office 365 authentication failed"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+  valid: true
+azure_scheme_text:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: Text
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+  valid: true
+bad_auth_json:
+  errors:
+    - "token: service error: Office 365 authentication failed"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - abcd/123/3343/@jack/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - abcd/123/3343/@jack/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+  valid: true
+cc_bcc:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            bccRecipients:
+              - emailAddress:
+                  address: bcc@test.ca
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            ccRecipients:
+              - emailAddress:
+                  address: cc@test.ca
+                  name: Chris
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Sender Name
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: bob@test.ca
+                  name: Bob
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/Sender Name<user@example.edu>/sendMail"
+  valid: true
+empty:
+  error: "Office 365: an invalid Office 365 Client OAuth2 ID was specified"
+  valid: false
+empty_creds:
+  error: "Office 365: an invalid Office 365 Client OAuth2 ID was specified"
+  valid: false
+guid_lookup_fails:
+  errors:
+    - "user lookup: service error: the Office 365 object id could not be resolved"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json: ~
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: GET
+      url: "https://graph.microsoft.com/v1.0/users/8b799edf-6f98-4d3a-9be7-2862fb4e5752"
+  valid: true
+invalid_client_id:
+  error: "Office 365: an invalid Office 365 Client OAuth2 ID was specified"
+  valid: false
+invalid_tenant:
+  error: "Office 365: an invalid Office 365 Tenant was specified"
+  valid: false
+lookup_bad_mail:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json: ~
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: GET
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: to@example.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba/sendMail"
+  valid: true
+lookup_fails_continue:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json: ~
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: GET
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: to@example.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba/sendMail"
+  valid: true
+lookup_no_targets:
+  errors:
+    - "service error: there are no Email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+lookup_upn:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json: ~
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: GET
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: upn@example.ca
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: to@example.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba/sendMail"
+  valid: true
+mode_invalid_autodetect:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - refresh_token
+          - - client_id
+            - ab-cd-ef-gh
+          - - refresh_token
+            - seed
+          - - scope
+            - "https://graph.microsoft.com/Mail.Send offline_access"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@live.com
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: user@live.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/me/sendMail"
+  valid: true
+multi_partial:
+  errors:
+    - "send: HTTP 500: Office 365 delivery failed"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: b@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: a@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+  valid: true
+no_source_email:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - abcd
+          - - client_secret
+            - 123/3343/@jack/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/ab-cd-ef-gh/oauth2/v2.0/token"
+    - body:
+        json: ~
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: GET
+      url: "https://graph.microsoft.com/v1.0/users/tenant"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.ca
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/tenant/sendMail"
+  valid: true
+object_id_lookup:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - abcd/123/3343/@jack/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json: ~
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: GET
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.ca
+                name: John
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/hg-fe-dc-ba/sendMail"
+  valid: true
+odd_code:
+  errors:
+    - "token: service error: Office 365 authentication failed"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - zz-zz-zz-zz
+          - - client_secret
+            - abcd/abc/dcba/@john/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+  valid: true
+org_forced_on_live:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - seed
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant-id/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@live.com
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: user@live.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@live.com/sendMail"
+  valid: true
+personal_auto:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - refresh_token
+          - - client_id
+            - ab-cd-ef-gh
+          - - refresh_token
+            - refresh-token-value
+          - - scope
+            - "https://graph.microsoft.com/Mail.Send offline_access"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@live.com
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: to@example.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/me/sendMail"
+  valid: true
+personal_forced:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - refresh_token
+          - - client_id
+            - ab-cd-ef-gh
+          - - refresh_token
+            - seed
+          - - scope
+            - "https://graph.microsoft.com/Mail.Send offline_access"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.com
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: user@example.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/me/sendMail"
+  valid: true
+query_params:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - abcd/123/3343/@jack/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.ca
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.ca/sendMail"
+  valid: true
+reply_to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            replyTo:
+              - emailAddress:
+                  address: reply@example.org
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+  valid: true
+reply_to_named_plus:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+  valid: true
+savesent_no:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - secret
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.edu
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: email1@test.ca
+          saveToSentItems: "false"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.edu/sendMail"
+  valid: true
+self_target:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - ab-cd-ef-gh
+          - - client_secret
+            - abcd/123/3343/@jack/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+    - body:
+        json:
+          message:
+            body:
+              content: Mercurio Body
+              contentType: HTML
+            from:
+              emailAddress:
+                address: user@example.com
+                name: Mercurio
+            subject: Mercurio Title
+            toRecipients:
+              - emailAddress:
+                  address: user@example.com
+          saveToSentItems: "true"
+      headers:
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.microsoft.com/v1.0/users/user@example.com/sendMail"
+  valid: true
+tenant_in_user:
+  errors:
+    - "token: service error: Office 365 authentication failed"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - client_credentials
+          - - client_id
+            - abcd
+          - - client_secret
+            - 321/4321/@test/test
+          - - scope
+            - "https://graph.microsoft.com/.default"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://login.microsoftonline.com/01-12-23-34/oauth2/v2.0/token"
+  valid: true

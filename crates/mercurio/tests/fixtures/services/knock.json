@@ -1,0 +1,15 @@
+{
+"source":"hand-written from vendor API docs https://docs.knock.app/api-reference/workflows/trigger",
+"cases":[
+{"name":"empty","url":"knock://"},
+{"name":"no_workflow","url":"knock://sk_test_123"},
+{"name":"no_recipient","url":"knock://sk_test_123/new-comment"},
+{"name":"bad_host","url":"knock://sk_test_123/new-comment/u1?host=bad_host!"},
+{"name":"basic","url":"knock://sk_test_123/new-comment/dr_grant","responses":[{"status":200,"body":{"workflow_run_id":"123e4567-e89b-12d3-a456-426614174000"}}]},
+{"name":"inline_identification","url":"knock://sk_test_123/new-comment/dr_grant/ellie@example.com/+15551234567","type":"warning"},
+{"name":"actor_tenant_cancel_data","url":"knock://sk_test_123/new-comment/dr_grant?actor=mr_dna&tenant=ingen&cancel=incident_1993&:severity=high"},
+{"name":"to_param_custom_host_header","url":"knock://sk_test_123/alerts?to=u1,u2&host=knock.example.com&+X-Env=staging"},
+{"name":"duplicate_recipients","url":"knock://sk_test_123/alerts/u1/u1"},
+{"name":"unprocessable","url":"knock://sk_test_123/alerts/u1","responses":[{"status":422,"body":{"code":"invalid_params"}}]},
+{"name":"connection_error","url":"knock://sk_test_123/alerts/u1","responses":[{"error":true}]}
+]}

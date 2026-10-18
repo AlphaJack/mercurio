@@ -1,0 +1,333 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all_invalid:
+  error: "Flock: no Flock targets to notify"
+  valid: false
+bad_token:
+  error: "Flock: an invalid Flock Access Key was specified"
+  valid: false
+blank:
+  error: "Flock: an invalid Flock Access Key was specified"
+  valid: false
+botname:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: mybot
+            profileImage: "https://example.org/failure-72x72.png"
+          token: tttttttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/tttttttttttttttttttttttt"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          token: tttttttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/tttttttttttttttttttttttt"
+  valid: true
+empty:
+  error: "Flock: an invalid Flock Access Key was specified"
+  valid: false
+escape_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>&lt;T &amp; &apos;q&apos;&gt;</b><br/>a &lt; b &quot;c&quot;\nline 2</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/iiiiiiiiiiiiiiiiiiiiiiii"
+  valid: true
+html_format:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>&lt;T&gt;</b><br/><i>b</i></flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "u:uuuuuuuuuuuu"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+  valid: true
+multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "g:chan"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "u:user"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "g:gggggggggggg"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "u:uuuuuuuuuuuu"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+  valid: true
+multi_partial_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "g:gggggggggggg"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "u:uuuuuuuuuuuu"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/iiiiiiiiiiiiiiiiiiiiiiii"
+  valid: true
+native_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: ~
+          to: "u:abc"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/iiiiiiiiiiiiiiiiiiiiiiii"
+  valid: true
+plain_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "u:uuuuuuuuuuuu"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+  valid: true
+some_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "u:abc"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          to: "u:uuuuuuuuuuuu"
+          token: iiiiiiiiiiiiiiiiiiiiiiii
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.co/v1/chat.sendMessage"
+  valid: true
+webhook:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          token: tttttttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/tttttttttttttttttttttttt"
+  valid: true
+webhook_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          token: tttttttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/tttttttttttttttttttttttt"
+  valid: true
+webhook_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: "https://example.org/info-72x72.png"
+          token: tttttttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/tttttttttttttttttttttttt"
+  valid: true
+webhook_image_false:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: ~
+          token: tttttttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/tttttttttttttttttttttttt"
+  valid: true
+webhook_image_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          flockml: "<flockml><b>Mercurio Title</b><br/>Mercurio Body</flockml>"
+          sendAs:
+            name: Mercurio
+            profileImage: ~
+          token: tttttttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.flock.com/hooks/sendMessage/tttttttttttttttttttttttt"
+  valid: true

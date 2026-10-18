@@ -1,0 +1,26 @@
+{
+"pipeline":{"url":"evolution://myapikey@hostname/myinstance/5511999999999"},
+"cases":[
+{"name":"empty","url":"evolution://"},
+{"name":"colon_at","url":"evolution://:@/"},
+{"name":"no_apikey","url":"evolution://hostname/myinstance/5511999999999"},
+{"name":"no_instance_target","url":"evolution://myapikey@hostname/5511999999999"},
+{"name":"no_target","url":"evolution://myapikey@hostname/myinstance"},
+{"name":"not_a_phone","url":"evolution://myapikey@hostname/myinstance/notaphone"},
+{"name":"short_phone","url":"evolution://myapikey@hostname/myinstance/12345"},
+{"name":"basic","url":"evolution://myapikey@hostname/myinstance/5511999999999"},
+{"name":"secure","url":"evolutions://myapikey@hostname/myinstance/5511999999999"},
+{"name":"port","url":"evolution://myapikey@hostname:8080/myinstance/5511999999999"},
+{"name":"default_port","url":"evolution://myapikey@hostname:80/myinstance/5511999999999"},
+{"name":"secure_443","url":"evolutions://key@secure.host:443/inst/5511999999999"},
+{"name":"two","url":"evolution://myapikey@hostname/myinstance/5511999999999/5521888888888"},
+{"name":"mixed_invalid","url":"evolution://myapikey@hostname/myinstance/5511999999999/bad/+1 (555) 123-4567"},
+{"name":"to","url":"evolution://myapikey@hostname/myinstance?to=5511999999999,5521888888888"},
+{"name":"quoted_instance","url":"evolution://my%20key@hostname/my%2520inst/5511999999999"},
+{"name":"title_merged","url":"evolution://key@host/inst/5511999999999","title":"Hello","body":"World","type":"failure"},
+{"name":"markdown_plain","url":"evolution://key@host/inst/5511999999999","format":"markdown","body":"plain text"},
+{"name":"err_500","url":"evolution://myapikey@hostname/myinstance/5511999999999","responses":[{"status":500}]},
+{"name":"err_999","url":"evolution://myapikey@hostname/myinstance/5511999999999","responses":[{"status":999}]},
+{"name":"ok_201","url":"evolution://myapikey@hostname/myinstance/5511999999999","responses":[{"status":201}]},
+{"name":"partial","url":"evolution://key@host/inst/5511111111111/5522222222222/5533333333333","responses":[{"status":200},{"status":500},{"status":200}]}
+]}

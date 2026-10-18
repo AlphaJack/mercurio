@@ -1,0 +1,141 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_email:
+  error: "VoIPms: an invalid VoIPms user email was specified"
+  valid: false
+bad_source:
+  error: "VoIPms: an invalid VoIPms source phone # was specified"
+  valid: false
+bad_target:
+  errors:
+    - "VoIPms: there are no valid VoIPms targets to notify"
+  ok: false
+  requests: []
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232000"
+  valid: true
+default_response:
+  errors:
+    - "service error: VoIPms response has no status"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232001"
+  valid: true
+empty:
+  error: "VoIPms: password has to be specified"
+  valid: false
+fail_with_message:
+  errors:
+    - "service error: VoIPms error: \"invalid_dst\": \"bad\""
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232001"
+  valid: true
+foreign_source:
+  error: "VoIPms: VoIPms only supports +1 country code"
+  valid: false
+from_query:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232001"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232002"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232001"
+  valid: true
+list_json:
+  errors:
+    - "service error: VoIPms response is not an object"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232001"
+  valid: true
+no_password:
+  error: "VoIPms: an invalid VoIPms user email was specified"
+  valid: false
+no_source:
+  error: "VoIPms: an invalid VoIPms source phone # was specified"
+  valid: false
+not_json:
+  errors:
+    - "service error: VoIPms returned an unreadable response"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232001"
+  valid: true
+quoted:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=us%2Ber%40example.com&api_password=pa%24s&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232000"
+  valid: true
+self:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232000"
+  valid: true
+targets:
+  errors:
+    - "service error: VoIPms error: \"invalid_dst\": null"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232001"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://voip.ms/api/v1/rest.php?api_username=user%40example.com&api_password=password&did=5551232000&message=Mercurio+Title%0D%0AMercurio+Body&method=sendSMS&dst=5551232002"
+  valid: true

@@ -1,0 +1,14 @@
+{
+"cases":[
+{"name":"basic","url":"form://localhost"},
+{"name":"auth_port_path","url":"forms://user:pass@localhost:8080/path/to/hook"},
+{"name":"headers_params_payload","url":"form://localhost/?+X-Custom=yes&-param=1&:title=subject&:message=&:extra=value"},
+{"name":"method_get","url":"form://localhost/?method=GET&-p=1"},
+{"name":"method_delete","url":"form://localhost/?method=delete"},
+{"name":"method_invalid","url":"form://localhost/?method=invalid"},
+{"name":"attachment_default","url":"form://localhost","attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"},{"name":"b.txt","mime":"text/plain","text":"bye"}]},
+{"name":"attach_as_single","url":"form://localhost?attach-as=meta","attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"attach_as_wildcard","url":"form://localhost?attach-as=file*","attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"attach_as_invalid","url":"form://localhost?attach-as=!!!"},
+{"name":"server_error","url":"form://localhost","responses":[{"status":500}]}
+]}

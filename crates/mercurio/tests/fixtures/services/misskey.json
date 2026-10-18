@@ -1,0 +1,17 @@
+{
+"cases":[
+{"name":"invalid_empty","url":"misskey://"},
+{"name":"invalid_blank","url":"misskey://:@/"},
+{"name":"no_token","url":"misskey://hostname"},
+{"name":"basic","url":"misskey://access_token@hostname"},
+{"name":"secure","url":"misskeys://access_token@hostname","title":"T","body":"B"},
+{"name":"token_param","url":"misskey://hostname/?token=abcd123"},
+{"name":"user_pass_no_token","url":"misskey://user:pass@hostname"},
+{"name":"port","url":"misskeys://access_token@hostname:8443"},
+{"name":"visibility_invalid","url":"misskey://access_token@hostname?visibility=invalid"},
+{"name":"visibility_specified","url":"misskeys://access_token@hostname?visibility=specified"},
+{"name":"visibility_prefix","url":"misskeys://access_token@hostname?visibility=FOL"},
+{"name":"error_500","url":"misskeys://access_token@hostname","responses":[{"status":500}]},
+{"name":"error_204","url":"misskeys://access_token@hostname","responses":[{"status":204}]},
+{"name":"connection_error","url":"misskeys://access_token@hostname","responses":[{"error":true}]}
+]}

@@ -1,0 +1,257 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_token:
+  error: "Lauther: the Lauther token specified is invalid"
+  valid: false
+bad_token_pct:
+  error: "Lauther: the Lauther token specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+colon_at:
+  error: "Lauther: the Lauther token specified is invalid"
+  valid: false
+empty:
+  error: "Lauther: the Lauther token specified is invalid"
+  valid: false
+err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+err_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+extras:
+  ok: true
+  requests:
+    - body:
+        json:
+          color: red
+          icon: "https://i.ca/x.png"
+          message: Mercurio Body
+          path: /home
+          priority: 0
+          sound: default
+          tag: g1
+          title: Mercurio Title
+          url: "https://example.ca"
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_99:
+  error: "Lauther: the Lauther priority specified is invalid"
+  valid: false
+priority_emerg:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 2
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_high:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 1
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_low:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_lowest:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: -2
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_neg:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: -2
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_num:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 2
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_plus:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 1
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+priority_plusminus:
+  error: "Lauther: the Lauther priority specified is invalid"
+  valid: false
+status_204:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+title_body_type:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: b
+          priority: 0
+          title: t
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+token_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true
+token_qs_overrides:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          priority: 0
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer lpt_ABC999
+        Content-Type: application/json
+      method: POST
+      url: "https://api.lauther.id/v1/push"
+  valid: true

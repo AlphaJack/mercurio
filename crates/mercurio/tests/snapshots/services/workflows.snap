@@ -1,0 +1,826 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_version:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/workflows/workflow1e/triggers/manual/paths/invoke?api-version=2024-01-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+bad_workflow:
+  error: "Power Automate / Workflows (for MSTeams): an invalid Workflows ID was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/workflows/workflow1b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+blank:
+  error: "Power Automate / Workflows (for MSTeams): an invalid hostname or port was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/wf/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sig"
+  valid: true
+empty:
+  error: "Power Automate / Workflows (for MSTeams): an invalid hostname or port was specified"
+  valid: false
+http_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/wf/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sig"
+  valid: true
+http_204_fails:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/wf/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sig"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/wf/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sig"
+  valid: true
+id_and_signature_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/workflows/workflow1b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+id_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/workflows/workflow1c/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+mentions:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: hi <at>Bob</at> and <AT> bob </at> and <at>Bob</at> <at> </at>
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  entities:
+                    - mentioned:
+                        id: Bob
+                        name: Bob
+                      text: "<at>Bob</at>"
+                      type: mention
+                    - mentioned:
+                        id: bob
+                        name: bob
+                      text: "<AT> bob </at>"
+                      type: mention
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/wf/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sig"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://server.azure.com:443/workflows/643e69f83c8944/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KODuebWbDGYFr0z0eu"
+  valid: true
+native_cu:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://default.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/123456789/workflows/abc123/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SIG1"
+  valid: true
+native_pa:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://server.azure.com:443/powerautomate/automations/direct/workflows/643e69f83c8944/triggers/manual/paths/invoke?api-version=2022-03-01-preview&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KODuebWbDGYFr0z0eu"
+  valid: true
+no_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/workflows/workflow1a/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+no_signature:
+  error: "Power Automate / Workflows (for MSTeams): an invalid Signature was specified"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/wf/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sig"
+  valid: true
+pa_route:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/powerautomate/automations/direct/cu/123456789/workflows/3XXX5/triggers/manual/paths/invoke?api-version=2022-03-01-preview&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iXXXU"
+  valid: true
+pa_routeid:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/powerautomate/automations/direct/cu/42/workflows/3XXX5/triggers/manual/paths/invoke?api-version=2022-03-01-preview&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iXXXU"
+  valid: true
+pa_ver:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/powerautomate/automations/direct/workflows/workflow1e/triggers/manual/paths/invoke?api-version=1995-01-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+powerautomate:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/powerautomate/automations/direct/workflows/workflow1e/triggers/manual/paths/invoke?api-version=2022-03-01-preview&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+route_invalid:
+  error: "Power Automate / Workflows (for MSTeams): an invalid Workflows Routing ID was specified"
+  valid: false
+route_without_pa:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/3XXX5/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iXXXU"
+  valid: true
+sig_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host/workflows/wf1/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=abc-def"
+  valid: true
+template_bad_scheme:
+  error: "Power Automate / Workflows (for MSTeams): the Workflows template specified could not be loaded"
+  valid: false
+template_missing_file:
+  errors:
+    - "invalid message: Workflow template could not be accessed"
+  ok: false
+  requests: []
+  valid: true
+ver:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: info
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/info-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: true
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/workflows/workflow1b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true
+workflow_param_wrap:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content:
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+                body:
+                  - altText: warning
+                    height: 32px
+                    type: Image
+                    url: "https://example.org/warning-32x32.png"
+                  - id: title
+                    size: Large
+                    style: heading
+                    text: Mercurio Title
+                    type: TextBlock
+                    weight: Bolder
+                  - id: body
+                    style: default
+                    text: Mercurio Body
+                    type: TextBlock
+                    wrap: false
+                msteams:
+                  width: full
+                type: AdaptiveCard
+                version: "1.4"
+              contentType: application/vnd.microsoft.card.adaptive
+              contentUrl: ~
+          type: message
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://host:443/workflows/workflow1d/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=signature"
+  valid: true

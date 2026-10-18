@@ -1,0 +1,211 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_source:
+  error: "Telnyx: the Account (From) Phone # specified is invalid"
+  valid: false
+body:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: héllo
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+empty:
+  error: "Telnyx: an invalid Telnyx API Key was specified"
+  valid: false
+from_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232002"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+from_query_bad:
+  error: "Telnyx: the Account (From) Phone # specified is invalid"
+  valid: false
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232002"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+invalid_target_only:
+  errors:
+    - "Telnyx: there are no valid Telnyx targets to notify"
+  ok: false
+  requests: []
+  valid: true
+key_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer thekey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+mixed_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+no_key:
+  error: "Telnyx: an invalid Telnyx API Key was specified"
+  valid: false
+profile:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          messaging_profile_id: prof-123
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+self:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true
+targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+    - body:
+        json:
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232002"
+      headers:
+        Accept: application/json
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telnyx.com/v2/messages"
+  valid: true

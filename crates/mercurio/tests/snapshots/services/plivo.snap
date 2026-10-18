@@ -1,0 +1,209 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          dst: "+15551232000"
+          src: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+alpha_source:
+  error: "Plivo: the Plivo source specified is invalid"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          dst: "+15551232000"
+          src: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+empty:
+  error: "Plivo: the Plivo authentication ID specified is invalid"
+  valid: false
+http_error:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          dst: "+15551232000"
+          src: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+invalid_target_only:
+  errors:
+    - "invalid message: there are no valid Plivo targets to notify"
+  ok: false
+  requests: []
+  valid: true
+multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          dst: "+15551231111"
+          src: "+15551230000"
+          text: "t\r\nb"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+    - body:
+        json:
+          dst: "+15551232222"
+          src: "+15551230000"
+          text: "t\r\nb"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+multi_batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          dst: +15551231111<+15551232222
+          src: "+15551230000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+no_source:
+  error: "Plivo: the Plivo source specified is invalid"
+  valid: false
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          dst: "+15551231111"
+          src: "+15551230000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+    - body:
+        json:
+          dst: "+15551232222"
+          src: "+15551230000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+qs_from_to_batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          dst: "+15551232000"
+          src: "+15551233000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+qs_id_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          dst: "+15551232000"
+          src: "+15551233000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+qs_token_host_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          dst: "+15551232123"
+          src: "+15551233000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+    - body:
+        json:
+          dst: "+15551232000"
+          src: "+15551233000"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+self:
+  ok: true
+  requests:
+    - body:
+        json:
+          dst: "+15551231234"
+          src: "+15551231234"
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYTpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.plivo.com/v1/Account/aaaaaaaaaaaaaaaaaaaaaaaaa/Message/"
+  valid: true
+short_id:
+  error: "Plivo: the Plivo authentication ID specified is invalid"
+  valid: false
+short_source:
+  error: "Plivo: the Plivo source specified is invalid"
+  valid: false
+short_target_only:
+  errors:
+    - "invalid message: there are no valid Plivo targets to notify"
+  ok: false
+  requests: []
+  valid: true
+short_token:
+  error: "Plivo: the Plivo authentication token specified is invalid"
+  valid: false

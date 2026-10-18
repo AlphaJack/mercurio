@@ -1,0 +1,36 @@
+---
+source: crates/mercurio/src/testing/fixtures.rs
+---
+attachments:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"<boundary>\"\r\n\r\n--<boundary>\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body\r\n--<boundary>\r\nContent-Type: image/png\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"a.png\"\r\n\r\niVBORw0KGgo=\r\n--<boundary>\r\nContent-Type: text/plain\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"notes.txt\"\r\n\r\naGVsbG8gd29ybGQ=\r\n--<boundary>--"
+cc_equals_target_skipped:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: a@example.com\r\nCc: b@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: b@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+connection_error:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+first_fails_second_sent:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: a@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: b@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+format_text:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nplain"
+http_403:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+key_alias_and_from_override:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <other@example.net>\r\nTo: other@example.net\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+name_reply_cc_bcc:
+  - "Subject: =?utf-8?b?SMOpbGxv?=\r\nFrom: =?utf-8?b?SsO2aG4gRMWT?= <user@example.com>\r\nTo: user2@example.com\r\nReply-To: =?utf-8?b?SsO2aG4gRMWT?= <rep@example.com>\r\nCc: Ann B <ann@example.com>\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n<b>hi</b>"
+query_only:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user2@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+reply_name_used_as_from:
+  - "Subject: Mercurio Title\r\nFrom: Rep Ly <user@example.com>\r\nTo: user2@example.com\r\nReply-To: Rep Ly <rep@example.com>\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+self_notify:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+session_token_param:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+session_token_password:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+status_202_fails:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+targets_path:
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: user2@example.com\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"
+  - "Subject: Mercurio Title\r\nFrom: Mercurio Notifications <user@example.com>\r\nTo: Bob Smith <bob@example.org>\r\nDate: <date>\r\nX-Application: Mercurio\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nMercurio Body"

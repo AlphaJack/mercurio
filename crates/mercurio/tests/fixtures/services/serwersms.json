@@ -1,0 +1,22 @@
+{
+"cases":[
+{"name":"empty","url":"serwersms://"},
+{"name":"no_password","url":"serwersms://user@Sender/48500600700"},
+{"name":"no_user","url":"serwersms://:pass@Sender/48500600700"},
+{"name":"bad_sender","url":"serwersms://user:pass@-Sender/48500600700"},
+{"name":"long_sender","url":"serwersms://user:pass@SenderTooLongX/48500600700"},
+{"name":"no_targets","url":"serwersms://user:pass@Sender"},
+{"name":"only_invalid","url":"serwersms://user:pass@Sender/abc"},
+{"name":"phone_ok","url":"serwersms://user:pass@Sender/48500600700","responses":[{"status":200,"body":{"success":true,"queued":1}}]},
+{"name":"default_response","url":"serwersms://user:pass@Sender/48500600700"},
+{"name":"api_error","url":"serwersms://user:pass@Sender/48500600700","responses":[{"status":200,"body":{"success":false,"error":{"code":1,"message":"bad"}}}]},
+{"name":"http_500","url":"serwersms://user:pass@Sender/48500600700","responses":[{"status":500}]},
+{"name":"conn_error","url":"serwersms://user:pass@Sender/48500600700","responses":[{"error":true}]},
+{"name":"not_json","url":"serwersms://user:pass@Sender/48500600700","responses":[{"status":200,"body":"server error"}]},
+{"name":"groups","url":"serwersms://user:pass@Sender/%23123/48500600700/48500600701?to=%23456,48500600700","responses":[{"status":200,"body":{"success":true}},{"status":200,"body":{"success":true}},{"status":200,"body":{"success":0}},{"status":200,"body":{"success":true}}]},
+{"name":"hash_group","url":"serwersms://user:pass@Sender/#77","responses":[{"status":200,"body":{"success":true}}]},
+{"name":"from_sender","url":"serwersms://user:pass@ignored/48500600700?from=FromName&sender=Sndr%20X","responses":[{"status":200,"body":{"success":true}}]},
+{"name":"from_only","url":"serwersms://user:pass@ignored/48500600700?from=FromName","responses":[{"status":200,"body":{"success":true}}]},
+{"name":"mms","url":"serwersms://user:pass@Sender/48500600700","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="},{"name":"b.jpg","mime":"image/jpeg","b64":"/9j/4AA="}],"responses":[{"status":200,"body":{"success":true}}]},
+{"name":"mms_fail","url":"serwersms://user:pass@Sender/48500600700/%239","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}],"responses":[{"status":200,"body":{"success":false}},{"status":400}]}
+]}

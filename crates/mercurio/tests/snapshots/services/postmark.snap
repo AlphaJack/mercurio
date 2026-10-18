@@ -1,0 +1,372 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_is_failure:
+  errors:
+    - "HTTP 202: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: user@example.ca
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser@example.ca
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+apikey_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: sender@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: target@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: overridekey
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+attachment:
+  ok: true
+  requests:
+    - body:
+        json:
+          Attachments:
+            - Content: iVBORw0KGgo=
+              ContentType: image/png
+              Name: a.png
+            - Content: aGVsbG8=
+              ContentType: text/plain
+              Name: b.txt
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: a@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+bad_target:
+  errors:
+    - "service error: there are no Postmark email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          Bcc: bcc@nuxref.com
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser4@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+cc:
+  ok: true
+  requests:
+    - body:
+        json:
+          Cc: cc@nuxref.com
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser5@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+cc_in_bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          Bcc: cc@nuxref.com
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser5@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+cc_named:
+  ok: true
+  requests:
+    - body:
+        json:
+          Cc: Chris <cc@nuxref.com>
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser5@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: user@example.au
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser@example.au
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+empty:
+  error: "Postmark: an invalid Postmark API Key was specified"
+  valid: false
+empty_creds:
+  error: "Postmark: an invalid Postmark API Key was specified"
+  valid: false
+from_name:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: John <user@example.com>
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser2@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+from_name_utf8:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "=?utf-8?b?SsO2cmcgTQ==?= <user@example.com>"
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser2@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+from_param_host_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: Sender <sender@example.com>
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: path@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: tok
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+invalid_from:
+  error: "Postmark: an invalid Postmark From email was specified"
+  valid: false
+multi_partial:
+  errors:
+    - "HTTP 422: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: a@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: b@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+named_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: bob@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+no_password:
+  error: "Postmark: an invalid Postmark From email was specified"
+  valid: false
+one_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser1@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+reply:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          ReplyTo: Rep <reply@example.com>
+          Subject: Mercurio Title
+          To: newuser3@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+self_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: user@example.ca
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser@example.ca
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+text:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: user@example.com
+          Subject: "<no subject>"
+          TextBody: Mercurio Body
+          To: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: newuser6@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+    - body:
+        json:
+          From: user@example.com
+          HtmlBody: Mercurio Body
+          Subject: Mercurio Title
+          To: extra@nuxref.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Postmark-Server-Token: abcd
+      method: POST
+      url: "https://api.postmarkapp.com/email"
+  valid: true
+token_only:
+  error: "Postmark: an invalid Postmark API Key was specified"
+  valid: false

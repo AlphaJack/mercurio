@@ -1,0 +1,292 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+alias_resolved_once:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              identifier:
+                type: m.id.user
+                user: user
+              initial_device_display_name: Mercurio
+              password: pass
+              type: m.login.password
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost:8080/_matrix/client/v3/login"
+        - body:
+            json:
+              auth:
+                type: m.login.dummy
+              initial_device_display_name: Mercurio
+              kind: user
+              password: pass
+              username: user
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost:8080/_matrix/client/v3/register?kind=user"
+        - body:
+            json: {}
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost:8080/_matrix/client/v3/join/%23general%3Alocalhost"
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost:8080/_matrix/client/v3/rooms/%21gen%3Alocalhost/send/m.room.message/0"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost:8080/_matrix/client/v3/rooms/%21gen%3Alocalhost/send/m.room.message/1"
+  url_id: 660aacf6
+  valid: true
+login_fails_then_works:
+  sends:
+    - attempts: 1
+      errors:
+        - "login: service error: Matrix login and registration failed"
+      ok: false
+      requests:
+        - body:
+            json:
+              identifier:
+                type: m.id.user
+                user: user
+              initial_device_display_name: Mercurio
+              password: pass
+              type: m.login.password
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/login"
+        - body:
+            json:
+              auth:
+                type: m.login.dummy
+              initial_device_display_name: Mercurio
+              kind: user
+              password: pass
+              username: user
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              identifier:
+                type: m.id.user
+                user: user
+              initial_device_display_name: Mercurio
+              password: pass
+              type: m.login.password
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/login"
+        - body:
+            json: {}
+          headers:
+            Accept: application/json
+            Authorization: Bearer t
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer t
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+  url_id: c44c32f5
+  valid: true
+retry_skips_delivered_room:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              identifier:
+                type: m.id.user
+                user: user
+              initial_device_display_name: Mercurio
+              password: pass
+              type: m.login.password
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/login"
+        - body:
+            json:
+              auth:
+                type: m.login.dummy
+              initial_device_display_name: Mercurio
+              kind: user
+              password: pass
+              username: user
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/register?kind=user"
+        - body:
+            json: {}
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/join/%21a%3Alocalhost"
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost/_matrix/client/v3/rooms/%21a%3Alocalhost/send/m.room.message/0"
+        - body:
+            json: {}
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/join/%21b%3Alocalhost"
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost/_matrix/client/v3/rooms/%21b%3Alocalhost/send/m.room.message/1"
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost/_matrix/client/v3/rooms/%21b%3Alocalhost/send/m.room.message/2"
+  url_id: c44c32f5
+  valid: true
+session_and_room_cache_kept:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              identifier:
+                type: m.id.user
+                user: user
+              initial_device_display_name: Mercurio
+              password: pass
+              type: m.login.password
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/login"
+        - body:
+            json:
+              auth:
+                type: m.login.dummy
+              initial_device_display_name: Mercurio
+              kind: user
+              password: pass
+              username: user
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/register?kind=user"
+        - body:
+            json: {}
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/1"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              body: "# Mercurio Title\r\nMercurio Body"
+              msgtype: m.text
+          headers:
+            Accept: application/json
+            Authorization: Bearer abcd1234
+            Content-Type: application/json
+          method: PUT
+          url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/2"
+  url_id: c44c32f5
+  valid: true

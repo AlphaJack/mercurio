@@ -1,0 +1,342 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token1
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+batch_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+                - "44444444444444"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+batch_from:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+            originator: mercurio
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+batch_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+batch_source:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+            originator: mercurio
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+batch_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+                - "66666666666666"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+blank:
+  error: "D7 Networks: the D7 Networks token specified is invalid"
+  valid: false
+blank_source:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+empty:
+  error: "D7 Networks: the D7 Networks token specified is invalid"
+  valid: false
+http_999:
+  errors:
+    - "HTTP 999: {\"message\": \"x\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+invalid_targets:
+  errors:
+    - "invalid message: there are no valid D7 Networks targets to notify"
+  ok: false
+  requests: []
+  valid: true
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "44444444444444"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+pass_only_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: "Bearer :token3"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+qs_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+unicode_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token4
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+unicode_yes_multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "t\r\nb"
+              data_coding: unicode
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token8
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "t\r\nb"
+              data_coding: unicode
+              recipients:
+                - "44444444444444"
+      headers:
+        Accept: application/json
+        Authorization: Bearer token8
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true
+user_pass_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          message_globals:
+            channel: sms
+          messages:
+            - content: "Mercurio Title\r\nMercurio Body"
+              data_coding: auto
+              recipients:
+                - "33333333333333"
+      headers:
+        Accept: application/json
+        Authorization: "Bearer token:colon2"
+        Content-Type: application/json
+      method: POST
+      url: "https://api.d7networks.com/messages/v1/send"
+  valid: true

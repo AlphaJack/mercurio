@@ -1,0 +1,8 @@
+{
+"cases":[
+{"name":"token_reused","url":"ringc://15551232000:password@clientid/secret","sends":3,"responses":[{"status":200,"body":{"access_token":"abc","expires_in":3600}},{"status":200},{"status":200},{"status":200}]},
+{"name":"no_expiry_logs_in_every_send","url":"ringc://15551232000:password@clientid/secret","sends":2,"responses":[{"status":200,"body":{"access_token":"abc"}},{"status":200},{"status":200,"body":{"access_token":"def"}},{"status":200}]},
+{"name":"login_fails_then_works","url":"ringc://15551232000:password@clientid/secret","sends":3,"responses":[{"status":401,"body":{}},{"status":200,"body":{"access_token":"abc","expires_in":60}},{"status":200},{"status":200}]},
+{"name":"jwt_reused","url":"ringc://15551232000:eyJ0eXAi.abc-def_1@clientid/secret?mode=jwt","sends":2,"responses":[{"status":200,"body":{"access_token":"abc","expires_in":10}},{"status":200},{"status":200}]},
+{"name":"retry_skips_delivered","url":"ringc://15551232000:password@clientid/secret/15551232001/15551232002?retry=1","sends":1,"responses":[{"status":200,"body":{"access_token":"abc","expires_in":3600}},{"status":200},{"status":500},{"status":200}]}
+]}

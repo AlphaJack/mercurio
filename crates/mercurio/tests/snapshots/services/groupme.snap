@@ -1,0 +1,237 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+attach_bad_json:
+  errors:
+    - "upload: service error: GroupMe image service returned no URL for a.png"
+  ok: false
+  requests:
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Content-Type: image/png
+        X-Access-Token: tok
+      method: POST
+      url: "https://image.groupme.com/pictures"
+  valid: true
+attach_no_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+attach_no_url:
+  errors:
+    - "upload: service error: GroupMe image service returned no URL for a.png"
+  ok: false
+  requests:
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Content-Type: image/png
+        X-Access-Token: tok
+      method: POST
+      url: "https://image.groupme.com/pictures"
+  valid: true
+attach_only:
+  ok: true
+  requests:
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Content-Type: image/png
+        X-Access-Token: tok
+      method: POST
+      url: "https://image.groupme.com/pictures"
+    - body:
+        json:
+          attachments:
+            - type: image
+              url: "https://i.groupme.com/abc"
+          bot_id: botid123
+          text: ""
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+attach_two_skip_text:
+  ok: true
+  requests:
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Content-Type: image/png
+        X-Access-Token: tok
+      method: POST
+      url: "https://image.groupme.com/pictures"
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Content-Type: image/gif
+        X-Access-Token: tok
+      method: POST
+      url: "https://image.groupme.com/pictures"
+    - body:
+        json:
+          attachments:
+            - type: image
+              url: "https://i.groupme.com/1"
+            - type: image
+              url: "https://i.groupme.com/2"
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+attach_upload:
+  ok: true
+  requests:
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Content-Type: image/png
+        X-Access-Token: tok
+      method: POST
+      url: "https://image.groupme.com/pictures"
+    - body:
+        json:
+          attachments:
+            - type: image
+              url: "https://i.groupme.com/abc"
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+attach_upload_fail:
+  errors:
+    - "upload: HTTP 500 Internal server error."
+  ok: false
+  requests:
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Content-Type: image/png
+        X-Access-Token: tok
+      method: POST
+      url: "https://image.groupme.com/pictures"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+bot_id_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          bot_id: other1
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+error_201:
+  errors:
+    - "HTTP 201 "
+  ok: false
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+error_401:
+  errors:
+    - "HTTP 401: Unauthorized - Invalid or expired access token."
+  ok: false
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+invalid_bot_id:
+  error: "GroupMe: a GroupMe bot_id must be specified"
+  valid: false
+invalid_empty:
+  error: "GroupMe: a GroupMe bot_id must be specified"
+  valid: false
+title_merge:
+  ok: true
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Hello\r\nWorld"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true
+with_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          bot_id: botid123
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.groupme.com/v3/bots/post"
+  valid: true

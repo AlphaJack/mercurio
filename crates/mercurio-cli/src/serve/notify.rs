@@ -1,0 +1,298 @@
+//! Sending a notification and rendering its result: the logs of the call as text, HTML or `{"error", "details"}`.
+
+use std::io::Read;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, mpsc};
+use std::time::{Duration, SystemTime};
+
+use mercurio::{Asset, Mercurio, Message, Report, TagFilter, TemplateVars, Transport};
+use serde_json::{Value, json};
+
+use super::http::{Body, Reply, Req};
+
+/// One log line of a notification call.
+#[derive(Debug, Clone)]
+pub struct LogEntry {
+    pub level: &'static str,
+    pub time: SystemTime,
+    pub message: String,
+    pub service: Option<String>,
+}
+
+impl LogEntry {
+    pub fn new(level: &'static str, message: String, service: Option<String>) -> Self {
+        LogEntry { level, time: SystemTime::now(), message, service }
+    }
+
+    /// `YYYY-MM-DD HH:MM:SS,mmm` (UTC).
+    pub fn asctime(&self) -> String {
+        let d = self.time.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
+        let (y, mo, da, h, mi, s) = mercurio::crypto::utc_parts(d.as_secs());
+        format!("{y:04}-{mo:02}-{da:02} {h:02}:{mi:02}:{s:02},{:03}", d.subsec_millis())
+    }
+
+    pub fn line(&self) -> String {
+        format!("{} - {} - {}", self.asctime(), self.level, self.message)
+    }
+}
+
+/// Log entries for a finished call: one per service notified.
+pub fn report_logs(report: &Report) -> Vec<LogEntry> {
+    let mut logs = Vec::new();
+    for e in &report.entries {
+        let service = Some(e.service.to_string());
+        if e.delivery.is_success() {
+            logs.push(LogEntry::new("INFO", format!("Sent {} notification.", e.label), service));
+        } else {
+            for o in e.delivery.outcomes.iter().filter(|o| o.result.is_err()) {
+                let why = o.result.as_ref().err().map(ToString::to_string).unwrap_or_default();
+                logs.push(LogEntry::new(
+                    "ERROR",
+                    format!("Failed to send {} notification: {why}", e.label),
+                    service.clone(),
+                ));
+            }
+        }
+    }
+    logs
+}
+
+pub fn render(req: &Req, status: u16, logs: &[LogEntry], error: Option<&str>) -> Reply {
+    if req.wants_json() {
+        let details: Vec<Value> = logs.iter().map(|l| json!([l.level, l.asctime(), l.message])).collect();
+        return Reply::json(status, &json!({"error": error, "details": details}));
+    }
+    if req.wants_html_logs() {
+        let mut html = String::from("<ul class=\"logs\">");
+        for l in logs {
+            html.push_str(&format!(
+                "<li class=\"log_{lvl}\"><div class=\"log_time\">{t}</div><div class=\"log_level\">{lvl}</div><div class=\"log_msg\">{m}</div></li>",
+                lvl = l.level,
+                t = l.asctime(),
+                m = html_escape(&l.message)
+            ));
+        }
+        html.push_str("</ul>");
+        return Reply::new(status, "text/html; charset=utf-8", html.into_bytes());
+    }
+    let mut text = logs.iter().map(LogEntry::line).collect::<Vec<_>>().join("\n");
+    if text.is_empty() {
+        text = error.unwrap_or_default().to_string();
+    }
+    Reply::new(status, "text/plain; charset=utf-8", text.into_bytes())
+}
+
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&#x27;")
+}
+
+/// What to send.
+pub struct Job {
+    pub notifier: Mercurio,
+    pub message: Message,
+    pub filter: TagFilter,
+    pub vars: TemplateVars,
+    /// `Some(key)` for a stored configuration.
+    pub key: Option<String>,
+    /// The notifier's transport and asset (for live streams).
+    pub transport: Arc<dyn Transport>,
+    pub asset: Asset,
+}
+
+impl Job {
+    pub fn run(&self) -> Report {
+        self.notifier.notify_with(&self.message, &self.filter, &self.vars)
+    }
+
+    /// The 424 message for this kind of call.
+    pub fn failure_message(&self) -> &'static str {
+        if self.key.is_some() {
+            "One or more notification could not be sent"
+        } else {
+            "One or more notifications could not be sent"
+        }
+    }
+}
+
+pub fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<LogEntry>) {
+    let report = job.run();
+    let all = report_logs(&report);
+    let logs = filter_level(all.clone(), level);
+    let reply = if report.is_success() {
+        log::info!("NOTIFY - {} - Delivered Notification(s){}", req.remote, key_suffix(job));
+        render(req, 200, &logs, None)
+    } else {
+        log::warn!("NOTIFY - {} - One or more notifications not sent{}", req.remote, key_suffix(job));
+        render(req, 424, &logs, Some(job.failure_message()))
+    };
+    (reply, report, all)
+}
+
+fn key_suffix(job: &Job) -> String {
+    job.key.as_ref().map(|k| format!(" using KEY: {k}")).unwrap_or_default()
+}
+
+/// Numeric log level of a level name (`TRACE` 5 ... `CRITICAL` 50).
+pub fn level_value(name: &str) -> Option<u8> {
+    match name.trim().to_ascii_uppercase().as_str() {
+        "TRACE" => Some(5),
+        "DEBUG" => Some(10),
+        "INFO" => Some(20),
+        "WARNING" => Some(30),
+        "ERROR" => Some(40),
+        "CRITICAL" => Some(50),
+        _ => None,
+    }
+}
+
+/// Keep the entries at or above `level`.
+pub fn filter_level(logs: Vec<LogEntry>, level: u8) -> Vec<LogEntry> {
+    logs.into_iter().filter(|l| level_value(l.level).unwrap_or(20) >= level).collect()
+}
+
+fn entry_logs(e: &mercurio::ReportEntry) -> Vec<LogEntry> {
+    report_logs(&Report { entries: vec![e.clone()] })
+}
+
+/// One Server-Sent Event.
+pub fn sse(event: &str, data: &Value) -> Vec<u8> {
+    format!("event: {event}\ndata: {data}\n\n").into_bytes()
+}
+
+fn log_event(l: &LogEntry) -> Vec<u8> {
+    sse("log", &json!({"level": l.level, "asctime": l.asctime(), "message": l.message, "service": l.service}))
+}
+
+/// Reads queued events, sending a heartbeat comment while idle.
+pub struct EventReader {
+    rx: mpsc::Receiver<Vec<u8>>,
+    buf: Vec<u8>,
+    pos: usize,
+    heartbeat: Duration,
+    _slot: Option<StreamSlot>,
+}
+
+impl Read for EventReader {
+    fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+        if self.pos >= self.buf.len() {
+            self.buf = match self.rx.recv_timeout(self.heartbeat) {
+                Ok(chunk) => chunk,
+                Err(mpsc::RecvTimeoutError::Timeout) => b": heartbeat\n\n".to_vec(),
+                Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(0),
+            };
+            self.pos = 0;
+        }
+        let n = out.len().min(self.buf.len() - self.pos);
+        out[..n].copy_from_slice(&self.buf[self.pos..self.pos + n]);
+        self.pos += n;
+        Ok(n)
+    }
+}
+
+/// Live streams currently admitted (`APPRISE_STREAM_WORKER_COUNT` + `APPRISE_STREAM_QUEUE_SIZE`).
+pub struct StreamSlots {
+    active: AtomicUsize,
+    capacity: usize,
+}
+
+impl StreamSlots {
+    pub fn new(capacity: usize) -> Arc<StreamSlots> {
+        Arc::new(StreamSlots { active: AtomicUsize::new(0), capacity })
+    }
+
+    pub fn try_admit(self: &Arc<Self>) -> Option<StreamSlot> {
+        let prev = self.active.fetch_add(1, Ordering::SeqCst);
+        if prev >= self.capacity {
+            self.active.fetch_sub(1, Ordering::SeqCst);
+            return None;
+        }
+        Some(StreamSlot(self.clone()))
+    }
+}
+
+/// Releases its admission when the response is done.
+pub struct StreamSlot(Arc<StreamSlots>);
+
+impl Drop for StreamSlot {
+    fn drop(&mut self) {
+        self.0.active.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+/// Called once a streamed job has finished.
+pub type OnDone = Box<dyn FnOnce(&Report, &[LogEntry]) + Send>;
+
+/// Runs the job in the background, sending a `log` event as each service finishes and a final `result` event; `done` gets the report and logs.
+pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: OnDone) -> Reply {
+    let (tx, rx) = mpsc::channel::<Vec<u8>>();
+    if tx.send(b": connected\n\n".to_vec()).is_err() {
+        log::debug!("stream closed before it started");
+    }
+    std::thread::spawn(move || {
+        let sel = job.notifier.select(&job.filter, &job.vars);
+        let asset = &job.asset;
+        let transport = job.transport.as_ref();
+        let entries: Vec<mercurio::ReportEntry> = std::thread::scope(|scope| {
+            let handles: Vec<_> = sel
+                .iter()
+                .map(|t| {
+                    let tx = tx.clone();
+                    let msg = &job.message;
+                    scope.spawn(move || {
+                        let attempts = t.deliver(msg, transport, asset);
+                        let entry = mercurio::ReportEntry {
+                            label: t.label(),
+                            service: t.service().id,
+                            delivery: attempts.last().map(|a| a.delivery.clone()).unwrap_or_default(),
+                            attempts,
+                            url_id: t.url_id(asset),
+                        };
+                        for l in filter_level(entry_logs(&entry), level) {
+                            if tx.send(log_event(&l)).is_err() {
+                                log::debug!("stream client went away");
+                            }
+                        }
+                        entry
+                    })
+                })
+                .collect();
+            handles.into_iter().filter_map(|h| h.join().ok()).collect()
+        });
+        for t in &sel.resolved {
+            t.close(transport, asset);
+        }
+        let mut report = Report { entries };
+        for (p, e) in &sel.unresolved {
+            report.entries.push(mercurio::ReportEntry {
+                label: p.label(),
+                service: p.service().id,
+                delivery: mercurio::Delivery {
+                    outcomes: vec![mercurio::Outcome { target: None, result: Err(e.clone()) }],
+                },
+                attempts: Vec::new(),
+                url_id: None,
+            });
+        }
+        let ready = report.entries.len() - sel.unresolved.len();
+        let unresolved_logs: Vec<LogEntry> = report.entries.iter().skip(ready).flat_map(entry_logs).collect();
+        for l in filter_level(unresolved_logs, level) {
+            if tx.send(log_event(&l)).is_err() {
+                log::debug!("stream client went away");
+            }
+        }
+        let status = report.status().as_str().to_ascii_uppercase();
+        if tx.send(sse("result", &json!({"status": status}))).is_err() {
+            log::debug!("stream client went away before the result");
+        }
+        drop(tx);
+        let logs = report_logs(&report);
+        done(&report, &logs);
+    });
+    let reader = EventReader { rx, buf: Vec::new(), pos: 0, heartbeat, _slot: Some(slot) };
+    Reply {
+        status: 200,
+        ctype: "text/event-stream".into(),
+        body: Body::Stream(Box::new(reader)),
+        headers: vec![("Cache-Control".into(), "no-cache".into()), ("X-Accel-Buffering".into(), "no".into())],
+    }
+}

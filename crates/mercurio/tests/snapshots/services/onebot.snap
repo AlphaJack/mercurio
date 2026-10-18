@@ -1,0 +1,582 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_fail_skips_target:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                file: "base64://iVBORw0KGgo="
+              type: image
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                file: "base64://aGVsbG8="
+                name: notes.txt
+              type: file
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+  valid: true
+attach_only:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://aGVsbG8="
+                name: notes.txt
+              type: file
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+attach_post_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 2
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://iVBORw0KGgo="
+              type: image
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://iVBORw0KGgo="
+              type: image
+          user_id: 2
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://aGVsbG8="
+                name: notes.txt
+              type: file
+          user_id: 2
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+attachments:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://iVBORw0KGgo="
+              type: image
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                file: "base64://iVBORw0KGgo="
+              type: image
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://aGVsbG8="
+                name: notes.txt
+              type: file
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                file: "base64://aGVsbG8="
+                name: notes.txt
+              type: file
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://SUQz"
+              type: record
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                file: "base64://SUQz"
+              type: record
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+    - body:
+        json:
+          message:
+            - data:
+                file: "base64://AAAA"
+              type: video
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          group_id: 2
+          message:
+            - data:
+                file: "base64://AAAA"
+              type: video
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+  valid: true
+big_id:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 9999999999999999999
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+empty_body_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+http_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 2
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+invalid_mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 12345
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+list_body_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+no_host:
+  error: "OneBot: an invalid hostname or port was specified"
+  valid: false
+no_targets:
+  errors:
+    - "service error: there are no OneBot targets to notify"
+  ok: false
+  requests: []
+  valid: true
+retcode_fail:
+  errors:
+    - "service error: OneBot action failed: retcode=100, x"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+retcode_null:
+  errors:
+    - "service error: OneBot action failed: retcode=null, "
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+retcode_one:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+status_failed:
+  errors:
+    - "service error: OneBot action failed: retcode=0, "
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+title_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "T\r\nB"
+              type: text
+          user_id: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+to_param_sorted:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 111
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 222
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+    - body:
+        json:
+          group_id: 999
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_group_msg"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 12345
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+token_secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 12345
+      headers:
+        Authorization: Bearer tok en
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:5700/send_private_msg"
+    - body:
+        json:
+          group_id: 678
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+      headers:
+        Authorization: Bearer tok en
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:5700/send_group_msg"
+  valid: true
+user:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 12345
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/send_private_msg"
+  valid: true
+user_group_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          user_id: 12345
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:3000/send_private_msg"
+    - body:
+        json:
+          group_id: 67890
+          message:
+            - data:
+                text: "Mercurio Title\r\nMercurio Body"
+              type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:3000/send_group_msg"
+  valid: true

@@ -1,0 +1,6 @@
+{
+"cases":[
+{"name":"session_reused","url":"emby://l2g:l2gpass@localhost","sends":3,"responses":[{"body":{"AccessToken":"tok","Id":"u1"}},{"body":[{"Id":"s1"}]},{"status":204},{"body":[{"Id":"s1"}]},{"status":204},{"body":[{"Id":"s1"},{"Id":"s2"}]},{"status":204},{"status":200}]},
+{"name":"login_fails_then_works","url":"embys://l2g@localhost:1234","sends":2,"responses":[{"status":500},{"body":{"AccessToken":"tok","User":{"Id":"u2"}}},{"body":[{"Id":"s1"}]},{"status":200}]},
+{"name":"retry_skips_delivered","url":"emby://l2g:l2gpass@localhost?retry=1","sends":1,"responses":[{"body":{"AccessToken":"tok","Id":"u1"}},{"body":[{"Id":"s1"},{"Id":"s2"}]},{"status":204},{"status":500},{"body":[{"Id":"s1"},{"Id":"s2"}]},{"status":204}]}
+]}

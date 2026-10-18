@@ -1,0 +1,312 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_error:
+  errors:
+    - "service error: Viber error: invalidAuthToken"
+  ok: false
+  requests:
+    - body:
+        json:
+          receiver: t10
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+avatar:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: t3
+          sender:
+            avatar: "https://example.com/a.png"
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: targetx
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          receiver: target2
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+default_response_fails:
+  errors:
+    - "service error: Viber error: unknown"
+  ok: false
+  requests:
+    - body:
+        json:
+          receiver: targetx
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+empty:
+  error: "Viber: an invalid Viber authentication token was specified"
+  valid: false
+empty_slash:
+  error: "Viber: an invalid Viber authentication token was specified"
+  valid: false
+http_error:
+  errors:
+    - "HTTP 500: internal error"
+  ok: false
+  requests:
+    - body:
+        json:
+          receiver: targetZ
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+http_error_not_json:
+  errors:
+    - "service error: invalid JSON response from Viber"
+  ok: false
+  requests:
+    - body:
+        json:
+          receiver: targetZ
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+long_from_truncated:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: m12
+          sender:
+            name: abcdefghijklmnopqrstuvwxyz01
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+no_targets:
+  errors:
+    - "service error: there are no Viber receivers to notify"
+  ok: false
+  requests: []
+  valid: true
+not_json:
+  errors:
+    - "service error: invalid JSON response from Viber"
+  ok: false
+  requests:
+    - body:
+        json:
+          receiver: targetY
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+partial_failure:
+  errors:
+    - "service error: Viber error: unknown"
+  ok: false
+  requests:
+    - body:
+        json:
+          receiver: a1
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+    - body:
+        json:
+          receiver: a2
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+status_string_zero:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: m12
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+title_merged:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: m12
+          sender:
+            name: Mercurio Notifications
+          text: "T\r\nB é"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: t5
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+token_param_host_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: t1
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+    - body:
+        json:
+          receiver: t2
+          sender:
+            name: Mercurio Notifications
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true
+token_param_no_targets:
+  errors:
+    - "service error: there are no Viber receivers to notify"
+  ok: false
+  requests: []
+  valid: true
+two_targets_from:
+  ok: true
+  requests:
+    - body:
+        json:
+          receiver: t1
+          sender:
+            name: Viber Bot
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+    - body:
+        json:
+          receiver: t2
+          sender:
+            name: Viber Bot
+          text: "Mercurio Title\r\nMercurio Body"
+          type: text
+      headers:
+        Content-Type: application/json
+        X-Viber-Auth-Token: token
+      method: POST
+      url: "https://chatapi.viber.com/pa/send_message"
+  valid: true

@@ -1,0 +1,256 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+alpha_source_short_target:
+  errors:
+    - "invalid message: there are no valid 46elks targets to notify"
+  ok: false
+  requests: []
+  valid: true
+alpha_source_target:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - to
+            - "15551234512"
+          - - from
+            - Acme
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+    - body:
+        form:
+          - - to
+            - "+15551234513"
+          - - from
+            - Acme
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - to
+            - "+15551234578"
+          - - from
+            - "+15551234578"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+created_is_error:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - to
+            - "+15551234567"
+          - - from
+            - "+15551234567"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+elks_scheme:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - to
+            - "+15551234123"
+          - - from
+            - "+15551234123"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+empty:
+  error: "46elks: no 46elks password was specified"
+  valid: false
+from_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - to
+            - "+46701234534"
+          - - from
+            - Acme
+          - - message
+            - "t\r\nb"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - to
+            - "+15551234567"
+          - - from
+            - "+15551234567"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - to
+            - "+15551234511"
+          - - from
+            - Acme
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjE6cGFzcw==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+native_to_only:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - to
+            - "15551234511"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjE6cGFzcw==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+no_targets:
+  errors:
+    - "invalid message: there are no valid 46elks targets to notify"
+  ok: false
+  requests: []
+  valid: true
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - to
+            - "15551234512"
+          - - from
+            - Acme
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+    - body:
+        form:
+          - - to
+            - "15551234513"
+          - - from
+            - Acme
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+pass_only:
+  error: "46elks: no 46elks user was specified"
+  valid: false
+self:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - to
+            - "+15551234556"
+          - - from
+            - "+15551234556"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - to
+            - "15551234511"
+          - - from
+            - Acme
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+    - body:
+        form:
+          - - to
+            - "+15551234512"
+          - - from
+            - Acme
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.46elks.com/a1/sms"
+  valid: true
+user_only:
+  error: "46elks: no 46elks password was specified"
+  valid: false

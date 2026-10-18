@@ -1,0 +1,26 @@
+{
+"cases":[
+{"name":"empty","url":"smsc://"},
+{"name":"no_password","url":"smsc://login@+71234567890"},
+{"name":"no_login","url":"smsc://:password@+71234567890"},
+{"name":"basic","url":"smsc://login:password@+71234567890"},
+{"name":"two_targets","url":"smsc://login:password@+71234567890/+79876543210"},
+{"name":"sender","url":"smsc://login:password@+71234567890?sender=MySender"},
+{"name":"sender_blank","url":"smsc://login:password@+71234567890?sender=%20%20"},
+{"name":"translit","url":"smsc://login:password@+71234567890?translit=yes"},
+{"name":"translit_no","url":"smsc://login:password@+71234567890?translit=no"},
+{"name":"to","url":"smsc://login:password@+71234567890?to=%2B79876543210"},
+{"name":"with_invalid","url":"smsc://login:password@+71234567890/notaphone"},
+{"name":"only_invalid","url":"smsc://login:password@notaphone"},
+{"name":"http_500","url":"smsc://login:password@+71234567890","responses":[{"status":500}]},
+{"name":"http_201","url":"smsc://login:password@+71234567890","responses":[{"status":201}]},
+{"name":"conn_error","url":"smsc://login:password@+71234567890","responses":[{"error":true}]},
+{"name":"api_error","url":"smsc://login:password@+71234567890","responses":[{"status":200,"body":{"error":"invalid login","error_code":2}}]},
+{"name":"api_error_nomsg","url":"smsc://login:password@+71234567890","responses":[{"status":200,"body":{"error_code":99}}]},
+{"name":"api_ok","url":"smsc://login:password@+71234567890","responses":[{"status":200,"body":{"id":5,"cnt":1}}]},
+{"name":"not_json","url":"smsc://login:password@+71234567890","responses":[{"status":200,"body":"OK"}]},
+{"name":"list_json","url":"smsc://login:password@+71234567890","responses":[{"status":200,"body":[1,2]}]},
+{"name":"mms","url":"smsc://login:pass@+71234567890?sender=Biz&translit=yes","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="},{"name":"b.txt","mime":"text/plain","text":"hello"}]},
+{"name":"mms_error","url":"smsc://login:pass@+71234567890","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}],"responses":[{"status":200,"body":{"error_code":7}}]},
+{"name":"mms_http_fail","url":"smsc://login:pass@+71234567890","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}],"responses":[{"status":400}]}
+]}

@@ -1,0 +1,433 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all_targets_invalid:
+  errors:
+    - "invalid message: there are no SES email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+attachments:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+bad_reply:
+  error: "AWS Simple Email Service (SES): an invalid AWS Reply To address was specified"
+  valid: false
+blank:
+  error: "AWS Simple Email Service (SES): an invalid AWS Access Key ID was specified"
+  valid: false
+cc_equals_target_skipped:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - a@example.com
+          - - Destinations.member.2
+            - b@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - b@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+email_stops_secret:
+  error: "AWS Simple Email Service (SES): an invalid AWS Region was specified"
+  valid: false
+empty:
+  error: "AWS Simple Email Service (SES): an invalid AWS Access Key ID was specified"
+  valid: false
+first_fails_second_sent:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - a@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - b@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+format_text:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+http_403:
+  errors:
+    - "HTTP 403: Unauthorized - Invalid Access/Secret Key Combination."
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+invalid_region_param:
+  error: "AWS Simple Email Service (SES): an invalid AWS Region was specified"
+  valid: false
+key_alias_and_from_override:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - other@example.net
+          - - Source
+            - Mercurio Notifications <other@example.net>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.US-WEST-2.amazonaws.com"
+  valid: true
+name_reply_cc_bcc:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user2@example.com
+          - - Destinations.member.2
+            - hidden@example.com
+          - - Destinations.member.3
+            - ann@example.com
+          - - Source
+            - "=?utf-8?b?SsO2aG4gRMWT?= <user@example.com>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+no_from:
+  error: "AWS Simple Email Service (SES): an invalid AWS From address was specified"
+  valid: false
+no_region:
+  error: "AWS Simple Email Service (SES): an invalid AWS Region was specified"
+  valid: false
+no_secret:
+  error: "AWS Simple Email Service (SES): an invalid AWS Secret Access Key was specified"
+  valid: false
+query_only:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user2@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+reply_name_used_as_from:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user2@example.com
+          - - Source
+            - Rep Ly <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+self_notify:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+session_token_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+        X-Amz-Security-Token: TOK+x=
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+session_token_password:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+        X-Amz-Security-Token: SESSIONTOKEN
+      method: POST
+      url: "https://email.us-east-1.amazonaws.com"
+  valid: true
+status_202_fails:
+  errors:
+    - "HTTP 202: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true
+targets_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - user2@example.com
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+    - body:
+        form:
+          - - Action
+            - SendRawEmail
+          - - Version
+            - 2010-12-01
+          - - RawMessage.Data
+            - "<ignored>"
+          - - Destinations.member.1
+            - bob@example.org
+          - - Source
+            - Mercurio Notifications <user@example.com>
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://email.us-west-2.amazonaws.com"
+  valid: true

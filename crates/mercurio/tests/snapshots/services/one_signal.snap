@@ -1,0 +1,642 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_lang:
+  error: "OneSignal: an invalid OneSignal Language was specified"
+  valid: false
+batch_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - pid1
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user1
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user2
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+batch_yes:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - pid1
+            - pid2
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_email_tokens:
+            - a@b.com
+            - c@d.com
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user1
+            - user2
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          included_segments:
+            - seg1
+            - seg2
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+blank_apikey:
+  error: "OneSignal: an invalid OneSignal API key was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+contents_no_without_template:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+custom_decode:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          custom_data:
+            bad: "b64:invalid!"
+            par:
+              a: 1
+              b:
+                - 1
+                - 2
+            plain: x
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          template_id: templateid
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+custom_no_decode:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          custom_data:
+            par: "b64:eyJhIjogMX0="
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          template_id: templateid
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+custom_postback:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          custom_data:
+            key1: value1
+          data:
+            key3: value3
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          template_id: templateid
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+empty:
+  error: "OneSignal: an invalid OneSignal API key was specified"
+  valid: false
+empty_creds:
+  error: "OneSignal: an invalid OneSignal API key was specified"
+  valid: false
+lang_subtitle:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            es: Mercurio Body
+          headings:
+            es: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          subtitle:
+            es: Sub
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+language_precedence:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            fr: Mercurio Body
+          headings:
+            fr: Mercurio Title
+          include_player_ids:
+            - player
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          subtitle:
+            fr: Heads Up
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+mixed_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - player
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_email_tokens:
+            - user@email.com
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          included_segments:
+            - seg
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+no_app:
+  error: "OneSignal: an invalid OneSignal Application ID was specified"
+  valid: false
+no_targets:
+  errors:
+    - "invalid message: there are no OneSignal targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+partial_failure:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          included_segments:
+            - segment
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+player:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: b
+          headings:
+            en: t
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/success-72x72.png"
+          small_icon: "https://example.org/success-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+query_only:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: "123"
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          template_id: tp
+      headers:
+        Authorization: Basic abc
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+status_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+status_204:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+template:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          template_id: templateid
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+template_no_contents:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+          template_id: templateid
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_player_ids:
+            - playerid
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          included_segments:
+            - segment
+          large_icon: "https://example.org/info-72x72.png"
+          small_icon: "https://example.org/info-32x32.png"
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true
+user_no_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          app_id: appid
+          content_available: true
+          contents:
+            en: Mercurio Body
+          headings:
+            en: Mercurio Title
+          include_external_user_ids:
+            - user
+      headers:
+        Authorization: Basic apikey
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.onesignal.com/notifications"
+  valid: true

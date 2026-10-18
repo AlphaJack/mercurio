@@ -1,0 +1,776 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+blank_project:
+  error: "Firebase Cloud Messaging: the FCM legacy API (server key) was shut down in July 2024: give the project ID and ?keyfile= with a service account JSON key"
+  valid: false
+color_hex:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            android:
+              notification:
+                color: "#aabbcc"
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+color_no:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+color_short:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            android:
+              notification:
+                color: "#aa11bb"
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+color_yes:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            android:
+              notification:
+                color: "#3AA337"
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+data_kwargs:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            data:
+              key: value
+              key2: value2
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+empty:
+  error: "Firebase Cloud Messaging: the FCM legacy API (server key) was shut down in July 2024: give the project ID and ?keyfile= with a service account JSON key"
+  valid: false
+image_url:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              image: "https://example.com/i.png"
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+image_url_no:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+image_yes:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              image: "https://example.org/warning-256x256.png"
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+legacy_api_key:
+  error: "Firebase Cloud Messaging: the FCM legacy API (server key) was shut down in July 2024: give the project ID and ?keyfile= with a service account JSON key"
+  valid: false
+legacy_apikey_query:
+  error: "Firebase Cloud Messaging: the FCM legacy API (server key) was shut down in July 2024: give the project ID and ?keyfile= with a service account JSON key"
+  valid: false
+legacy_mode:
+  error: "Firebase Cloud Messaging: the FCM legacy API (server key) was shut down in July 2024: give the project ID and ?keyfile= with a service account JSON key"
+  valid: false
+mode_empty:
+  error: "Firebase Cloud Messaging: the FCM mode specified is invalid"
+  valid: false
+mode_invalid:
+  error: "Firebase Cloud Messaging: the FCM mode specified is invalid"
+  valid: false
+multi:
+  errors:
+    - "send: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            topic: topic1
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+no_host:
+  error: "Firebase Cloud Messaging: the FCM legacy API (server key) was shut down in July 2024: give the project ID and ?keyfile= with a service account JSON key"
+  valid: false
+no_targets:
+  errors:
+    - "Firebase Cloud Messaging: there are no FCM devices or topics to notify"
+  ok: false
+  requests: []
+  valid: true
+oauth_bad_key:
+  errors:
+    - "service error: FCM provided private key is invalid"
+  ok: false
+  requests: []
+  valid: true
+oauth_bad_type:
+  errors:
+    - "service error: FCM keyfile is not of type service_account"
+  ok: false
+  requests: []
+  valid: true
+oauth_basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            topic: topic
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+oauth_blank_project:
+  error: "Firebase Cloud Messaging: an invalid FCM Project ID was specified"
+  valid: false
+oauth_file_url:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            android:
+              notification:
+                color: "#12aabb"
+              priority: HIGH
+            apns:
+              headers:
+                apns-priority: "10"
+                apns-push-type: alert
+            data:
+              a: b
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+            webpush:
+              headers:
+                Urgency: high
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+oauth_invalid_path:
+  errors:
+    - "service error: FCM keyfile could not be accessed"
+  ok: false
+  requests: []
+  valid: true
+oauth_missing_email:
+  errors:
+    - "service error: FCM keyfile is missing required information"
+  ok: false
+  requests: []
+  valid: true
+oauth_missing_keyfile:
+  error: "Firebase Cloud Messaging: no FCM JSON KeyFile was specified"
+  valid: false
+oauth_not_json:
+  errors:
+    - "service error: FCM keyfile is not valid JSON"
+  ok: false
+  requests: []
+  valid: true
+oauth_pkcs1_custom_uri:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://example.com/oauth/token"
+    - body:
+        json:
+          message:
+            android:
+              priority: NORMAL
+            apns:
+              headers:
+                apns-priority: "5"
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+            webpush:
+              headers:
+                Urgency: very-low
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+oauth_project_query:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              image: "https://example.org/info-256x256.png"
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+oauth_send_fail:
+  errors:
+    - "send: HTTP 404: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: a
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: b
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+oauth_token_bad_expiry:
+  errors:
+    - "token: service error: FCM access token could not be acquired"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+  valid: true
+oauth_token_fail:
+  errors:
+    - "token: HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+  valid: true
+oauth_token_no_access:
+  errors:
+    - "token: service error: FCM access token could not be acquired"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+  valid: true
+oauth_wrong_project:
+  errors:
+    - "service error: FCM keyfile identifies itself for a different project"
+  ok: false
+  requests: []
+  valid: true
+priority_invalid:
+  error: "Firebase Cloud Messaging: an invalid FCM Priority was specified"
+  valid: false
+priority_low:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            android:
+              priority: NORMAL
+            apns:
+              headers:
+                apns-priority: "5"
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+            webpush:
+              headers:
+                Urgency: low
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+priority_max:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            android:
+              priority: HIGH
+            apns:
+              headers:
+                apns-priority: "10"
+                apns-push-type: alert
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            topic: t
+            webpush:
+              headers:
+                Urgency: high
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+    - body:
+        json:
+          message:
+            android:
+              priority: HIGH
+            apns:
+              headers:
+                apns-priority: "10"
+                apns-push-type: alert
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+            webpush:
+              headers:
+                Urgency: high
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+send_400:
+  errors:
+    - "send: HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+send_conn_error:
+  errors:
+    - "send: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            topic: topic1
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            token: device
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true
+topic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - assertion
+            - "<ignored>"
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth2.googleapis.com/token"
+    - body:
+        json:
+          message:
+            notification:
+              body: Mercurio Body
+              title: Mercurio Title
+            topic: topic
+      headers:
+        Authorization: Bearer ya29.token
+        Content-Type: application/json
+      method: POST
+      url: "https://fcm.googleapis.com/v1/projects/mercurio-project/messages:send"
+  valid: true

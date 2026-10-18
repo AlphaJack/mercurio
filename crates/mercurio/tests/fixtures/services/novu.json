@@ -1,0 +1,17 @@
+{
+"source":"hand-written from vendor API docs https://docs.novu.co/api-reference/events/trigger-event",
+"cases":[
+{"name":"empty","url":"novu://"},
+{"name":"no_workflow","url":"novu://apikey"},
+{"name":"no_subscriber","url":"novu://apikey/welcome"},
+{"name":"bad_region","url":"novu://apikey/welcome/sub1?region=mars"},
+{"name":"bad_host","url":"novu://apikey/welcome/sub1?host=bad_host!"},
+{"name":"basic","url":"novu://apikey/welcome/sub1","responses":[{"status":201,"body":{"data":{"acknowledged":true,"status":"processed"}}}]},
+{"name":"mixed_recipients_type","url":"novu://apikey/welcome/sub1/user@example.com/+15551234567","type":"failure","responses":[{"status":201,"body":{"data":{"acknowledged":true}}}]},
+{"name":"eu_region_to_param","url":"novu://apikey/welcome?region=EU&to=a,b","responses":[{"status":201}]},
+{"name":"self_hosted_extras","url":"novu://apikey/welcome/sub1?host=novu.example.com:3000/api&transaction=tx-1&:env=prod&+X-Trace=abc","responses":[{"status":201}]},
+{"name":"self_hosted_http","url":"novu://apikey/welcome/sub1?host=http://10.0.0.5:3000","responses":[{"status":201}]},
+{"name":"not_acknowledged","url":"novu://apikey/welcome/sub1","responses":[{"status":201,"body":{"data":{"acknowledged":false,"status":"error"}}}]},
+{"name":"unauthorized","url":"novu://apikey/welcome/sub1","responses":[{"status":401,"body":{"message":"API Key not found"}}]},
+{"name":"connection_error","url":"novu://apikey/welcome/sub1","responses":[{"error":true}]}
+]}

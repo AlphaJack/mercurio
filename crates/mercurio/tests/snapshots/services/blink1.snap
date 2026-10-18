@@ -1,0 +1,511 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+duration_max:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 300
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+duration_negative:
+  error: "blink(1): blink(1) duration must be between 0 and 300000 ms"
+  valid: false
+duration_over:
+  error: "blink(1): blink(1) duration must be between 0 and 300000 ms"
+  valid: false
+duration_spaces:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 0.5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+duration_text:
+  error: "blink(1): blink(1) duration must be an integer"
+  valid: false
+fade_large:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 3
+        - 232
+        - 0
+        - 0
+    - sleep: 15
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+fade_negative:
+  error: "blink(1): blink(1) fade must be between 0 and 10000 ms"
+  valid: false
+fade_odd:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 1
+        - 0
+        - 0
+    - sleep: 0.02
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+fade_over:
+  error: "blink(1): blink(1) fade must be between 0 and 10000 ms"
+  valid: false
+fade_text:
+  error: "blink(1): blink(1) fade must be an integer"
+  valid: false
+ledn_1:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 1
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 1
+        - 0
+    - close: true
+  ok: true
+  valid: true
+ledn_2:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 20
+        - 2
+        - 0
+    - sleep: 0.3
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 2
+        - 0
+    - close: true
+  ok: true
+  valid: true
+ledn_all:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+ledn_unknown:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+off_fails:
+  errors:
+    - "service error: blink1-tool exited with status 1"
+  ok: false
+  valid: true
+open_fails:
+  errors:
+    - "service error: blink1-tool exited with status 1"
+  ok: false
+  valid: true
+serial:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ABCD1234
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+serial_fade_duration:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ABCD1234
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 10
+        - 0
+        - 0
+    - sleep: 0.15
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+types_failure:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 163
+        - 32
+        - 55
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+types_success:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 55
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+types_warning:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 202
+        - 207
+        - 41
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+underscore:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 5
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true
+zeroes:
+  events:
+    - open:
+        - 10168
+        - 493
+        - ~
+    - report:
+        - 1
+        - 99
+        - 58
+        - 163
+        - 227
+        - 0
+        - 0
+        - 0
+        - 0
+    - sleep: 0
+    - report:
+        - 1
+        - 99
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    - close: true
+  ok: true
+  valid: true

@@ -1,0 +1,255 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: target
+      headers:
+        Authorization: Bearer token=
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: target
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+error_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: target
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: t1
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: t2
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+image_off:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: target
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+invalid_blank:
+  error: "Line: an invalid Access Token was specified"
+  valid: false
+invalid_empty:
+  error: "Line: an invalid Access Token was specified"
+  valid: false
+long_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: target
+      headers:
+        Authorization: Bearer a/very/long/token=
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+multi_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: just body
+              type: text
+          to: target1
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: just body
+              type: text
+          to: target2
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+no_targets:
+  errors:
+    - "invalid message: there were no Line targets to notify"
+  ok: false
+  requests: []
+  valid: true
+title_merge:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "My Title\r\nMy Body"
+              type: text
+          to: target
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+to_split:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: a
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: b
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: c
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true
+token_param_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - sender:
+                iconUrl: "https://example.org/info-128x128.png"
+                name: Mercurio
+              text: "Mercurio Title\r\nMercurio Body"
+              type: text
+          to: target1
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.line.me/v2/bot/message/push"
+  valid: true

@@ -1,0 +1,356 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachment:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          attachments:
+            - fileblob: iVBORw0KGgo=
+              filename: a.png
+              mimetype: image/png
+            - fileblob: aGVsbG8=
+              filename: b.txt
+              mimetype: text/plain
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbb-cccccccc
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: no-reply@example.com
+          subject: Mercurio Title
+          to:
+            - user1@example.com
+            - User2 <user2@example.com>
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+bcc_cc:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          bcc:
+            - user@example.com
+          cc:
+            - Chris <user2@example.com>
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+created_is_failure:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+empty:
+  error: "SMTP2Go: an invalid SMTP2Go API Key was specified"
+  valid: false
+empty_creds:
+  error: "SMTP2Go: an invalid SMTP2Go API Key was specified"
+  valid: false
+from_name:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: Jo Doe <user@localhost.localdomain>
+          subject: Mercurio Title
+          to:
+            - Jo Doe <user@localhost.localdomain>
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+from_name_utf8_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: "=?utf-8?b?SsO2cmc=?= <user@localhost.localdomain>"
+          subject: Mercurio Title
+          to:
+            - Bob <bob@example.com>
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbb-cccccccc
+          custom_headers:
+            - header: X-Customer-Campaign-ID
+              value: Mercurio
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+invalid_to:
+  errors:
+    - "service error: there are no Email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbb-cccccccc
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          text_body: Mercurio Body
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+multi_partial:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - a@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - b@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+multi_with_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          bcc:
+            - user3@example.com
+          cc:
+            - Da <user5@example.com>
+          html_body: Mercurio Body
+          sender: user@example.com
+          subject: Mercurio Title
+          to:
+            - user1@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+    - body:
+        json:
+          api_key: key
+          bcc:
+            - user3@example.com
+          cc:
+            - Da <user5@example.com>
+          html_body: Mercurio Body
+          sender: user@example.com
+          subject: Mercurio Title
+          to:
+            - User2 <user2@example.com>
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+no_apikey:
+  error: "SMTP2Go: an invalid SMTP2Go API Key was specified"
+  valid: false
+no_user:
+  error: "SMTP2Go: no SMTP2Go username was specified"
+  valid: false
+one_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - test@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+quote_user:
+  error: "SMTP2Go: invalid ~From~ email format"
+  valid: false
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+text:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbb-cccccccc
+          sender: user@localhost.localdomain
+          subject: ""
+          text_body: Mercurio Body
+          to:
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          api_key: key
+          html_body: Mercurio Body
+          sender: user@localhost.localdomain
+          subject: Mercurio Title
+          to:
+            - test@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.smtp2go.com/v3/email/send"
+  valid: true
+trailing_slash_no_key:
+  error: "SMTP2Go: an invalid SMTP2Go API Key was specified"
+  valid: false

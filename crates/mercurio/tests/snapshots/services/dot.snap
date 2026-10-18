@@ -1,0 +1,346 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_only:
+  ok: true
+  requests:
+    - body:
+        json:
+          image: iVBORw0KGgo=
+          refreshNow: true
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/image"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+empty:
+  error: "Dot.: an invalid hostname or port was specified"
+  valid: false
+err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+err_first_of_two:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+    - body:
+        json:
+          image: Zm9v
+          refreshNow: true
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/image"
+  valid: true
+image_mode_attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          image: iVBORw0KGgo=
+          refreshNow: true
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device/image"
+  valid: true
+image_mode_bad_border:
+  ok: true
+  requests:
+    - body:
+        json:
+          image: Zm9vYmFy
+          refreshNow: true
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device/image"
+  valid: true
+image_mode_no_image:
+  errors:
+    - "service error: image mode selected but no image data was provided"
+  ok: false
+  requests: []
+  valid: true
+image_mode_opts:
+  ok: true
+  requests:
+    - body:
+        json:
+          border: 1
+          ditherKernel: ATKINSON
+          ditherType: ORDERED
+          image: Zm9vYmFy
+          refreshNow: false
+          taskKey: k1
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device/image"
+  valid: true
+image_mode_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          image: Zm9vYmFy
+          link: "https://example.com"
+          refreshNow: true
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device/image"
+  valid: true
+image_mode_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          image: ZmFrZUJhc2U2NA==
+          refreshNow: true
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/image"
+  valid: true
+image_mode_qs_wins:
+  ok: true
+  requests:
+    - body:
+        json:
+          image: Zm9vYmFy
+          refreshNow: true
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device/image"
+  valid: true
+mode_bad_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+mode_text_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+mode_text_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+mode_unknown_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+no_apikey:
+  errors:
+    - "service error: no Dot API key or device id was specified"
+  ok: false
+  requests: []
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: b
+          refreshNow: true
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+ok_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+refresh_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: false
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+refresh_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: false
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+signature:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon: abc
+          link: "https://example.com"
+          message: Mercurio Body
+          refreshNow: true
+          signature: test_signature
+          taskKey: t
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+  valid: true
+text_plus_attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+    - body:
+        json:
+          image: iVBORw0KGgo=
+          refreshNow: true
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/image"
+  valid: true
+text_plus_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          refreshNow: true
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/text"
+    - body:
+        json:
+          image: ZmFrZUJhc2U2NA==
+          refreshNow: true
+      headers:
+        Authorization: Bearer apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://dot.mindreset.tech/api/authV2/open/device/device_id/image"
+  valid: true

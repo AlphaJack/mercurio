@@ -1,0 +1,8 @@
+{
+"cases":[
+{"name":"lookup_cached","url":"mmost://team@localhost/token?mode=bot&to=%23chan","sends":3,"responses":[{"status":200,"body":{"id":"resolved1"}},{"status":201},{"status":201},{"status":201}]},
+{"name":"lookup_cached_secure_port_path","url":"mmosts://team@localhost:8443/sub/path/token?mode=bot&to=%23chan,id1","sends":2,"responses":[{"status":200,"body":{"id":"resolved1"}},{"status":201},{"status":201},{"status":201},{"status":201}]},
+{"name":"failed_lookup_not_cached","url":"mmost://localhost/token?team=my%20team&to=%23chan","sends":2,"responses":[{"status":404},{"status":200,"body":{"id":"r2"}},{"status":200}]},
+{"name":"post_fails_lookup_kept","url":"mmost://team@localhost/token?mode=bot&to=%23chan","sends":2,"responses":[{"status":200,"body":{"id":"resolved1"}},{"status":500},{"status":201}]},
+{"name":"webhook_url_id","url":"mmost://user@localhost:8065/token","sends":2}
+]}

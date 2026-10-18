@@ -1,0 +1,15 @@
+{
+"cases":[
+{"name":"empty","url":"spike://"},
+{"name":"invalid_key","url":"spike://invalid-key"},
+{"name":"basic","url":"spike://1234567890abcdef1234567890abcdef"},
+{"name":"token_param","url":"spike://?token=1234567890ABCDEF1234567890abcdef"},
+{"name":"native","url":"https://api.spike.sh/v1/alerts/1234567890abcdef1234567890abcdef"},
+{"name":"native_bad","url":"https://api.spike.sh/v1/alerts/1234567890abcdef"},
+{"name":"no_title","url":"spike://1234567890abcdef1234567890abcdef","title":""},
+{"name":"type_failure","url":"spike://1234567890abcdef1234567890abcdef","type":"failure","title":"t","body":"b"},
+{"name":"http_500","url":"spike://1234567890abcdef1234567890abcdef","responses":[{"status":500}]},
+{"name":"http_201","url":"spike://1234567890abcdef1234567890abcdef","responses":[{"status":201}]},
+{"name":"conn_error","url":"spike://ffffffffffffffffffffffffffffffff","responses":[{"error":true}]},
+{"name":"too_long_key","url":"spike://1234567890abcdef1234567890abcdef0"}
+]}

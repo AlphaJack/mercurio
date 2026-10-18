@@ -1,0 +1,574 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+cloud:
+  ok: true
+  requests:
+    - body:
+        json:
+          frames:
+            - icon: i620
+              index: 0
+              text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Cache-Control: no-cache
+        Content-Type: application/json
+        X-Access-Token: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT==
+      method: POST
+      url: "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.941c51dff3135bd87aa72db9d855dd50/1"
+  valid: true
+cloud_bad_token:
+  error: "LaMetric: an invalid LaMetric Application Access Token was specified"
+  valid: false
+cloud_bad_ver:
+  error: "LaMetric: an invalid LaMetric Application Version was specified"
+  valid: false
+cloud_options:
+  ok: true
+  requests:
+    - body:
+        json:
+          frames:
+            - icon: heart
+              index: 0
+              text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Cache-Control: no-cache
+        Content-Type: application/json
+        X-Access-Token: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT==
+      method: POST
+      url: "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.abcd/1"
+  valid: true
+cloud_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          frames:
+            - icon: i620
+              index: 0
+              text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Cache-Control: no-cache
+        Content-Type: application/json
+        X-Access-Token: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT==
+      method: POST
+      url: "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.941c51dff3135bd87aa72db9d855dd50/1"
+  valid: true
+cloud_qs_ver:
+  ok: true
+  requests:
+    - body:
+        json:
+          frames:
+            - icon: i620
+              index: 0
+              text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Cache-Control: no-cache
+        Content-Type: application/json
+        X-Access-Token: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT==
+      method: POST
+      url: "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.941c51dff3135bd87aa72db9d855dd50/5"
+  valid: true
+cloud_ver:
+  ok: true
+  requests:
+    - body:
+        json:
+          frames:
+            - icon: i620
+              index: 0
+              text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Cache-Control: no-cache
+        Content-Type: application/json
+        X-Access-Token: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT==
+      method: POST
+      url: "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.941c51dff3135bd87aa72db9d855dd50/2"
+  valid: true
+colon_at:
+  error: "LaMetric: an invalid LaMetric Application Access Token was specified"
+  valid: false
+cycles_2:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 2
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.1.3:8080/api/v2/device/notifications"
+  valid: true
+cycles_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.1.5:8080/api/v2/device/notifications"
+  valid: true
+cycles_neg:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 3
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.1.4:8080/api/v2/device/notifications"
+  valid: true
+device_apikey_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2Og==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.2.8:8080/api/v2/device/notifications"
+  valid: true
+device_default_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i9182
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.0.5:8080/api/v2/device/notifications"
+  valid: true
+device_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i9184
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.0.4:8000/api/v2/device/notifications"
+  valid: true
+device_secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i9183
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.0.6:8080/api/v2/device/notifications"
+  valid: true
+device_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic cm9vdDo4Yjc5OWVkZi02Zjk4LTRkM2EtOWJlNy0yODYyZmI0ZTU3NTI=
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.0.5:8080/api/v2/device/notifications"
+  valid: true
+empty:
+  error: "LaMetric: an invalid LaMetric Application Access Token was specified"
+  valid: false
+hostname_err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://example.com:8080/api/v2/device/notifications"
+  valid: true
+icon_230:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: "230"
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.1.2:8080/api/v2/device/notifications"
+  valid: true
+icon_hash:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: "230"
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.1.2:8080/api/v2/device/notifications"
+  valid: true
+icon_hash_spaces:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: heart
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.1.2:8080/api/v2/device/notifications"
+  valid: true
+icon_type_alert:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: alert
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: critical
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.0.9:8080/api/v2/device/notifications"
+  valid: true
+icon_type_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.0.10:8080/api/v2/device/notifications"
+  valid: true
+mode_invalid:
+  error: "LaMetric: an invalid LaMetric Mode was specified"
+  valid: false
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          frames:
+            - icon: i620
+              index: 0
+              text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Cache-Control: no-cache
+        Content-Type: application/json
+        X-Access-Token: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT==
+      method: POST
+      url: "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.941c51dff3135bd87aa72db9d855dd50/1"
+  valid: true
+native_nover:
+  ok: true
+  requests:
+    - body:
+        json:
+          frames:
+            - icon: i620
+              index: 0
+              text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Cache-Control: no-cache
+        Content-Type: application/json
+        X-Access-Token: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT==
+      method: POST
+      url: "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.941c51dff3135bd87aa72db9d855dd50/1"
+  valid: true
+ok_201:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://example.com:8080/api/v2/device/notifications"
+  valid: true
+sound_alarm1:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+            sound:
+              category: alarms
+              id: alarm13
+              repeat: 1
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.0.6:8080/api/v2/device/notifications"
+  valid: true
+sound_bike:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+            sound:
+              category: notifications
+              id: bicycle
+              repeat: 1
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.0.7:8080/api/v2/device/notifications"
+  valid: true
+sound_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.0.8:8080/api/v2/device/notifications"
+  valid: true
+sound_thunder_t:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Mercurio Title\r\nMercurio Body"
+            sound:
+              category: notifications
+              id: thunder
+              repeat: 1
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "https://192.168.0.7:8080/api/v2/device/notifications"
+  valid: true
+title_merge:
+  ok: true
+  requests:
+    - body:
+        json:
+          icon_type: none
+          lifetime: 120000
+          model:
+            cycles: 1
+            frames:
+              - icon: i620
+                text: "Hi\r\nThere"
+          priority: info
+      headers:
+        Accept: application/json
+        Authorization: Basic ZGV2OjhiNzk5ZWRmLTZmOTgtNGQzYS05YmU3LTI4NjJmYjRlNTc1Mg==
+        Cache-Control: no-cache
+        Content-Type: application/json
+      method: POST
+      url: "http://example.com:8080/api/v2/device/notifications"
+  valid: true
+uuid_host_only:
+  error: "LaMetric: an invalid LaMetric Application Access Token was specified"
+  valid: false

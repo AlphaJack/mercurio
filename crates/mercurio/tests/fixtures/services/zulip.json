@@ -1,0 +1,24 @@
+{
+"cases":[
+{"name":"empty","url":"zulip://"},
+{"name":"blank","url":"zulip://:@/"},
+{"name":"no_bot","url":"zulip://mercurio"},
+{"name":"no_token","url":"zulip://botname@mercurio"},
+{"name":"short_token","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"bad_botname","url":"zulip://....@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"bot_suffix","url":"zulip://bot-name-bot@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"basic","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"full_host","url":"zulip://botname@mercurio.zulipchat.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"custom_host","url":"zulip://botname@myorg.chat.example.org/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","title":"","body":"no subject"},
+{"name":"channels","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/channel2/channel1"},
+{"name":"to_param","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/?to=channel1/channel2%23chan3"},
+{"name":"token_param","url":"zulip://botname@mercurio/?token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&to=channel1"},
+{"name":"token_param_path_targets","url":"zulip://botname@mercurio/streamA?token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"emails","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/user@example.com/user2@example.com","type":"warning"},
+{"name":"hash_stream","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/%23mystream"},
+{"name":"long_title","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","title":"0123456789012345678901234567890123456789012345678901234567890123456789"},
+{"name":"partial_fail","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/a/b","responses":[{"status":401},{"status":200}]},
+{"name":"http_500","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"status":500}]},
+{"name":"http_201_fails","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"status":201}]},
+{"name":"conn_error","url":"zulip://botname@mercurio/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"error":true}]}
+]}

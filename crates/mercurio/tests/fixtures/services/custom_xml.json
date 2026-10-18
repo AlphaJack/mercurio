@@ -1,0 +1,11 @@
+{
+"cases":[
+{"name":"basic","url":"xml://localhost"},
+{"name":"auth_port_path","url":"xmls://user:pass@localhost:8080/path/to/hook"},
+{"name":"escape","url":"xml://localhost","title":"<b>T & 'q'</b>","body":"a \"b\" <c>"},
+{"name":"payload_remap","url":"xml://localhost/?:Subject=Title&:Message=&:Extra=val&:bad!!key=x&:!!!=y"},
+{"name":"headers","url":"xml://localhost/?+X-Custom=yes&method=put"},
+{"name":"attachment","url":"xml://localhost","attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"method_invalid","url":"xml://localhost/?method=invalid"},
+{"name":"server_error","url":"xml://localhost","responses":[{"status":500}]}
+]}

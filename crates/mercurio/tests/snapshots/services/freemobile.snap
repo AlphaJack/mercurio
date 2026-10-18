@@ -1,0 +1,137 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: password
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+blank_creds:
+  error: "Free-Mobile: a FreeMobile user and password combination was not provided"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: password
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+empty:
+  error: "Free-Mobile: a FreeMobile user and password combination was not provided"
+  valid: false
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: password
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: password
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: password
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+no_user:
+  error: "Free-Mobile: a FreeMobile user and password combination was not provided"
+  valid: false
+query_creds:
+  ok: true
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: password
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+quoted:
+  ok: true
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: pass/word
+          user: us er
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+title_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          msg: only body ✓
+          pass: password
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true
+user_pass_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          msg: "Mercurio Title\r\nMercurio Body"
+          pass: pass
+          user: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://smsapi.free-mobile.fr/sendmsg"
+  valid: true

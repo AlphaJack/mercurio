@@ -1,0 +1,16 @@
+{
+"pipeline":{"url":"gotify://hostname/abcd1234"},
+"cases":[
+{"name":"basic","url":"gotify://hostname/abcd1234"},
+{"name":"secure_port_path","url":"gotifys://user:pass@hostname:8443/a/path/abcd1234/"},
+{"name":"priority_high","url":"gotify://hostname/abcd1234?priority=high","type":"warning"},
+{"name":"priority_numeric","url":"gotify://hostname/abcd1234?priority=4"},
+{"name":"priority_invalid","url":"gotify://hostname/abcd1234?priority=invalid"},
+{"name":"markdown","url":"gotify://hostname/abcd1234?format=markdown","title":"# Title","body":"**bold**"},
+{"name":"no_token","url":"gotify://hostname"},
+{"name":"no_title","url":"gotify://hostname/abcd1234","title":""},
+{"name":"server_error","url":"gotify://hostname/abcd1234","responses":[{"status":500,"body":"server error"}]},
+{"name":"non_200_success","url":"gotify://hostname/abcd1234","responses":[{"status":204,"body":""}]},
+{"name":"connection_error","url":"gotify://hostname/abcd1234","responses":[{"error":true}]},
+{"name":"verify_off","url":"gotifys://hostname/abcd1234?verify=no"}
+]}

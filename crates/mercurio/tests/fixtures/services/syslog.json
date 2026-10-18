@@ -1,0 +1,22 @@
+{
+"cases":[
+{"name":"default","url":"syslog://"},
+{"name":"empty_auth","url":"syslog://:@/"},
+{"name":"no_pid_perror","url":"syslog://?logpid=no&logperror=yes","body":"body"},
+{"name":"title_body","url":"syslog://","title":"title","body":"body"},
+{"name":"no_title","url":"syslog://","title":"","body":"just a body"},
+{"name":"facility_arg","url":"syslog://_/?facility=local5"},
+{"name":"facility_invalid","url":"syslog://_/?facility=invalid"},
+{"name":"facility_prefix","url":"syslog://_/?facility=d"},
+{"name":"facility_host","url":"syslog://kern?logpid=no&logperror=y"},
+{"name":"facility_arg_overrides_host","url":"syslog://kern?facility=d"},
+{"name":"facility_path","url":"syslog://_/cron"},
+{"name":"facility_local7","url":"syslog://local7/"},
+{"name":"facility_upper","url":"syslog://MAIL"},
+{"name":"facility_bad_host","url":"syslog://notafacility"},
+{"name":"type_success","url":"syslog://","type":"success"},
+{"name":"type_warning","url":"syslog://auth","type":"warning"},
+{"name":"type_failure","url":"syslog://daemon","type":"failure"},
+{"name":"multiline","url":"syslog://","body":"line one\nline two"},
+{"name":"unicode","url":"syslog://","title":"Grüße","body":"✓ done"}
+]}

@@ -1,0 +1,140 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+blank:
+  error: "Techulus Push: an invalid Techulus Push API key was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+empty:
+  error: "Techulus Push: an invalid Techulus Push API key was specified"
+  valid: false
+err_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+err_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+invalid_key:
+  error: "Techulus Push: an invalid Techulus Push API key was specified"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: ""
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+not_v4:
+  error: "Techulus Push: an invalid Techulus Push API key was specified"
+  valid: false
+ok_204:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+title_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: World
+          title: Hello
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+valid:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789abc
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true
+valid_upper:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        x-api-key: 12345678-1234-4123-8123-123456789ABC
+      method: POST
+      url: "https://push.techulus.com/api/v1/notify"
+  valid: true

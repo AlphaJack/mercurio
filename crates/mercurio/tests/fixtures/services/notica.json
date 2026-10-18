@@ -1,0 +1,25 @@
+{
+"cases":[
+{"name":"empty","url":"notica://"},
+{"name":"empty_creds","url":"notica://:@/"},
+{"name":"native","url":"https://notica.us/?zzzzzz"},
+{"name":"native_params","url":"https://notica.us/?zzzzzz&overflow=upstream"},
+{"name":"official","url":"notica://aaaaaa","title":"My Title","body":"line1\nline2"},
+{"name":"official_no_title","url":"notica://aaaaaa","title":""},
+{"name":"selfhosted","url":"notica://localhost/bbbbbb"},
+{"name":"selfhosted_user","url":"notica://user@localhost/cccccc"},
+{"name":"selfhosted_userpass","url":"notica://user:pass@localhost/dddddd/"},
+{"name":"selfhosted_path","url":"notica://user:pass@localhost/a/path/rrrrrr/"},
+{"name":"selfhosted_port","url":"notica://localhost:8080/aaaaaa"},
+{"name":"secure","url":"noticas://localhost/jjjjjj"},
+{"name":"secure_port_path","url":"noticas://localhost:8080/path/555555"},
+{"name":"secure_userpass_port","url":"noticas://user:pass@localhost:8080/666666"},
+{"name":"headers","url":"notica://localhost:8080//777777/?+HeaderKey=HeaderValue"},
+{"name":"headers_ignored_official","url":"notica://777777/?+HeaderKey=HeaderValue"},
+{"name":"no_host_path","url":"notica:///tokenonly"},
+{"name":"error_500","url":"notica://cccccc","responses":[{"status":500}]},
+{"name":"error_999","url":"notica://ddddddd","responses":[{"status":999}]},
+{"name":"status_201_fails","url":"notica://localhost/eeeeee","responses":[{"status":201}]},
+{"name":"conn_error","url":"notica://eeeeeeee","responses":[{"error":true}]},
+{"name":"type_failure","url":"notica://aaaaaa","type":"failure","body":"a & b = c"}
+]}

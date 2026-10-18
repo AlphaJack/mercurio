@@ -1,0 +1,609 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+a128:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+a129:
+  error: "Apprise API: the Apprise API token specified is invalid"
+  valid: false
+a32:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+auth_port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - t
+          - - body
+            - b
+          - - type
+            - failure
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: mytoken2
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost:8080/notify"
+  valid: true
+bad_method:
+  error: "Apprise API: the method specified is invalid"
+  valid: false
+bang:
+  error: "Apprise API: the Apprise API token specified is invalid"
+  valid: false
+caller_format:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+          - - format
+            - markdown
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: mytoken0
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+caller_format_json:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          format: html
+          title: Mercurio Title
+          type: info
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Apprise-Config-ID: mytoken0
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+colon_at:
+  error: "Apprise API: an invalid hostname or port was specified"
+  valid: false
+empty:
+  error: "Apprise API: an invalid hostname or port was specified"
+  valid: false
+err_204:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+form_attach:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: title
+            value: Mercurio Title
+          - name: body
+            value: Mercurio Body
+          - name: type
+            value: info
+          - name: tag
+            value: a
+          - name: tag
+            value: b
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: file01
+          - b64: aGVsbG8=
+            content_type: text/plain
+            filename: note.txt
+            name: file02
+      headers:
+        Accept: application/json
+        Content-Type: multipart/form-data
+        X-Apprise-Config-ID: tok
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+format_override:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+          - - format
+            - markdown
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: mytoken0
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+format_override_json:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          format: html
+          title: Mercurio Title
+          type: info
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/json
+        X-Apprise-Config-ID: mytoken0
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        HeaderKey: HeaderValue
+        X-Apprise-Config-ID: path
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "https://localhost:8080/notify"
+  valid: true
+json:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+          type: warning
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Apprise-Config-ID: abc123
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "https://localhost:8080/notify"
+  valid: true
+json_attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - base64: iVBORw0KGgo=
+              filename: a.png
+              mimetype: image/png
+            - base64: aGVsbG8=
+              filename: note.txt
+              mimetype: text/plain
+          body: Mercurio Body
+          title: Mercurio Title
+          type: info
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Apprise-Config-ID: tok
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://example.com/notify/dddddddddddddddddddddddddddddddd"
+  valid: true
+native_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "https://example.com/path/notify/dddddddddddddddddddddddddddddddd"
+  valid: true
+native_port_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          tag:
+            - x
+          title: Mercurio Title
+          type: info
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://example.com:8000/a/b/notify/tok"
+  valid: true
+native_v2:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: dddddddddddddddddddddddddddddddd
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://example.com/notify"
+  valid: true
+no_token:
+  error: "Apprise API: the Apprise API token specified is invalid"
+  valid: false
+password_only:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Authorization: Basic OnNlY3JldA==
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: mytoken1
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+pct:
+  error: "Apprise API: the Apprise API token specified is invalid"
+  valid: false
+port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost:8080/notify"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: cccccccccccccccccccccccccccccccc
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "https://localhost/notify"
+  valid: true
+tags:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+          - - tag
+            - admin
+          - - tag
+            - team
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: abcd
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+tags_json:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          tag:
+            - admin
+            - team
+          title: Mercurio Title
+          type: info
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Apprise-Config-ID: abcd
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "https://localhost/notify"
+  valid: true
+token_and_to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: ffffffffffffffffffffffffffffffff
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+token_qs_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: abcd
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/some/path/notify"
+  valid: true
+user:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-Config-ID: mytoken1
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify"
+  valid: true
+v1:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/notify/mytoken1"
+  valid: true
+v1_form_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - body
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        X-Apprise-ID: "<ignored>"
+        X-Apprise-Recursion-Count: "1"
+      method: POST
+      url: "http://localhost/sub/dir/notify/mytoken1"
+  valid: true
+v3:
+  error: "Apprise API: the Apprise API version specified is invalid"
+  valid: false

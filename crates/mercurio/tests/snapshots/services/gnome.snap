@@ -1,0 +1,161 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+fails:
+  errors:
+    - "service error: notify-send exited with status 1"
+  ok: false
+  valid: true
+failure_type:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "T\r\nB"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+image_false:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: ~
+        urgency: 1
+  ok: true
+  valid: true
+image_no_urgency_high:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: ~
+        urgency: 2
+  ok: true
+  valid: true
+image_yes:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+multiline:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\n1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+no_title:
+  events:
+    - gnome:
+        app: Mercurio
+        body: Mercurio Body
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+priority_emergency:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 2
+  ok: true
+  valid: true
+priority_invalid:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+priority_low:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 0
+  ok: true
+  valid: true
+priority_moderate:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 0
+  ok: true
+  valid: true
+quotes:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "it's \"q\" \\ x\r\nline1\r\nline2\ttab é ☃"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+underscore:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+urgency_0:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 0
+  ok: true
+  valid: true
+urgency_2:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 2
+  ok: true
+  valid: true
+urgency_invalid:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 1
+  ok: true
+  valid: true
+urgency_over_priority:
+  events:
+    - gnome:
+        app: Mercurio
+        body: "Mercurio Title\r\nMercurio Body"
+        icon: "<tmp>/mercurio/logo.svg"
+        urgency: 2
+  ok: true
+  valid: true

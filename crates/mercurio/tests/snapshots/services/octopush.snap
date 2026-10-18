@@ -1,0 +1,330 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+0987654321"
+          sender: Mercurio
+          text: "t\r\nb"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+1111111111"
+            - phone_number: "+33333333333"
+          sender: sender
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+blank:
+  error: "Octopush: an invalid Octopush API Login was specified"
+  valid: false
+blank_key:
+  error: "Octopush: an invalid Octopush API Key was specified"
+  valid: false
+blank_sender:
+  error: "Octopush: an invalid Octopush sender was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+1234567890"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+empty:
+  error: "Octopush: an invalid Octopush API Login was specified"
+  valid: false
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+1234567890"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+login_invalid:
+  error: "Octopush: an invalid Octopush API Login was specified"
+  valid: false
+no_batch_multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+1111111111"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+33333333333"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+no_key:
+  error: "Octopush: an invalid Octopush API Key was specified"
+  valid: false
+no_targets:
+  errors:
+    - "invalid message: there are no valid Octopush targets to notify"
+  ok: false
+  requests: []
+  valid: true
+ok_200_is_error:
+  errors:
+    - "HTTP 200: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+1234567890"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+purpose_invalid:
+  error: "Octopush: the Octopush purpose specified is invalid"
+  valid: false
+purpose_wholesale:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: wholesale
+          recipients:
+            - phone_number: "+9999999999"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: key
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+qs_sender:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+2222222222"
+          sender: abc
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: abc123
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+replies:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+3333333333"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+sender:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+1111111111"
+          sender: sender
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: apikey
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+type_invalid:
+  error: "Octopush: the Octopush type specified is invalid"
+  valid: false
+type_low_cost:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+9999999999"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_low_cost
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: key
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+type_minus:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+9999999999"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_low_cost
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: key
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true
+type_premium:
+  ok: true
+  requests:
+    - body:
+        json:
+          purpose: alert
+          recipients:
+            - phone_number: "+9999999999"
+          sender: Mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          type: sms_premium
+          with_replies: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+        api-key: key
+        api-login: user@myaccount.com
+        cache-control: no-cache
+      method: POST
+      url: "https://api.octopush.com/v1/public/sms-campaign/send"
+  valid: true

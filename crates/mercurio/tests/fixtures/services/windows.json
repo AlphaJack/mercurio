@@ -1,0 +1,17 @@
+{
+"cases":[
+{"name":"basic","url":"windows://"},
+{"name":"underscore","url":"windows://_/"},
+{"name":"failure_type","url":"windows://","type":"failure","title":"T","body":"B"},
+{"name":"no_title","url":"windows://","title":""},
+{"name":"duration_1","url":"windows://_/?duration=1"},
+{"name":"duration_30","url":"windows://_/?duration=30"},
+{"name":"duration_0","url":"windows://_/?duration=0"},
+{"name":"duration_negative","url":"windows://_/?duration=-1"},
+{"name":"duration_invalid","url":"windows://_/?duration=invalid"},
+{"name":"duration_spaces","url":"windows://_/?duration=%207%20"},
+{"name":"image_false","url":"windows://_/?image=False"},
+{"name":"quotes","url":"windows://","title":"it's","body":"a 'b' $c `d`\né"},
+{"name":"multiline","url":"windows://","body":"1\n2\n3\n4"},
+{"name":"fails","url":"windows://","responses":[{"exit":1}]}
+]}

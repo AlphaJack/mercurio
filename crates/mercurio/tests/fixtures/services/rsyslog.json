@@ -1,0 +1,22 @@
+{
+"normalise":[["^(<\\d+>- )\\d+ ","${1}<pid> "]],
+"divergence":"Apprise computes the PRI as level + facility * 8 although its facility constants are already shifted (user.info becomes <70> instead of <14>). mercurio sends the RFC 5424 value; tests/src/testing/oracle/stream.rs maps the recorded PRI with (pri / 8) + (pri % 8) before comparing.",
+"cases":[
+{"name":"basic","url":"rsyslog://localhost","body":"test"},
+{"name":"facility_arg","url":"rsyslog://localhost/?facility=local5","body":"test"},
+{"name":"facility_invalid","url":"rsyslog://localhost/?facility=invalid"},
+{"name":"facility_prefix","url":"rsyslog://localhost/?facility=d"},
+{"name":"port","url":"rsyslog://localhost:518"},
+{"name":"title","url":"rsyslog://localhost:518","title":"Testing a title entry","body":"test"},
+{"name":"no_title","url":"rsyslog://localhost","title":"","body":"test"},
+{"name":"default_port","url":"rsyslog://localhost:514"},
+{"name":"facility_path","url":"rsyslog://localhost/kern"},
+{"name":"facility_path_prefix_port","url":"rsyslog://localhost:514/d"},
+{"name":"no_pid","url":"rsyslog://localhost:9000/d?logpid=no","body":"test"},
+{"name":"local7_failure","url":"rsyslog://10.0.0.1/local7","type":"failure"},
+{"name":"warning","url":"rsyslog://syslog.example.com/auth","type":"warning"},
+{"name":"success","url":"rsyslog://syslog.example.com/?facility=MAIL","type":"success"},
+{"name":"no_host","url":"rsyslog://"},
+{"name":"multi_path","url":"rsyslog://localhost/kern/cron"},
+{"name":"unicode","url":"rsyslog://localhost","title":"Grüße","body":"✓ done"}
+]}

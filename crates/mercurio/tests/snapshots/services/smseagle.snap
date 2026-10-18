@@ -1,0 +1,537 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            attachments:
+              - content: iVBORw0KGgo=
+                content_type: image/png
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: mms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+attach_non_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789,987654321,111111111"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+    - body:
+        json:
+          method: sms.send_tocontact
+          params:
+            access_token: token
+            contactname: "c1,c2"
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+default_response:
+  errors:
+    - "HTTP 200: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+empty:
+  error: "SMS Eagle: an invalid SMSEagle Access Token was specified"
+  valid: false
+http_500:
+  errors:
+    - "service error: SMSEagle error: {\"status\":\"ok\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+list_error:
+  errors:
+    - "service error: SMSEagle error: [{\"status\":\"ok\"},{\"status\":\"error\"}]"
+  ok: false
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+list_mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+mixed_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 1
+            highpriority: 0
+            message: "[~] Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 1
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+    - body:
+        json:
+          method: sms.send_togroup
+          params:
+            access_token: token
+            flash: 1
+            groupname: group1
+            highpriority: 0
+            message: "[~] Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 1
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+    - body:
+        json:
+          method: sms.send_togroup
+          params:
+            access_token: token
+            flash: 1
+            groupname: group2
+            highpriority: 0
+            message: "[~] Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 1
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+    - body:
+        json:
+          method: sms.send_tocontact
+          params:
+            access_token: token
+            contactname: contact1
+            flash: 1
+            highpriority: 0
+            message: "[~] Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 1
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+    - body:
+        json:
+          method: sms.send_tocontact
+          params:
+            access_token: token
+            contactname: contact2
+            flash: 1
+            highpriority: 0
+            message: "[~] Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 1
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+no_targets:
+  errors:
+    - "SMS Eagle: there are no valid SMSEagle targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_token:
+  error: "SMS Eagle: an invalid SMSEagle Access Token was specified"
+  valid: false
+phone:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+phone_plus_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "+12345678901"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8443/jsonrpc/sms"
+  valid: true
+priority_1:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 1
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+priority_5:
+  error: "SMS Eagle: an invalid SMSEagle priority was specified"
+  valid: false
+priority_bad:
+  error: "SMS Eagle: an invalid SMSEagle priority was specified"
+  valid: false
+priority_high:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 1
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+priority_n:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+priority_plus:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 1
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+result_string:
+  errors:
+    - "service error: SMSEagle error: \"OK\""
+  ok: false
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+status_error:
+  errors:
+    - "service error: SMSEagle error: {\"error_text\":\"x\",\"status\":\"error\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: token
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+token_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: abc
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: abc
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "987654321"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true
+user_pass_no_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          method: sms.send_sms
+          params:
+            access_token: user
+            flash: 0
+            highpriority: 0
+            message: "Mercurio Title\r\nMercurio Body"
+            message_type: sms
+            responsetype: extended
+            test: 0
+            to: "123456789"
+            unicode: 1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc/sms"
+  valid: true

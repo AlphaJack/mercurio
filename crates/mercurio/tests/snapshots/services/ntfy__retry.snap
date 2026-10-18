@@ -1,0 +1,178 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+no_retry_no_tracking:
+  sends:
+    - attempts: 1
+      errors:
+        - "HTTP 500: {}"
+      ok: false
+      requests:
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic2
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic2
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+  url_id: 0960a6a2
+  valid: true
+retry_exhausted:
+  sends:
+    - attempts: 2
+      errors:
+        - "HTTP 500: {}"
+      ok: false
+      requests:
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+  url_id: 7e5ccd92
+  valid: true
+retry_skips_delivered_topic:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic2
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic2
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+  url_id: 0960a6a2
+  valid: true
+store_no:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+        - body:
+            json:
+              message: Mercurio Body
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+  url_id: 7e5ccd92
+  valid: true
+two_messages:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              message: one
+              title: a
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/info-256x256.png"
+          method: POST
+          url: "http://localhost"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              message: two
+              title: Mercurio Title
+              topic: topic1
+          headers:
+            Content-Type: application/json
+            X-Icon: "https://example.org/failure-256x256.png"
+          method: POST
+          url: "http://localhost"
+  url_id: 7e5ccd92
+  valid: true

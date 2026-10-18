@@ -1,0 +1,186 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_host:
+  error: "Courier: an invalid Courier host was specified"
+  valid: false
+bad_request:
+  errors:
+    - "HTTP 400: {\"message\":\"Bad Request\",\"type\":\"invalid_request_error\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            content:
+              body: Mercurio Body
+              title: Mercurio Title
+            data:
+              type: info
+            to:
+              user_id: example_user
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.courier.com/send"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          message:
+            content:
+              body: Mercurio Body
+              title: Mercurio Title
+            data:
+              type: info
+            to:
+              user_id: example_user
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.courier.com/send"
+  valid: true
+digits_without_plus_are_user_ids:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            content:
+              body: Mercurio Body
+              title: Mercurio Title
+            data:
+              type: info
+            to:
+              user_id: "15551234567"
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.courier.com/send"
+  valid: true
+email_single:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            content:
+              body: Mercurio Body
+              title: Mercurio Title
+            data:
+              type: success
+            to:
+              email: ben@example.com
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.courier.com/send"
+  valid: true
+empty:
+  error: "Courier: an invalid Courier auth token was specified"
+  valid: false
+multi_array:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            content:
+              body: Mercurio Body
+              title: Mercurio Title
+            data:
+              type: info
+            to:
+              - email: ben@example.com
+              - phone_number: "+15551234567"
+              - user_id: user42
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.courier.com/send"
+  valid: true
+no_recipient:
+  error: "Courier: no Courier recipients were specified"
+  valid: false
+template_routing_data:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            data:
+              body: Mercurio Body
+              name: Ben
+              title: Mercurio Title
+              type: info
+            routing:
+              channels:
+                - email
+                - sms
+              method: single
+            template: nt_01abc
+            to:
+              user_id: example_user
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.courier.com/send"
+  valid: true
+to_param_custom_host_header:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            content:
+              body: Mercurio Body
+              title: Mercurio Title
+            data:
+              type: info
+            to:
+              - user_id: u1
+              - user_id: u2
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+        Idempotency-Key: abc123
+      method: POST
+      url: "https://courier.internal:8443/send"
+  valid: true
+user_id:
+  ok: true
+  requests:
+    - body:
+        json:
+          message:
+            content:
+              body: Mercurio Body
+              title: Mercurio Title
+            data:
+              type: info
+            to:
+              user_id: example_user
+      headers:
+        Accept: application/json
+        Authorization: Bearer pk_prod_abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.courier.com/send"
+  valid: true

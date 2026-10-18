@@ -1,0 +1,459 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_key:
+  error: "Africas Talking: the Africas Talking apikey specified is invalid"
+  valid: false
+batch:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+44444444444,55555555555"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+blank:
+  error: "Africas Talking: the Africas Talking appuser specified is invalid"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "11111111111"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+empty:
+  error: "Africas Talking: the Africas Talking appuser specified is invalid"
+  valid: false
+http_201_ok:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "11111111111"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "11111111111"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+mixed:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "33333333333"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "t\r\nb"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+44444444444"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "t\r\nb"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+mode_invalid:
+  error: "Africas Talking: the Africas Talking mode specified is invalid"
+  valid: false
+mode_premium:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+44444444444"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://content.africastalking.com/version1/messaging"
+  valid: true
+mode_sandbox:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+44444444444"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.sandbox.africastalking.com/version1/messaging"
+  valid: true
+non_json:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "15551231234"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+per_target_partial:
+  errors:
+    - "service error: one or more recipients were rejected"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "15551231234"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "15551231235"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+qs_apikey:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "11111111111"
+          - - from
+            - FROMUSER
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: key
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+qs_user_to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "11111111111"
+          - - from
+            - "5555555555555"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: _
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "22222222222"
+          - - from
+            - "5555555555555"
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: _
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_empty:
+  errors:
+    - "service error: one or more recipients were rejected"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+15551231234"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_int_number:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "15551231234"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_invalid:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+254711000111"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_not_list:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "15551231234"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_ok:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+15551231234,+15555555555"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_partial:
+  errors:
+    - "service error: one or more recipients were rejected"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "+15551231234,+15555555555"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_suffix_match:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "0711222333,+255711222333"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+recipients_suffix_single:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - username
+            - user
+          - - to
+            - "0711222333"
+          - - from
+            - AFRICASTKNG
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        apiKey: apikey
+      method: POST
+      url: "https://api.africastalking.com/version1/messaging"
+  valid: true
+short_target:
+  errors:
+    - "invalid message: there are no valid Africas Talking targets to notify"
+  ok: false
+  requests: []
+  valid: true

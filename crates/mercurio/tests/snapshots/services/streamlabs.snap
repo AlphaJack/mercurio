@@ -1,0 +1,217 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+alert_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          duration: 1000
+          message: Mercurio Title
+          type: donation
+          user_message: Mercurio Body
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/alerts"
+  valid: true
+alert_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          duration: 1000
+          message: Mercurio Title
+          type: donation
+          user_message: Mercurio Body
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/alerts"
+  valid: true
+alert_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          duration: 1000
+          message: only body
+          type: donation
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/alerts"
+  valid: true
+alert_options:
+  ok: true
+  requests:
+    - body:
+        json:
+          duration: 1500
+          image_href: "https://example.com/i.png"
+          message: Mercurio Title
+          sound_href: "https://example.com/s.mp3"
+          special_text_color: B
+          type: follow
+          user_message: Mercurio Body
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/alerts"
+  valid: true
+alert_type_subscription:
+  ok: true
+  requests:
+    - body:
+        json:
+          duration: 1000
+          message: Mercurio Title
+          type: subscription
+          user_message: Mercurio Body
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/alerts"
+  valid: true
+bad_alert_type:
+  error: "Streamlabs: the streamlabs alert type specified is invalid"
+  valid: false
+bad_call:
+  error: "Streamlabs: the streamlabs call specified is invalid"
+  valid: false
+bad_currency:
+  error: "Streamlabs: an invalid Streamlabs currency was specified"
+  valid: false
+bad_token:
+  error: "Streamlabs: an invalid Streamlabs access token was specified"
+  valid: false
+basic_alert:
+  ok: true
+  requests:
+    - body:
+        json:
+          duration: 1000
+          message: Mercurio Title
+          type: donation
+          user_message: Mercurio Body
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/alerts"
+  valid: true
+donation_amount_decimal:
+  ok: true
+  requests:
+    - body:
+        json:
+          amount: 2.5
+          currency: USD
+          identifier: Mercurio
+          message: "Mercurio Title\r\nMercurio Body"
+          name: Anon
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/donations"
+  valid: true
+donation_basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          amount: 0
+          currency: USD
+          identifier: Mercurio
+          message: "Mercurio Title\r\nMercurio Body"
+          name: Anon
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/donations"
+  valid: true
+donation_error:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          amount: 0
+          currency: USD
+          identifier: Mercurio
+          message: "Mercurio Title\r\nMercurio Body"
+          name: Anon
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/donations"
+  valid: true
+donation_long:
+  ok: true
+  requests:
+    - body:
+        json:
+          amount: 0
+          currency: USD
+          identifier: Mercurio
+          message: "a title\r\n01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234"
+          name: Anon
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/donations"
+  valid: true
+donation_options:
+  ok: true
+  requests:
+    - body:
+        json:
+          amount: 10
+          currency: EUR
+          identifier: ME
+          message: body only
+          name: JOE
+      headers:
+        Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/donations"
+  valid: true
+empty:
+  error: "Streamlabs: an invalid Streamlabs access token was specified"
+  valid: false
+long_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          duration: 1000
+          message: Mercurio Title
+          type: donation
+          user_message: Mercurio Body
+      headers:
+        Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl
+        Content-Type: application/json
+      method: POST
+      url: "https://streamlabs.com/api/v2.0/alerts"
+  valid: true
+short_name:
+  error: "Streamlabs: an invalid Streamlabs donor was specified"
+  valid: false
+upper_alert_type:
+  error: "Streamlabs: the streamlabs alert type specified is invalid"
+  valid: false

@@ -1,0 +1,184 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_host:
+  error: "Novu: an invalid Novu host was specified"
+  valid: false
+bad_region:
+  error: "Novu: the Novu region specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          to:
+            - sub1
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.novu.co/v1/events/trigger"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          to:
+            - sub1
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.novu.co/v1/events/trigger"
+  valid: true
+empty:
+  error: "Novu: an invalid Novu API key was specified"
+  valid: false
+eu_region_to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          to:
+            - a
+            - b
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://eu.api.novu.co/v1/events/trigger"
+  valid: true
+mixed_recipients_type:
+  ok: true
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: failure
+          to:
+            - sub1
+            - email: user@example.com
+              subscriberId: user@example.com
+            - phone: "+15551234567"
+              subscriberId: "+15551234567"
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.novu.co/v1/events/trigger"
+  valid: true
+no_subscriber:
+  error: "Novu: no Novu subscribers were specified"
+  valid: false
+no_workflow:
+  error: "Novu: no Novu workflow id was specified"
+  valid: false
+not_acknowledged:
+  errors:
+    - "service error: Novu did not acknowledge the trigger"
+  ok: false
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          to:
+            - sub1
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.novu.co/v1/events/trigger"
+  valid: true
+self_hosted_extras:
+  ok: true
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            env: prod
+            title: Mercurio Title
+            type: info
+          to:
+            - sub1
+          transactionId: tx-1
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+        X-Trace: abc
+      method: POST
+      url: "https://novu.example.com:3000/api/v1/events/trigger"
+  valid: true
+self_hosted_http:
+  ok: true
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          to:
+            - sub1
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+      method: POST
+      url: "http://10.0.0.5:3000/v1/events/trigger"
+  valid: true
+unauthorized:
+  errors:
+    - "HTTP 401: {\"message\":\"API Key not found\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          name: welcome
+          payload:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          to:
+            - sub1
+      headers:
+        Accept: application/json
+        Authorization: ApiKey apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://api.novu.co/v1/events/trigger"
+  valid: true

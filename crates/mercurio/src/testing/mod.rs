@@ -1,0 +1,348 @@
+//! Test doubles: run any plan with zero network access.
+//!
+//! ```
+//! use mercurio::testing::FakeTransport;
+//! use mercurio::{Message, Mercurio};
+//! use std::sync::Arc;
+//!
+//! let fake = Arc::new(FakeTransport::new());
+//! fake.respond(200, "{}");
+//! let mut m = Mercurio::with_transport(fake.clone());
+//! m.add("json://localhost/hook").unwrap();
+//! assert!(m.notify(&Message::new("hi")).is_success());
+//! assert_eq!(fake.requests()[0].url, "http://localhost/hook");
+//! ```
+
+#[cfg(any(test, feature = "testing"))]
+pub mod fixtures;
+
+use std::collections::VecDeque;
+use std::io::{self, Read, Write};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use crate::error::{Error, Result};
+use crate::http::{Request, Response};
+use crate::transport::{Command, CommandOutput, Conn, Datagram, Endpoint, Transport};
+
+type Rule = (Box<dyn Fn(&Request) -> bool + Send + Sync>, Result<Response>);
+
+/// Records every request and answers from a script.
+///
+/// Matching order: the first rule whose predicate accepts the request (rules are reusable), then the next queued response, then the default (`200` with body `{}`).
+///
+/// ```
+/// use std::sync::Arc;
+/// use mercurio::testing::FakeTransport;
+/// use mercurio::{Error, ErrorClass, Mercurio, Message, Response};
+///
+/// let fake = Arc::new(FakeTransport::new());
+/// fake.on_url("/flaky", Response::new(503, "busy").with_header("Retry-After", "1"));
+/// fake.fail(Error::transport("connection refused"));
+///
+/// let mut m = Mercurio::with_transport(fake.clone());
+/// m.add("json://localhost/down")?; // gets the queued transport failure
+/// m.add("json://localhost/flaky")?; // matches the rule
+/// let report = m.sequential().notify(&Message::new("hi"));
+///
+/// let classes: Vec<ErrorClass> = report.failures().map(|(_, o)| o.result.as_ref().unwrap_err().class()).collect();
+/// assert_eq!(classes[0], ErrorClass::Transient);
+/// assert!(matches!(classes[1], ErrorClass::RateLimited { .. }));
+/// # Ok::<(), mercurio::Error>(())
+/// ```
+pub struct FakeTransport {
+    state: Mutex<State>,
+}
+
+struct State {
+    queue: VecDeque<Result<Response>>,
+    rules: Vec<Rule>,
+    default: Response,
+    requests: Vec<Request>,
+    endpoints: Vec<Endpoint>,
+    conns: VecDeque<ScriptedConn>,
+    datagrams: Vec<Datagram>,
+    commands: Vec<Command>,
+    command_outputs: VecDeque<Result<CommandOutput>>,
+    sleeps: Vec<Duration>,
+}
+
+impl Default for FakeTransport {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FakeTransport {
+    /// A fake with no scripted responses: every request gets `200` with body `{}`.
+    pub fn new() -> Self {
+        Self {
+            state: Mutex::new(State {
+                queue: VecDeque::new(),
+                rules: Vec::new(),
+                default: Response::new(200, "{}").with_header("Content-Type", "application/json"),
+                requests: Vec::new(),
+                endpoints: Vec::new(),
+                conns: VecDeque::new(),
+                datagrams: Vec::new(),
+                commands: Vec::new(),
+                command_outputs: VecDeque::new(),
+                sleeps: Vec::new(),
+            }),
+        }
+    }
+
+    fn lock(&self) -> std::sync::MutexGuard<'_, State> {
+        self.state.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    /// Queue a response.
+    pub fn respond(&self, status: u16, body: impl Into<Vec<u8>>) -> &Self {
+        self.lock().queue.push_back(Ok(Response::new(status, body)));
+        self
+    }
+
+    /// Queue a JSON response.
+    pub fn respond_json(&self, status: u16, body: serde_json::Value) -> &Self {
+        let r =
+            Response::new(status, serde_json::to_vec(&body).unwrap()).with_header("Content-Type", "application/json");
+        self.lock().queue.push_back(Ok(r));
+        self
+    }
+
+    /// Queue a full response.
+    pub fn respond_with(&self, response: Response) -> &Self {
+        self.lock().queue.push_back(Ok(response));
+        self
+    }
+
+    /// Queue a transport failure.
+    pub fn fail(&self, error: Error) -> &Self {
+        self.lock().queue.push_back(Err(error));
+        self
+    }
+
+    /// Answer every request whose URL contains `needle` with `response`.
+    pub fn on_url(&self, needle: impl Into<String>, response: Response) -> &Self {
+        let needle = needle.into();
+        self.lock().rules.push((Box::new(move |r: &Request| r.url.contains(&needle)), Ok(response)));
+        self
+    }
+
+    /// Replace the fallback response.
+    pub fn default_response(&self, response: Response) -> &Self {
+        self.lock().default = response;
+        self
+    }
+
+    /// Every HTTP request received, in order.
+    pub fn requests(&self) -> Vec<Request> {
+        self.lock().requests.clone()
+    }
+
+    /// The most recent HTTP request.
+    pub fn last_request(&self) -> Option<Request> {
+        self.lock().requests.last().cloned()
+    }
+
+    /// Queue a connection to hand out on the next `connect`.
+    pub fn push_conn(&self, conn: ScriptedConn) -> &Self {
+        self.lock().conns.push_back(conn);
+        self
+    }
+
+    /// Every endpoint a stream was opened to, in order.
+    pub fn endpoints(&self) -> Vec<Endpoint> {
+        self.lock().endpoints.clone()
+    }
+
+    /// Every datagram sent, in order.
+    pub fn datagrams(&self) -> Vec<Datagram> {
+        self.lock().datagrams.clone()
+    }
+
+    /// Every local program run, in order.
+    pub fn commands(&self) -> Vec<Command> {
+        self.lock().commands.clone()
+    }
+
+    /// Queue the result of the next local program run (default: exit 0, no output).
+    pub fn push_command_output(&self, out: Result<CommandOutput>) -> &Self {
+        self.lock().command_outputs.push_back(out);
+        self
+    }
+
+    /// Every sleep requested (throttling, retry waits); the fake never sleeps.
+    pub fn sleeps(&self) -> Vec<Duration> {
+        self.lock().sleeps.clone()
+    }
+}
+
+impl Transport for FakeTransport {
+    fn http(&self, req: &Request) -> Result<Response> {
+        let mut s = self.lock();
+        s.requests.push(req.clone());
+        if let Some((_, res)) = s.rules.iter().find(|(pred, _)| pred(req)) {
+            return res.clone();
+        }
+        if let Some(res) = s.queue.pop_front() {
+            return res;
+        }
+        Ok(s.default.clone())
+    }
+
+    fn connect(&self, ep: &Endpoint) -> Result<Box<dyn Conn>> {
+        let mut s = self.lock();
+        s.endpoints.push(ep.clone());
+        match s.conns.pop_front() {
+            Some(mut c) => {
+                if ep.tls {
+                    c.tls = true;
+                }
+                Ok(Box::new(c))
+            }
+            None => Err(Error::transport(format!("no scripted connection for {}:{}", ep.host, ep.port))),
+        }
+    }
+
+    fn datagram(&self, dg: &Datagram) -> Result<()> {
+        self.lock().datagrams.push(dg.clone());
+        Ok(())
+    }
+
+    fn command(&self, cmd: &Command) -> Result<CommandOutput> {
+        let mut s = self.lock();
+        s.commands.push(cmd.clone());
+        s.command_outputs.pop_front().unwrap_or(Ok(CommandOutput { status: 0, stdout: Vec::new(), stderr: Vec::new() }))
+    }
+
+    fn sleep(&self, d: Duration) {
+        self.lock().sleeps.push(d);
+    }
+}
+
+type Handler = Box<dyn FnMut(&[u8]) -> Vec<u8> + Send>;
+
+/// An in-memory stream driven by a handler that sees every write and returns bytes for the client to read next.
+///
+/// `written()` exposes everything the client sent for assertions.
+pub struct ScriptedConn {
+    greeting: Vec<u8>,
+    readable: VecDeque<u8>,
+    handler: Handler,
+    written: Arc<Mutex<Vec<u8>>>,
+    pending_line: Vec<u8>,
+    line_mode: bool,
+    tls: bool,
+    allow_tls: bool,
+}
+
+impl ScriptedConn {
+    /// Handler called once per complete line (`\n`-terminated) the client writes.
+    pub fn lines(
+        greeting: impl Into<Vec<u8>>,
+        mut on_line: impl FnMut(&str) -> Option<String> + Send + 'static,
+    ) -> Self {
+        let handler: Handler = Box::new(move |line: &[u8]| {
+            let text = String::from_utf8_lossy(line);
+            let text = text.trim_end_matches(['\r', '\n']);
+            on_line(text).map(String::into_bytes).unwrap_or_default()
+        });
+        Self::build(greeting.into(), handler, true)
+    }
+
+    /// Handler called with every raw write.
+    pub fn bytes(greeting: impl Into<Vec<u8>>, handler: impl FnMut(&[u8]) -> Vec<u8> + Send + 'static) -> Self {
+        Self::build(greeting.into(), Box::new(handler), false)
+    }
+
+    fn build(greeting: Vec<u8>, handler: Handler, line_mode: bool) -> Self {
+        Self {
+            greeting: greeting.clone(),
+            readable: greeting.into_iter().collect(),
+            handler,
+            written: Arc::new(Mutex::new(Vec::new())),
+            pending_line: Vec::new(),
+            line_mode,
+            tls: false,
+            allow_tls: true,
+        }
+    }
+
+    /// Refuse STARTTLS upgrades.
+    pub fn without_tls(mut self) -> Self {
+        self.allow_tls = false;
+        self
+    }
+
+    /// Shared handle to every byte written by the client.
+    pub fn written(&self) -> Arc<Mutex<Vec<u8>>> {
+        self.written.clone()
+    }
+
+    /// Bytes the peer sends when the connection opens.
+    pub fn greeting(&self) -> &[u8] {
+        &self.greeting
+    }
+}
+
+impl Read for ScriptedConn {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.readable.is_empty() {
+            return Ok(0);
+        }
+        let n = buf.len().min(self.readable.len());
+        for b in buf.iter_mut().take(n) {
+            *b = self.readable.pop_front().unwrap();
+        }
+        Ok(n)
+    }
+}
+
+impl Write for ScriptedConn {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.written.lock().unwrap().extend_from_slice(buf);
+        if self.line_mode {
+            for &b in buf {
+                self.pending_line.push(b);
+                if b == b'\n' {
+                    let line = std::mem::take(&mut self.pending_line);
+                    let reply = (self.handler)(&line);
+                    self.readable.extend(reply);
+                }
+            }
+        } else {
+            let reply = (self.handler)(buf);
+            self.readable.extend(reply);
+        }
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl Conn for ScriptedConn {
+    fn start_tls(&mut self) -> Result<()> {
+        if !self.allow_tls {
+            return Err(Error::transport("TLS not available"));
+        }
+        self.tls = true;
+        Ok(())
+    }
+    fn is_tls(&self) -> bool {
+        self.tls
+    }
+}
+
+impl std::fmt::Debug for FakeTransport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FakeTransport").field("requests", &self.lock().requests.len()).finish()
+    }
+}
+
+impl std::fmt::Debug for ScriptedConn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ScriptedConn").field("tls", &self.tls).finish()
+    }
+}

@@ -1,0 +1,22 @@
+{
+"cases":[
+{"name":"empty","url":"qq://"},
+{"name":"invalid_token","url":"qq://invalid!"},
+{"name":"short_token","url":"qq://abc123"},
+{"name":"basic","url":"qq://abc123def456ghi789jkl012mno345pq"},
+{"name":"token_param","url":"qq://?token=abc123def456ghi789jkl012mno345pq"},
+{"name":"token_param_overrides","url":"qq://ignored/?token=abc123def456ghi789jkl012mno345pq"},
+{"name":"native","url":"https://qmsg.zendee.cn/v3/send/abc123def456ghi789jkl012mno345pq"},
+{"name":"native_legacy","url":"https://qmsg.zendee.cn/send/abc123def456ghi789jkl012mno345pq"},
+{"name":"native_upper","url":"HTTPS://QMSG.ZENDEE.CN/send/ABC123DEF456GHI789JKL012MNO345PQ"},
+{"name":"no_title","url":"qq://abc123def456ghi789jkl012mno345pq","title":""},
+{"name":"type_failure","url":"qq://abc123def456ghi789jkl012mno345pq","title":"t & x","body":"b=1&c","type":"failure"},
+{"name":"refused","url":"qq://abc123def456ghi789jkl012mno345pq","responses":[{"status":200,"body":{"success":false,"reason":"bad key","code":500,"info":null}}]},
+{"name":"accepted","url":"qq://abc123def456ghi789jkl012mno345pq","responses":[{"status":200,"body":{"success":true,"reason":"ok","code":0,"info":{}}}]},
+{"name":"http_500","url":"qq://abc123def456ghi789jkl012mno345pq","responses":[{"status":500}]},
+{"name":"http_201","url":"qq://abc123def456ghi789jkl012mno345pq","responses":[{"status":201}]},
+{"name":"http_999","url":"qq://abc123def456ghi789jkl012mno345pq","responses":[{"status":999}]},
+{"name":"conn_error","url":"qq://abc123def456ghi789jkl012mno345pq","responses":[{"error":true}]},
+{"name":"long_token","url":"qq://ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+{"name":"too_long_token","url":"qq://fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+]}

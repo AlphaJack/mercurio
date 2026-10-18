@@ -1,0 +1,299 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+blank:
+  error: "Cisco Webex Teams: the Webex Teams webhook token specified is invalid"
+  valid: false
+bot:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+          roomId: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+bot_204_fails:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+          roomId: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+bot_attach:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: roomId
+            value: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+          - name: markdown
+            value: "Mercurio Title\r\nMercurio Body"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: files
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+    - body:
+        multipart:
+          - name: roomId
+            value: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+          - b64: aGVsbG8=
+            content_type: text/plain
+            filename: notes.txt
+            name: files
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+bot_attach_fail_stops:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: roomId
+            value: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+          - name: markdown
+            value: "Mercurio Title\r\nMercurio Body"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: files
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+bot_conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+          roomId: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+bot_mode_prefix:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+          roomId: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+      headers:
+        Authorization: Bearer aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+bot_no_rooms:
+  errors:
+    - "invalid message: Webex Teams Bot mode has no room IDs to notify"
+  ok: false
+  requests: []
+  valid: true
+bot_to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+          roomId: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+bot_two_rooms:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+          roomId: Y2lzY29zcGFyazovL3VzL1JPT00vabc
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+          roomId: Y2lzY29zcGFyazovL3VzL1JPT00vxyz
+      headers:
+        Authorization: Bearer BotToken1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://webexapis.com/v1/messages"
+  valid: true
+empty:
+  error: "Cisco Webex Teams: the Webex Teams webhook token specified is invalid"
+  valid: false
+mode_invalid:
+  error: "Cisco Webex Teams: the Webex Teams mode specified is invalid"
+  valid: false
+mode_upper_invalid:
+  error: "Cisco Webex Teams: the Webex Teams mode specified is invalid"
+  valid: false
+mode_w_prefix_entries:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+native_ciscospark:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+native_webexapis:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook_204:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook_attach_ignored:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook_mode_short_token:
+  error: "Cisco Webex Teams: the Webex Teams webhook token specified is invalid"
+  valid: false
+webhook_mode_with_entries:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook_short_token_is_bot:
+  errors:
+    - "invalid message: Webex Teams Bot mode has no room IDs to notify"
+  ok: false
+  requests: []
+  valid: true
+webhook_text_format:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook_token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+webhook_webex_scheme:
+  ok: true
+  requests:
+    - body:
+        json:
+          markdown: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ciscospark.com/v1/webhooks/incoming//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true

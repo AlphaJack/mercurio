@@ -1,0 +1,27 @@
+{
+"cases":[
+{"name":"empty","url":"join://"},
+{"name":"blank","url":"join://:@/"},
+{"name":"apikey_only","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"short_key","url":"join://abc"},
+{"name":"to_param","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?to=dddddddddddddddddddddddddddddddd"},
+{"name":"priority_high","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=high"},
+{"name":"priority_invalid","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=invalid"},
+{"name":"priority_empty","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority="},
+{"name":"priority_num","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=-2"},
+{"name":"priority_emergency","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=2"},
+{"name":"user_host_image_true","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@dddddddddddddddddddddddddddddddd?image=True","type":"warning"},
+{"name":"user_host_image_false","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@dddddddddddddddddddddddddddddddd?image=False"},
+{"name":"device_name","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/MyDevice"},
+{"name":"device_name_space","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/My%20Device"},
+{"name":"device_id","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/dddddddddddddddddddddddddddddddd"},
+{"name":"two_devices","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/dddddddddddddddddddddddddddddddd/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},
+{"name":"group","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/dddddddddddddddddddddddddddddddd/group.chrome"},
+{"name":"group_bare","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/android/PHONE/allthings"},
+{"name":"dedupe_sort","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/zeta/alpha/zeta"},
+{"name":"error_500","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"status":500}]},
+{"name":"error_201","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"status":201}]},
+{"name":"partial_fail","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/dddddddddddddddddddddddddddddddd/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","responses":[{"status":200},{"status":401}]},
+{"name":"conn_error","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"error":true}]},
+{"name":"no_image_title","url":"join://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?image=no","title":"","body":"just body"}
+]}

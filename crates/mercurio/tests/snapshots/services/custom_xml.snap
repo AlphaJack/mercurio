@@ -1,0 +1,80 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachment:
+  ok: true
+  requests:
+    - body:
+        text: "<?xml version='1.0' encoding='utf-8'?>\n<soapenv:Envelope\n    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soapenv:Body>\n        <Notification>\n            <Version>1.1</Version><Subject>Mercurio Title</Subject><Message>Mercurio Body</Message><MessageType>info</MessageType>\n            <Attachments format=\"base64\"><Attachment filename=\"a.txt\" mimetype=\"text/plain\">aGVsbG8=</Attachment></Attachments>\n       </Notification>\n    </soapenv:Body>\n</soapenv:Envelope>"
+      headers:
+        Content-Type: application/xml
+      method: POST
+      url: "http://localhost"
+  valid: true
+auth_port_path:
+  ok: true
+  requests:
+    - body:
+        text: "<?xml version='1.0' encoding='utf-8'?>\n<soapenv:Envelope\n    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soapenv:Body>\n        <Notification>\n            <Version>1.1</Version><Subject>Mercurio Title</Subject><Message>Mercurio Body</Message><MessageType>info</MessageType>\n            \n       </Notification>\n    </soapenv:Body>\n</soapenv:Envelope>"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/xml
+      method: POST
+      url: "https://localhost:8080/path/to/hook"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        text: "<?xml version='1.0' encoding='utf-8'?>\n<soapenv:Envelope\n    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soapenv:Body>\n        <Notification>\n            <Version>1.1</Version><Subject>Mercurio Title</Subject><Message>Mercurio Body</Message><MessageType>info</MessageType>\n            \n       </Notification>\n    </soapenv:Body>\n</soapenv:Envelope>"
+      headers:
+        Content-Type: application/xml
+      method: POST
+      url: "http://localhost"
+  valid: true
+escape:
+  ok: true
+  requests:
+    - body:
+        text: "<?xml version='1.0' encoding='utf-8'?>\n<soapenv:Envelope\n    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soapenv:Body>\n        <Notification>\n            <Version>1.1</Version><Subject>&lt;b&gt;T &amp; &apos;q&apos;&lt;/b&gt;</Subject><Message>a &quot;b&quot; &lt;c&gt;</Message><MessageType>info</MessageType>\n            \n       </Notification>\n    </soapenv:Body>\n</soapenv:Envelope>"
+      headers:
+        Content-Type: application/xml
+      method: POST
+      url: "http://localhost"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        text: "<?xml version='1.0' encoding='utf-8'?>\n<soapenv:Envelope\n    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soapenv:Body>\n        <Notification>\n            <Version>1.1</Version><Subject>Mercurio Title</Subject><Message>Mercurio Body</Message><MessageType>info</MessageType>\n            \n       </Notification>\n    </soapenv:Body>\n</soapenv:Envelope>"
+      headers:
+        Content-Type: application/xml
+        X-Custom: "yes"
+      method: PUT
+      url: "http://localhost/"
+  valid: true
+method_invalid:
+  error: "XML: invalid method \"invalid\""
+  valid: false
+payload_remap:
+  ok: true
+  requests:
+    - body:
+        text: "<?xml version='1.0' encoding='utf-8'?>\n<soapenv:Envelope\n    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soapenv:Body>\n        <Notification>\n            <Version>1.1</Version><Title>Mercurio Title</Title><MessageType>info</MessageType><Extra>val</Extra><badkey>x</badkey>\n            \n       </Notification>\n    </soapenv:Body>\n</soapenv:Envelope>"
+      headers:
+        Content-Type: application/xml
+      method: POST
+      url: "http://localhost/"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        text: "<?xml version='1.0' encoding='utf-8'?>\n<soapenv:Envelope\n    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soapenv:Body>\n        <Notification>\n            <Version>1.1</Version><Subject>Mercurio Title</Subject><Message>Mercurio Body</Message><MessageType>info</MessageType>\n            \n       </Notification>\n    </soapenv:Body>\n</soapenv:Envelope>"
+      headers:
+        Content-Type: application/xml
+      method: POST
+      url: "http://localhost"
+  valid: true

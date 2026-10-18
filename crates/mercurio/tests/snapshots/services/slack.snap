@@ -1,0 +1,1489 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+blank:
+  error: "Slack: an invalid Slack (first) Token was specified"
+  valid: false
+bot_attach:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: GET
+      url: "https://slack.com/api/files.getUploadURLExternal?filename=a.png&length=8"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://files.slack.test/upload"
+    - body:
+        json:
+          channel_id: C123456
+          files:
+            - id: F123ABC456
+              title: a.png
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/files.completeUploadExternal"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: GET
+      url: "https://slack.com/api/files.getUploadURLExternal?filename=notes.txt&length=5"
+    - body:
+        multipart:
+          - b64: aGVsbG8=
+            filename: notes.txt
+            name: file
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://files.slack.test/upload"
+    - body:
+        json:
+          channel_id: C123456
+          files:
+            - id: F123ABC456
+              title: notes.txt
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/files.completeUploadExternal"
+  valid: true
+bot_attach_complete_fail:
+  errors:
+    - "upload complete: service error: Slack did not complete the upload"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: GET
+      url: "https://slack.com/api/files.getUploadURLExternal?filename=a.png&length=8"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://files.slack.test/upload"
+    - body:
+        json:
+          channel_id: C123456
+          files:
+            - id: F123ABC456
+              title: a.png
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/files.completeUploadExternal"
+  valid: true
+bot_attach_no_channel:
+  errors:
+    - "post: service error: Slack did not identify the attachment channel"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_attach_no_upload_url:
+  errors:
+    - "upload url: service error: Slack did not return an upload URL"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: GET
+      url: "https://slack.com/api/files.getUploadURLExternal?filename=a.png&length=8"
+  valid: true
+bot_attach_two_channels:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#a"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#b"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: GET
+      url: "https://slack.com/api/files.getUploadURLExternal?filename=a.png&length=8"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://files.slack.test/upload"
+    - body:
+        json:
+          channel_id: C123456
+          files:
+            - id: F123ABC456
+              title: a.png
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/files.completeUploadExternal"
+    - body:
+        json:
+          channel_id: C2
+          files:
+            - id: F123ABC456
+              title: a.png
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/files.completeUploadExternal"
+  valid: true
+bot_attach_upload_fail:
+  errors:
+    - "upload: HTTP 500: x"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: GET
+      url: "https://slack.com/api/files.getUploadURLExternal?filename=a.png&length=8"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://files.slack.test/upload"
+  valid: true
+bot_bad_channels:
+  errors:
+    - "invalid message: invalid Slack target"
+    - "HTTP 200: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              text: Mercurio Body
+              title: Mercurio Title
+          channel: "#-"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              text: Mercurio Body
+              title: Mercurio Title
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_default_channel:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#general"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_email:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          thread_ts: "123"
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+    - body: ~
+      headers:
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://slack.com/api/users.lookupByEmail?email=user%40example.com"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: U999
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          thread_ts: "123"
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_email_lookup_crash:
+  errors:
+    - "user lookup: service error: unexpected Slack lookup response"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://slack.com/api/users.lookupByEmail?email=user%40example.com"
+  valid: true
+bot_email_lookup_fail:
+  errors:
+    - "user lookup: HTTP 200: {\"ok\":false}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/x-www-form-urlencoded
+      method: GET
+      url: "https://slack.com/api/users.lookupByEmail?email=user%40example.com"
+  valid: true
+bot_invalid_token:
+  error: "Slack: an invalid Slack OAuth Access Token was specified"
+  valid: false
+bot_not_ok:
+  errors:
+    - "HTTP 200: {\"ok\":false}"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_rotating:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              text: Mercurio Body
+              title: Mercurio Title
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: username
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxe.xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_str_crash:
+  errors:
+    - "service error: unexpected Slack response"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#a"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_text_OK:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_token_param_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              text: Mercurio Body
+              title: Mercurio Title
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: test
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxb-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+bot_xoxp_footer:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: username
+      headers:
+        Accept: application/json
+        Authorization: Bearer xoxe.xoxp-1234-1234-abc124
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://slack.com/api/chat.postMessage"
+  valid: true
+empty:
+  error: "Slack: an invalid Slack (first) Token was specified"
+  valid: false
+gov_mode:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack-gov.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_500:
+  errors:
+    - "HTTP 500: ok"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#usenet"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: l2g
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_attach_ignored:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_bad_channels:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#-invalid-"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#hmm"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_blocks:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - blocks:
+                - text:
+                    emoji: true
+                    text: A &lt;b&gt;
+                    type: plain_text
+                  type: header
+                - text:
+                    text: Mercurio Body
+                    type: mrkdwn
+                  type: section
+                - elements:
+                    - alt_text: info
+                      image_url: "https://example.org/info-72x72.png"
+                      type: image
+                    - text: Mercurio
+                      type: mrkdwn
+                  type: context
+              color: "#3AA3E3"
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_blocks_no_footer:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - blocks:
+                - text:
+                    emoji: true
+                    text: Mercurio Title
+                    type: plain_text
+                  type: header
+                - text:
+                    text: Mercurio Body
+                    type: mrkdwn
+                  type: section
+              color: "#3AA3E3"
+          channel: "#chan"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_blocks_no_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - blocks:
+                - text:
+                    emoji: true
+                    text: Mercurio Title
+                    type: plain_text
+                  type: header
+                - text:
+                    text: Mercurio Body
+                    type: mrkdwn
+                  type: section
+                - elements:
+                    - text: Mercurio
+                      type: mrkdwn
+                  type: context
+              color: "#CACF29"
+          channel: "#chan"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_blocks_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - blocks:
+                - text:
+                    text: Mercurio Body
+                    type: plain_text
+                  type: section
+                - elements:
+                    - alt_text: info
+                      image_url: "https://example.org/info-72x72.png"
+                      type: image
+                    - text: Mercurio
+                      type: plain_text
+                  type: context
+              color: "#3AA3E3"
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_channel_no_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#channel"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#b"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_crash_sequence:
+  errors:
+    - "invalid message: unsupported formatting sequence in message"
+  ok: false
+  requests: []
+  valid: true
+hook_email_fails:
+  errors:
+    - "invalid message: e-mails can only be resolved in bot mode"
+  ok: false
+  requests: []
+  valid: true
+hook_fail_text:
+  errors:
+    - "HTTP 200: fail"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: username
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_footer_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              text: Mercurio Body
+              title: Mercurio Title
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_format_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: x & <y>
+              title: a&lt;b
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_ids_users:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: id
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "@id"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#plain"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_links:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: "Hi <!channel> and <!here|everyone> also <@U123> <@U456|Bob> see <https://x.io/?a=1&b=2|site> and <mailto://a<@b.c> &amp; done"
+              title: T &amp; co
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_mode_bot_invalid:
+  error: "Slack: an invalid Slack OAuth Access Token was specified"
+  valid: false
+hook_plain:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: username
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_thread:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#b"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          thread_ts: "1.5"
+          username: notify
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "124"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          thread_ts: "100"
+          username: notify
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "@chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: notify
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_thread_bad:
+  errors:
+    - "invalid message: invalid Slack target"
+  ok: false
+  requests: []
+  valid: true
+hook_timestamp_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: Mercurio Body
+              title: Mercurio Title
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#nuxref"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: username
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#other"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: username
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          channel: "#chan"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+hook_token_param_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+          username: bot
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnadfdajkjkfl"
+  valid: true
+invalid_token_a:
+  error: "Slack: an invalid Slack (first) Token was specified"
+  valid: false
+invalid_token_c:
+  error: "Slack: an invalid Slack (third) Token was specified"
+  valid: false
+mode_invalid:
+  error: "Slack: the Slack mode specified is invalid"
+  valid: false
+native_gov:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack-gov.com/services/AAAAAAAAA/BBBBBBBBB/cccccccccccccccccccccccc"
+  valid: true
+native_gov_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack-gov.com/services/AAAAAAAAA/BBBBBBBBB/cccccccccccccccccccccccc"
+  valid: true
+native_hook:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/AAAAAAAAA/BBBBBBBBB/cccccccccccccccccccccccc"
+  valid: true
+native_hook_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/AAAAAAAAA/BBBBBBBBB/cccccccccccccccccccccccc"
+  valid: true
+native_trigger_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title: Mercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/triggers/T1JJ3T3L2/XXXXXXXX/YYYYYYYY"
+  valid: true
+native_workflow:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title: Mercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/workflows/T1JJ3T3L2/Ft07XXXX/XXXXXXXX/YYYYYYYY"
+  valid: true
+one_token:
+  error: "Slack: an invalid Slack (second) Token was specified"
+  valid: false
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: "*Release*\n\nHello *bold* &amp; _it_ u <http://example.com|link>\n\n- one\n- two\n\n```\nx  y\nz\n```\n\nend"
+              title: Mercurio Title
+              ts: ~
+          channel: "#channel"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: "*Release notes*\n\nThis has *bold*, _italic_, `code` and a <http://example.com/a_b|link>.\n\n- first item\n- second _item_\n\n> quoted * text &amp; more &lt;stuff&gt;\n\n~gone~ :smile:"
+              title: Mercurio Title
+              ts: ~
+          channel: "#channel"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: "*Section 1*\n\nParagraph 1 has *bold 1* and _italic_ words, a <http://example.com/1|link 1> and `code 1`. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\n*Section 2*\n\nParagraph 2 has *bold 2* and _italic_ words, a <http://example.com/2|link 2> and `code 2`. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\n*Section 3*\n\nParagraph 3 has *bold 3* and _italic_ words, a <http://example.com/3|link 3> and `code 3`. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\n*Section 4*\n\nParagraph 4 has *bold 4* and _italic_ words, a <http://example.com/4|link 4> and `code 4`. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\n*Section 5*\n\nParagraph 5 has *bold 5* and _italic_ words, a <http://example.com/5|link 5> and `code 5`. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\n*Section 6*\n\nParagraph 6 has *bold 6* and _italic_ words, a <http://example.com/6|link 6> and `code 6`. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\n*Section 7*\n\nParagraph 7 has *bold 7* and _italic_ words, a <http://example.com/7|link 7> and `code 7`. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\n*Section 8*\n\nParagraph 8 has *bold 8* and _italic_ words, a <http://example.com/8|link 8> and `code 8`. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\n*Section 9*\n\nParagraph 9 has *bold 9* and _italic_ words, a <http://example.com/9|link 9> and `code 9`. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\n*Section 10*\n\nParagraph 10 has *bold 10* and _italic_ words, a <http://example.com/10|link 10> and `code 10`. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\n*Section 11*\n\nParagraph 11 has *bold 11* and _italic_ words, a <http://example.com/11|link 11> and `code 11`. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\n*Section 12*\n\nParagraph 12 has *bold 12* and _italic_ words, a <http://example.com/12|link 12> and `code 12`. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\n*Section 13*\n\nParagraph 13 has *bold 13* and _italic_ words, a <http://example.com/13|link 13> and `code 13`. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\n*Section 14*\n\nParagraph 14 has *bold 14* and _italic_ words, a <http://example.com/14|link 14> and `code 14`. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\n*Section 15*\n\nParagraph 15 has *bold 15* and _italic_ words, a <http://example.com/15|link 15> and `code 15`. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\n*Section 16*\n\nParagraph 16 has *bold 16* and _italic_ words, a <http://example.com/16|link 16> and `code 16`. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\n*Section 17*\n\nParagraph 17 has *bold 17* and _italic_ words, a <http://example.com/17|link 17> and `code 17`. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\n*Section 18*\n\nParagraph 18 has *bold 18* and _italic_ words, a <http://example.com/18|link 18> and `code 18`. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\n*Section 19*\n\nParagraph 19 has *bold 19* and _italic_ words, a <http://example.com/19|link 19> and `code 19`. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\n*Section 20*\n\nParagraph 20 has *bold 20* and _italic_ words, a <http://example.com/20|link 20> and `code 20`. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\n*Section 21*\n\nParagraph 21 has *bold 21* and _italic_ words, a <http://example.com/21|link 21> and `code 21`. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\n*Section 22*\n\nParagraph 22 has *bold 22* and _italic_ words, a <http://example.com/22|link 22> and `code 22`. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\n*Section 23*\n\nParagraph 23 has *bold 23* and _italic_ words, a <http://example.com/23|link 23> and `code 23`. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\n*Section 24*\n\nParagraph 24 has *bold 24* and _italic_ words, a <http://example.com/24|link 24> and `code 24`. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\n*Section 25*\n\nParagraph 25 has *bold 25* and _italic_ words, a <http://example.com/25|link 25> and `code 25`. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\n*Section 26*\n\nParagraph 26 has *bold 26* and _italic_ words, a <http://example.com/26|link 26> and `code 26`. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\n*Section 27*\n\nParagraph 27 has *bold 27* and _italic_ words, a <http://example.com/27|link 27> and `code 27`. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\n*Section 28*\n\nParagraph 28 has *bold 28* and _italic_ words, a <http://example.com/28|link 28> and `code 28`. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\n*Section 29*\n\nParagraph 29 has *bold 29* and _italic_ words, a <http://example.com/29|link 29> and `code 29`. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\n*Section 30*\n\nParagraph 30 has *bold 30* and _italic_ words, a <http://example.com/30|link 30> and `code 30`. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\n*Section 31*\n\nParagraph 31 has *bold 31* and _italic_ words, a <http://example.com/31|link 31> and `code 31`. Sentences keep goi"
+              title: A title that is long enough to be interesting for counters and amalgamation A title that is long enough to be interesting for counters and amalgamation
+              ts: ~
+          channel: "#channel"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: "lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit \n sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing \n elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur \n adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet \n consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit \n amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. \n sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum \n dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem \n ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor \n lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod \n tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do \n eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed \n do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit \n sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing \n elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. \n adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet \n consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit \n amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor \n sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum \n dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem \n ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor \n lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod \n tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do \n eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. \n do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit \n sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing \n elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur \n adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet \n consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit \n amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor \n sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum \n dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem \n ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. \n lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci"
+              title: Mercurio Title
+              ts: ~
+          channel: "#channel"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: "Plain &lt;text&gt; &amp; *stars* _under_ [x](y)\nsecond line"
+              title: Mercurio Title
+              ts: ~
+          channel: "#channel"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: false
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              footer_icon: "https://example.org/info-72x72.png"
+              text: "*Section 1*\n\nParagraph 1 has *bold 1* and _italic_ words, a <http://example.com/1|link 1> and `code 1`. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\n*Section 2*\n\nParagraph 2 has *bold 2* and _italic_ words, a <http://example.com/2|link 2> and `code 2`. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\n*Section 3*\n\nParagraph 3 has *bold 3* and _italic_ words, a <http://example.com/3|link 3> and `code 3`. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\n*Section 4*\n\nParagraph 4 has *bold 4* and _italic_ words, a <http://example.com/4|link 4> and `code 4`. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\n*Section 5*\n\nParagraph 5 has *bold 5* and _italic_ words, a <http://example.com/5|link 5> and `code 5`. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\n*Section 6*\n\nParagraph 6 has *bold 6* and _italic_ words, a <http://example.com/6|link 6> and `code 6`. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\n*Section 7*\n\nParagraph 7 has *bold 7* and _italic_ words, a <http://example.com/7|link 7> and `code 7`. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\n*Section 8*\n\nParagraph 8 has *bold 8* and _italic_ words, a <http://example.com/8|link 8> and `code 8`. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\n*Section 9*\n\nParagraph 9 has *bold 9* and _italic_ words, a <http://example.com/9|link 9> and `code 9`. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\n*Section 10*\n\nParagraph 10 has *bold 10* and _italic_ words, a <http://example.com/10|link 10> and `code 10`. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\n*Section 11*\n\nParagraph 11 has *bold 11* and _italic_ words, a <http://example.com/11|link 11> and `code 11`. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\n*Section 12*\n\nParagraph 12 has *bold 12* and _italic_ words, a <http://example.com/12|link 12> and `code 12`. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\n*Section 13*\n\nParagraph 13 has *bold 13* and _italic_ words, a <http://example.com/13|link 13> and `code 13`. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\n*Section 14*\n\nParagraph 14 has *bold 14* and _italic_ words, a <http://example.com/14|link 14> and `code 14`. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\n*Section 15*\n\nParagraph 15 has *bold 15* and _italic_ words, a <http://example.com/15|link 15> and `code 15`. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\n*Section 16*\n\nParagraph 16 has *bold 16* and _italic_ words, a <http://example.com/16|link 16> and `code 16`. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\n*Section 17*\n\nParagraph 17 has *bold 17* and _italic_ words, a <http://example.com/17|link 17> and `code 17`. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\n*Section 18*\n\nParagraph 18 has *bold 18* and _italic_ words, a <http://example.com/18|link 18> and `code 18`. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\n*Section 19*\n\nParagraph 19 has *bold 19* and _italic_ words, a <http://example.com/19|link 19> and `code 19`. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\n*Section 20*\n\nParagraph 20 has *bold 20* and _italic_ words, a <http://example.com/20|link 20> and `code 20`. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\n*Section 21*\n\nParagraph 21 has *bold 21* and _italic_ words, a <http://example.com/21|link 21> and `code 21`. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\n*Section 22*\n\nParagraph 22 has *bold 22* and _italic_ words, a <http://example.com/22|link 22> and `code 22`. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\n*Section 23*\n\nParagraph 23 has *bold 23* and _italic_ words, a <http://example.com/23|link 23> and `code 23`. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\n*Section 24*\n\nParagraph 24 has *bold 24* and _italic_ words, a <http://example.com/24|link 24> and `code 24`. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\n*Section 25*\n\nParagraph 25 has *bold 25* and _italic_ words, a <http://example.com/25|link 25> and `code 25`. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\n*Section 26*\n\nParagraph 26 has *bold 26* and _italic_ words, a <http://example.com/26|link 26> and `code 26`. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\n*Section 27*\n\nParagraph 27 has *bold 27* and _italic_ words, a <http://example.com/27|link 27> and `code 27`. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\n*Section 28*\n\nParagraph 28 has *bold 28* and _italic_ words, a <http://example.com/28|link 28> and `code 28`. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\n*Section 29*\n\nParagraph 29 has *bold 29* and _italic_ words, a <http://example.com/29|link 29> and `code 29`. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\n*Section 30*\n\nParagraph 30 has *bold 30* and _italic_ words, a <http://example.com/30|link 30> and `code 30`. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\n*Section 31*\n\nParagraph 31 has *bold 31* and _italic_ words, a <http://example.com/31|link 31> and `code 31`. Sentences keep goi"
+              title: Mercurio Title
+              ts: ~
+          channel: "#channel"
+          icon_url: "https://example.org/info-72x72.png"
+          mrkdwn: true
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/services/T1JJ3T3L2/A1BRTD4JD/TIiajkdnlazkcOXrIdevi7FQ"
+  valid: true
+template_bad_scheme:
+  error: "Slack: the Slack template could not be loaded"
+  valid: false
+template_missing:
+  errors:
+    - "invalid message: the Slack template could not be applied"
+  ok: false
+  requests: []
+  valid: true
+trigger:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title: Mercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/triggers/T1JJ3T3L2/XXXXXXXX/YYYYYYYY"
+  valid: true
+trigger_four:
+  error: "Slack: a Slack Trigger URL requires exactly 3 path segments"
+  valid: false
+two_tokens:
+  error: "Slack: an invalid Slack (third) Token was specified"
+  valid: false
+workflow:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title: Mercurio Body"
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/workflows/T1JJ3T3L2/Ft07XXXX/XXXXXXXX/YYYYYYYY"
+  valid: true
+workflow_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: Mercurio Body
+      headers:
+        Accept: application/json
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://hooks.slack.com/workflows/T1JJ3T3L2/Ft07XXXX/XXXXXXXX/YYYYYYYY"
+  valid: true
+workflow_three:
+  error: "Slack: a Slack Workflow URL requires exactly 4 path segments"
+  valid: false
+workflow_too_few:
+  error: "Slack: a Slack Workflow URL requires exactly 4 path segments"
+  valid: false

@@ -1,0 +1,121 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+alpha_source:
+  error: "Kavenegar: the Kavenegar source specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/aaaaaaaaaaaaaaaaaaaaaaaa/sms/send.json?receptor=33333333333333&message=t%0D%0Ab"
+  valid: true
+blank:
+  error: "Kavenegar: an invalid Kavenegar API Key was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/cccccccccccccccccccccccc/sms/send.json?receptor=55555555555555&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+created_201:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=44444444444444&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+empty:
+  error: "Kavenegar: an invalid Kavenegar API Key was specified"
+  valid: false
+from_param:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=33333333333333&message=Mercurio+Title%0D%0AMercurio+Body&sender=11111111111111"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {\"message\": \"bad\"}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=44444444444444&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+invalid_targets:
+  errors:
+    - "invalid message: there are no valid Kavenegar targets to notify"
+  ok: false
+  requests: []
+  valid: true
+multi:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=33333333333333&message=Mercurio+Title%0D%0AMercurio+Body"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=44444444444444&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=33333333333333&message=Mercurio+Title%0D%0AMercurio+Body"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=44444444444444&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+quoted_source:
+  error: "Kavenegar: the Kavenegar source specified is invalid"
+  valid: false
+short_source:
+  error: "Kavenegar: the Kavenegar source specified is invalid"
+  valid: false
+source:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/bbbbbbbbbbbbbbbbbbbbbbbb/sms/send.json?receptor=33333333333333&message=Mercurio+Title%0D%0AMercurio+Body&sender=11111111111111"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: POST
+      url: "https://api.kavenegar.com/v1/aaaaaaaaaaaaaaaaaaaaaaaa/sms/send.json?receptor=33333333333333&message=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true

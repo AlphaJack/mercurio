@@ -1,0 +1,27 @@
+{
+"cases":[
+{"name":"empty","url":"pagerduty://"},
+{"name":"blank_both","url":"pagerduty://%20@%20/"},
+{"name":"blank_host","url":"pagerduty://%20/"},
+{"name":"blank_user","url":"pagerduty://%20@abcd/"},
+{"name":"blank_source","url":"pagerduty://myroutekey@myapikey/%20"},
+{"name":"blank_component","url":"pagerduty://myroutekey@myapikey/mysource/%20"},
+{"name":"bad_region","url":"pagerduty://myroutekey@myapikey?region=invalid"},
+{"name":"bad_severity","url":"pagerduty://myroutekey@myapikey?severity=invalid"},
+{"name":"upper_severity","url":"pagerduty://myroutekey@myapikey?severity=ERR"},
+{"name":"basic","url":"pagerduty://myroutekey@myapikey"},
+{"name":"no_image","url":"pagerduty://myroutekey@myapikey?image=no","type":"warning"},
+{"name":"region_eu","url":"pagerduty://myroutekey@myapikey?region=EU","type":"failure"},
+{"name":"severity_critical","url":"pagerduty://myroutekey@myapikey?severity=critical","type":"success"},
+{"name":"severity_err","url":"pagerduty://myroutekey@myapikey?severity=err"},
+{"name":"severity_w","url":"pagerduty://myroutekey@myapikey?severity=w"},
+{"name":"details","url":"pagerduty://myroutekey@myapikey?+key=value&+key2=value%2520two"},
+{"name":"source_component","url":"pagerduty://myroutekey@myapikey/mysource/mycomponent"},
+{"name":"group_class_click","url":"pagerduty://routekey@apikey/ms/mc?group=mygroup&class=myclass&click=http%3A%2F%2Fexample.com"},
+{"name":"all_qs","url":"pagerduty://?integrationkey=r&apikey=a&source=s&component=c"},
+{"name":"http_500","url":"pagerduty://somerkey@someapikey/bizarre/code","responses":[{"status":500}]},
+{"name":"http_202","url":"pagerduty://somerkey@someapikey","responses":[{"status":202}]},
+{"name":"http_204","url":"pagerduty://somerkey@someapikey","responses":[{"status":204}]},
+{"name":"conn_error","url":"pagerduty://somerkey@someapikey","responses":[{"error":true}]},
+{"name":"title_body","url":"pagerduty://k@a","title":"My Title","body":"Line1\nLine2"}
+]}

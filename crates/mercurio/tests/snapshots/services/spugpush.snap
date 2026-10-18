@@ -1,0 +1,179 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/ffffffffffffffffffffffffffffffff"
+  valid: true
+empty:
+  error: "SpugPush: the SpugPush token is invalid"
+  valid: false
+invalid:
+  error: "SpugPush: the SpugPush token is invalid"
+  valid: false
+long_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij1234"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+native_old_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+native_too_short:
+  error: "SpugPush: the SpugPush token is invalid"
+  valid: false
+native_upper:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/ABC123def456ghi789jkl012mno345pq"
+  valid: true
+no_content:
+  errors:
+    - "HTTP 204 "
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+no_title_uses_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+title_body_type:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "B\nC"
+          title: T é
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+token_param_overrides_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"
+  valid: true
+too_long_token:
+  error: "SpugPush: the SpugPush token is invalid"
+  valid: false

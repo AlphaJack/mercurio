@@ -1,0 +1,17 @@
+{
+"cases":[
+{"name":"empty","url":"deltachat://"},
+{"name":"basic","url":"deltachat://user:pass@smtp.example.com/friend@example.org"},
+{"name":"secure","url":"deltachats://user:pass@smtp.example.com/friend@example.org"},
+{"name":"secure_port","url":"deltachats://user:pass@smtp.example.com:2525/friend@example.org"},
+{"name":"self","url":"deltachat://user:pass@smtp.example.com/"},
+{"name":"pgp_sign","url":"deltachat://user:pass@smtp.example.com/friend@example.org?pgp=sign"},
+{"name":"pgp_invalid","url":"deltachat://user:pass@smtp.example.com/friend@example.org?pgp=invalid"},
+{"name":"long_body","url":"deltachats://user:pass@smtp.example.com/friend@example.org","title":"Alert","body":"This is a fairly long message body that should be cut in the subject line\nwith a second line"},
+{"name":"empty_title","url":"deltachats://user:pass@smtp.example.com/friend@example.org","title":"","body":"short"},
+{"name":"unicode","url":"deltachats://user:pass@smtp.example.com/friend@example.org","title":"Grüße","body":"✓ done"},
+{"name":"format_html_ignored","url":"deltachats://user:pass@smtp.example.com/friend@example.org?format=html","body":"<b>bold</b>"},
+{"name":"cc_header","url":"deltachats://user:pass@smtp.example.com/friend@example.org?cc=other@example.org&+X-Extra=1"},
+{"name":"attach","url":"deltachats://user:pass@smtp.example.com/friend@example.org","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="}]},
+{"name":"fail_login","url":"deltachats://user:pass@smtp.example.com/friend@example.org","responses":[{"smtp_fail":"login"}]}
+]}

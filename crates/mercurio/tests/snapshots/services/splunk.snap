@@ -1,0 +1,346 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+action_ack:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: ACKNOWLEDGEMENT
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+action_crit:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: CRITICAL
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+action_i:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+action_invalid:
+  error: "Splunk On-Call: the Splunk action specified is invalid"
+  valid: false
+action_r:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: RECOVERY
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+action_recovery:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: RECOVERY
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+action_resolve:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: RECOVERY
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+action_warn:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: WARNING
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+bad:
+  error: "Splunk On-Call: the Splunk API Key specified is invalid"
+  valid: false
+bad_api:
+  error: "Splunk On-Call: the Splunk API Key specified is invalid"
+  valid: false
+bad_route:
+  error: "Splunk On-Call: the Splunk Routing Key specified is invalid"
+  valid: false
+empty:
+  error: "Splunk On-Call: the Splunk API Key specified is invalid"
+  valid: false
+entity_deep:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: a/b/c
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/abc123/route"
+  valid: true
+entity_encoded:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: "a?b#c%d/e"
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/abc123/route"
+  valid: true
+entity_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: my_entity
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/abc123/route"
+  valid: true
+entity_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: entity_id
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/abc123/route"
+  valid: true
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+long_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+          entity_id: Mercurio/db
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/token/db"
+  valid: true
+map_bad_key:
+  error: "Splunk On-Call: the Splunk mapping key specified is invalid"
+  valid: false
+map_bad_value:
+  error: "Splunk On-Call: the Splunk mapping value specified is invalid"
+  valid: false
+map_f:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: ACKNOWLEDGEMENT
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+map_warning:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: CRITICAL
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/routing_key
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/routing_key"
+  valid: true
+native_entity:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: entity_id
+          message_type: CRITICAL
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/routing_key"
+  valid: true
+no_route:
+  error: "Splunk On-Call: the Splunk Routing Key specified is invalid"
+  valid: false
+qs_keys:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/abc123/db"
+  valid: true
+success_type:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Notifications
+          entity_id: Mercurio/db
+          message_type: RECOVERY
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/apikey/db"
+  valid: true
+victorops:
+  ok: true
+  requests:
+    - body:
+        json:
+          entity_display_name: Mercurio Title
+          entity_id: Mercurio/db
+          message_type: INFO
+          monitoring_tool: Mercurio
+          state_message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://alert.victorops.com/integrations/generic/20131114/alert/abc123/db"
+  valid: true

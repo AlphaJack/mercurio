@@ -1,0 +1,30 @@
+{
+  "user1": {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/abcdef1234567890",
+    "keys": {
+      "p256dh": "BCj-fZwrJUTWDRmq8yO88_xKJkB9jMqiAUS2rbgK35U0SH76DdeqRu2Oaq7iYGqO4yw_tbdKKxWPfnMTj1wW3gg",
+      "auth": "5I3XwN-msGG8E7PQhSzs1Q"
+    }
+  },
+  "User2": {
+    "endpoint": "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl",
+    "keys": {
+      "p256dh": "BF59DWsEdmhvsuh--zgFQkUqe5N7rs4gd-XGU9LsKBPZZhAZO41TvNGWjpTZk0z890VU4vy6nRbFawR2OifNHxQ",
+      "auth": "prQvNy5V7bZseqSC_QEyLA"
+    }
+  },
+  "user@example.com": {
+    "endpoint": "https://push.example.com:8443/push/self",
+    "keys": {
+      "p256dh": "BFLEEKmLOvrCY53NF3T-uquOZ_C61KrHDwB9VLjeG8IH3fqDMpQWIGfQkn8joFYmadIFMfnPv2pk-0RbWcwYERw",
+      "auth": "7nLznW4L4jW2gamNhIP9YQ"
+    }
+  },
+  "broken": {
+    "endpoint": "http://insecure.example.com/x",
+    "keys": {
+      "p256dh": "AAAA",
+      "auth": "AAAA"
+    }
+  }
+}

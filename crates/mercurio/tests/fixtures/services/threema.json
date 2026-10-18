@@ -1,0 +1,22 @@
+{
+"cases":[
+{"name":"threema_id","url":"threema://*THEGWID@secret/ECHOECHO/"},
+{"name":"phone","url":"threema://*THEGWID@secret/16134442222/"},
+{"name":"phones_two","url":"threema://*THEGWID@secret/16134442222/16134443333/"},
+{"name":"email","url":"threema://*THEGWID@secret/user@example.com"},
+{"name":"mixed","url":"threema://*THEGWID@secret/ECHOECHO/user@example.com/+1 613 444 2222/bad"},
+{"name":"from_param","url":"threema:///?secret=secret&from=*THEGWID&to=16134442222,ECHOECHO"},
+{"name":"gwid_param","url":"threema:///?secret=secret&gwid=*THEGWID&to=16134442222"},
+{"name":"quoted_user","url":"threema://%2ATHEGWID@secret/ECHOECHO"},
+{"name":"body_unicode","url":"threema://*THEGWID@secret/ECHOECHO","title":"Title","body":"héllo & world+1"},
+{"name":"no_targets","url":"threema://*THEGWID@secret"},
+{"name":"invalid_target_only","url":"threema://*THEGWID@secret/123"},
+{"name":"empty","url":"threema://"},
+{"name":"no_user","url":"threema://@:"},
+{"name":"short_user","url":"threema://user@secret"},
+{"name":"no_secret","url":"threema:///?gwid=*THEGWID&to=ECHOECHO"},
+{"name":"partial_failure","url":"threema://*THEGWID@secret/16134442222/16134443333","responses":[{"status":500},{"status":200}]},
+{"name":"bizarre_code","url":"threema://*THEGWID@secret/16134443333","responses":[{"status":999}]},
+{"name":"created","url":"threema://*THEGWID@secret/16134443333","responses":[{"status":201}]},
+{"name":"connection_error","url":"threema://*THEGWID@secret/16134443333","responses":[{"error":true}]}
+]}

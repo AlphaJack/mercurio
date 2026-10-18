@@ -1,0 +1,153 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_token:
+  error: "Feishu: the Feishu token specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\r\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/abc123/"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\r\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/token/"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\r\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/token/"
+  valid: true
+dot_token:
+  error: "Feishu: the Feishu token specified is invalid"
+  valid: false
+empty:
+  error: "Feishu: the Feishu token specified is invalid"
+  valid: false
+empty_userinfo:
+  error: "Feishu: the Feishu token specified is invalid"
+  valid: false
+no_content:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\r\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/token/"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: Mercurio Body
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/abc123/"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\r\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/token/"
+  valid: true
+title_merged:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "My Title\r\nMy Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/abc123/"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\r\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/abc123/"
+  valid: true
+token_param_wins:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: "Mercurio Title\r\nMercurio Body"
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/abc_1-23/"
+  valid: true
+unicode:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            text: 你好 & <world>
+          msg_type: text
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/abc123/"
+  valid: true

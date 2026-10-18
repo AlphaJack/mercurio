@@ -1,0 +1,155 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+actor_tenant_cancel_data:
+  ok: true
+  requests:
+    - body:
+        json:
+          actor: mr_dna
+          cancellation_key: incident_1993
+          data:
+            body: Mercurio Body
+            severity: high
+            title: Mercurio Title
+            type: info
+          recipients:
+            - dr_grant
+          tenant: ingen
+      headers:
+        Accept: application/json
+        Authorization: Bearer sk_test_123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.knock.app/v1/workflows/new-comment/trigger"
+  valid: true
+bad_host:
+  error: "Knock: an invalid Knock host was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          recipients:
+            - dr_grant
+      headers:
+        Accept: application/json
+        Authorization: Bearer sk_test_123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.knock.app/v1/workflows/new-comment/trigger"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          recipients:
+            - u1
+      headers:
+        Accept: application/json
+        Authorization: Bearer sk_test_123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.knock.app/v1/workflows/alerts/trigger"
+  valid: true
+duplicate_recipients:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          recipients:
+            - u1
+      headers:
+        Accept: application/json
+        Authorization: Bearer sk_test_123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.knock.app/v1/workflows/alerts/trigger"
+  valid: true
+empty:
+  error: "Knock: an invalid Knock API key was specified"
+  valid: false
+inline_identification:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: warning
+          recipients:
+            - dr_grant
+            - email: ellie@example.com
+              id: ellie@example.com
+            - id: "+15551234567"
+              phone_number: "+15551234567"
+      headers:
+        Accept: application/json
+        Authorization: Bearer sk_test_123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.knock.app/v1/workflows/new-comment/trigger"
+  valid: true
+no_recipient:
+  error: "Knock: no Knock recipients were specified"
+  valid: false
+no_workflow:
+  error: "Knock: no Knock workflow key was specified"
+  valid: false
+to_param_custom_host_header:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          recipients:
+            - u1
+            - u2
+      headers:
+        Accept: application/json
+        Authorization: Bearer sk_test_123
+        Content-Type: application/json
+        X-Env: staging
+      method: POST
+      url: "https://knock.example.com/v1/workflows/alerts/trigger"
+  valid: true
+unprocessable:
+  errors:
+    - "HTTP 422: {\"code\":\"invalid_params\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            body: Mercurio Body
+            title: Mercurio Title
+            type: info
+          recipients:
+            - u1
+      headers:
+        Accept: application/json
+        Authorization: Bearer sk_test_123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.knock.app/v1/workflows/alerts/trigger"
+  valid: true

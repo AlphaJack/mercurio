@@ -1,0 +1,26 @@
+{
+"cases":[
+{"name":"no_key","url":"prowl://"},
+{"name":"empty","url":"prowl://:@/"},
+{"name":"short_key","url":"prowl://aaaaaaaaaaaaaaaaaaaa"},
+{"name":"basic","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"provider","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+{"name":"bad_provider","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbb"},
+{"name":"priority_high","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=high"},
+{"name":"priority_low","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=LOW","type":"warning"},
+{"name":"priority_moderate","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=m"},
+{"name":"priority_emergency","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=emergency"},
+{"name":"priority_num_neg2","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=-2"},
+{"name":"priority_num_10","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=10"},
+{"name":"priority_num_2","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=2"},
+{"name":"priority_invalid","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority=invalid"},
+{"name":"priority_empty","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?priority="},
+{"name":"trailing_slashes","url":"prowl://wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww///"},
+{"name":"title_body","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","title":"Hello & world","body":"line1\nline2"},
+{"name":"no_title","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","title":""},
+{"name":"http_406","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"status":406}]},
+{"name":"http_409","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"status":409}]},
+{"name":"http_204","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"status":204}]},
+{"name":"conn_error","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","responses":[{"error":true}]},
+{"name":"attachments_unsupported","url":"prowl://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="}]}
+]}

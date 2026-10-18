@@ -1,0 +1,37 @@
+{
+  "bad0": {
+    "endpoint": "https://e.example.com/x",
+    "keys": {
+      "p256dh": "AAAA",
+      "auth": "AAAA"
+    }
+  },
+  "bad1": {
+    "endpoint": "https://e.example.com/x",
+    "keys": {
+      "p256dh": "AAAA",
+      "auth": "AAAA"
+    }
+  },
+  "bad2": {
+    "endpoint": "https://e.example.com/x",
+    "keys": {
+      "p256dh": "AAAA",
+      "auth": "AAAA"
+    }
+  },
+  "bad3": {
+    "endpoint": "https://e.example.com/x",
+    "keys": {
+      "p256dh": "AAAA",
+      "auth": "AAAA"
+    }
+  },
+  "bad4": {
+    "endpoint": "https://e.example.com/x",
+    "keys": {
+      "p256dh": "AAAA",
+      "auth": "AAAA"
+    }
+  }
+}

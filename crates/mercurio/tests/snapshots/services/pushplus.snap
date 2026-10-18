@@ -1,0 +1,465 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_error:
+  errors:
+    - "service error: PushPlus code=Some(903): fail"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+api_unknown_code:
+  errors:
+    - "service error: PushPlus code=Some(1234): Unknown error"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+bad_topic_ignored:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+channel_invalid:
+  error: "Pushplus: the Pushplus channel is not valid"
+  valid: false
+channel_mail:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: mail
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+channel_wecom_alias:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: cp
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+default_response_fails:
+  errors:
+    - "service error: PushPlus code=None: Unknown error"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+empty:
+  error: "Pushplus: the Pushplus token is invalid"
+  valid: false
+format_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: "**x**"
+          template: markdown
+          title: "**x**"
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+format_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: txt
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+http_error:
+  errors:
+    - "HTTP 500: {\"code\":200}"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+json_list:
+  errors:
+    - "service error: PushPlus code=None: Unknown error"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+mode_and_channel:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: mail
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: mail
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: mygroup
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+native_no_token:
+  error: "unsupported URL scheme: https://"
+  valid: false
+not_json:
+  errors:
+    - "service error: PushPlus code=None: Unknown error"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+short_token:
+  error: "Pushplus: the Pushplus token is invalid"
+  valid: false
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+topic_and_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: t1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: t2
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+topic_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: mygroup
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+two_topics:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: group1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: group2
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+two_topics_first_fails:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: group1
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+    - body:
+        json:
+          channel: wechat
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          topic: group2
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+webhook_name:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: webhook
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          webhook: myhook
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+webhook_name_wins:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: webhook
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          webhook: myhook
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+webhook_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: webhook
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+          webhook: myhook
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+webhook_user_mail:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: mail
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+wecom_scheme:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: cp
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true
+wecom_scheme_channel:
+  ok: true
+  requests:
+    - body:
+        json:
+          channel: mail
+          content: Mercurio Body
+          template: html
+          title: Mercurio Title
+          token: abcdefghij0123456789abcdefghij01
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.pushplus.plus/send"
+  valid: true

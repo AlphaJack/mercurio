@@ -1,0 +1,212 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+detect_fails_then_succeeds:
+  sends:
+    - attempts: 1
+      errors:
+        - "owner lookup: service error: failed to detect a Telegram user; send your bot a message first"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+        - body:
+            json:
+              chat_id: "77"
+              disable_notification: false
+              disable_web_page_preview: true
+              message_thread_id: 5
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              chat_id: "77"
+              disable_notification: false
+              disable_web_page_preview: true
+              message_thread_id: 5
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  url_id: 0c2628ac
+  valid: true
+explicit_chat_never_detects:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              chat_id: 12345
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              chat_id: 12345
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  url_id: 0c2628ac
+  valid: true
+owner_detected_once:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+        - body:
+            json:
+              chat_id: "532389719"
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              chat_id: "532389719"
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              chat_id: "532389719"
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  url_id: 0c2628ac
+  valid: true
+retry_skips_delivered_chat:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              chat_id: 111
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+        - body:
+            json:
+              chat_id: 222
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+        - body:
+            json:
+              chat_id: 222
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  url_id: 0c2628ac
+  valid: true
+store_no_still_caches_in_memory:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+        - body:
+            json:
+              chat_id: "9"
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              chat_id: "9"
+              disable_notification: false
+              disable_web_page_preview: true
+              parse_mode: HTML
+              text: "<b>Mercurio Title</b>\r\nMercurio Body"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  url_id: 0c2628ac
+  valid: true

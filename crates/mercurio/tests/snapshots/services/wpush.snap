@@ -1,0 +1,424 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_error:
+  errors:
+    - "service error: WPUSH code=401: API Key error"
+  ok: false
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+apikey_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: b
+          title: t
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+basic_default_response_fails:
+  errors:
+    - "service error: WPUSH code=None: Unknown error"
+  ok: false
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+channel_feishu:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: feishu
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+channel_invalid:
+  error: "WPUSH: the WPUSH channel (invalid) is not valid"
+  valid: false
+channels_sorted:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: "dingtalk,feishu,qqbot"
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+click_url:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          url: "https://example.com/"
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+code_false:
+  errors:
+    - "service error: WPUSH code=false: server error"
+  ok: false
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+empty:
+  error: "WPUSH: the WPUSH API Key is invalid"
+  valid: false
+group:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: qqbot
+          content: Mercurio Body
+          option: "123456"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+group_overrides_option:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          option: b
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+group_with_topic:
+  error: "WPUSH: the WPUSH option/group cannot be combined with topic targets"
+  valid: false
+http_500:
+  errors:
+    - "HTTP 500: {\"code\":0}"
+  ok: false
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: mail
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+native_no_key:
+  error: "unsupported URL scheme: https://"
+  valid: false
+no_title_uses_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Body
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+not_json:
+  errors:
+    - "service error: WPUSH code=None: Unknown error"
+  ok: false
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+option:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: qqbot
+          content: Mercurio Body
+          option: "123456"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+partial_failure:
+  errors:
+    - "service error: WPUSH code=1: Unknown error"
+  ok: false
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: a
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: b
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+short_key:
+  error: "WPUSH: the WPUSH API Key is invalid"
+  valid: false
+topics_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: topic1
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: topic2
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+topics_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: t3
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: t4
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: topic1
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: Mercurio Body
+          title: Mercurio Title
+          topic_code: topic2
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true
+unicode:
+  ok: true
+  requests:
+    - body:
+        json:
+          apikey: WPUSHabcdefghijklmnopqrstuvwxyz0
+          channel: wechat
+          content: 内容
+          title: 标题
+      headers:
+        Content-Type: application/json
+        X-API-Key: WPUSHabcdefghijklmnopqrstuvwxyz0
+        X-Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.wpush.cn/api/v1/send"
+  valid: true

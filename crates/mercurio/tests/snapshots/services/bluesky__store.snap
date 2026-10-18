@@ -1,0 +1,375 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachment_after_login:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://plc.directory/did:plc:1234"
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+        - body:
+            bytes: iVBORw0KGgo=
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: image/png
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                embed:
+                  $type: app.bsky.embed.images
+                  images:
+                    - alt: a.png
+                      image:
+                        ref: 1
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            bytes: iVBORw0KGgo=
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: image/png
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                embed:
+                  $type: app.bsky.embed.images
+                  images:
+                    - alt: a.png
+                      image:
+                        ref: 2
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  url_id: "88258130"
+  valid: true
+handle_with_host_reused:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.example.ca"
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://plc.directory/did:plc:1234"
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw3
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  url_id: 30756a26
+  valid: true
+login_fails_lookup_cached:
+  sends:
+    - attempts: 1
+      errors:
+        - "login: HTTP 401: {}"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://plc.directory/did:plc:1234"
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  url_id: "88258130"
+  valid: true
+no_access_jwt_logs_in_again:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://plc.directory/did:plc:1234"
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  url_id: "88258130"
+  valid: true
+record_fails_session_kept:
+  sends:
+    - attempts: 1
+      errors:
+        - "post: HTTP 500: {}"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://plc.directory/did:plc:1234"
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  url_id: "88258130"
+  valid: true
+session_reused:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+        - body: ~
+          headers:
+            Content-Type: application/x-www-form-urlencoded; charset=utf-8
+          method: GET
+          url: "https://plc.directory/did:plc:1234"
+        - body:
+            json:
+              identifier: "did:plc:1234"
+              password: app-pw
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              collection: app.bsky.feed.post
+              record:
+                $type: app.bsky.feed.post
+                createdAt: ~
+                text: "Mercurio Title\r\nMercurio Body"
+              repo: "did:plc:1234"
+          headers:
+            Authorization: Bearer abcd
+            Content-Type: application/json
+          method: POST
+          url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  url_id: "88258130"
+  valid: true

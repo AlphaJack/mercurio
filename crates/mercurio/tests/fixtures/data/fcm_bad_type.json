@@ -1,0 +1,10 @@
+{
+  "type": "user",
+  "project_id": "mercurio-project",
+  "private_key_id": "0123456789abcdef0123456789abcdef01234567",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDjcZZNCe4QSYD0\nARsPBfcwtzfMqtjcnugzz//FLNUEaJefdzqrIhUPRuik2tjHB2JBEJv6FHvF//Wu\nkC7dkly/NEbs5ueCFAgSDutjDbDy4OhlJCdciW7s/53AN0rYjPUk3mBU5nVjK82B\n2NZs2F7r51aBDuRBzCRyupLGZLy5dnqTXLdSxAjUPuIBogvpxsoLgjbHTs+c9Oa9\nHNd0244pemcsBxUx2znAdGhbLlv080FfdWNrT9MJgmR4g+4oUGqgjdK7VnmcdVfc\nRCgTZmf3hqz99f34KX5sgVCg90xKl0u/KlyBdvBA0oCuSAxO1Zf6GqEoDQbRVZd7\nNQY955N7AgMBAAECggEAS3f7OWDcH4dkRJLBWcDO/tksqLrf7oTD471WzyRLIoVa\nGk3Dp9lNR55tv5XmbFQk5BYQy3BUiaSe7udkxZy1LbS4/A66Ls1ayDMvI9T9K/o4\n4qaWcPwhVH6U55zxNt2+0hb/u+wkc12reTRsIf3BsWE3sOcyEiscxPznivEONjNb\nwflIoSv2t4A9QCKDJil6udfZS+8hcxxYbBi1DBWEYrEvDzyLQILmNNwJ1I5Ku224\nx5f6dQuAlnk4lH5nTw+GeRIfT3jkf2phC+hIbfdIIx9Jw8Mb1MN7pP3MVfZ3RJOM\nsUgFr4nyp5lk5HLxBMyWORQ4RI7sUmVuQY7PisZkcQKBgQD7EuxhO4scWSgQoSP9\noRGFwKnwRQW9f+Awd9xIeVy1MdPkWNHqbiEzeQQY6PYc+IFy2lL9bO5CMUrmrYT8\nvSYWp1olCM4UOiExegS8h15jWIXkbWWy4jaS3JxgcpulrfC88FQfJ2Z5tEp6MgsN\nqwAKmpRd4JSQ2vi3wQULr489fwKBgQDn5/m8OL4p6jVMmtColk21FCrnRhOz1p1M\nqv+b8jZZKkC1EG2fA+JA9Hb9JqPmcDUzWI47XbCh/D4ANaopUdhZ8l3vvqHfIR+d\n2HMGm8k5NwN1BCg7K85r2c6mQQT4BEi9ywmsUo7TD5RtcpA7IQZ3PsTOCqobHKYv\nG6Az5FSgBQKBgQCWFZHH7dgSchlJF4p0KrxWv/zV6+yqgq55Sq0bhbCtf8OyVIXn\nJT4jjsusOFYmq0Z2aZwCcgNa/ixQCJnemxMRp6hzSvgljzoYYWBDcogxytD+44ZP\nkHofAFFaNihkub2Ws/MVTHAtgGCk+xUwbm/v5seZ9o3YqYzUC0YA3kk58QKBgQCo\nCB+d0AeJ21fvP6W84dtAP3KuzMnt3q1vJd+7oQ7cII9uIo8rTucbZYbp+pt7lwYV\nRC8auNIJLPnHsRqwgcsfsUt7MUecoyWDe5gsy6hLup7YpMB5z03sO49OS4JMKt6C\nFqHVqKQwLfPAMehrz4wdzu9O089ZgbKwI3Y641Cl+QKBgF04jfahuw92lOfH16MA\nA48HVN30GbWVPU/jI49Ws5r1FcQ0jQMFgdrZPV6Dxrqf6CeSLIR4Y+Ni3U1Mz3wj\nZ6XY/Pz9G0mwgOPinlPogVd/K8wEdKLlx7eC5JJISSKiEIi5JX1OKpeiWZqGQe0I\nQfIzH4YAR34GS859ZdX1aeJs\n-----END PRIVATE KEY-----\n",
+  "client_email": "mercurio@mercurio-project.iam.gserviceaccount.com",
+  "client_id": "123456789",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token"
+}

@@ -1,0 +1,20 @@
+{
+"cases":[
+{"name":"empty","url":"voipms://"},
+{"name":"no_password","url":"voipms://user@example.com/15551232000"},
+{"name":"bad_email","url":"voipms://password:user@/15551232000"},
+{"name":"no_source","url":"voipms://password:user@example.com"},
+{"name":"bad_source","url":"voipms://password:user@example.com/1234"},
+{"name":"foreign_source","url":"voipms://password:user@example.com/+44 20 7946 0958"},
+{"name":"self","url":"voipms://password:user@example.com/15551232000","responses":[{"status":200,"body":{"status":"success"}}]},
+{"name":"default_response","url":"voipms://password:user@example.com/15551232000/15551232001"},
+{"name":"targets","url":"voipms://password:user@example.com/15551232000/15551232001/5551232002/+44 20 7946 0958","responses":[{"status":200,"body":{"status":"success"}},{"status":200,"body":{"status":"invalid_dst"}}]},
+{"name":"bad_target","url":"voipms://password:user@example.com/15551232000/abc"},
+{"name":"from_query","url":"voipms://password:user@example.com/15551232001?from=15551232000&to=15551232002","responses":[{"status":200,"body":{"status":"success"}},{"status":200,"body":"null"}]},
+{"name":"not_json","url":"voipms://password:user@example.com/15551232000/15551232001","responses":[{"status":200,"body":"server error"},{"status":200,"body":{"status":"success"}}]},
+{"name":"list_json","url":"voipms://password:user@example.com/15551232000/15551232001","responses":[{"status":200,"body":[1]},{"status":200,"body":{"status":"success"}}]},
+{"name":"http_500","url":"voipms://password:user@example.com/15551232000/15551232001","responses":[{"status":500,"body":{}},{"status":200,"body":{"status":"success"}}]},
+{"name":"conn_error","url":"voipms://password:user@example.com/15551232000","responses":[{"error":true}]},
+{"name":"quoted","url":"voipms://pa%24s:us%2Ber@example.com/15551232000","responses":[{"status":200,"body":{"status":"success"}}]},
+{"name":"fail_with_message","url":"voipms://password:user@example.com/15551232000/15551232001","responses":[{"status":200,"body":{"status":"invalid_dst","message":"bad"}},{"status":200,"body":{"status":"success"}}]}
+]}

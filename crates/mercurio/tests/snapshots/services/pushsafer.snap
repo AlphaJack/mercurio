@@ -1,0 +1,708 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_batch_failure_carries:
+  errors:
+    - "service error: Pushsafer: bad"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - p
+            - "data:image/jpeg;base64,iVBORw0KGgo="
+          - - p2
+            - "data:image/jpeg;base64,iVBORw0KGgo="
+          - - p3
+            - "data:image/jpeg;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - p
+            - "data:image/jpeg;base64,iVBORw0KGgo="
+          - - p2
+            - "data:image/jpeg;base64,iVBORw0KGgo="
+          - - p3
+            - "data:image/jpeg;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - ""
+          - - m
+            - "..."
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - p
+            - "data:image/jpeg;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+attach_four_images:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "1"
+          - - p
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - p2
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - p3
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - ""
+          - - m
+            - "..."
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "1"
+          - - p
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "2"
+          - - p
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - p2
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - p3
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - ""
+          - - m
+            - "..."
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "2"
+          - - p
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+attach_image:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - p
+            - "data:image/png;base64,iVBORw0KGgo="
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+attach_non_image_skipped:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+basic_default_resp_fails:
+  errors:
+    - "service error: Pushsafer: Unknown"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+empty:
+  error: "Pushsafer: an invalid PushSafer Private Key was specified"
+  valid: false
+http_204:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {\"status\":1}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+no_key:
+  error: "Pushsafer: an invalid PushSafer Private Key was specified"
+  valid: false
+no_key_secure:
+  error: "Pushsafer: an invalid PushSafer Private Key was specified"
+  valid: false
+non_json:
+  errors:
+    - "service error: Pushsafer: Unknown"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+priority_25:
+  error: "Pushsafer: an invalid PushSafer priority was specified"
+  valid: false
+priority_emergency:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+priority_invalid:
+  error: "Pushsafer: an invalid PushSafer priority was specified"
+  valid: false
+priority_neg1:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+priority_prefix:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA337"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.pushsafer.com/api"
+  valid: true
+sound_14:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - s
+            - "14"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.pushsafer.com/api"
+  valid: true
+sound_94000:
+  error: "Pushsafer: an invalid PushSafer sound was specified"
+  valid: false
+sound_invalid:
+  error: "Pushsafer: an invalid PushSafer sound was specified"
+  valid: false
+sound_ok:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - s
+            - "32"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+sound_prefix:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - s
+            - "17"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.pushsafer.com/api"
+  valid: true
+status_zero:
+  errors:
+    - "service error: Pushsafer: bad"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+targets:
+  errors:
+    - "service error: Pushsafer: bad"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "12"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "24"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "53"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+to_targets:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "12"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "24"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - "53"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://www.pushsafer.com/api"
+  valid: true
+vibration_0:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - v
+            - "0"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.pushsafer.com/api"
+  valid: true
+vibration_1:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - t
+            - Mercurio Title
+          - - m
+            - Mercurio Body
+          - - i
+            - "25"
+          - - c
+            - "#3AA3E3"
+          - - d
+            - a
+          - - v
+            - "1"
+          - - k
+            - eeeeeeeeeeeeeeeeeeee
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.pushsafer.com/api"
+  valid: true
+vibration_25000:
+  error: "Pushsafer: an invalid PushSafer vibration was specified"
+  valid: false
+vibration_invalid:
+  error: "Pushsafer: an invalid PushSafer vibration was specified"
+  valid: false

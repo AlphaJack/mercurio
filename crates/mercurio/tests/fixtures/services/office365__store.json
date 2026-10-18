@@ -1,0 +1,11 @@
+{
+"cases":[
+{"name":"token_reused","url":"o365://user@example.edu/tenant/ab-cd-ef-gh/secret/email1@test.ca","sends":3,"responses":[{"status":200,"body":{"expires_in":2000,"access_token":"abcd1234"}},{"status":202,"body":""},{"status":202,"body":""},{"status":202,"body":""}]},
+{"name":"short_token_logs_in_again","url":"o365://user@example.edu/tenant/ab-cd-ef-gh/secret/email1@test.ca","sends":2,"responses":[{"status":200,"body":{"expires_in":5,"access_token":"t1"}},{"status":202,"body":""},{"status":200,"body":{"expires_in":2000,"access_token":"t2"}},{"status":202,"body":""}]},
+{"name":"sender_lookup_cached","url":"o365://hg-fe-dc-ba/tenant/ab-cd-ef-gh/secret/to@example.com","sends":2,"responses":[{"status":200,"body":{"expires_in":2000,"access_token":"abcd1234"}},{"status":200,"body":{"mail":"user@example.ca","displayName":"John"}},{"status":200},{"status":200}]},
+{"name":"sender_lookup_unusable_not_retried","url":"o365://hg-fe-dc-ba/tenant/ab-cd-ef-gh/secret/to@example.com","sends":2,"responses":[{"status":200,"body":{"expires_in":2000,"access_token":"abcd1234"}},{"status":200,"body":{"mail":"invalid"}},{"status":200},{"status":200}]},
+{"name":"sender_lookup_failed_retried","url":"o365://hg-fe-dc-ba/tenant/ab-cd-ef-gh/secret/to@example.com","sends":2,"responses":[{"status":200,"body":{"expires_in":2000,"access_token":"abcd1234"}},{"status":403},{"status":200},{"status":200,"body":{"userPrincipalName":"upn@example.ca"}},{"status":200}]},
+{"name":"personal_refresh_token_rotated","url":"o365://user@outlook.com/ab-cd-ef-gh/refresh-secret/to@example.com","sends":2,"responses":[{"status":200,"body":{"expires_in":5,"access_token":"t1","refresh_token":"rotated1"}},{"status":202},{"status":200,"body":{"expires_in":3600,"access_token":"t2","refresh_token":"rotated2"}},{"status":202}]},
+{"name":"auth_fails_then_works","url":"o365://user@example.edu/tenant/ab-cd-ef-gh/secret/email1@test.ca","sends":2,"responses":[{"status":401},{"status":200,"body":{"expires_in":2000,"access_token":"abcd1234"}},{"status":202,"body":""}]},
+{"name":"retry_skips_delivered","url":"o365://user@example.edu/tenant/ab-cd-ef-gh/secret/a@test.ca/b@test.ca?retry=1","sends":1,"responses":[{"status":200,"body":{"expires_in":2000,"access_token":"abcd1234"}},{"status":202,"body":""},{"status":500},{"status":202,"body":""}]}
+]}

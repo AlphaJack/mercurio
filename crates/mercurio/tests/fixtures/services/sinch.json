@@ -1,0 +1,23 @@
+{
+"cases":[
+{"name":"empty","url":"sinch://"},
+{"name":"blank","url":"sinch://:@/"},
+{"name":"no_token","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@12345678"},
+{"name":"bad_source","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@_"},
+{"name":"short_code_no_targets","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@33333"},
+{"name":"nine_digits","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@333333333"},
+{"name":"invalid_targets","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@33333333333/123/999999999999999/abcd/"},
+{"name":"short_code","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@12345/44444444444"},
+{"name":"six_short_code","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@123456/44444444444"},
+{"name":"self","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@55555555555"},
+{"name":"region_eu","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@55555555555?region=EU"},
+{"name":"region_invalid","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@55555555555?region=invalid"},
+{"name":"qs_spi_token_from","url":"sinch://_?spi=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&token=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&from=55555555555"},
+{"name":"qs_source","url":"sinch://_?spi=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&token=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&source=55555555555"},
+{"name":"qs_to","url":"sinch://_?spi=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&token=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&from=55555555555&to=7777777777777"},
+{"name":"non_hex","url":"sinch://gggggggggggggggggggggggggggggggg:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@55555555555"},
+{"name":"multi","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@55555555555/66666666666/77777777777","title":"t","body":"b"},
+{"name":"http_error","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@66666666666","responses":[{"status":999,"body":"{\"code\": 4, \"message\": \"no\"}"}]},
+{"name":"partial","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@55555555555/66666666666/77777777777","responses":[{"status":500,"body":"{}"}]},
+{"name":"connection_error","url":"sinch://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@66666666666","responses":[{"error":true}]}
+]}

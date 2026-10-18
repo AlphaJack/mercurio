@@ -1,0 +1,21 @@
+{
+"cases":[
+{"name":"empty","url":"notifyre://"},
+{"name":"no_targets","url":"notifyre://apikey"},
+{"name":"basic","url":"notifyre://apikey/15551232000"},
+{"name":"multi","url":"notifyre://apikey/15551232000/+61 412 345 678/bad?to=15551232001"},
+{"name":"from","url":"notifyre://apikey/15551232000?from=15551239999&campaign=%20Camp%20"},
+{"name":"from_bad","url":"notifyre://apikey/15551232000?from=abc"},
+{"name":"mode_bad","url":"notifyre://apikey/15551232000?mode=email"},
+{"name":"mode_s","url":"notifyre://apikey/15551232000?mode=S"},
+{"name":"api_fail","url":"notifyre://apikey/15551232000","responses":[{"status":200,"body":{"success":false,"message":"server error"}}]},
+{"name":"api_ok","url":"notifyre://apikey/15551232000","responses":[{"status":200,"body":{"success":true}}]},
+{"name":"not_json","url":"notifyre://apikey/15551232000","responses":[{"status":200,"body":"fine"}]},
+{"name":"http_400","url":"notifyre://apikey/15551232000","responses":[{"status":400,"body":{"success":true}}]},
+{"name":"conn_error","url":"notifyre://apikey/15551232000","responses":[{"error":true}]},
+{"name":"sms_attach_ignored","url":"notifyre://apikey/15551232000","attachments":[{"name":"a.pdf","mime":"application/pdf","text":"%PDF"}]},
+{"name":"fax","url":"notifyre://apikey/15551232000?mode=fax&template=Tpl&ref=R1&hq=no&header=Hdr&from=15551239999"},
+{"name":"fax_attach","url":"notifyre://apikey/15551232000?mode=f","attachments":[{"name":"a.pdf","mime":"application/pdf","text":"%PDF"}]},
+{"name":"fax_empty_body","url":"notifyre://apikey/15551232000?mode=fax","title":"","body":"","attachments":[{"name":"a.pdf","mime":"application/pdf","text":"%PDF"}]},
+{"name":"fax_hq_yes","url":"notifyre://apikey/15551232000?mode=fax&hq=yes","responses":[{"status":200,"body":{"success":false}}]}
+]}

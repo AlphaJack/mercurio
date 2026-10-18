@@ -1,0 +1,178 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_uuid:
+  error: "Stackfield: an invalid Stackfield webhook token was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+empty:
+  error: "Stackfield: an invalid Stackfield webhook token was specified"
+  valid: false
+html_format:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "<b>T</b><br />\r\nB"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+http_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+native_bad:
+  error: "unsupported URL scheme: https://"
+  valid: false
+native_bare:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+native_http_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+native_www:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: just body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+short_uuid:
+  error: "Stackfield: an invalid Stackfield webhook token was specified"
+  valid: false
+title_merge:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Hello\r\nWorld"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+token_param_bad:
+  error: "Stackfield: an invalid Stackfield webhook token was specified"
+  valid: false
+token_param_overrides_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+truncate:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: x
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/abcdef01-2345-6789-abcd-ef0123456789"
+  valid: true
+upper_uuid:
+  ok: true
+  requests:
+    - body:
+        json:
+          Title: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://www.stackfield.com/apiwh/ABCDEF01-2345-6789-ABCD-EF0123456789"
+  valid: true

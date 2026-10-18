@@ -1,0 +1,18 @@
+{
+"cases":[
+{"name":"basic","url":"wecombot://botkey"},
+{"name":"key_param","url":"wecombot://?key=botkey"},
+{"name":"key_param_wins","url":"wecombot://other/?key=bot_key-2"},
+{"name":"native","url":"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=BOTKEY"},
+{"name":"native_extra_params","url":"https://qyapi.weixin.qq.com/cgi-bin/webhook/send/?key=BOTKEY&data=123"},
+{"name":"native_http_format","url":"http://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=abc-123&format=markdown"},
+{"name":"native_no_key","url":"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?other=1"},
+{"name":"title_merged","url":"wecombot://botkey","title":"Title","body":"Body é","type":"failure"},
+{"name":"no_title","url":"wecombot://botkey","title":""},
+{"name":"empty","url":"wecombot://"},
+{"name":"empty_userinfo","url":"wecombot://:@/"},
+{"name":"bad_key","url":"wecombot://bot.key"},
+{"name":"server_error","url":"wecombot://botkey","responses":[{"status":500}]},
+{"name":"bizarre_code","url":"wecombot://botkey","responses":[{"status":999}]},
+{"name":"connection_error","url":"wecombot://botkey","responses":[{"error":true}]}
+]}

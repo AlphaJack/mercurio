@@ -1,0 +1,705 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_is_failure:
+  errors:
+    - "HTTP 202: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: nnnn
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+attachment:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            attachments:
+              - data: iVBORw0KGgo=
+                name: a.png
+                type: image/png
+              - data: aGVsbG8=
+                name: b.txt
+                type: text/plain
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: qqqq
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: cccccccccccccccccccccccccccccccc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: no-reply@example.com
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: no-reply@example.com
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user1@example.com
+            - address:
+                email: user2@example.com
+                name: User2
+            - address:
+                email: b@example.com
+                header_to: user1@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: llll
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+cc_with_header:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@example.com
+              name: Mercurio Notifications
+            headers:
+              CC: user5@example.com
+              X-Test: "yes"
+            html: Mercurio Body
+            reply_to: user@example.com
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user1@example.com
+            - address:
+                email: user5@example.com
+                header_to: user1@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: jjjj
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: oooo
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+empty:
+  error: "SparkPost: an invalid SparkPost API Key was specified"
+  valid: false
+empty_creds:
+  error: "SparkPost: an invalid SparkPost API Key was specified"
+  valid: false
+from_name:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Jo Doe
+            html: Mercurio Body
+            reply_to: Jo Doe <user@localhost.localdomain>
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+                name: Jo Doe
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+from_name_special:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: "Doe, Jo"
+            html: Mercurio Body
+            reply_to: "\"Doe, Jo\" <user@localhost.localdomain>"
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: to@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            headers:
+              X-Customer-Campaign-ID: Apprise
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: gggggggggggggggggggggggggggggggg
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+invalid_to:
+  errors:
+    - "service error: there are no SparkPost Email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+            text: Mercurio Body
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: cccccccccccccccccccccccccccccccc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+no_apikey:
+  error: "SparkPost: an invalid SparkPost API Key was specified"
+  valid: false
+no_batch_two:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: no-reply@example.com
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: no-reply@example.com
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user1@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: llll
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+    - body:
+        json:
+          content:
+            from:
+              email: no-reply@example.com
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: no-reply@example.com
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user2@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: llll
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+no_user:
+  error: "SparkPost: no SparkPost username was specified"
+  valid: false
+one_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: test@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+quote_user:
+  error: "SparkPost: invalid ~From~ email format"
+  valid: false
+region_eu:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://api.eu.sparkpost.com/api/v1/transmissions/"
+  valid: true
+region_invalid:
+  error: "SparkPost: the SparkPost region specified is invalid"
+  valid: false
+region_us:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: dddddddddddddddddddddddddddddddd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+retry_exhausted:
+  errors:
+    - "HTTP 429: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: pppp
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: pppp
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: pppp
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+retry_then_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: to@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: pppp
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: to@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: pppp
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: mmmm
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+text_blank_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            reply_to: user@localhost.localdomain
+            subject: "."
+            text: Mercurio Body
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: cccccccccccccccccccccccccccccccc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+to_cc_bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@example.com
+              name: Mercurio Notifications
+            headers:
+              CC: user5@example.com
+            html: Mercurio Body
+            reply_to: user@example.com
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user1@example.com
+                name: User1
+            - address:
+                email: user5@example.com
+                header_to: user1@example.com
+                name: Da
+            - address:
+                email: user3@example.com
+                header_to: user1@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: jjjj
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: test@example.com
+          substitution_data: {}
+      headers:
+        Accept: application/json
+        Authorization: kkkk
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true
+tokens:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            from:
+              email: user@localhost.localdomain
+              name: Mercurio Notifications
+            html: Mercurio Body
+            reply_to: user@localhost.localdomain
+            subject: Mercurio Title
+          options:
+            click_tracking: false
+            open_tracking: false
+          recipients:
+            - address:
+                email: user@localhost.localdomain
+          substitution_data:
+            name: Chris
+            status: admin
+      headers:
+        Accept: application/json
+        Authorization: hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sparkpost.com/api/v1/transmissions/"
+  valid: true

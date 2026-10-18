@@ -1,0 +1,16 @@
+{
+"cases":[
+{"name":"empty","url":"push://"},
+{"name":"blank","url":"push://:@/"},
+{"name":"invalid_key","url":"push://abcdefg"},
+{"name":"not_v4","url":"push://12345678-1234-1123-8123-123456789abc"},
+{"name":"valid","url":"push://12345678-1234-4123-8123-123456789abc"},
+{"name":"valid_upper","url":"push://12345678-1234-4123-8123-123456789ABC"},
+{"name":"title_body","url":"push://12345678-1234-4123-8123-123456789abc","title":"Hello","body":"World","type":"failure"},
+{"name":"no_title","url":"push://12345678-1234-4123-8123-123456789abc","title":""},
+{"name":"ok_204","url":"push://12345678-1234-4123-8123-123456789abc","responses":[{"status":204}]},
+{"name":"err_201","url":"push://12345678-1234-4123-8123-123456789abc","responses":[{"status":201}]},
+{"name":"err_500","url":"push://12345678-1234-4123-8123-123456789abc","responses":[{"status":500}]},
+{"name":"err_999","url":"push://12345678-1234-4123-8123-123456789abc","responses":[{"status":999}]},
+{"name":"conn_error","url":"push://12345678-1234-4123-8123-123456789abc","responses":[{"error":true}]}
+]}

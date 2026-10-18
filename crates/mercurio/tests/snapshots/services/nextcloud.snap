@@ -1,0 +1,435 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all_connection_error:
+  errors:
+    - "group lookup: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/users?format=json"
+  valid: true
+all_users:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/users?format=json"
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/bob"
+  valid: true
+basic_auth_port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost:8080/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+dup_user:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+empty:
+  error: "Nextcloud: an invalid hostname or port was specified"
+  valid: false
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+everyone_star:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/users?format=json"
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/5"
+  valid: true
+group:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "https://localhost:8080/ocs/v1.php/cloud/groups/group?format=json"
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "https://localhost:8080/ocs/v2.php/apps/notifications/api/v2/admin_notifications/alice"
+  valid: true
+group_bad_json:
+  errors:
+    - "service error: there were no Nextcloud targets to notify"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/groups/devs?format=json"
+  valid: true
+group_empty:
+  errors:
+    - "service error: there were no Nextcloud targets to notify"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/groups/devs?format=json"
+  valid: true
+group_fetch_fails:
+  errors:
+    - "group lookup: HTTP 403: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/groups/devs?format=json"
+  valid: true
+group_list_json:
+  errors:
+    - "group lookup: service error: unexpected Nextcloud response"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/groups/devs?format=json"
+  valid: true
+group_overlap:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        OCS-APIREQUEST: "true"
+      method: GET
+      url: "http://localhost/ocs/v1.php/cloud/groups/devs?format=json"
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/alice"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: text/plain
+        Content-Type: application/x-www-form-urlencoded
+        HeaderKey: HeaderValue
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost:8080/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+invalid_user_only:
+  errors:
+    - "service error: there were no Nextcloud targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_auth:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+no_body:
+  errors:
+    - "invalid message: no message body or attachment was specified"
+  ok: false
+  requests: []
+  valid: true
+no_targets:
+  errors:
+    - "service error: there were no Nextcloud targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Notifications
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+prefix_v20:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/abcd/ocs/v2.php/apps/admin_notifications/api/v1/notifications/user1"
+  valid: true
+prefix_v21:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/abcd/ef/ocs/v2.php/apps/notifications/api/v2/admin_notifications/user1"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "https://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+status_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+to_v20:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/admin_notifications/api/v1/notifications/user1"
+  valid: true
+to_v21:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/user1"
+  valid: true
+user_no_password:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - shortMessage
+            - Mercurio Title
+          - - longMessage
+            - Mercurio Body
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+        OCS-APIREQUEST: "true"
+      method: POST
+      url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin"
+  valid: true
+version_invalid:
+  error: "Nextcloud: an invalid Nextcloud version was specified"
+  valid: false
+version_negative:
+  error: "Nextcloud: an invalid Nextcloud version was specified"
+  valid: false
+version_zero:
+  error: "Nextcloud: an invalid Nextcloud version was specified"
+  valid: false

@@ -1,0 +1,219 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+batch_multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "44444444444"
+          Message: "t\r\nb"
+          To:
+            - "55555555555"
+            - "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YmJiYmI6Y2NjY2NjY2NjYw==
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+batch_self:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "44444444444"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To:
+            - "44444444444"
+      headers:
+        Accept: application/json
+        Authorization: Basic YmJiYmI6Y2NjY2NjY2NjYw==
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+blank:
+  error: "BulkVS: a BulkVS user/pass was not provided"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+created_is_error:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+empty:
+  error: "BulkVS: a BulkVS user/pass was not provided"
+  valid: false
+from_host_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+invalid_target:
+  errors:
+    - "invalid message: there are no valid BulkVS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "9876543210"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "33333333333"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWE6YmJiYmJiYmJiYg==
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+no_password:
+  error: "BulkVS: a BulkVS user/pass was not provided"
+  valid: false
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+qs_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "7777777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+qs_user_from:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "55555555555"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "55555555555"
+      headers:
+        Accept: application/json
+        Authorization: Basic enp6enp6enp6ejp5eXl5eXl5eXl5
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+self:
+  ok: true
+  requests:
+    - body:
+        json:
+          From: "2222222222"
+          Message: "Mercurio Title\r\nMercurio Body"
+          To: "2222222222"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXV1dXV1dXV1dTpwcHBwcHBwcHBw
+        Content-Type: application/json
+      method: POST
+      url: "https://portal.bulkvs.com/api/v1.0/messageSend"
+  valid: true
+short_source:
+  error: "BulkVS: the Account (From) Phone # specified is invalid"
+  valid: false

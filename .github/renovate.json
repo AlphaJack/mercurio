@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits",
+    ":automergeMinor"
+  ],
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    },
+    {
+      "description": "dist generates release.yml; update it with `dist init` instead",
+      "matchFileNames": [".github/workflows/release.yml"],
+      "enabled": false
+    }
+  ]
+}

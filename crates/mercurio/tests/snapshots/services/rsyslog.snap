@@ -1,0 +1,134 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - payload: "<14>- <pid> Mercurio Title: test"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+default_port:
+  events:
+    - payload: "<14>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+facility_arg:
+  events:
+    - payload: "<174>- <pid> Mercurio Title: test"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+facility_invalid:
+  error: "Remote Syslog: An invalid syslog facility (invalid) was specified."
+  valid: false
+facility_path:
+  events:
+    - payload: "<6>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+facility_path_prefix_port:
+  events:
+    - payload: "<30>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+facility_prefix:
+  events:
+    - payload: "<30>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+local7_failure:
+  events:
+    - payload: "<186>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: 10.0.0.1
+        port: 514
+  ok: true
+  valid: true
+multi_path:
+  events:
+    - payload: "<78>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+no_host:
+  events:
+    - payload: "<14>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: ""
+        port: 514
+  ok: true
+  valid: true
+no_pid:
+  events:
+    - payload: "<30>- Mercurio Title: test"
+      sendto:
+        host: localhost
+        port: 9000
+  ok: true
+  valid: true
+no_title:
+  events:
+    - payload: "<14>- <pid> test"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+port:
+  events:
+    - payload: "<14>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: localhost
+        port: 518
+  ok: true
+  valid: true
+success:
+  events:
+    - payload: "<21>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: syslog.example.com
+        port: 514
+  ok: true
+  valid: true
+title:
+  events:
+    - payload: "<14>- <pid> Testing a title entry: test"
+      sendto:
+        host: localhost
+        port: 518
+  ok: true
+  valid: true
+unicode:
+  events:
+    - payload: "<14>- <pid> Grüße: ✓ done"
+      sendto:
+        host: localhost
+        port: 514
+  ok: true
+  valid: true
+warning:
+  events:
+    - payload: "<36>- <pid> Mercurio Title: Mercurio Body"
+      sendto:
+        host: syslog.example.com
+        port: 514
+  ok: true
+  valid: true

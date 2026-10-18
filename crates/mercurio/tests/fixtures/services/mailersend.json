@@ -1,0 +1,26 @@
+{
+"pipeline":{"url":"mailersend://abcd:user@example.com"},
+"cases":[
+{"name":"empty","url":"mailersend://"},
+{"name":"empty_creds","url":"mailersend://:@/"},
+{"name":"token_only","url":"mailersend://abcd"},
+{"name":"no_password","url":"mailersend://abcd@host"},
+{"name":"invalid_api_key","url":"mailersend://bad+key*!:user@example.com"},
+{"name":"self_target","url":"mailersend://abcd:user@example.com"},
+{"name":"one_target","url":"mailersend://abcd:user@example.com/newuser@example.com"},
+{"name":"two_targets","url":"mailersend://abcd:user@example.com/one@example.com/two@example.com","responses":[{"status":202},{"status":422}]},
+{"name":"cc","url":"mailersend://abcd:user@example.com?cc=cc@example.com"},
+{"name":"bcc","url":"mailersend://abcd:user@example.com?bcc=bcc@example.com"},
+{"name":"cc_in_bcc","url":"mailersend://abcd:user@example.com/to@example.com?cc=x@example.com&bcc=x@example.com"},
+{"name":"reply","url":"mailersend://abcd:user@example.com?reply=reply@example.com"},
+{"name":"invalid_reply","url":"mailersend://abcd:user@example.com/newuser@example.com?reply=%20!"},
+{"name":"bad_target","url":"mailersend://abcd:user@example.com/bademailaddress"},
+{"name":"text_format","url":"mailersend://abcd:user@example.com?format=text","body":"a <b>\n c","title":""},
+{"name":"html_body","url":"mailersend://abcd:user@example.com/newuser@example.com","body":"<h1>Title</h1><div>x &lt; y</div>"},
+{"name":"to_param","url":"mailersend://abcd:user@example.com?to=extra@example.com"},
+{"name":"server_error","url":"mailersend://abcd:user@example.ca/newuser@example.ca","responses":[{"status":500}]},
+{"name":"created_is_failure","url":"mailersend://abcd:user@example.ca/newuser@example.ca","responses":[{"status":201}]},
+{"name":"odd_code","url":"mailersend://abcd:user@example.uk/newuser@example.uk","responses":[{"status":999}]},
+{"name":"conn_error","url":"mailersend://abcd:user@example.au/newuser@example.au","responses":[{"error":true}]},
+{"name":"attachment","url":"mailersend://abcd:user@example.com/to@example.com","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="},{"name":"b.txt","text":"hello"}]}
+]}

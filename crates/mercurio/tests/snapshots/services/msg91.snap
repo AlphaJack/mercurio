@@ -1,0 +1,204 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_authkey:
+  error: "MSG91: an invalid MSG91 Authentication Key was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          recipients:
+            - body: "t\r\nb"
+              mobiles: "15551232000"
+              type: warning
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          recipients:
+            - body: "Mercurio Title\r\nMercurio Body"
+              mobiles: "15551232000"
+              type: info
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+created_is_error:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          recipients:
+            - body: "Mercurio Title\r\nMercurio Body"
+              mobiles: "15551232000"
+              type: info
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+dash:
+  error: "MSG91: an invalid MSG91 Authentication Key was specified"
+  valid: false
+empty:
+  error: "MSG91: an invalid MSG91 Authentication Key was specified"
+  valid: false
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          recipients:
+            - body: "Mercurio Title\r\nMercurio Body"
+              mobiles: "15551232000"
+              type: info
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+invalid_target:
+  errors:
+    - "invalid message: there are no valid MSG91 targets to notify"
+  ok: false
+  requests: []
+  valid: true
+mapping:
+  ok: true
+  requests:
+    - body:
+        json:
+          recipients:
+            - extra: value
+              mobiles: "15551232000"
+              msg: "Mercurio Title\r\nMercurio Body"
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+mapping_same_key:
+  ok: true
+  requests:
+    - body:
+        json:
+          recipients:
+            - mobiles: "15551232000"
+              type: info
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+mapping_swap:
+  ok: true
+  requests:
+    - body:
+        json:
+          recipients:
+            - mobiles: "15551232000"
+              type: "Mercurio Title\r\nMercurio Body"
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+no_targets:
+  errors:
+    - "invalid message: there are no valid MSG91 targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_template:
+  error: "MSG91: an invalid MSG91 Template ID was specified"
+  valid: false
+short_url_yes:
+  ok: true
+  requests:
+    - body:
+        json:
+          recipients:
+            - body: "Mercurio Title\r\nMercurio Body"
+              mobiles: "15551232000"
+              type: info
+            - body: "Mercurio Title\r\nMercurio Body"
+              mobiles: "15551232001"
+              type: info
+          short_url: 1
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+template_space:
+  ok: true
+  requests:
+    - body:
+        json:
+          recipients:
+            - body: "Mercurio Title\r\nMercurio Body"
+              mobiles: "15551232000"
+              type: info
+          short_url: 0
+          template_id: my tmpl
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true
+to_short_url_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          recipients:
+            - body: "Mercurio Title\r\nMercurio Body"
+              mobiles: "15551232000"
+              type: info
+          short_url: 0
+          template_id: tttttttttttttttttttt
+      headers:
+        Content-Type: application/json
+        authkey: aaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://control.msg91.com/api/v5/flow/"
+  valid: true

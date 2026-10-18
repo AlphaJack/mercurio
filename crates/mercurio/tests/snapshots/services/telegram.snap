@@ -1,0 +1,956 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+album:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: chat_id
+            value: "12345"
+          - name: disable_notification
+            value: "false"
+          - name: media
+            value: "[{\"caption\":\"<b>Mercurio Title</b>\\r\\nMercurio Body\",\"media\":\"attach://file0\",\"parse_mode\":\"HTML\",\"show_caption_above_media\":true,\"type\":\"photo\"},{\"media\":\"attach://file1\",\"type\":\"photo\"}]"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: file0
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: b.png
+            name: file1
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMediaGroup"
+    - body:
+        multipart:
+          - name: chat_id
+            value: "12345"
+          - b64: cGRmZGF0YQ==
+            filename: doc.pdf
+            name: document
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendDocument"
+  valid: true
+album_retry:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: true
+          disable_web_page_preview: true
+          message_thread_id: 7
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        multipart:
+          - name: chat_id
+            value: "12345"
+          - name: disable_notification
+            value: "true"
+          - name: message_thread_id
+            value: "7"
+          - name: media
+            value: "[{\"media\":\"attach://file0\",\"type\":\"photo\"},{\"media\":\"attach://file1\",\"type\":\"photo\"}]"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: file0
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: b.png
+            name: file1
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMediaGroup"
+    - body:
+        multipart:
+          - name: chat_id
+            value: "12345"
+          - name: message_thread_id
+            value: "7"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+    - body:
+        multipart:
+          - name: chat_id
+            value: "12345"
+          - name: message_thread_id
+            value: "7"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: document
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendDocument"
+    - body:
+        multipart:
+          - name: chat_id
+            value: "12345"
+          - name: message_thread_id
+            value: "7"
+          - b64: iVBORw0KGgo=
+            filename: b.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+  valid: true
+api_error_continues:
+  errors:
+    - "HTTP 400: {\"description\":\"chat not found\",\"ok\":false}"
+  ok: false
+  requests:
+    - body:
+        json:
+          chat_id: 1
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: 2
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+attach_caption:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: caption
+            value: "<b>Mercurio Title</b>\r\nMercurio Body"
+          - name: show_caption_above_media
+            value: "true"
+          - name: parse_mode
+            value: HTML
+          - name: title
+            value: a.png
+          - name: chat_id
+            value: "12345"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+  valid: true
+attach_caption_topic_leak:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: caption
+            value: "<b>Mercurio Title</b>\r\nMercurio Body"
+          - name: show_caption_above_media
+            value: "true"
+          - name: parse_mode
+            value: HTML
+          - name: title
+            value: a.png
+          - name: chat_id
+            value: "1"
+          - name: message_thread_id
+            value: "5"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+    - body:
+        multipart:
+          - name: title
+            value: doc.pdf
+          - name: chat_id
+            value: "1"
+          - name: message_thread_id
+            value: "5"
+          - b64: cGRmZGF0YQ==
+            filename: doc.pdf
+            name: document
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendDocument"
+    - body:
+        multipart:
+          - name: caption
+            value: "<b>Mercurio Title</b>\r\nMercurio Body"
+          - name: show_caption_above_media
+            value: "true"
+          - name: parse_mode
+            value: HTML
+          - name: title
+            value: a.png
+          - name: chat_id
+            value: "2"
+          - name: message_thread_id
+            value: "5"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+    - body:
+        multipart:
+          - name: title
+            value: doc.pdf
+          - name: chat_id
+            value: "2"
+          - b64: cGRmZGF0YQ==
+            filename: doc.pdf
+            name: document
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendDocument"
+  valid: true
+attach_fail_stops:
+  errors:
+    - "attachment: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: caption
+            value: "<b>Mercurio Title</b>\r\nMercurio Body"
+          - name: show_caption_above_media
+            value: "true"
+          - name: parse_mode
+            value: HTML
+          - name: title
+            value: a.png
+          - name: chat_id
+            value: "12345"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+  valid: true
+attach_long_body_after:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: title
+            value: doc.pdf
+          - name: chat_id
+            value: "12345"
+          - b64: cGRmZGF0YQ==
+            filename: doc.pdf
+            name: document
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendDocument"
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+attach_long_body_before:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        multipart:
+          - name: title
+            value: a.png
+          - name: chat_id
+            value: "12345"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+  valid: true
+attach_mime_kinds:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: caption
+            value: "<b>Mercurio Title</b>\r\nMercurio Body"
+          - name: show_caption_above_media
+            value: "true"
+          - name: parse_mode
+            value: HTML
+          - name: title
+            value: a.gif
+          - name: chat_id
+            value: "12345"
+          - b64: Zw==
+            filename: a.gif
+            name: animation
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendAnimation"
+    - body:
+        multipart:
+          - name: title
+            value: v.ogg
+          - name: chat_id
+            value: "12345"
+          - b64: bw==
+            filename: v.ogg
+            name: voice
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendVoice"
+    - body:
+        multipart:
+          - name: title
+            value: m.mp4
+          - name: chat_id
+            value: "12345"
+          - b64: bQ==
+            filename: m.mp4
+            name: video
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendVideo"
+    - body:
+        multipart:
+          - name: title
+            value: s.mp3
+          - name: chat_id
+            value: "12345"
+          - b64: cw==
+            filename: s.mp3
+            name: audio
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendAudio"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+bot_prefix_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: just body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+content_invalid:
+  error: "Telegram: the content placement specified is invalid"
+  valid: false
+detect_disabled:
+  errors:
+    - "invalid message: there were no Telegram chat ids to notify"
+  ok: false
+  requests: []
+  valid: true
+detect_owner:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+    - body:
+        json:
+          chat_id: "532389719"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+detect_owner_empty:
+  errors:
+    - "owner lookup: service error: failed to detect a Telegram user; send your bot a message first"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+  valid: true
+detect_owner_http_error:
+  errors:
+    - "owner lookup: HTTP 401: {\"description\":\"Unauthorized\",\"ok\":false}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+  valid: true
+detect_owner_topic:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/getUpdates"
+    - body:
+        json:
+          chat_id: "532389719"
+          disable_notification: false
+          disable_web_page_preview: true
+          message_thread_id: 9
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+encoded_colon:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@chan"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+html_cleanup:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>\r\n<b>Head</b>\r\n</b>\r\nhi there\r\n<b>bold</b>\r\n- one\r\n- two\r\n<i>it</i> \"q' end"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+image:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          photo: "https://example.org/info-256x256.png"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/SendPhoto"
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+invalid_empty:
+  error: "Telegram: unparseable Telegram URL"
+  valid: false
+invalid_token_alpha:
+  error: "Telegram: unparseable Telegram URL"
+  valid: false
+markdown_bad_mdv:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@l2g"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: MARKDOWN
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+markdown_default:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: MARKDOWN
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+markdown_v2_silent_preview:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: true
+          disable_web_page_preview: false
+          parse_mode: MarkdownV2
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+multi_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: -30
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: 23423
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: "@id1"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: "@id2"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+only_invalid_target:
+  errors:
+    - "invalid message: there were no Telegram chat ids to notify"
+  ok: false
+  requests: []
+  valid: true
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\n<b>Release</b>\r\nHello <b>bold</b> &amp; <i>it</i> <u>u</u> <a href=\"http://example.com\">link</a>\r\n- one\r\n- two\r\n<pre>x  y\nz</pre>\r\nend"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: MARKDOWN
+          text: "*Mercurio Title*\n\n*Release notes*\n\nThis has *bold*, _italic_, `code` and a [link](http://example.com/a_b).\n\n- first item\n- second _item_\n\n> quoted \\* text & more <stuff>\n\ngone :smile:"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+pipeline_split_attach_after:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: caption
+            value: "<b>Mercurio Title</b>"
+          - name: show_caption_above_media
+            value: "false"
+          - name: parse_mode
+            value: HTML
+          - name: title
+            value: a.png
+          - name: chat_id
+            value: "12345"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+pipeline_split_attach_before:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: 12345
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        multipart:
+          - name: title
+            value: a.png
+          - name: chat_id
+            value: "12345"
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: photo
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendPhoto"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: MARKDOWN
+          text: "*A title that is long enough to be interesting for counters and amalgamation A title that is long enough to be interesting for counters and amalgamation*\n\n*Section 1*\n\nParagraph 1 has *bold 1* and _italic_ words, a [link 1](http://example.com/1) and `code 1`. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\n*Section 2*\n\nParagraph 2 has *bold 2* and _italic_ words, a [link 2](http://example.com/2) and `code 2`. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\n*Section 3*\n\nParagraph 3 has *bold 3* and _italic_ words, a [link 3](http://example.com/3) and `code 3`. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\n*Section 4*\n\nParagraph 4 has *bold 4* and _italic_ words, a [link 4](http://example.com/4) and `code 4`. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\n*Section 5*\n\nParagraph 5 has *bold 5* and _italic_ words, a [link 5](http://example.com/5) and `code 5`. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\n*Section 6*\n\nParagraph 6 has *bold 6* and _italic_ words, a [link 6](http://example.com/6) and `code 6`. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\n*Section 7*\n\nParagraph 7 has *bold 7* and _italic_ words, a [link 7](http://example.com/7) and `code 7`. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\n*Section 8*\n\nParagraph 8 has *bold 8* and _italic_ words, a [link 8](http://example.com/8) and `code 8`. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\n*Section 9*\n\nParagraph 9 has *bold 9* and _italic_ words, a [link 9](http://example.com/9) and `code 9`. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\n*Section 10*\n\nParagraph 10 has *bold 10* and _italic_ words, a [link 10](http://example.com/10) and `code 10`. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\n*Section 11*\n\nParagraph 11 has *bold 11* and _italic_ words, a [link 11](http://example.com/11) and `code 11`. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\n*Section 12*\n\nParagraph 12 has *bold 12* and _italic_ words, a [link 12](http://example.com/12) and `code 12`. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\n*Section 13*\n\nParagraph 13 has *bold 13* and _italic_ words, a [link 13](http://example.com/13) and `code 13`. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\n*Section 14*\n\nParagraph 14 has *bold 14* and _italic_ words, a [link 14](http://example.com/14) and `code 14`. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\n*Section 15*\n\nParagraph 15 has *bold 15* and _italic_ words, a [link 15](http://example.com/15) and `code 15`. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\n*Section 16*\n\nParagraph 16 has *bold 16* and _italic_ words, a [link 16](http://example.com/16) and `code 16`. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\n*Section 17*\n\nParagraph 17 has *bold 17* and _italic_ words, a [link 17](http://example.com/17) and `code 17`. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\n*Section 18*\n\nParagraph 18 has *bold 18* and _italic_ words, a [link 18](http://example.com/18) and `code 18`. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\n*Section 19*\n\nParagraph 19 has *bold 19* and _italic_ words, a [link 19](http://example.com/19) and `code 19`. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\n*Section 20*\n\nParagraph 20 has *bold 20* and _italic_ words, a [link 20](http://example.com/20) and `code 20`. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\n*Section 21*"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: MARKDOWN
+          text: "Paragraph 21 has *bold 21* and _italic_ words, a [link 21](http://example.com/21) and `code 21`. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\n*Section 22*\n\nParagraph 22 has *bold 22* and _italic_ words, a [link 22](http://example.com/22) and `code 22`. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\n*Section 23*\n\nParagraph 23 has *bold 23* and _italic_ words, a [link 23](http://example.com/23) and `code 23`. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\n*Section 24*\n\nParagraph 24 has *bold 24* and _italic_ words, a [link 24](http://example.com/24) and `code 24`. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\n*Section 25*\n\nParagraph 25 has *bold 25* and _italic_ words, a [link 25](http://example.com/25) and `code 25`. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\n*Section 26*\n\nParagraph 26 has *bold 26* and _italic_ words, a [link 26](http://example.com/26) and `code 26`. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\n*Section 27*\n\nParagraph 27 has *bold 27* and _italic_ words, a [link 27](http://example.com/27) and `code 27`. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\n*Section 28*\n\nParagraph 28 has *bold 28* and _italic_ words, a [link 28](http://example.com/28) and `code 28`. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\n*Section 29*\n\nParagraph 29 has *bold 29* and _italic_ words, a [link 29](http://example.com/29) and `code 29`. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\n*Section 30*\n\nParagraph 30 has *bold 30* and _italic_ words, a [link 30](http://example.com/30) and `code 30`. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\n*Section 31*\n\nParagraph 31 has *bold 31* and _italic_ words, a [link 31](http://example.com/31) and `code 31`. Sentences keep goi"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nlorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \r\ntempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \r\neiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \r\ndo eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit \r\nsed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing \r\nelit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur \r\nadipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet \r\nconsectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit \r\namet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. \r\nsit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum \r\ndolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem \r\nipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor \r\nlorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod \r\ntempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do \r\neiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed \r\ndo eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit \r\nsed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing \r\nelit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. \r\nadipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet \r\nconsectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit \r\namet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor \r\nsit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum \r\ndolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem \r\nipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor \r\nlorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod \r\ntempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. \r\ndo eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit \r\nsed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing \r\nelit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur \r\nadipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet \r\nconsectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit \r\namet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor \r\nsit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum \r\ndolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem \r\nipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. \r\nlorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \r\ntempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \r\neiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \r\ndo eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nPlain &lt;text&gt; &amp; *stars* _under_ [x](y)\r\nsecond line"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@lead2gold"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: MARKDOWN
+          text: "*Mercurio Title*\n\n*Section 1*\n\nParagraph 1 has *bold 1* and _italic_ words, a [link 1](http://example.com/1) and `code 1`. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\n*Section 2*\n\nParagraph 2 has *bold 2* and _italic_ words, a [link 2](http://example.com/2) and `code 2`. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\n*Section 3*\n\nParagraph 3 has *bold 3* and _italic_ words, a [link 3](http://example.com/3) and `code 3`. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\n*Section 4*\n\nParagraph 4 has *bold 4* and _italic_ words, a [link 4](http://example.com/4) and `code 4`. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\n*Section 5*\n\nParagraph 5 has *bold 5* and _italic_ words, a [link 5](http://example.com/5) and `code 5`. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\n*Section 6*\n\nParagraph 6 has *bold 6* and _italic_ words, a [link 6](http://example.com/6) and `code 6`. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\n*Section 7*\n\nParagraph 7 has *bold 7* and _italic_ words, a [link 7](http://example.com/7) and `code 7`. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\n*Section 8*\n\nParagraph 8 has *bold 8* and _italic_ words, a [link 8](http://example.com/8) and `code 8`. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\n*Section 9*\n\nParagraph 9 has *bold 9* and _italic_ words, a [link 9](http://example.com/9) and `code 9`. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\n*Section 10*\n\nParagraph 10 has *bold 10* and _italic_ words, a [link 10](http://example.com/10) and `code 10`. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\n*Section 11*\n\nParagraph 11 has *bold 11* and _italic_ words, a [link 11](http://example.com/11) and `code 11`. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\n*Section 12*\n\nParagraph 12 has *bold 12* and _italic_ words, a [link 12](http://example.com/12) and `code 12`. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\n*Section 13*\n\nParagraph 13 has *bold 13* and _italic_ words, a [link 13](http://example.com/13) and `code 13`. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\n*Section 14*\n\nParagraph 14 has *bold 14* and _italic_ words, a [link 14](http://example.com/14) and `code 14`. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\n*Section 15*\n\nParagraph 15 has *bold 15* and _italic_ words, a [link 15](http://example.com/15) and `code 15`. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\n*Section 16*\n\nParagraph 16 has *bold 16* and _italic_ words, a [link 16](http://example.com/16) and `code 16`. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\n*Section 17*\n\nParagraph 17 has *bold 17* and _italic_ words, a [link 17](http://example.com/17) and `code 17`. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\n*Section 18*\n\nParagraph 18 has *bold 18* and _italic_ words, a [link 18](http://example.com/18) and `code 18`. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\n*Section 19*\n\nParagraph 19 has *bold 19* and _italic_ words, a [link 19](http://example.com/19) and `code 19`. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\n*Section 20*\n\nParagraph 20 has *bold 20* and _italic_ words, a [link 20](http://example.com/20) and `code 20`. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\n*Section 21*\n\nParagraph 21 has *bold 21* and _italic_ words, a [link 21](http://example.com/21) and `code 21`. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+target_topics:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: -55
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: 9876
+          disable_notification: false
+          disable_web_page_preview: true
+          message_thread_id: 1111
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: 9876
+          disable_notification: false
+          disable_web_page_preview: true
+          message_thread_id: 1234
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+template_missing:
+  errors:
+    - "service error: Telegram Rich Message template could not be accessed"
+  ok: false
+  requests: []
+  valid: true
+thread:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@id1"
+          disable_notification: false
+          disable_web_page_preview: true
+          message_thread_id: 12345
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@id1"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+    - body:
+        json:
+          chat_id: "@id2"
+          disable_notification: false
+          disable_web_page_preview: true
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+topic:
+  ok: true
+  requests:
+    - body:
+        json:
+          chat_id: "@id1"
+          disable_notification: false
+          disable_web_page_preview: true
+          message_thread_id: 12345
+          parse_mode: HTML
+          text: "<b>Mercurio Title</b>\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/sendMessage"
+  valid: true
+topic_invalid:
+  error: "Telegram: the Telegram Topic ID specified is invalid"
+  valid: false

@@ -1,0 +1,351 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_202_fails:
+  errors:
+    - "HTTP 202: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+bad_key:
+  error: "Session Open Group Server: the SOGS public_key must be exactly 64 hex characters"
+  valid: false
+bad_seed:
+  error: "Session Open Group Server: the SOGS bot seed must be exactly 64 hex characters"
+  valid: false
+basic_200:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: ChYKFGjDqWxsbyDwn6aAICJxIgpsaW5lgA==
+          signature: p1QCBrmQyKIZZEC8lM2P4ED50fJM6zk9D7YYpHSedFaviC+8qU4LxS+Ry7rZUR9zWzVlEvs4vv7FFgu/40h0CA==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+basic_201:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+default_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+forbidden:
+  errors:
+    - "HTTP 403: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+huge_response:
+  errors:
+    - "service error: SOGS response exceeds the size limit"
+  ok: false
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+insecure:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "http://open.getsession.org/room/test-room/message"
+  valid: true
+insecure_port80:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "http://open.getsession.org/room/test-room/message"
+  valid: true
+invalid_room_only:
+  error: "Session Open Group Server: at least one valid SOGS room token must be specified"
+  valid: false
+long_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: CtcTCtQTTWVyY3VyaW8gVGl0bGUNCnl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXmA
+          signature: yXNSSNCfoaIpbH4sQQf2WC0hRrPPS1rPynHYrAAIupvQZR8tZI8z92ks4pKZy4yeoMaFGbMCjoRSE858NCQ/DA==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+no_keys:
+  error: "Session Open Group Server: the SOGS public_key must be exactly 64 hex characters"
+  valid: false
+no_room:
+  error: "Session Open Group Server: at least one valid SOGS room token must be specified"
+  valid: false
+no_seed:
+  error: "Session Open Group Server: the SOGS bot seed must be exactly 64 hex characters"
+  valid: false
+port:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org:8443/room/test-room/message"
+  valid: true
+query_keys:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+query_public_key:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+query_seed_override:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+sogs_scheme:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+to:
+  ok: true
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+two_rooms:
+  errors:
+    - "HTTP 403: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/another-room/message"
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true
+weird_status:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data: Ch8KHU1lcmN1cmlvIFRpdGxlDQpNZXJjdXJpbyBCb2R5gA==
+          signature: Oe1fbhfcTmkLkqpBzUmSG39s06mFzKR2zY0Sue8K37YHq16KK17XJvXsdphE3/6QY8d9pgeNXP5Nwo+A/YykCQ==
+      headers:
+        Content-Type: application/json
+        X-SOGS-Nonce: "<ignored>"
+        X-SOGS-Pubkey: 00e734ea6c2b6257de72355e472aa05a4c487e6b463c029ed306df2f01b5636b58
+        X-SOGS-Signature: "<ignored>"
+        X-SOGS-Timestamp: "<ignored>"
+      method: POST
+      url: "https://open.getsession.org/room/test-room/message"
+  valid: true

@@ -1,0 +1,349 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+empty:
+  error: "YouLMK: an invalid YouLMK token or key was specified"
+  valid: false
+err_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/k/k_7hq2nk3f9qd8w4"
+  valid: true
+err_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+err_402:
+  errors:
+    - "HTTP 402: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+image:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          image: "https://example.org/info-256x256.png"
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+image_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+invalid:
+  error: "YouLMK: an invalid YouLMK token or key was specified"
+  valid: false
+key:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/k/k_7hq2nk3f9qd8w4"
+  valid: true
+label_no_url:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+map_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: critical
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+map_info:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: low
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+map_invalid:
+  error: "YouLMK: an invalid YouLMK priority was specified"
+  valid: false
+map_short:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/k/k_7hq2nk3f9qd8w4"
+  valid: true
+native_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: low
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/k/k_7hq2nk3f9qd8w4"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: b
+          priority: normal
+          title: Mercurio Notifications
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+priority_crit_short:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: critical
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+priority_critical:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: critical
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+priority_invalid:
+  error: "YouLMK: an invalid YouLMK priority was specified"
+  valid: false
+short:
+  error: "YouLMK: an invalid YouLMK token or key was specified"
+  valid: false
+success_default:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+token:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+token_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+upper_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer YLK_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+url_group:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          group: deploys
+          priority: normal
+          title: Mercurio Title
+          url: "https://example.com/runs/1"
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+url_label:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+          url: "https://example.com"
+          url_label: View run
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+url_label_long:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: normal
+          title: Mercurio Title
+          url: "https://example.com"
+          url_label: xxxxxxxxxxxxxxxxxxxxxxxx
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true
+warning_default:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          priority: high
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer ylk_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://youlmk.com/v1/notify"
+  valid: true

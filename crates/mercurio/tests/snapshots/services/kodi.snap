@@ -1,0 +1,466 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+auth:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+colon_at:
+  error: "Kodi/XBMC: an invalid hostname or port was specified"
+  valid: false
+empty:
+  error: "Kodi/XBMC: an invalid hostname or port was specified"
+  valid: false
+empty_secure:
+  error: "Kodi/XBMC: an invalid hostname or port was specified"
+  valid: false
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8081/jsonrpc"
+  valid: true
+image_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+ip:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://192.168.4.1/jsonrpc"
+  valid: true
+ipv6:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://[2001:db8:002a:3256:adfe:05c0:0003:0006]/jsonrpc"
+  valid: true
+ipv6_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://[2001:db8:002a:3256:adfe:05c0:0003:0006]:8282/jsonrpc"
+  valid: true
+kodi_duration_zero:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 0
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+kodi_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/failure-128x128.png"
+            message: "line1\r\nline2"
+            title: t
+          type: error
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+kodi_success:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/success-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+kodi_warning:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/warning-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: warning
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+localhost:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+noimage:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/jsonrpc"
+  valid: true
+port:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+secure_auth:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Authorization: Basic dXNlcjpwYXNzd29yZA==
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8080/jsonrpc"
+  valid: true
+secure_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8080/jsonrpc"
+  valid: true
+status_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmc:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmc_duration:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 14000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmc_duration_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmc_duration_neg:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 1000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmc_empty:
+  error: "Kodi/XBMC: an invalid hostname or port was specified"
+  valid: false
+xbmc_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/failure-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmc_noimage:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmc_user_only:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/jsonrpc"
+  valid: true
+xbmcs_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          id: 1
+          jsonrpc: "2.0"
+          method: GUI.ShowNotification
+          params:
+            displaytime: 12000
+            image: "https://example.org/info-128x128.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:443/jsonrpc"
+  valid: true

@@ -1,0 +1,451 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accesstoken_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/service"
+  valid: true
+basic_auth:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: ~
+          title: Mercurio Title
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/persistent_notification/create"
+  valid: true
+batch_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - dev1
+            - dev2
+            - dev3
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/mobile"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/svc"
+  valid: true
+empty:
+  error: "HomeAssistant: an invalid Home Assistant Long-Lived Access Token was specified"
+  valid: false
+five_devices_quirk:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - a
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/script/run"
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - b
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/script/run"
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - c
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/script/run"
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - d
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/script/run"
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - e
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/script/run"
+  valid: true
+hex_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer 0123abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/light/turn_on"
+  valid: true
+invalid_and_valid_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/ha/api/services/notify/service"
+  valid: true
+invalid_nid:
+  error: "HomeAssistant: an invalid Home Assistant Notification Identifier was specified"
+  valid: false
+nid:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: abcd
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/api/services/persistent_notification/create"
+  valid: true
+no_token:
+  error: "HomeAssistant: an invalid Home Assistant Long-Lived Access Token was specified"
+  valid: false
+only_invalid_targets:
+  errors:
+    - "service error: no valid Home Assistant service targets to notify"
+  ok: false
+  requests: []
+  valid: true
+persistent_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: x1
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/persistent_notification/create"
+  valid: true
+persistent_basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: ~
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/persistent_notification/create"
+  valid: true
+persistent_plain_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: ~
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer accesstoken
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/persistent_notification/create"
+  valid: true
+port80:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: ~
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:80/api/services/persistent_notification/create"
+  valid: true
+prefix_param_persistent:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: ~
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/persistent_notification/create"
+  valid: true
+second_target_fails:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - a
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/svcA"
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - b
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/svcA"
+  valid: true
+secure_port_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8443/api/services/notify/path"
+  valid: true
+service_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: hello
+          targets:
+            - dev1
+          title: ""
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/mobile"
+    - body:
+        json:
+          message: hello
+          targets:
+            - dev2
+          title: ""
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/mobile"
+    - body:
+        json:
+          message: hello
+          targets:
+            - target1
+          title: ""
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/serviceA"
+    - body:
+        json:
+          message: hello
+          targets:
+            - target2
+          title: ""
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/serviceA"
+  valid: true
+single_device_quirk:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          targets:
+            - dev1
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/mobile"
+  valid: true
+target_failure_stops:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/svcB"
+  valid: true
+token_param_path_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/a"
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/path"
+  valid: true
+token_param_service_prefix:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/ha/api/services/notify/service"
+  valid: true
+token_param_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/ha/api/services/notify/service"
+  valid: true
+token_with_pre_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/path"
+    - body:
+        json:
+          message: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer long.lived.token
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/notify/prefix"
+  valid: true
+user_only:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: Mercurio Body
+          notification_id: ~
+          title: Mercurio Title
+      headers:
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8123/api/services/persistent_notification/create"
+  valid: true

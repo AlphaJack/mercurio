@@ -1,0 +1,818 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_multi_skip_text:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: image/png
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+    - body:
+        bytes: /9j/4AAQ
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: image/jpeg
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            embed:
+              $type: app.bsky.embed.images
+              images:
+                - alt: a.png
+                  image:
+                    $type: blob
+                    mimeType: image/png
+                    ref:
+                      $link: baf
+                    size: 8
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            embed:
+              $type: app.bsky.embed.images
+              images:
+                - alt: b.jpg
+                  image:
+                    $type: blob
+                    mimeType: image/png
+                    ref:
+                      $link: baf
+                    size: 8
+            text: 02/02
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+attach_no_blob:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: image/png
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+attach_one:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: image/png
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            embed:
+              $type: app.bsky.embed.images
+              images:
+                - alt: a.png
+                  image:
+                    $type: blob
+                    mimeType: image/png
+                    ref:
+                      $link: baf
+                    size: 8
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+attach_second_record_fails:
+  errors:
+    - "post: HTTP 400: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: image/png
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+    - body:
+        bytes: /9j/4AAQ
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: image/jpeg
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            embed:
+              $type: app.bsky.embed.images
+              images:
+                - alt: a.png
+                  image:
+                    $type: blob
+                    mimeType: image/png
+                    ref:
+                      $link: baf
+                    size: 8
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            embed:
+              $type: app.bsky.embed.images
+              images:
+                - alt: b.jpg
+                  image:
+                    $type: blob
+                    mimeType: image/png
+                    ref:
+                      $link: baf
+                    size: 8
+            text: 02/02
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+attach_upload_fails:
+  errors:
+    - "upload: HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        bytes: iVBORw0KGgo=
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: image/png
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.uploadBlob"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+bsky_scheme_title:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "T\r\nB é"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+connection_error:
+  errors:
+    - "handle lookup: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+  valid: true
+default_responses:
+  errors:
+    - "handle lookup: service error: an unparseable BlueSky DID was returned"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+  valid: true
+did_not_string:
+  errors:
+    - "handle lookup: service error: an unparseable BlueSky DID was returned"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+  valid: true
+did_unknown:
+  errors:
+    - "handle lookup: service error: unknown BlueSky DID scheme"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+  valid: true
+did_web:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://example.com/.well-known/did.json"
+    - body:
+        json:
+          identifier: "did:web:example.com"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:web:example.com"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+empty:
+  error: "BlueSky: a BlueSky UserID/Handle must be specified"
+  valid: false
+empty_userinfo:
+  error: "BlueSky: a BlueSky UserID/Handle must be specified"
+  valid: false
+handle_with_host:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.example.ca"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw3
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+no_user:
+  error: "BlueSky: a BlueSky UserID/Handle must be specified"
+  valid: false
+pds_bad_host:
+  errors:
+    - "did lookup: service error: failed to resolve a usable BlueSky PDS endpoint"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+  valid: true
+pds_credentials:
+  errors:
+    - "did lookup: service error: failed to resolve a usable BlueSky PDS endpoint"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+  valid: true
+pds_doc_list:
+  errors:
+    - "did lookup: service error: could not fetch the BlueSky DID document"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+  valid: true
+pds_insecure:
+  errors:
+    - "did lookup: service error: failed to resolve a usable BlueSky PDS endpoint"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+  valid: true
+pds_missing:
+  errors:
+    - "did lookup: service error: failed to resolve a usable BlueSky PDS endpoint"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+  valid: true
+pds_query:
+  errors:
+    - "did lookup: service error: failed to resolve a usable BlueSky PDS endpoint"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+  valid: true
+quoted_user:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=my.user"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app+pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+ratelimit_wait:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+record_error:
+  errors:
+    - "post: HTTP 999: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+resolve_http_error:
+  errors:
+    - "handle lookup: HTTP 500: {\"error\":\"x\"}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+  valid: true
+session_401:
+  errors:
+    - "login: HTTP 401: {\"error\":\"AuthenticationRequired\"}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+  valid: true
+session_empty:
+  errors:
+    - "login: service error: BlueSky authentication failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+  valid: true
+session_no_token:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: app-pw
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true
+user_password_host:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=user.bsky.social"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://plc.directory/did:plc:1234"
+    - body:
+        json:
+          identifier: "did:plc:1234"
+          password: secret
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.server.createSession"
+    - body:
+        json:
+          collection: app.bsky.feed.post
+          record:
+            $type: app.bsky.feed.post
+            createdAt: ~
+            text: "Mercurio Title\r\nMercurio Body"
+          repo: "did:plc:1234"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://example.pds.io/xrpc/com.atproto.repo.createRecord"
+  valid: true

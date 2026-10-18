@@ -1,0 +1,8 @@
+{
+"pipeline":{"url":"acme://abcd1234"},
+"cases":[
+{"name":"basic","url":"acme://abcd1234"},
+{"name":"no_token","url":"acme://"},
+{"name":"server_error","url":"acme://abcd1234","responses":[{"status":500,"body":"oops"}]},
+{"name":"connection_error","url":"acme://abcd1234","responses":[{"error":true}]}
+]}

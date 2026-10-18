@@ -1,0 +1,605 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+auth_fail:
+  errors:
+    - "service error: XMPP authentication failed: not-authorized"
+  ok: false
+  valid: true
+basic_self:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+connect_fail:
+  errors:
+    - "transport error: no scripted connection for example.com:5222"
+  ok: false
+  valid: true
+escaping:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "<b>&'\"</b>"
+        subject: ""
+        to: friend@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+insecure_mode_starttls:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: false
+        port: 5222
+        starttls: true
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+insecure_mode_tls:
+  events:
+    - connect:
+        direct_tls: true
+        host: example.com
+        plaintext: false
+        port: 5223
+        starttls: false
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+jid_invalid:
+  error: "XMPP: an invalid XMPP JID was specified"
+  valid: false
+jid_resource:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com/bot
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+jid_user_domain:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: friend@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+keepalive:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+mode_invalid:
+  error: "XMPP: the XMPP secure mode specified is invalid"
+  valid: false
+mode_prefix_s:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: false
+        port: 5222
+        starttls: true
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+mode_prefix_t:
+  events:
+    - connect:
+        direct_tls: true
+        host: example.com
+        plaintext: false
+        port: 5223
+        starttls: false
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+muc:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - join:
+        - room@conference.example.com
+        - user
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: room@conference.example.com
+        type: groupchat
+    - disconnect: true
+  ok: true
+  valid: true
+muc_name:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - join:
+        - room@conference.example.com
+        - bot_1
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: room@conference.example.com
+        type: groupchat
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: friend@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+muc_name_invalid:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - join:
+        - room@conference.example.com
+        - user
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: room@conference.example.com
+        type: groupchat
+    - disconnect: true
+  ok: true
+  valid: true
+muc_to:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - join:
+        - room@conference.example.com
+        - user
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: room@conference.example.com
+        type: groupchat
+    - disconnect: true
+  ok: true
+  valid: true
+no_password:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+no_user:
+  error: "XMPP: an invalid XMPP JID was specified"
+  valid: false
+port:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: false
+        port: 5333
+        starttls: true
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+roster:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - roster: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+scramplus_no:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+secure_default_starttls:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: false
+        port: 5222
+        starttls: true
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+secure_mode_none:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: false
+        port: 5222
+        starttls: true
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+secure_mode_tls:
+  events:
+    - connect:
+        direct_tls: true
+        host: example.com
+        plaintext: false
+        port: 5223
+        starttls: false
+        verify: true
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+subject:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: World
+        subject: Hello
+        to: friend@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+subject_no:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Hello\r\nWorld"
+        subject: ""
+        to: friend@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+targets_all_invalid:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+targets_invalid_dropped:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: ok@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+targets_path:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: friend@example.com
+        type: chat
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: other@example.org
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+targets_resource:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: friend@example.com
+        type: chat
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: phone@example.com
+        type: chat
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: res@example.com
+        type: chat
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: x@y.org
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+targets_to:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: a@b.com
+        type: chat
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: c@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+verify_no:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: false
+        port: 5222
+        starttls: true
+        verify: false
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+xmpp_host:
+  events:
+    - connect:
+        direct_tls: false
+        host: chat.example.net
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: friend@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true
+xmpp_host_blank:
+  events:
+    - connect:
+        direct_tls: false
+        host: example.com
+        plaintext: true
+        port: 5222
+        starttls: false
+        verify: ~
+    - presence: true
+    - message:
+        body: "Mercurio Title\r\nMercurio Body"
+        subject: ""
+        to: user@example.com
+        type: chat
+    - disconnect: true
+  ok: true
+  valid: true

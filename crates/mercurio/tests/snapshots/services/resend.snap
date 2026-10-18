@@ -1,0 +1,367 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: user@example.ca
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser0@example.ca
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+apikey_param_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: Joe <user@example.com>
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser5@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+attachment:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content: iVBORw0KGgo=
+              disposition: attachment
+              filename: a.png
+              type: application/octet-stream
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: a@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+bad_target:
+  ok: true
+  requests: []
+  valid: true
+bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          bcc:
+            - l2g@nuxref.com
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser7@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+cc:
+  ok: true
+  requests:
+    - body:
+        json:
+          cc:
+            - l2g@nuxref.com
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser8@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+cc_is_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          bcc:
+            - x@nuxref.com
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: l2g@nuxref.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+cc_named:
+  ok: true
+  requests:
+    - body:
+        json:
+          cc:
+            - Chris <l2g@nuxref.com>
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser8@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          from: user@example.au
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser02@example.au
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+empty:
+  error: "Resend: an invalid Resend API Key was specified"
+  valid: false
+empty_creds:
+  error: "Resend: an invalid Resend API Key was specified"
+  valid: false
+host_target_from_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: Ralph <user2@example.ca>
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser4@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+invalid_api_key:
+  error: "Resend: an invalid Resend API Key was specified"
+  valid: false
+multi_partial:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: a@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+    - body:
+        json:
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: b@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+name:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: Jessica <user@example.com>
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser2@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+name_utf8:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: "=?utf-8?b?SsO2cmc=?= <user@example.com>"
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser2@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+no_password:
+  error: "Resend: invalid ~From~ email specified"
+  valid: false
+odd_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          from: user@example.uk
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser01@example.uk
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+one_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser1@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+reply_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: Joe <user@example.com>
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: user@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+reply_named:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: Joe <user@example.com>
+          html: Mercurio Body
+          reply_to:
+            - John <newuser6@example.com>
+          subject: Mercurio Title
+          to: user@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+self_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: user@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          from: user@example.ca
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser0@example.ca
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+text_format:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: user@example.com
+          subject: "<no subject>"
+          text: Mercurio Body
+          to: newuser9@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: newuser9@example.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+    - body:
+        json:
+          from: user@example.com
+          html: Mercurio Body
+          subject: Mercurio Title
+          to: l2g@nuxref.com
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.resend.com/emails"
+  valid: true
+token_only:
+  error: "Resend: an invalid Resend API Key was specified"
+  valid: false

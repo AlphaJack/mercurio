@@ -1,0 +1,261 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+batch_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+batch_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+66666666666666"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+batch_yes:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+blank:
+  error: "ClickSend: a ClickSend user/pass was not provided"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+created_is_error:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+empty:
+  error: "ClickSend: a ClickSend user/pass was not provided"
+  valid: false
+http_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+invalid_targets:
+  errors:
+    - "invalid message: there are no valid ClickSend targets to notify"
+  ok: false
+  requests: []
+  valid: true
+key_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjphYmMxMjM=
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+key_param_quoted:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333333"
+      headers:
+        Authorization: Basic dXNlcjphK2I=
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+multi_batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333"
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+44444444444"
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+55555555555"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+multi_no_batch:
+  ok: true
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "t\r\nb"
+              source: php
+              to: "+33333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+    - body:
+        json:
+          messages:
+            - body: "t\r\nb"
+              source: php
+              to: "+44444444444"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+    - body:
+        json:
+          messages:
+            - body: "t\r\nb"
+              source: php
+              to: "+55555555555"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true
+no_password:
+  error: "ClickSend: a ClickSend user/pass was not provided"
+  valid: false
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+33333333333"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+44444444444"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+    - body:
+        json:
+          messages:
+            - body: "Mercurio Title\r\nMercurio Body"
+              source: php
+              to: "+55555555555"
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://rest.clicksend.com/v3/sms/send"
+  valid: true

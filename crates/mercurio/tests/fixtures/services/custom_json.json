@@ -1,0 +1,17 @@
+{
+"pipeline":{"url":"json://localhost"},
+"cases":[
+{"name":"basic","url":"json://localhost"},
+{"name":"auth_port_path","url":"jsons://user:pass@localhost:8080/path/to/hook"},
+{"name":"user_only","url":"json://user@localhost"},
+{"name":"headers_params_payload","url":"json://localhost/?+X-Custom=yes&-param=1&:title=subject&:message=&:extra=value"},
+{"name":"double_quoted_payload","url":"json://localhost/?:key%2520a=b%2520c"},
+{"name":"method_put","url":"json://localhost/?method=put"},
+{"name":"method_get","url":"json://localhost/?method=GET"},
+{"name":"method_invalid","url":"json://localhost/?method=invalid"},
+{"name":"failure_type","url":"json://localhost","type":"failure","title":"","body":"unicode ✓ body"},
+{"name":"attachment","url":"json://localhost","attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"server_error","url":"json://localhost","responses":[{"status":404}]},
+{"name":"bad_host","url":"json://"},
+{"name":"quoted_path","url":"json://localhost/a%20b/c"}
+]}

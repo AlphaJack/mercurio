@@ -1,0 +1,26 @@
+{
+"cases":[
+{"name":"user","url":"wechat://corpid:secret@1000002/johndoe","responses":[{"body":{"errcode":0,"access_token":"TOKEN1","expires_in":7200}},{"body":{"errcode":0,"errmsg":"ok"}}]},
+{"name":"all","url":"wechat://corpid:secret@1000002/@all","responses":[{"body":{"access_token":"TOKEN1"}},{"body":{"errcode":0}}]},
+{"name":"to_param","url":"wechat://corpid:secret@1000002?to=@all","responses":[{"body":{"access_token":"TOKEN1"}},{"body":{"errcode":0}}]},
+{"name":"multi_users","url":"wechat://corpid:secret@1000002/user1/user2/user3","responses":[{"body":{"access_token":"T"}},{"body":{"errcode":0}}]},
+{"name":"dept_tag_user","url":"wechat://corpid:secret@1000002/john/%23200/+3/bad!target","responses":[{"body":{"access_token":"T"}},{"body":{"errcode":0}}]},
+{"name":"markdown","url":"wechat://corpid:secret@1000002/@all?format=markdown","title":"Hi","body":"**b**","responses":[{"body":{"access_token":"T"}},{"body":{"errcode":0}}]},
+{"name":"send_default_response_fails","url":"wechat://corpid:secret@1000002/alice","responses":[{"body":{"access_token":"T"}}]},
+{"name":"token_default_response_fails","url":"wechat://corpid:secret@1000002/alice"},
+{"name":"token_errcode","url":"wechat://corpid:secret@1000002/alice","responses":[{"body":{"errcode":40001,"errmsg":"invalid credential"}}]},
+{"name":"token_missing","url":"wechat://corpid:secret@1000002/alice","responses":[{"body":{"errcode":0,"expires_in":7200}}]},
+{"name":"token_http_error","url":"wechat://corpid:secret@1000002/alice","responses":[{"status":500}]},
+{"name":"token_not_json","url":"wechat://corpid:secret@1000002/alice","responses":[{"body":"invalid"}]},
+{"name":"token_connection_error","url":"wechat://corpid:secret@1000002/alice","responses":[{"error":true}]},
+{"name":"send_errcode","url":"wechat://corpid:secret@1000002/alice","responses":[{"body":{"access_token":"T"}},{"body":{"errcode":81013,"errmsg":"all invalid"}}]},
+{"name":"send_http_error","url":"wechat://corpid:secret@1000002/alice","responses":[{"body":{"access_token":"T"}},{"status":403}]},
+{"name":"send_connection_error","url":"wechat://corpid:secret@1000002/alice","responses":[{"body":{"access_token":"T"}},{"error":true}]},
+{"name":"no_targets","url":"wechat://corpid:secret@1000002/"},
+{"name":"only_invalid_targets","url":"wechat://corpid:secret@1000002/bad!target"},
+{"name":"empty","url":"wechat://"},
+{"name":"no_secret","url":"wechat://corpid"},
+{"name":"no_agent","url":"wechat://corpid:secret@"},
+{"name":"bad_agent","url":"wechat://corpid:secret@notanumber"},
+{"name":"quoted_creds","url":"wechat://corp%20id:sec%2Fret@1000002/+42","responses":[{"body":{"access_token":"T"}},{"body":{"errcode":0}}]}
+]}

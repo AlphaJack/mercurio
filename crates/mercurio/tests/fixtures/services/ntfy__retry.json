@@ -1,0 +1,8 @@
+{
+"cases":[
+{"name":"retry_skips_delivered_topic","url":"ntfy://localhost/topic1/topic2?retry=2","sends":1,"responses":[{"status":200},{"status":500},{"status":200}]},
+{"name":"retry_exhausted","url":"ntfy://localhost/topic1?retry=1","sends":1,"responses":[{"status":500},{"status":500}]},
+{"name":"no_retry_no_tracking","url":"ntfy://localhost/topic1/topic2","sends":2,"responses":[{"status":200},{"status":500}]},
+{"name":"two_messages","url":"ntfy://localhost/topic1?retry=1","messages":[{"title":"a","body":"one"},{"body":"two","type":"failure"}]},
+{"name":"store_no","url":"ntfy://localhost/topic1?store=no&retry=1","sends":1,"responses":[{"status":500},{"status":200}]}
+]}

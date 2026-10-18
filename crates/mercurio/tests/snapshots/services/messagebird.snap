@@ -1,0 +1,246 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+alpha_source:
+  error: "Bird (MessageBird): the Bird source specified is invalid"
+  valid: false
+bad_key:
+  error: "Bird (MessageBird): an invalid Bird API Key was specified"
+  valid: false
+category:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: marketing
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+category_invalid:
+  error: "Bird (MessageBird): an invalid Bird SMS category was specified"
+  valid: false
+classic_key:
+  error: "Bird (MessageBird): classic MessageBird API keys stop working on 2026-12-31 and are not supported: create a Bird API key (bk_...)"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+created_201:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+empty:
+  error: "Bird (MessageBird): an invalid Bird API Key was specified"
+  valid: false
+eu_key:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_eu1_bbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://eu1.platform.bird.com/v1/sms/messages"
+  valid: true
+from_overrides_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551233000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+invalid_target:
+  errors:
+    - "invalid message: there are no valid Bird targets to notify"
+  ok: false
+  requests: []
+  valid: true
+multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "t\r\nb"
+          to: "+15551232001"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "t\r\nb"
+          to: "+15551232002"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+no_source:
+  error: "Bird (MessageBird): the Bird source specified is invalid"
+  valid: false
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232002"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+qs_from_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551233000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+self:
+  ok: true
+  requests:
+    - body:
+        json:
+          category: transactional
+          from: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Authorization: Bearer bk_us1_aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        Content-Type: application/json
+      method: POST
+      url: "https://us1.platform.bird.com/v1/sms/messages"
+  valid: true
+short_source:
+  error: "Bird (MessageBird): the Bird source specified is invalid"
+  valid: false
+short_target:
+  errors:
+    - "invalid message: there are no valid Bird targets to notify"
+  ok: false
+  requests: []
+  valid: true

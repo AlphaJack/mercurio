@@ -1,0 +1,121 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+blank:
+  error: "PushMe: an invalid PushMe Token was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=eeeeeeee&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+empty:
+  error: "PushMe: an invalid PushMe Token was specified"
+  valid: false
+err_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=ddddddd&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=cccccc&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+err_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=ddddddd&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+html:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=aaaaaa&title=%5B%21%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+markdown:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=aaaaaa&title=%5B%2B%5D+Mercurio+Title&content=Mercurio+Body&type=markdown"
+  valid: true
+push_key:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=pppppp&title=Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+token:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=aaaaaa&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+token_overrides_host:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=qtoken&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+token_status_no:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=bbbbbb&title=Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+token_status_true:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=bbbbbb&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+token_status_yes:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=bbbbbb&title=%5Bi%5D+Mercurio+Title&content=Mercurio+Body&type=text"
+  valid: true
+warning_no_title:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: POST
+      url: "https://push.i-i.me/?push_key=aaaaaa&title=%5B~%5D+&content=Mercurio+Body&type=text"
+  valid: true

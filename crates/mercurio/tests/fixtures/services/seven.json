@@ -1,0 +1,21 @@
+{
+"cases":[
+{"name":"no_key","url":"seven://"},
+{"name":"basic","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/15551232000"},
+{"name":"status_201","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/15551232000","responses":[{"status":201}]},
+{"name":"http_500","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/15551232000","responses":[{"status":500}]},
+{"name":"http_999","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/15551232000","responses":[{"status":999}]},
+{"name":"conn_error","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/15551232000","responses":[{"error":true}]},
+{"name":"to_param","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/?to=15551232000,+1 (555) 123-4567"},
+{"name":"invalid_phone","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/15551"},
+{"name":"no_targets","url":"seven://aaaaaaaaaaaaaaaaaaaaaaaaa/"},
+{"name":"from","url":"seven://33333333333333/15551232000?from=mercurio"},
+{"name":"source","url":"seven://33333333333333/15551232000?source=mercurio"},
+{"name":"flash","url":"seven://33333333333333/15551232000?from=mercurio&flash=true"},
+{"name":"flash_no","url":"seven://33333333333333/15551232000?flash=no"},
+{"name":"label","url":"seven://33333333333333/15551232000?source=AR&flash=1&label=123"},
+{"name":"label_spaces","url":"seven://33333333333333/15551232000?label=%20abc%20&from=%20me%20"},
+{"name":"multi_partial","url":"seven://33333333333333/15551232000/15551232001/bad","responses":[{"status":200},{"status":400}]},
+{"name":"multi","url":"seven://33333333333333/15551232000/+44 20 7946 0958","title":"T","body":"hello"},
+{"name":"verify_no","url":"seven://33333333333333/15551232000?from=AR&flash=yes&label=123&verify=no","type":"failure"}
+]}

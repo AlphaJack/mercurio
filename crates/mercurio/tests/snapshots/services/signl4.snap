@@ -1,0 +1,226 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-AlertingScenario: multi_ack
+          X-S4-ExternalID: x1
+          X-S4-Filtering: true
+          X-S4-Location: "40.6413111,-73.7781391"
+          X-S4-Service: IoT
+          X-S4-SourceSystem: Mercurio
+          X-S4-Status: resolved
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+bad:
+  error: "SIGNL4: an invalid SIGNL4 team or integration secret was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+blank:
+  error: "SIGNL4: an invalid SIGNL4 team or integration secret was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+empty:
+  error: "SIGNL4: an invalid SIGNL4 team or integration secret was specified"
+  valid: false
+ext_status:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-ExternalID: ar1234
+          X-S4-SourceSystem: Mercurio
+          X-S4-Status: new
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+filtering_encoded:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-Filtering: true
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+filtering_false:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+filtering_yes:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-Filtering: true
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+http_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+http_204:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+location:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-Location: "40.6413111,-73.7781391"
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Notifications
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+qs_secret:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret2/"
+  valid: true
+scenario:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-AlertingScenario: singl4_ack
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+service:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-Service: IoT
+          X-S4-SourceSystem: Mercurio
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true

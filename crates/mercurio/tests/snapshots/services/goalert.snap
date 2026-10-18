@@ -1,0 +1,284 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+action_prefix:
+  ok: true
+  requests:
+    - body:
+        json:
+          action: close
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+empty:
+  error: "GoAlert: an invalid hostname or port was specified"
+  valid: false
+first_fails_second_sent:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer c1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+invalid_action:
+  error: "GoAlert: the GoAlert action specified is invalid"
+  valid: false
+invalid_target_only:
+  errors:
+    - "service error: there are no GoAlert integration keys to notify"
+  ok: false
+  requests: []
+  valid: true
+map_success_closes:
+  ok: true
+  requests:
+    - body:
+        json:
+          action: close
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+no_targets:
+  errors:
+    - "service error: there are no GoAlert integration keys to notify"
+  ok: false
+  requests: []
+  valid: true
+no_title_markdown_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: "disk \\_full\\_ at C:\\Users"
+          summary: "disk _full_ at C:\\Users"
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+no_title_summary:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: "disk \\_full\\_ at C:\\Users"
+          summary: "disk \\_full\\_ at C:\\Users"
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+quoted_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/my%20path/api/v2/generic/incoming"
+  valid: true
+status_201:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+status_204:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+status_206_fails:
+  errors:
+    - "HTTP 206: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+status_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+to_list_mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/a/b/api/v2/generic/incoming"
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer c1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/a/b/api/v2/generic/incoming"
+  valid: true
+token_close_dedup:
+  ok: true
+  requests:
+    - body:
+        json:
+          action: close
+          dedup: disk
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/api/v2/generic/incoming"
+  valid: true
+trigger_meta:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          meta:
+            Region: eu west
+            env: prod
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/api/v2/generic/incoming"
+  valid: true
+trigger_success_no_close:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v2/generic/incoming"
+  valid: true
+two_keys_path_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer b1b2c3d4-e5f6-7890-abcd-ef123456789c
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8443/goalert/api/v2/generic/incoming"
+    - body:
+        json:
+          details: Mercurio Body
+          summary: Mercurio Title
+      headers:
+        Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8443/goalert/api/v2/generic/incoming"
+  valid: true

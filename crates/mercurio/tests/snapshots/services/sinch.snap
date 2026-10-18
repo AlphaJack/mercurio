@@ -1,0 +1,238 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_source:
+  error: "Sinch: the Account (From) Phone # or Short-code specified is invalid"
+  valid: false
+blank:
+  error: "Sinch: an invalid Sinch Account SID was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+66666666666"
+          to:
+            - "+66666666666"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+empty:
+  error: "Sinch: an invalid Sinch Account SID was specified"
+  valid: false
+http_error:
+  errors:
+    - "HTTP 999: {\"code\": 4, \"message\": \"no\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+66666666666"
+          to:
+            - "+66666666666"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+invalid_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+33333333333"
+          to:
+            - "+33333333333"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "t\r\nb"
+          from: "+55555555555"
+          to:
+            - "+66666666666"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+    - body:
+        json:
+          body: "t\r\nb"
+          from: "+55555555555"
+          to:
+            - "+77777777777"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+nine_digits:
+  error: "Sinch: the Account (From) Phone # specified is invalid"
+  valid: false
+no_token:
+  error: "Sinch: an invalid Sinch Authentication Token was specified"
+  valid: false
+non_hex:
+  error: "Sinch: an invalid Sinch Account SID was specified"
+  valid: false
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+55555555555"
+          to:
+            - "+66666666666"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+55555555555"
+          to:
+            - "+77777777777"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+qs_source:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+55555555555"
+          to:
+            - "+55555555555"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+qs_spi_token_from:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+55555555555"
+          to:
+            - "+55555555555"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+qs_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+55555555555"
+          to:
+            - "+7777777777777"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+region_eu:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+55555555555"
+          to:
+            - "+55555555555"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://eu.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+region_invalid:
+  error: "Sinch: the region specified is invalid"
+  valid: false
+self:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "+55555555555"
+          to:
+            - "+55555555555"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+short_code:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "12345"
+          to:
+            - "+44444444444"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true
+short_code_no_targets:
+  errors:
+    - "invalid message: there are no valid Sinch targets to notify"
+  ok: false
+  requests: []
+  valid: true
+six_short_code:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          from: "123456"
+          to:
+            - "+44444444444"
+      headers:
+        Authorization: Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        Content-Type: application/json
+      method: POST
+      url: "https://us.sms.api.sinch.com/xms/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/batches"
+  valid: true

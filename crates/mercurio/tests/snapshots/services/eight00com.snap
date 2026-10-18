@@ -1,0 +1,244 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_source:
+  error: "800.com: the 800.com from phone # is invalid"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232000"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+empty:
+  error: "800.com: an 800.com Personal Access Token must be specified"
+  valid: false
+from_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232001"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232002"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232000"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+http_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232000"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+invalid_target:
+  errors:
+    - "800.com: there are no valid 800.com targets to notify"
+  ok: false
+  requests: []
+  valid: true
+mms:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: sender
+            value: "+15551232000"
+          - name: recipient
+            value: "+15551232001"
+          - name: message
+            value: "Mercurio Title\r\nMercurio Body"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: "media[]"
+          - b64: R0lGODlh
+            content_type: image/gif
+            filename: b.gif
+            name: "media[]"
+      headers:
+        Authorization: Bearer token
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+mms_conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: sender
+            value: "+15551232000"
+          - name: recipient
+            value: "+15551232000"
+          - name: message
+            value: "Mercurio Title\r\nMercurio Body"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: "media[]"
+      headers:
+        Authorization: Bearer token
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+mms_fail:
+  errors:
+    - "HTTP 422: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: sender
+            value: "+15551232000"
+          - name: recipient
+            value: "+15551232001"
+          - name: message
+            value: "Mercurio Title\r\nMercurio Body"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: "media[]"
+      headers:
+        Authorization: Bearer token
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.800.com/message"
+    - body:
+        multipart:
+          - name: sender
+            value: "+15551232000"
+          - name: recipient
+            value: "+15551232002"
+          - name: message
+            value: "Mercurio Title\r\nMercurio Body"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: "media[]"
+      headers:
+        Authorization: Bearer token
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+no_token:
+  error: "800.com: an 800.com Personal Access Token must be specified"
+  valid: false
+self:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232000"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232001"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232002"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer token
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+token_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232001"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true
+token_query_overrides:
+  ok: true
+  requests:
+    - body:
+        json:
+          message: "Mercurio Title\r\nMercurio Body"
+          recipient: "+15551232000"
+          sender: "+15551232000"
+      headers:
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://api.800.com/message"
+  valid: true

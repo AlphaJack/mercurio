@@ -1,0 +1,215 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted:
+  errors:
+    - "HTTP 202: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://api2.pushdeer.com:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+bad_host_key:
+  error: "PushDeer: an invalid PushDeer API Pushkey was specified"
+  valid: false
+bad_key:
+  error: "PushDeer: an invalid PushDeer API Pushkey was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://api2.pushdeer.com:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+empty:
+  error: "PushDeer: an invalid PushDeer API Pushkey was specified"
+  valid: false
+empty_secure:
+  error: "PushDeer: an invalid PushDeer API Pushkey was specified"
+  valid: false
+host:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+host_multi_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+host_port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:8080/message/push?pushkey=aaaaaaaa"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Body
+          - - type
+            - text
+          - - desp
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://api2.pushdeer.com:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api2.pushdeer.com:443/message/push?pushkey=aaaaaaaa"
+  valid: true
+secure_host_port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://example.com:8443/message/push?pushkey=AbC123"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - text
+            - Mercurio Title
+          - - type
+            - text
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://api2.pushdeer.com:80/message/push?pushkey=aaaaaaaa"
+  valid: true
+title_body:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - text
+            - Hi there
+          - - type
+            - text
+          - - desp
+            - "line\nbody é"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://api2.pushdeer.com:80/message/push?pushkey=aaaaaaaa"
+  valid: true

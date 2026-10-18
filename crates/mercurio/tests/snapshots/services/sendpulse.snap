@@ -1,0 +1,964 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachment:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs19
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            attachments_binary:
+              a.png: iVBORw0KGgo=
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+bad_login_json:
+  errors:
+    - "token: service error: invalid response from SendPulse server"
+  ok: false
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1a
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs2
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            bcc:
+              - email: l2g@nuxref.com
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+cc_named:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs4
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            cc:
+              - email: l2g@nuxref.com
+                name: Chris
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+empty:
+  error: "SendPulse: invalid ~From~ email specified"
+  valid: false
+empty_creds:
+  error: "SendPulse: invalid ~From~ email specified"
+  valid: false
+from_id_secret:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: ci
+          client_secret: cs
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: chris@example.com
+              name: Chris
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.com
+                name: Chris
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+from_name:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: chris@example.com
+              name: Chris
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.com
+                name: Chris
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+from_param_email:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: chris@example.com
+              name: Chris
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.com
+                name: Chris
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+host_only:
+  error: "SendPulse: invalid ~From~ email specified"
+  valid: false
+html_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: PHA+SGkgPGI+dGhlcmU8L2I+PC9wPng=
+            subject: Mercurio Title
+            text: "Hi there\n\nx"
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+invalid_template:
+  error: "SendPulse: the SendPulse Template ID is invalid"
+  valid: false
+invalid_to_falls_back:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs6
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+login_http_error:
+  errors:
+    - "token: HTTP 403: {\"error\":\"x\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1a
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+  valid: true
+login_no_expiry:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1a
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+login_no_token:
+  errors:
+    - "token: service error: SendPulse returned no access token"
+  ok: false
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1a
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+  valid: true
+login_short_expiry:
+  errors:
+    - "token: service error: SendPulse token expiry limit returned was invalid"
+  ok: false
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1a
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+  valid: true
+multi_targets:
+  errors:
+    - "send: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs9
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.com
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: test@test.com
+                name: Test
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+named_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs8
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.com
+                name: Chris
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+no_credentials:
+  error: "SendPulse: an invalid SendPulse Client ID was specified"
+  valid: false
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: PGgxPlJlbGVhc2U8L2gxPjxwPkhlbGxvIDxiPmJvbGQ8L2I+ICZhbXA7IDxpPml0PC9pPiA8dT51PC91PiA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20iPmxpbms8L2E+PC9wPjx1bD48bGk+b25lPC9saT48bGk+dHdvPC9saT48L3VsPjxwcmU+eCAgeQp6PC9wcmU+PHNjcmlwdD5ubygpPC9zY3JpcHQ+PGJyLz5lbmQ=
+            subject: Mercurio Title
+            text: "Release\n\nHello bold & it u link\n\n- one\n- two\n\nx  y\nz\n\nend"
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: PGgxPlJlbGVhc2Ugbm90ZXM8L2gxPgo8cD5UaGlzIGhhcyA8c3Ryb25nPmJvbGQ8L3N0cm9uZz4sIDxlbT5pdGFsaWM8L2VtPiwgPGNvZGU+Y29kZTwvY29kZT4gYW5kIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tL2FfYiI+bGluazwvYT4uPC9wPgo8dWw+CjxsaT5maXJzdCBpdGVtPC9saT4KPGxpPnNlY29uZCA8ZW0+aXRlbTwvZW0+PC9saT4KPC91bD4KPGJsb2NrcXVvdGU+CjxwPnF1b3RlZCAqIHRleHQgJmFtcDsgbW9yZSA8c3R1ZmY+PC9wPgo8L2Jsb2NrcXVvdGU+CjxwPjxkZWw+Z29uZTwvZGVsPiA6c21pbGU6PC9wPg==
+            subject: Mercurio Title
+            text: "Release notes\n\nThis has bold, italic, code and a link.\n\n- first item\n- second item\n\nquoted * text & more\n\ngone :smile:"
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: PGgyPlNlY3Rpb24gMTwvaDI+CjxwPlBhcmFncmFwaCAxIGhhcyA8c3Ryb25nPmJvbGQgMTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xIj5saW5rIDE8L2E+IGFuZCA8Y29kZT5jb2RlIDE8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDFhPC9saT4KPGxpPnBvaW50IDFiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjwvaDI+CjxwPlBhcmFncmFwaCAyIGhhcyA8c3Ryb25nPmJvbGQgMjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yIj5saW5rIDI8L2E+IGFuZCA8Y29kZT5jb2RlIDI8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDJhPC9saT4KPGxpPnBvaW50IDJiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMzwvaDI+CjxwPlBhcmFncmFwaCAzIGhhcyA8c3Ryb25nPmJvbGQgMzwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8zIj5saW5rIDM8L2E+IGFuZCA8Y29kZT5jb2RlIDM8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDNhPC9saT4KPGxpPnBvaW50IDNiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNDwvaDI+CjxwPlBhcmFncmFwaCA0IGhhcyA8c3Ryb25nPmJvbGQgNDwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS80Ij5saW5rIDQ8L2E+IGFuZCA8Y29kZT5jb2RlIDQ8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDRhPC9saT4KPGxpPnBvaW50IDRiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNTwvaDI+CjxwPlBhcmFncmFwaCA1IGhhcyA8c3Ryb25nPmJvbGQgNTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS81Ij5saW5rIDU8L2E+IGFuZCA8Y29kZT5jb2RlIDU8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDVhPC9saT4KPGxpPnBvaW50IDViPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNjwvaDI+CjxwPlBhcmFncmFwaCA2IGhhcyA8c3Ryb25nPmJvbGQgNjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS82Ij5saW5rIDY8L2E+IGFuZCA8Y29kZT5jb2RlIDY8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDZhPC9saT4KPGxpPnBvaW50IDZiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNzwvaDI+CjxwPlBhcmFncmFwaCA3IGhhcyA8c3Ryb25nPmJvbGQgNzwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS83Ij5saW5rIDc8L2E+IGFuZCA8Y29kZT5jb2RlIDc8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDdhPC9saT4KPGxpPnBvaW50IDdiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gODwvaDI+CjxwPlBhcmFncmFwaCA4IGhhcyA8c3Ryb25nPmJvbGQgODwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS84Ij5saW5rIDg8L2E+IGFuZCA8Y29kZT5jb2RlIDg8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDhhPC9saT4KPGxpPnBvaW50IDhiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gOTwvaDI+CjxwPlBhcmFncmFwaCA5IGhhcyA8c3Ryb25nPmJvbGQgOTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS85Ij5saW5rIDk8L2E+IGFuZCA8Y29kZT5jb2RlIDk8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDlhPC9saT4KPGxpPnBvaW50IDliPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTA8L2gyPgo8cD5QYXJhZ3JhcGggMTAgaGFzIDxzdHJvbmc+Ym9sZCAxMDwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xMCI+bGluayAxMDwvYT4gYW5kIDxjb2RlPmNvZGUgMTA8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDEwYTwvbGk+CjxsaT5wb2ludCAxMGI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAxMTwvaDI+CjxwPlBhcmFncmFwaCAxMSBoYXMgPHN0cm9uZz5ib2xkIDExPC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzExIj5saW5rIDExPC9hPiBhbmQgPGNvZGU+Y29kZSAxMTwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMTFhPC9saT4KPGxpPnBvaW50IDExYjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDEyPC9oMj4KPHA+UGFyYWdyYXBoIDEyIGhhcyA8c3Ryb25nPmJvbGQgMTI8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMTIiPmxpbmsgMTI8L2E+IGFuZCA8Y29kZT5jb2RlIDEyPC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAxMmE8L2xpPgo8bGk+cG9pbnQgMTJiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTM8L2gyPgo8cD5QYXJhZ3JhcGggMTMgaGFzIDxzdHJvbmc+Ym9sZCAxMzwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xMyI+bGluayAxMzwvYT4gYW5kIDxjb2RlPmNvZGUgMTM8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDEzYTwvbGk+CjxsaT5wb2ludCAxM2I8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAxNDwvaDI+CjxwPlBhcmFncmFwaCAxNCBoYXMgPHN0cm9uZz5ib2xkIDE0PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzE0Ij5saW5rIDE0PC9hPiBhbmQgPGNvZGU+Y29kZSAxNDwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMTRhPC9saT4KPGxpPnBvaW50IDE0YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDE1PC9oMj4KPHA+UGFyYWdyYXBoIDE1IGhhcyA8c3Ryb25nPmJvbGQgMTU8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMTUiPmxpbmsgMTU8L2E+IGFuZCA8Y29kZT5jb2RlIDE1PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAxNWE8L2xpPgo8bGk+cG9pbnQgMTViPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTY8L2gyPgo8cD5QYXJhZ3JhcGggMTYgaGFzIDxzdHJvbmc+Ym9sZCAxNjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xNiI+bGluayAxNjwvYT4gYW5kIDxjb2RlPmNvZGUgMTY8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDE2YTwvbGk+CjxsaT5wb2ludCAxNmI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAxNzwvaDI+CjxwPlBhcmFncmFwaCAxNyBoYXMgPHN0cm9uZz5ib2xkIDE3PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzE3Ij5saW5rIDE3PC9hPiBhbmQgPGNvZGU+Y29kZSAxNzwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMTdhPC9saT4KPGxpPnBvaW50IDE3YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDE4PC9oMj4KPHA+UGFyYWdyYXBoIDE4IGhhcyA8c3Ryb25nPmJvbGQgMTg8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMTgiPmxpbmsgMTg8L2E+IGFuZCA8Y29kZT5jb2RlIDE4PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAxOGE8L2xpPgo8bGk+cG9pbnQgMThiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTk8L2gyPgo8cD5QYXJhZ3JhcGggMTkgaGFzIDxzdHJvbmc+Ym9sZCAxOTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xOSI+bGluayAxOTwvYT4gYW5kIDxjb2RlPmNvZGUgMTk8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDE5YTwvbGk+CjxsaT5wb2ludCAxOWI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyMDwvaDI+CjxwPlBhcmFncmFwaCAyMCBoYXMgPHN0cm9uZz5ib2xkIDIwPC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzIwIj5saW5rIDIwPC9hPiBhbmQgPGNvZGU+Y29kZSAyMDwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjBhPC9saT4KPGxpPnBvaW50IDIwYjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDIxPC9oMj4KPHA+UGFyYWdyYXBoIDIxIGhhcyA8c3Ryb25nPmJvbGQgMjE8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMjEiPmxpbmsgMjE8L2E+IGFuZCA8Y29kZT5jb2RlIDIxPC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAyMWE8L2xpPgo8bGk+cG9pbnQgMjFiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjI8L2gyPgo8cD5QYXJhZ3JhcGggMjIgaGFzIDxzdHJvbmc+Ym9sZCAyMjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yMiI+bGluayAyMjwvYT4gYW5kIDxjb2RlPmNvZGUgMjI8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDIyYTwvbGk+CjxsaT5wb2ludCAyMmI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyMzwvaDI+CjxwPlBhcmFncmFwaCAyMyBoYXMgPHN0cm9uZz5ib2xkIDIzPC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzIzIj5saW5rIDIzPC9hPiBhbmQgPGNvZGU+Y29kZSAyMzwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjNhPC9saT4KPGxpPnBvaW50IDIzYjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDI0PC9oMj4KPHA+UGFyYWdyYXBoIDI0IGhhcyA8c3Ryb25nPmJvbGQgMjQ8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMjQiPmxpbmsgMjQ8L2E+IGFuZCA8Y29kZT5jb2RlIDI0PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAyNGE8L2xpPgo8bGk+cG9pbnQgMjRiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjU8L2gyPgo8cD5QYXJhZ3JhcGggMjUgaGFzIDxzdHJvbmc+Ym9sZCAyNTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yNSI+bGluayAyNTwvYT4gYW5kIDxjb2RlPmNvZGUgMjU8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDI1YTwvbGk+CjxsaT5wb2ludCAyNWI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyNjwvaDI+CjxwPlBhcmFncmFwaCAyNiBoYXMgPHN0cm9uZz5ib2xkIDI2PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzI2Ij5saW5rIDI2PC9hPiBhbmQgPGNvZGU+Y29kZSAyNjwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjZhPC9saT4KPGxpPnBvaW50IDI2YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDI3PC9oMj4KPHA+UGFyYWdyYXBoIDI3IGhhcyA8c3Ryb25nPmJvbGQgMjc8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMjciPmxpbmsgMjc8L2E+IGFuZCA8Y29kZT5jb2RlIDI3PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAyN2E8L2xpPgo8bGk+cG9pbnQgMjdiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjg8L2gyPgo8cD5QYXJhZ3JhcGggMjggaGFzIDxzdHJvbmc+Ym9sZCAyODwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yOCI+bGluayAyODwvYT4gYW5kIDxjb2RlPmNvZGUgMjg8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDI4YTwvbGk+CjxsaT5wb2ludCAyOGI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyOTwvaDI+CjxwPlBhcmFncmFwaCAyOSBoYXMgPHN0cm9uZz5ib2xkIDI5PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzI5Ij5saW5rIDI5PC9hPiBhbmQgPGNvZGU+Y29kZSAyOTwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjlhPC9saT4KPGxpPnBvaW50IDI5YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDMwPC9oMj4KPHA+UGFyYWdyYXBoIDMwIGhhcyA8c3Ryb25nPmJvbGQgMzA8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMzAiPmxpbmsgMzA8L2E+IGFuZCA8Y29kZT5jb2RlIDMwPC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAzMGE8L2xpPgo8bGk+cG9pbnQgMzBiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMzE8L2gyPgo8cD5QYXJhZ3JhcGggMzEgaGFzIDxzdHJvbmc+Ym9sZCAzMTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8zMSI+bGluayAzMTwvYT4gYW5kIDxjb2RlPmNvZGUgMzE8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2k8L3A+
+            subject: A title that is long enough to be interesting for counters and amalgamation A title that is long enough to be interesting for counters and amalgamation
+            text: "Section 1\n\nParagraph 1 has bold 1 and italic words, a link 1 and code 1. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\nSection 2\n\nParagraph 2 has bold 2 and italic words, a link 2 and code 2. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\nSection 3\n\nParagraph 3 has bold 3 and italic words, a link 3 and code 3. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\nSection 4\n\nParagraph 4 has bold 4 and italic words, a link 4 and code 4. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\nSection 5\n\nParagraph 5 has bold 5 and italic words, a link 5 and code 5. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\nSection 6\n\nParagraph 6 has bold 6 and italic words, a link 6 and code 6. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\nSection 7\n\nParagraph 7 has bold 7 and italic words, a link 7 and code 7. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\nSection 8\n\nParagraph 8 has bold 8 and italic words, a link 8 and code 8. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\nSection 9\n\nParagraph 9 has bold 9 and italic words, a link 9 and code 9. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\nSection 10\n\nParagraph 10 has bold 10 and italic words, a link 10 and code 10. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\nSection 11\n\nParagraph 11 has bold 11 and italic words, a link 11 and code 11. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\nSection 12\n\nParagraph 12 has bold 12 and italic words, a link 12 and code 12. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\nSection 13\n\nParagraph 13 has bold 13 and italic words, a link 13 and code 13. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\nSection 14\n\nParagraph 14 has bold 14 and italic words, a link 14 and code 14. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\nSection 15\n\nParagraph 15 has bold 15 and italic words, a link 15 and code 15. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\nSection 16\n\nParagraph 16 has bold 16 and italic words, a link 16 and code 16. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\nSection 17\n\nParagraph 17 has bold 17 and italic words, a link 17 and code 17. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\nSection 18\n\nParagraph 18 has bold 18 and italic words, a link 18 and code 18. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\nSection 19\n\nParagraph 19 has bold 19 and italic words, a link 19 and code 19. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\nSection 20\n\nParagraph 20 has bold 20 and italic words, a link 20 and code 20. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\nSection 21\n\nParagraph 21 has bold 21 and italic words, a link 21 and code 21. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\nSection 22\n\nParagraph 22 has bold 22 and italic words, a link 22 and code 22. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\nSection 23\n\nParagraph 23 has bold 23 and italic words, a link 23 and code 23. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\nSection 24\n\nParagraph 24 has bold 24 and italic words, a link 24 and code 24. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\nSection 25\n\nParagraph 25 has bold 25 and italic words, a link 25 and code 25. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\nSection 26\n\nParagraph 26 has bold 26 and italic words, a link 26 and code 26. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\nSection 27\n\nParagraph 27 has bold 27 and italic words, a link 27 and code 27. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\nSection 28\n\nParagraph 28 has bold 28 and italic words, a link 28 and code 28. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\nSection 29\n\nParagraph 29 has bold 29 and italic words, a link 29 and code 29. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\nSection 30\n\nParagraph 30 has bold 30 and italic words, a link 30 and code 30. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\nSection 31\n\nParagraph 31 has bold 31 and italic words, a link 31 and code 31. Sentences keep goi"
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: bG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCAKIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gCiBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCAKIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IAogc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIAogZWxpdCBzZWQuIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyLiBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciAKIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQuIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IAogY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3IuIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCAKIGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3IuIAogc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gCiBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gbG9yZW0gCiBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvciAKIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyBlaXVzbW9kIAogdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyLiBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIAogZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQuIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyLiBhZGlwaXNjaW5nIGVsaXQgc2VkIAogZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3IuIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCAKIHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3IuIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgCiBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIuIAogYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgCiBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IAogYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciAKIHNpdCBhbWV0IGNvbnNlY3RldHVyLiBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSAKIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQuIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyLiBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIAogaXBzdW0gZG9sb3IuIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQuIGRvIGVpdXNtb2QgdGVtcG9yIAogbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3IuIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCAKIHRlbXBvci4gbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gCiBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gCiBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IAogc2VkIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyAKIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciAKIGFkaXBpc2NpbmcgZWxpdCBzZWQuIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyLiBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCAKIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQuIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCAKIGFtZXQgY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3IuIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIAogc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIuIGFkaXBpc2NpbmcgZWxpdCBzZWQgZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gaXBzdW0gCiBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gbG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZC4gZG8gZWl1c21vZCB0ZW1wb3IgbG9yZW0gCiBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvci4gc2l0IGFtZXQgY29uc2VjdGV0dXIgYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIHRlbXBvci4gCiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyBlaXVzbW9kIHRlbXBvciBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ci4gYWRpcGlzY2luZyBlbGl0IHNlZCBkbyBlaXVzbW9kIAogdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yLiBsb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkLiBkbyAKIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyLiBhZGlwaXNjaW5nIGVsaXQgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGxvcmVtIGlwc3VtIGRvbG9yLiBzaXQgYW1ldCBjb25zZWN0ZXR1ciBhZGlwaXNjaW5nIGVsaXQgc2VkIAogZG8gZWl1c21vZCB0ZW1wb3IuIGxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IGNvbnNlY3RldHVyIGFkaXBpc2Np
+            subject: Mercurio Title
+            text: lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            subject: Mercurio Title
+            text: "Plain <text> & *stars* _under_ [x](y)\nsecond line"
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: PGgyPlNlY3Rpb24gMTwvaDI+CjxwPlBhcmFncmFwaCAxIGhhcyA8c3Ryb25nPmJvbGQgMTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xIj5saW5rIDE8L2E+IGFuZCA8Y29kZT5jb2RlIDE8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDFhPC9saT4KPGxpPnBvaW50IDFiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjwvaDI+CjxwPlBhcmFncmFwaCAyIGhhcyA8c3Ryb25nPmJvbGQgMjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yIj5saW5rIDI8L2E+IGFuZCA8Y29kZT5jb2RlIDI8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDJhPC9saT4KPGxpPnBvaW50IDJiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMzwvaDI+CjxwPlBhcmFncmFwaCAzIGhhcyA8c3Ryb25nPmJvbGQgMzwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8zIj5saW5rIDM8L2E+IGFuZCA8Y29kZT5jb2RlIDM8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDNhPC9saT4KPGxpPnBvaW50IDNiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNDwvaDI+CjxwPlBhcmFncmFwaCA0IGhhcyA8c3Ryb25nPmJvbGQgNDwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS80Ij5saW5rIDQ8L2E+IGFuZCA8Y29kZT5jb2RlIDQ8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDRhPC9saT4KPGxpPnBvaW50IDRiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNTwvaDI+CjxwPlBhcmFncmFwaCA1IGhhcyA8c3Ryb25nPmJvbGQgNTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS81Ij5saW5rIDU8L2E+IGFuZCA8Y29kZT5jb2RlIDU8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDVhPC9saT4KPGxpPnBvaW50IDViPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNjwvaDI+CjxwPlBhcmFncmFwaCA2IGhhcyA8c3Ryb25nPmJvbGQgNjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS82Ij5saW5rIDY8L2E+IGFuZCA8Y29kZT5jb2RlIDY8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDZhPC9saT4KPGxpPnBvaW50IDZiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gNzwvaDI+CjxwPlBhcmFncmFwaCA3IGhhcyA8c3Ryb25nPmJvbGQgNzwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS83Ij5saW5rIDc8L2E+IGFuZCA8Y29kZT5jb2RlIDc8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDdhPC9saT4KPGxpPnBvaW50IDdiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gODwvaDI+CjxwPlBhcmFncmFwaCA4IGhhcyA8c3Ryb25nPmJvbGQgODwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS84Ij5saW5rIDg8L2E+IGFuZCA8Y29kZT5jb2RlIDg8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDhhPC9saT4KPGxpPnBvaW50IDhiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gOTwvaDI+CjxwPlBhcmFncmFwaCA5IGhhcyA8c3Ryb25nPmJvbGQgOTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS85Ij5saW5rIDk8L2E+IGFuZCA8Y29kZT5jb2RlIDk8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDlhPC9saT4KPGxpPnBvaW50IDliPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTA8L2gyPgo8cD5QYXJhZ3JhcGggMTAgaGFzIDxzdHJvbmc+Ym9sZCAxMDwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xMCI+bGluayAxMDwvYT4gYW5kIDxjb2RlPmNvZGUgMTA8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDEwYTwvbGk+CjxsaT5wb2ludCAxMGI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAxMTwvaDI+CjxwPlBhcmFncmFwaCAxMSBoYXMgPHN0cm9uZz5ib2xkIDExPC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzExIj5saW5rIDExPC9hPiBhbmQgPGNvZGU+Y29kZSAxMTwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMTFhPC9saT4KPGxpPnBvaW50IDExYjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDEyPC9oMj4KPHA+UGFyYWdyYXBoIDEyIGhhcyA8c3Ryb25nPmJvbGQgMTI8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMTIiPmxpbmsgMTI8L2E+IGFuZCA8Y29kZT5jb2RlIDEyPC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAxMmE8L2xpPgo8bGk+cG9pbnQgMTJiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTM8L2gyPgo8cD5QYXJhZ3JhcGggMTMgaGFzIDxzdHJvbmc+Ym9sZCAxMzwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xMyI+bGluayAxMzwvYT4gYW5kIDxjb2RlPmNvZGUgMTM8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDEzYTwvbGk+CjxsaT5wb2ludCAxM2I8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAxNDwvaDI+CjxwPlBhcmFncmFwaCAxNCBoYXMgPHN0cm9uZz5ib2xkIDE0PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzE0Ij5saW5rIDE0PC9hPiBhbmQgPGNvZGU+Y29kZSAxNDwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMTRhPC9saT4KPGxpPnBvaW50IDE0YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDE1PC9oMj4KPHA+UGFyYWdyYXBoIDE1IGhhcyA8c3Ryb25nPmJvbGQgMTU8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMTUiPmxpbmsgMTU8L2E+IGFuZCA8Y29kZT5jb2RlIDE1PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAxNWE8L2xpPgo8bGk+cG9pbnQgMTViPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTY8L2gyPgo8cD5QYXJhZ3JhcGggMTYgaGFzIDxzdHJvbmc+Ym9sZCAxNjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xNiI+bGluayAxNjwvYT4gYW5kIDxjb2RlPmNvZGUgMTY8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDE2YTwvbGk+CjxsaT5wb2ludCAxNmI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAxNzwvaDI+CjxwPlBhcmFncmFwaCAxNyBoYXMgPHN0cm9uZz5ib2xkIDE3PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzE3Ij5saW5rIDE3PC9hPiBhbmQgPGNvZGU+Y29kZSAxNzwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMTdhPC9saT4KPGxpPnBvaW50IDE3YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDE4PC9oMj4KPHA+UGFyYWdyYXBoIDE4IGhhcyA8c3Ryb25nPmJvbGQgMTg8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMTgiPmxpbmsgMTg8L2E+IGFuZCA8Y29kZT5jb2RlIDE4PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAxOGE8L2xpPgo8bGk+cG9pbnQgMThiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMTk8L2gyPgo8cD5QYXJhZ3JhcGggMTkgaGFzIDxzdHJvbmc+Ym9sZCAxOTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8xOSI+bGluayAxOTwvYT4gYW5kIDxjb2RlPmNvZGUgMTk8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDE5YTwvbGk+CjxsaT5wb2ludCAxOWI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyMDwvaDI+CjxwPlBhcmFncmFwaCAyMCBoYXMgPHN0cm9uZz5ib2xkIDIwPC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzIwIj5saW5rIDIwPC9hPiBhbmQgPGNvZGU+Y29kZSAyMDwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjBhPC9saT4KPGxpPnBvaW50IDIwYjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDIxPC9oMj4KPHA+UGFyYWdyYXBoIDIxIGhhcyA8c3Ryb25nPmJvbGQgMjE8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMjEiPmxpbmsgMjE8L2E+IGFuZCA8Y29kZT5jb2RlIDIxPC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAyMWE8L2xpPgo8bGk+cG9pbnQgMjFiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjI8L2gyPgo8cD5QYXJhZ3JhcGggMjIgaGFzIDxzdHJvbmc+Ym9sZCAyMjwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yMiI+bGluayAyMjwvYT4gYW5kIDxjb2RlPmNvZGUgMjI8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDIyYTwvbGk+CjxsaT5wb2ludCAyMmI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyMzwvaDI+CjxwPlBhcmFncmFwaCAyMyBoYXMgPHN0cm9uZz5ib2xkIDIzPC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzIzIj5saW5rIDIzPC9hPiBhbmQgPGNvZGU+Y29kZSAyMzwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjNhPC9saT4KPGxpPnBvaW50IDIzYjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDI0PC9oMj4KPHA+UGFyYWdyYXBoIDI0IGhhcyA8c3Ryb25nPmJvbGQgMjQ8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMjQiPmxpbmsgMjQ8L2E+IGFuZCA8Y29kZT5jb2RlIDI0PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAyNGE8L2xpPgo8bGk+cG9pbnQgMjRiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjU8L2gyPgo8cD5QYXJhZ3JhcGggMjUgaGFzIDxzdHJvbmc+Ym9sZCAyNTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yNSI+bGluayAyNTwvYT4gYW5kIDxjb2RlPmNvZGUgMjU8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDI1YTwvbGk+CjxsaT5wb2ludCAyNWI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyNjwvaDI+CjxwPlBhcmFncmFwaCAyNiBoYXMgPHN0cm9uZz5ib2xkIDI2PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzI2Ij5saW5rIDI2PC9hPiBhbmQgPGNvZGU+Y29kZSAyNjwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjZhPC9saT4KPGxpPnBvaW50IDI2YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDI3PC9oMj4KPHA+UGFyYWdyYXBoIDI3IGhhcyA8c3Ryb25nPmJvbGQgMjc8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMjciPmxpbmsgMjc8L2E+IGFuZCA8Y29kZT5jb2RlIDI3PC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAyN2E8L2xpPgo8bGk+cG9pbnQgMjdiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMjg8L2gyPgo8cD5QYXJhZ3JhcGggMjggaGFzIDxzdHJvbmc+Ym9sZCAyODwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8yOCI+bGluayAyODwvYT4gYW5kIDxjb2RlPmNvZGUgMjg8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2luZyBzbyBzcGxpdHRpbmcgaGFzIHRvIHBpY2sgYSBib3VuZGFyeS48L3A+Cjx1bD4KPGxpPnBvaW50IDI4YTwvbGk+CjxsaT5wb2ludCAyOGI8L2xpPgo8L3VsPgo8aDI+U2VjdGlvbiAyOTwvaDI+CjxwPlBhcmFncmFwaCAyOSBoYXMgPHN0cm9uZz5ib2xkIDI5PC9zdHJvbmc+IGFuZCA8ZW0+aXRhbGljPC9lbT4gd29yZHMsIGEgPGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tLzI5Ij5saW5rIDI5PC9hPiBhbmQgPGNvZGU+Y29kZSAyOTwvY29kZT4uIFNlbnRlbmNlcyBrZWVwIGdvaW5nIHNvIHNwbGl0dGluZyBoYXMgdG8gcGljayBhIGJvdW5kYXJ5LjwvcD4KPHVsPgo8bGk+cG9pbnQgMjlhPC9saT4KPGxpPnBvaW50IDI5YjwvbGk+CjwvdWw+CjxoMj5TZWN0aW9uIDMwPC9oMj4KPHA+UGFyYWdyYXBoIDMwIGhhcyA8c3Ryb25nPmJvbGQgMzA8L3N0cm9uZz4gYW5kIDxlbT5pdGFsaWM8L2VtPiB3b3JkcywgYSA8YSBocmVmPSJodHRwOi8vZXhhbXBsZS5jb20vMzAiPmxpbmsgMzA8L2E+IGFuZCA8Y29kZT5jb2RlIDMwPC9jb2RlPi4gU2VudGVuY2VzIGtlZXAgZ29pbmcgc28gc3BsaXR0aW5nIGhhcyB0byBwaWNrIGEgYm91bmRhcnkuPC9wPgo8dWw+CjxsaT5wb2ludCAzMGE8L2xpPgo8bGk+cG9pbnQgMzBiPC9saT4KPC91bD4KPGgyPlNlY3Rpb24gMzE8L2gyPgo8cD5QYXJhZ3JhcGggMzEgaGFzIDxzdHJvbmc+Ym9sZCAzMTwvc3Ryb25nPiBhbmQgPGVtPml0YWxpYzwvZW0+IHdvcmRzLCBhIDxhIGhyZWY9Imh0dHA6Ly9leGFtcGxlLmNvbS8zMSI+bGluayAzMTwvYT4gYW5kIDxjb2RlPmNvZGUgMzE8L2NvZGU+LiBTZW50ZW5jZXMga2VlcCBnb2k8L3A+
+            subject: Mercurio Title
+            text: "Section 1\n\nParagraph 1 has bold 1 and italic words, a link 1 and code 1. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\nSection 2\n\nParagraph 2 has bold 2 and italic words, a link 2 and code 2. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\nSection 3\n\nParagraph 3 has bold 3 and italic words, a link 3 and code 3. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\nSection 4\n\nParagraph 4 has bold 4 and italic words, a link 4 and code 4. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\nSection 5\n\nParagraph 5 has bold 5 and italic words, a link 5 and code 5. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\nSection 6\n\nParagraph 6 has bold 6 and italic words, a link 6 and code 6. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\nSection 7\n\nParagraph 7 has bold 7 and italic words, a link 7 and code 7. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\nSection 8\n\nParagraph 8 has bold 8 and italic words, a link 8 and code 8. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\nSection 9\n\nParagraph 9 has bold 9 and italic words, a link 9 and code 9. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\nSection 10\n\nParagraph 10 has bold 10 and italic words, a link 10 and code 10. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\nSection 11\n\nParagraph 11 has bold 11 and italic words, a link 11 and code 11. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\nSection 12\n\nParagraph 12 has bold 12 and italic words, a link 12 and code 12. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\nSection 13\n\nParagraph 13 has bold 13 and italic words, a link 13 and code 13. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\nSection 14\n\nParagraph 14 has bold 14 and italic words, a link 14 and code 14. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\nSection 15\n\nParagraph 15 has bold 15 and italic words, a link 15 and code 15. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\nSection 16\n\nParagraph 16 has bold 16 and italic words, a link 16 and code 16. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\nSection 17\n\nParagraph 17 has bold 17 and italic words, a link 17 and code 17. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\nSection 18\n\nParagraph 18 has bold 18 and italic words, a link 18 and code 18. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\nSection 19\n\nParagraph 19 has bold 19 and italic words, a link 19 and code 19. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\nSection 20\n\nParagraph 20 has bold 20 and italic words, a link 20 and code 20. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\nSection 21\n\nParagraph 21 has bold 21 and italic words, a link 21 and code 21. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\nSection 22\n\nParagraph 22 has bold 22 and italic words, a link 22 and code 22. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\nSection 23\n\nParagraph 23 has bold 23 and italic words, a link 23 and code 23. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\nSection 24\n\nParagraph 24 has bold 24 and italic words, a link 24 and code 24. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\nSection 25\n\nParagraph 25 has bold 25 and italic words, a link 25 and code 25. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\nSection 26\n\nParagraph 26 has bold 26 and italic words, a link 26 and code 26. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\nSection 27\n\nParagraph 27 has bold 27 and italic words, a link 27 and code 27. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\nSection 28\n\nParagraph 28 has bold 28 and italic words, a link 28 and code 28. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\nSection 29\n\nParagraph 29 has bold 29 and italic words, a link 29 and code 29. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\nSection 30\n\nParagraph 30 has bold 30 and italic words, a link 30 and code 30. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\nSection 31\n\nParagraph 31 has bold 31 and italic words, a link 31 and code 31. Sentences keep goi"
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+relogin_on_401:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs17
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: a@example.com
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs17
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: a@example.com
+      headers:
+        Authorization: Bearer new456
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: b@example.com
+      headers:
+        Authorization: Bearer new456
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+send_bad_json:
+  errors:
+    - "send: service error: invalid response from SendPulse server"
+  ok: false
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs18
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+template:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            template:
+              id: 123
+              variables: {}
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+template_data:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs16
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            template:
+              id: 1234
+              variables:
+                sub: value
+                sub2: value2
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+text:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: user@example.com
+              name: Mercurio
+            subject: "<no subject>"
+            text: Mercurio Body
+            to:
+              - email: user@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+user_param_email:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: ci
+          client_secret: cs
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: chris@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+user_param_email_host_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: chris@example.ca
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.ca
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+user_param_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: client_id
+          client_secret: cs1
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: chris@example.com
+              name: Mercurio
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: chris@example.com
+                name: Mercurio
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true
+user_param_invalid:
+  error: "SendPulse: invalid ~From~ email specified"
+  valid: false
+user_param_named:
+  ok: true
+  requests:
+    - body:
+        json:
+          client_id: ci
+          client_secret: cs
+          grant_type: client_credentials
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/oauth/access_token"
+    - body:
+        json:
+          email:
+            from:
+              email: Chris<chris@example.com>
+              name: Chris
+            html: TWVyY3VyaW8gQm9keQ==
+            subject: Mercurio Title
+            text: Mercurio Body
+            to:
+              - email: Chris<chris@example.com>
+                name: Chris
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendpulse.com/smtp/emails"
+  valid: true

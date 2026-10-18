@@ -1,0 +1,635 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all_channels:
+  ok: true
+  requests:
+    - body:
+        json:
+          call:
+            message: "Mercurio Title\nMercurio Body"
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          inapp:
+            image: "https://example.org/info-72x72.png"
+            title: Mercurio Title
+          mobile_push:
+            message: Mercurio Body
+            title: Mercurio Title
+          slack:
+            text: "Mercurio Title\nMercurio Body"
+          sms:
+            message: "Mercurio Title\nMercurio Body"
+          to:
+            email: user@example.ca
+            id: id
+            number: "+15551234567"
+          type: Mercurio
+          web_push:
+            icon: "https://example.org/info-72x72.png"
+            message: Mercurio Body
+            title: Mercurio Title
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+all_channels_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          call:
+            message: Mercurio Body
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio
+          inapp:
+            image: "https://example.org/info-72x72.png"
+            title: Mercurio
+          mobile_push:
+            message: Mercurio Body
+            title: Mercurio
+          slack:
+            text: Mercurio Body
+          to:
+            email: user@example.ca
+            id: id
+          type: Mercurio
+          web_push:
+            icon: "https://example.org/info-72x72.png"
+            message: Mercurio Body
+            title: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+bad_channel:
+  error: "Pingram: the Pingram forced channel specified is invalid"
+  valid: false
+bad_json:
+  errors:
+    - "service error: invalid response from Pingram server"
+  ok: false
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+bad_key:
+  error: "Pingram: an invalid Pingram API Key was specified"
+  valid: false
+bad_mode:
+  error: "Pingram: the Pingram mode specified is invalid"
+  valid: false
+bad_region:
+  error: "Pingram: the Pingram region specified is invalid"
+  valid: false
+bad_type:
+  error: "Pingram: an invalid Pingram Message Type was specified"
+  valid: false
+bcc_from:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            senderEmail: joe@example.ca
+            senderName: Joe
+            subject: Mercurio Title
+          options:
+            email:
+              bccAddresses:
+                - l2g@nuxref.com
+              fromAddress: joe@example.ca
+              fromName: Joe
+          to:
+            email: user9@example.ca
+            id: id
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+bcc_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user6@example.ca
+            id: id
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+cc:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          options:
+            email:
+              ccAddresses:
+                - l2g@nuxref.com
+          to:
+            email: user8@example.ca
+            id: id
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+empty:
+  error: "Pingram: an invalid Pingram API Key was specified"
+  valid: false
+errors:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: a@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: b@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+from_not_email:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+from_plain:
+  ok: true
+  requests:
+    - body:
+        json:
+          options:
+            email:
+              fromAddress: joe@example.ca
+              fromName: Mercurio
+          to:
+            id: id5
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+html_email:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: "<b>hi</b>"
+            subject: Mercurio Title
+          to:
+            email: user@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+id_sms:
+  ok: true
+  requests:
+    - body:
+        json:
+          sms:
+            message: "Mercurio Title\nMercurio Body"
+          to:
+            id: id
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+ids_email:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            id: id
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user1@example.com
+            id: id2
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+invalid_and_sms:
+  ok: true
+  requests:
+    - body:
+        json:
+          sms:
+            message: "Mercurio Title\nMercurio Body"
+          to:
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+invalid_only:
+  errors:
+    - "service error: there are no Pingram recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+jwt_key:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_pk_aaaa.bbbb.cccc-dd_ee
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: "<h1>Release</h1><p>Hello <b>bold</b> &amp; <i>it</i> <u>u</u> <a href=\"http://example.com\">link</a></p><ul><li>one</li><li>two</li></ul><pre>x  y\nz</pre><script>no()</script><br/>end"
+            subject: Mercurio Title
+          to:
+            email: user1@example.com
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: "#&nbsp;Release&nbsp;notes<br/><br/>This&nbsp;has&nbsp;**bold**,&nbsp;*italic*,&nbsp;`code`&nbsp;and&nbsp;a&nbsp;[link](http://example.com/a_b).<br/><br/>-&nbsp;first&nbsp;item<br/>-&nbsp;second&nbsp;*item*<br/><br/>&gt;&nbsp;quoted&nbsp;\\*&nbsp;text&nbsp;&amp;&nbsp;more&nbsp;&lt;stuff&gt;<br/><br/>~~gone~~&nbsp;:smile:"
+            subject: Mercurio Title
+          to:
+            email: user1@example.com
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: "##&nbsp;Section&nbsp;1<br/><br/>Paragraph&nbsp;1&nbsp;has&nbsp;**bold&nbsp;1**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;1](http://example.com/1)&nbsp;and&nbsp;`code&nbsp;1`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;1a<br/>-&nbsp;point&nbsp;1b<br/><br/>##&nbsp;Section&nbsp;2<br/><br/>Paragraph&nbsp;2&nbsp;has&nbsp;**bold&nbsp;2**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;2](http://example.com/2)&nbsp;and&nbsp;`code&nbsp;2`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;2a<br/>-&nbsp;point&nbsp;2b<br/><br/>##&nbsp;Section&nbsp;3<br/><br/>Paragraph&nbsp;3&nbsp;has&nbsp;**bold&nbsp;3**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;3](http://example.com/3)&nbsp;and&nbsp;`code&nbsp;3`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;3a<br/>-&nbsp;point&nbsp;3b<br/><br/>##&nbsp;Section&nbsp;4<br/><br/>Paragraph&nbsp;4&nbsp;has&nbsp;**bold&nbsp;4**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;4](http://example.com/4)&nbsp;and&nbsp;`code&nbsp;4`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;4a<br/>-&nbsp;point&nbsp;4b<br/><br/>##&nbsp;Section&nbsp;5<br/><br/>Paragraph&nbsp;5&nbsp;has&nbsp;**bold&nbsp;5**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;5](http://example.com/5)&nbsp;and&nbsp;`code&nbsp;5`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;5a<br/>-&nbsp;point&nbsp;5b<br/><br/>##&nbsp;Section&nbsp;6<br/><br/>Paragraph&nbsp;6&nbsp;has&nbsp;**bold&nbsp;6**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;6](http://example.com/6)&nbsp;and&nbsp;`code&nbsp;6`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;6a<br/>-&nbsp;point&nbsp;6b<br/><br/>##&nbsp;Section&nbsp;7<br/><br/>Paragraph&nbsp;7&nbsp;has&nbsp;**bold&nbsp;7**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;7](http://example.com/7)&nbsp;and&nbsp;`code&nbsp;7`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;7a<br/>-&nbsp;point&nbsp;7b<br/><br/>##&nbsp;Section&nbsp;8<br/><br/>Paragraph&nbsp;8&nbsp;has&nbsp;**bold&nbsp;8**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;8](http://example.com/8)&nbsp;and&nbsp;`code&nbsp;8`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;8a<br/>-&nbsp;point&nbsp;8b<br/><br/>##&nbsp;Section&nbsp;9<br/><br/>Paragraph&nbsp;9&nbsp;has&nbsp;**bold&nbsp;9**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;9](http://example.com/9)&nbsp;and&nbsp;`code&nbsp;9`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;9a<br/>-&nbsp;point&nbsp;9b<br/><br/>##&nbsp;Section&nbsp;10<br/><br/>Paragraph&nbsp;10&nbsp;has&nbsp;**bold&nbsp;10**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;10](http://example.com/10)&nbsp;and&nbsp;`code&nbsp;10`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;10a<br/>-&nbsp;point&nbsp;10b<br/><br/>##&nbsp;Section&nbsp;11<br/><br/>Paragraph&nbsp;11&nbsp;has&nbsp;**bold&nbsp;11**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;11](http://example.com/11)&nbsp;and&nbsp;`code&nbsp;11`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;11a<br/>-&nbsp;point&nbsp;11b<br/><br/>##&nbsp;Section&nbsp;12<br/><br/>Paragraph&nbsp;12&nbsp;has&nbsp;**bold&nbsp;12**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;12](http://example.com/12)&nbsp;and&nbsp;`code&nbsp;12`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;12a<br/>-&nbsp;point&nbsp;12b<br/><br/>##&nbsp;Section&nbsp;13<br/><br/>Paragraph&nbsp;13&nbsp;has&nbsp;**bold&nbsp;13**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;13](http://example.com/13)&nbsp;and&nbsp;`code&nbsp;13`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;13a<br/>-&nbsp;point&nbsp;13b<br/><br/>##&nbsp;Section&nbsp;14<br/><br/>Paragraph&nbsp;14&nbsp;has&nbsp;**bold&nbsp;14**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;14](http://example.com/14)&nbsp;and&nbsp;`code&nbsp;14`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;14a<br/>-&nbsp;point&nbsp;14b<br/><br/>##&nbsp;Section&nbsp;15<br/><br/>Paragraph&nbsp;15&nbsp;has&nbsp;**bold&nbsp;15**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;15](http://example.com/15)&nbsp;and&nbsp;`code&nbsp;15`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;15a<br/>-&nbsp;point&nbsp;15b<br/><br/>##&nbsp;Section&nbsp;16<br/><br/>Paragraph&nbsp;16&nbsp;has&nbsp;**bold&nbsp;16**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;16](http://example.com/16)&nbsp;and&nbsp;`code&nbsp;16`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;16a<br/>-&nbsp;point&nbsp;16b<br/><br/>##&nbsp;Section&nbsp;17<br/><br/>Paragraph&nbsp;17&nbsp;has&nbsp;**bold&nbsp;17**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;17](http://example.com/17)&nbsp;and&nbsp;`code&nbsp;17`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;17a<br/>-&nbsp;point&nbsp;17b<br/><br/>##&nbsp;Section&nbsp;18<br/><br/>Paragraph&nbsp;18&nbsp;has&nbsp;**bold&nbsp;18**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;18](http://example.com/18)&nbsp;and&nbsp;`code&nbsp;18`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;18a<br/>-&nbsp;point&nbsp;18b<br/><br/>##&nbsp;Section&nbsp;19<br/><br/>Paragraph&nbsp;19&nbsp;has&nbsp;**bold&nbsp;19**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;19](http://example.com/19)&nbsp;and&nbsp;`code&nbsp;19`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;19a<br/>-&nbsp;point&nbsp;19b<br/><br/>##&nbsp;Section&nbsp;20<br/><br/>Paragraph&nbsp;20&nbsp;has&nbsp;**bold&nbsp;20**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;20](http://example.com/20)&nbsp;and&nbsp;`code&nbsp;20`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;20a<br/>-&nbsp;point&nbsp;20b<br/><br/>##&nbsp;Section&nbsp;21<br/><br/>Paragraph&nbsp;21&nbsp;has&nbsp;**bold&nbsp;21**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;21](http://example.com/21)&nbsp;and&nbsp;`code&nbsp;21`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;21a<br/>-&nbsp;point&nbsp;21b<br/><br/>##&nbsp;Section&nbsp;22<br/><br/>Paragraph&nbsp;22&nbsp;has&nbsp;**bold&nbsp;22**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;22](http://example.com/22)&nbsp;and&nbsp;`code&nbsp;22`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;22a<br/>-&nbsp;point&nbsp;22b<br/><br/>##&nbsp;Section&nbsp;23<br/><br/>Paragraph&nbsp;23&nbsp;has&nbsp;**bold&nbsp;23**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;23](http://example.com/23)&nbsp;and&nbsp;`code&nbsp;23`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;23a<br/>-&nbsp;point&nbsp;23b<br/><br/>##&nbsp;Section&nbsp;24<br/><br/>Paragraph&nbsp;24&nbsp;has&nbsp;**bold&nbsp;24**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;24](http://example.com/24)&nbsp;and&nbsp;`code&nbsp;24`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;24a<br/>-&nbsp;point&nbsp;24b<br/><br/>##&nbsp;Section&nbsp;25<br/><br/>Paragraph&nbsp;25&nbsp;has&nbsp;**bold&nbsp;25**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;25](http://example.com/25)&nbsp;and&nbsp;`code&nbsp;25`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;25a<br/>-&nbsp;point&nbsp;25b<br/><br/>##&nbsp;Section&nbsp;26<br/><br/>Paragraph&nbsp;26&nbsp;has&nbsp;**bold&nbsp;26**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;26](http://example.com/26)&nbsp;and&nbsp;`code&nbsp;26`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;26a<br/>-&nbsp;point&nbsp;26b<br/><br/>##&nbsp;Section&nbsp;27<br/><br/>Paragraph&nbsp;27&nbsp;has&nbsp;**bold&nbsp;27**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;27](http://example.com/27)&nbsp;and&nbsp;`code&nbsp;27`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;27a<br/>-&nbsp;point&nbsp;27b<br/><br/>##&nbsp;Section&nbsp;28<br/><br/>Paragraph&nbsp;28&nbsp;has&nbsp;**bold&nbsp;28**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;28](http://example.com/28)&nbsp;and&nbsp;`code&nbsp;28`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;28a<br/>-&nbsp;point&nbsp;28b<br/><br/>##&nbsp;Section&nbsp;29<br/><br/>Paragraph&nbsp;29&nbsp;has&nbsp;**bold&nbsp;29**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;29](http://example.com/29)&nbsp;and&nbsp;`code&nbsp;29`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;29a<br/>-&nbsp;point&nbsp;29b<br/><br/>##&nbsp;Section&nbsp;30<br/><br/>Paragraph&nbsp;30&nbsp;has&nbsp;**bold&nbsp;30**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;30](http://example.com/30)&nbsp;and&nbsp;`code&nbsp;30`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;30a<br/>-&nbsp;point&nbsp;30b<br/><br/>##&nbsp;Section&nbsp;31<br/><br/>Paragraph&nbsp;31&nbsp;has&nbsp;**bold&nbsp;31**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;31](http://example.com/31)&nbsp;and&nbsp;`code&nbsp;31`.&nbsp;Sentences&nbsp;keep&nbsp;goi"
+            subject: A title that is long enough to be interesting for counters and amalgamation A title that is long enough to be interesting for counters and amalgamation
+          to:
+            email: user1@example.com
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;<br/>&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;<br/>&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;<br/>&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;<br/>&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;<br/>&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;<br/>&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;<br/>&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;<br/>&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;<br/>&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;<br/>&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;<br/>&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;<br/>&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;<br/>&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;<br/>&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;<br/>&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;<br/>&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;<br/>&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;<br/>&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;<br/>&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;<br/>&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;<br/>&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;<br/>&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;<br/>&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;<br/>&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;<br/>&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;<br/>&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;<br/>&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;<br/>&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;<br/>&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;<br/>&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;<br/>&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;<br/>&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;<br/>&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;<br/>&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;<br/>&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;<br/>&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;<br/>&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed.&nbsp;do&nbsp;<br/>&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur.&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;do&nbsp;eiusmod&nbsp;tempor&nbsp;lorem&nbsp;ipsum&nbsp;dolor.&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipiscing&nbsp;elit&nbsp;sed&nbsp;<br/>&nbsp;do&nbsp;eiusmod&nbsp;tempor.&nbsp;lorem&nbsp;ipsum&nbsp;dolor&nbsp;sit&nbsp;amet&nbsp;consectetur&nbsp;adipisci
+            subject: Mercurio Title
+          to:
+            email: user1@example.com
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: "Plain&nbsp;&lt;text&gt;&nbsp;&amp;&nbsp;*stars*&nbsp;_under_&nbsp;[x](y)<br/>second&nbsp;line"
+            subject: Mercurio Title
+          to:
+            email: user1@example.com
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: "##&nbsp;Section&nbsp;1<br/><br/>Paragraph&nbsp;1&nbsp;has&nbsp;**bold&nbsp;1**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;1](http://example.com/1)&nbsp;and&nbsp;`code&nbsp;1`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;1a<br/>-&nbsp;point&nbsp;1b<br/><br/>##&nbsp;Section&nbsp;2<br/><br/>Paragraph&nbsp;2&nbsp;has&nbsp;**bold&nbsp;2**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;2](http://example.com/2)&nbsp;and&nbsp;`code&nbsp;2`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;2a<br/>-&nbsp;point&nbsp;2b<br/><br/>##&nbsp;Section&nbsp;3<br/><br/>Paragraph&nbsp;3&nbsp;has&nbsp;**bold&nbsp;3**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;3](http://example.com/3)&nbsp;and&nbsp;`code&nbsp;3`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;3a<br/>-&nbsp;point&nbsp;3b<br/><br/>##&nbsp;Section&nbsp;4<br/><br/>Paragraph&nbsp;4&nbsp;has&nbsp;**bold&nbsp;4**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;4](http://example.com/4)&nbsp;and&nbsp;`code&nbsp;4`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;4a<br/>-&nbsp;point&nbsp;4b<br/><br/>##&nbsp;Section&nbsp;5<br/><br/>Paragraph&nbsp;5&nbsp;has&nbsp;**bold&nbsp;5**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;5](http://example.com/5)&nbsp;and&nbsp;`code&nbsp;5`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;5a<br/>-&nbsp;point&nbsp;5b<br/><br/>##&nbsp;Section&nbsp;6<br/><br/>Paragraph&nbsp;6&nbsp;has&nbsp;**bold&nbsp;6**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;6](http://example.com/6)&nbsp;and&nbsp;`code&nbsp;6`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;6a<br/>-&nbsp;point&nbsp;6b<br/><br/>##&nbsp;Section&nbsp;7<br/><br/>Paragraph&nbsp;7&nbsp;has&nbsp;**bold&nbsp;7**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;7](http://example.com/7)&nbsp;and&nbsp;`code&nbsp;7`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;7a<br/>-&nbsp;point&nbsp;7b<br/><br/>##&nbsp;Section&nbsp;8<br/><br/>Paragraph&nbsp;8&nbsp;has&nbsp;**bold&nbsp;8**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;8](http://example.com/8)&nbsp;and&nbsp;`code&nbsp;8`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;8a<br/>-&nbsp;point&nbsp;8b<br/><br/>##&nbsp;Section&nbsp;9<br/><br/>Paragraph&nbsp;9&nbsp;has&nbsp;**bold&nbsp;9**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;9](http://example.com/9)&nbsp;and&nbsp;`code&nbsp;9`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;9a<br/>-&nbsp;point&nbsp;9b<br/><br/>##&nbsp;Section&nbsp;10<br/><br/>Paragraph&nbsp;10&nbsp;has&nbsp;**bold&nbsp;10**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;10](http://example.com/10)&nbsp;and&nbsp;`code&nbsp;10`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;10a<br/>-&nbsp;point&nbsp;10b<br/><br/>##&nbsp;Section&nbsp;11<br/><br/>Paragraph&nbsp;11&nbsp;has&nbsp;**bold&nbsp;11**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;11](http://example.com/11)&nbsp;and&nbsp;`code&nbsp;11`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;11a<br/>-&nbsp;point&nbsp;11b<br/><br/>##&nbsp;Section&nbsp;12<br/><br/>Paragraph&nbsp;12&nbsp;has&nbsp;**bold&nbsp;12**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;12](http://example.com/12)&nbsp;and&nbsp;`code&nbsp;12`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;12a<br/>-&nbsp;point&nbsp;12b<br/><br/>##&nbsp;Section&nbsp;13<br/><br/>Paragraph&nbsp;13&nbsp;has&nbsp;**bold&nbsp;13**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;13](http://example.com/13)&nbsp;and&nbsp;`code&nbsp;13`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;13a<br/>-&nbsp;point&nbsp;13b<br/><br/>##&nbsp;Section&nbsp;14<br/><br/>Paragraph&nbsp;14&nbsp;has&nbsp;**bold&nbsp;14**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;14](http://example.com/14)&nbsp;and&nbsp;`code&nbsp;14`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;14a<br/>-&nbsp;point&nbsp;14b<br/><br/>##&nbsp;Section&nbsp;15<br/><br/>Paragraph&nbsp;15&nbsp;has&nbsp;**bold&nbsp;15**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;15](http://example.com/15)&nbsp;and&nbsp;`code&nbsp;15`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;15a<br/>-&nbsp;point&nbsp;15b<br/><br/>##&nbsp;Section&nbsp;16<br/><br/>Paragraph&nbsp;16&nbsp;has&nbsp;**bold&nbsp;16**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;16](http://example.com/16)&nbsp;and&nbsp;`code&nbsp;16`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;16a<br/>-&nbsp;point&nbsp;16b<br/><br/>##&nbsp;Section&nbsp;17<br/><br/>Paragraph&nbsp;17&nbsp;has&nbsp;**bold&nbsp;17**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;17](http://example.com/17)&nbsp;and&nbsp;`code&nbsp;17`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;17a<br/>-&nbsp;point&nbsp;17b<br/><br/>##&nbsp;Section&nbsp;18<br/><br/>Paragraph&nbsp;18&nbsp;has&nbsp;**bold&nbsp;18**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;18](http://example.com/18)&nbsp;and&nbsp;`code&nbsp;18`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;18a<br/>-&nbsp;point&nbsp;18b<br/><br/>##&nbsp;Section&nbsp;19<br/><br/>Paragraph&nbsp;19&nbsp;has&nbsp;**bold&nbsp;19**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;19](http://example.com/19)&nbsp;and&nbsp;`code&nbsp;19`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;19a<br/>-&nbsp;point&nbsp;19b<br/><br/>##&nbsp;Section&nbsp;20<br/><br/>Paragraph&nbsp;20&nbsp;has&nbsp;**bold&nbsp;20**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;20](http://example.com/20)&nbsp;and&nbsp;`code&nbsp;20`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;20a<br/>-&nbsp;point&nbsp;20b<br/><br/>##&nbsp;Section&nbsp;21<br/><br/>Paragraph&nbsp;21&nbsp;has&nbsp;**bold&nbsp;21**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;21](http://example.com/21)&nbsp;and&nbsp;`code&nbsp;21`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;21a<br/>-&nbsp;point&nbsp;21b<br/><br/>##&nbsp;Section&nbsp;22<br/><br/>Paragraph&nbsp;22&nbsp;has&nbsp;**bold&nbsp;22**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;22](http://example.com/22)&nbsp;and&nbsp;`code&nbsp;22`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;22a<br/>-&nbsp;point&nbsp;22b<br/><br/>##&nbsp;Section&nbsp;23<br/><br/>Paragraph&nbsp;23&nbsp;has&nbsp;**bold&nbsp;23**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;23](http://example.com/23)&nbsp;and&nbsp;`code&nbsp;23`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;23a<br/>-&nbsp;point&nbsp;23b<br/><br/>##&nbsp;Section&nbsp;24<br/><br/>Paragraph&nbsp;24&nbsp;has&nbsp;**bold&nbsp;24**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;24](http://example.com/24)&nbsp;and&nbsp;`code&nbsp;24`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;24a<br/>-&nbsp;point&nbsp;24b<br/><br/>##&nbsp;Section&nbsp;25<br/><br/>Paragraph&nbsp;25&nbsp;has&nbsp;**bold&nbsp;25**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;25](http://example.com/25)&nbsp;and&nbsp;`code&nbsp;25`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;25a<br/>-&nbsp;point&nbsp;25b<br/><br/>##&nbsp;Section&nbsp;26<br/><br/>Paragraph&nbsp;26&nbsp;has&nbsp;**bold&nbsp;26**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;26](http://example.com/26)&nbsp;and&nbsp;`code&nbsp;26`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;26a<br/>-&nbsp;point&nbsp;26b<br/><br/>##&nbsp;Section&nbsp;27<br/><br/>Paragraph&nbsp;27&nbsp;has&nbsp;**bold&nbsp;27**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;27](http://example.com/27)&nbsp;and&nbsp;`code&nbsp;27`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;27a<br/>-&nbsp;point&nbsp;27b<br/><br/>##&nbsp;Section&nbsp;28<br/><br/>Paragraph&nbsp;28&nbsp;has&nbsp;**bold&nbsp;28**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;28](http://example.com/28)&nbsp;and&nbsp;`code&nbsp;28`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;28a<br/>-&nbsp;point&nbsp;28b<br/><br/>##&nbsp;Section&nbsp;29<br/><br/>Paragraph&nbsp;29&nbsp;has&nbsp;**bold&nbsp;29**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;29](http://example.com/29)&nbsp;and&nbsp;`code&nbsp;29`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;29a<br/>-&nbsp;point&nbsp;29b<br/><br/>##&nbsp;Section&nbsp;30<br/><br/>Paragraph&nbsp;30&nbsp;has&nbsp;**bold&nbsp;30**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;30](http://example.com/30)&nbsp;and&nbsp;`code&nbsp;30`.&nbsp;Sentences&nbsp;keep&nbsp;going&nbsp;so&nbsp;splitting&nbsp;has&nbsp;to&nbsp;pick&nbsp;a&nbsp;boundary.<br/><br/>-&nbsp;point&nbsp;30a<br/>-&nbsp;point&nbsp;30b<br/><br/>##&nbsp;Section&nbsp;31<br/><br/>Paragraph&nbsp;31&nbsp;has&nbsp;**bold&nbsp;31**&nbsp;and&nbsp;*italic*&nbsp;words,&nbsp;a&nbsp;[link&nbsp;31](http://example.com/31)&nbsp;and&nbsp;`code&nbsp;31`.&nbsp;Sentences&nbsp;keep&nbsp;goi"
+            subject: Mercurio Title
+          to:
+            email: user1@example.com
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+region_ca:
+  ok: true
+  requests:
+    - body:
+        json:
+          sms:
+            message: "Mercurio Title\nMercurio Body"
+          to:
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.ca.pingram.io/send"
+  valid: true
+region_eu_notarget:
+  errors:
+    - "service error: there are no Pingram recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+template_query:
+  ok: true
+  requests:
+    - body:
+        json:
+          parameters:
+            appBody: Mercurio Body
+            appColor: "#3AA3E3"
+            appDescription: Mercurio Notifications
+            appId: Mercurio
+            appImageUrl: "https://example.org/info-72x72.png"
+            appTitle: Mercurio Title
+            appType: info
+            appUrl: "https://example.org"
+          to:
+            email: user5@example.com
+            id: id
+          type: typec
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+template_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          parameters:
+            appBody: Mercurio Body
+            appColor: "#A32037"
+            appDescription: Mercurio Notifications
+            appId: Mercurio
+            appImageUrl: "https://example.org/failure-72x72.png"
+            appTitle: Mercurio Title
+            appType: failure
+            appUrl: "https://example.org"
+            token1: value1
+          to:
+            email: user2@example.com
+            id: id10
+          type: type
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+text_email_escape:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: a&nbsp;&lt;b&gt;&nbsp;&amp;&nbsp;&apos;c&apos;<br/>line&nbsp;two&emsp;x
+            subject: Mercurio Title
+          to:
+            email: user@example.ca
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+two_emails:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user1@example.com
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user2@example.com
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+two_sms:
+  ok: true
+  requests:
+    - body:
+        json:
+          sms:
+            message: "Mercurio Title\nMercurio Body"
+          to:
+            number: "+15551235553"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+    - body:
+        json:
+          sms:
+            message: "Mercurio Title\nMercurio Body"
+          to:
+            number: "15551235554"
+          type: Mercurio
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true
+type_message_mode:
+  ok: true
+  requests:
+    - body:
+        json:
+          email:
+            html: Mercurio&nbsp;Body
+            subject: Mercurio Title
+          to:
+            email: user5@example.com
+            id: id
+          type: typeb
+      headers:
+        Authorization: Bearer pingram_sk_abc123
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pingram.io/send"
+  valid: true

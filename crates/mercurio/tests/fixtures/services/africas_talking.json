@@ -1,0 +1,27 @@
+{
+"cases":[
+{"name":"empty","url":"atalk://"},
+{"name":"blank","url":"atalk://:@/"},
+{"name":"bad_key","url":"atalk://user@^/"},
+{"name":"short_target","url":"atalk://user@apikey/33333"},
+{"name":"mixed","url":"atalk://user@apikey/123/33333333333/abcd/+44444444444","title":"t","body":"b"},
+{"name":"batch","url":"atalk://user@apikey/+44444444444/55555555555?batch=y"},
+{"name":"mode_invalid","url":"atalk://user@apikey/+44444444444?mode=invalid"},
+{"name":"mode_sandbox","url":"atalk://user@apikey/+44444444444?mode=s"},
+{"name":"mode_premium","url":"atalk://user@apikey/+44444444444?mode=PREM"},
+{"name":"qs_apikey","url":"atalk://11111111111?apikey=key&user=user&from=FROMUSER"},
+{"name":"qs_user_to","url":"atalk://_?user=user&to=11111111111,22222222222&key=bbbbbbbbbb&from=5555555555555"},
+{"name":"http_999","url":"atalk://user@apikey/11111111111/","responses":[{"status":999}]},
+{"name":"http_201_ok","url":"atalk://user@apikey/11111111111/","responses":[{"status":201}]},
+{"name":"connection_error","url":"atalk://user@apikey/11111111111/","responses":[{"error":true}]},
+{"name":"recipients_ok","url":"atalk://user@apikey/+15551231234/+15555555555?batch=yes","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [{\"number\": \"+15551231234\", \"statusCode\": 101}, {\"number\": \"+15555555555\", \"statusCode\": \"102\"}]}}"}]},
+{"name":"recipients_partial","url":"atalk://user@apikey/+15551231234/+15555555555?batch=yes","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [{\"number\": \"+15551231234\", \"statusCode\": 101}, {\"number\": \"+15555555555\", \"statusCode\": 405}]}}"}]},
+{"name":"recipients_empty","url":"atalk://user@apikey/+15551231234","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": []}}"}]},
+{"name":"recipients_invalid","url":"atalk://user@apikey/+254711000111","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [\"invalid\", {\"statusCode\": null}, {\"number\": \"+254711000111\", \"statusCode\": \"abc\"}, {\"number\": \"+254711000111\", \"statusCode\": 100}]}}"}]},
+{"name":"recipients_suffix_match","url":"atalk://user@apikey/0711222333/+255711222333?batch=yes","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [{\"number\": \"+254711222333\", \"statusCode\": 101}, {\"number\": \"+255711222333\", \"statusCode\": 101}]}}"}]},
+{"name":"recipients_suffix_single","url":"atalk://user@apikey/0711222333","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [{\"number\": \"+254711222333\", \"statusCode\": 101}]}}"}]},
+{"name":"recipients_int_number","url":"atalk://user@apikey/15551231234","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [{\"number\": 15551231234, \"statusCode\": 100}]}}"}]},
+{"name":"recipients_not_list","url":"atalk://user@apikey/15551231234","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": \"x\"}}"}]},
+{"name":"non_json","url":"atalk://user@apikey/15551231234","responses":[{"status":200,"body":"server error"}]},
+{"name":"per_target_partial","url":"atalk://user@apikey/15551231234/15551231235","responses":[{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [{\"number\": \"+15551231234\", \"statusCode\": 101}]}}"},{"status":200,"body":"{\"SMSMessageData\": {\"Recipients\": [{\"number\": \"+15551231235\", \"statusCode\": 403}]}}"}]}
+]}

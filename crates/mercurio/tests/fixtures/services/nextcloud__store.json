@@ -1,0 +1,7 @@
+{
+"cases":[
+{"name":"group_lookup_cached","url":"ncloud://admin:pass@localhost/%23grp","sends":2,"responses":[{"status":200,"body":{"ocs":{"data":{"users":["bob"]}}}},{"status":200},{"status":200}]},
+{"name":"empty_all_not_cached","url":"nclouds://admin:pass@localhost:8443/all?url_prefix=nc","sends":2,"responses":[{"status":200,"body":{"ocs":{"data":{"users":[]}}}},{"status":200,"body":{"ocs":{"data":{"users":["x"]}}}},{"status":200}]},
+{"name":"empty_group_cached","url":"ncloud://localhost/%23empty","sends":2,"responses":[{"status":200,"body":{"ocs":{"data":{"users":[]}}}}]},
+{"name":"failed_lookup_not_cached","url":"ncloud://admin@localhost/%23grp","sends":2,"responses":[{"status":500},{"status":200,"body":{"ocs":{"data":{"users":["amy"]}}}},{"status":200}]}
+]}

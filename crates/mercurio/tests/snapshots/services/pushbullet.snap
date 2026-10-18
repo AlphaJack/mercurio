@@ -1,0 +1,683 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_bad_response:
+  errors:
+    - "upload request: service error: Pushbullet: unexpected upload-request response"
+  ok: false
+  requests:
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+  valid: true
+attach_file_push_fails:
+  errors:
+    - "push: HTTP 500: {}"
+    - "push: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://upload.pushbullet.com/abcd123"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: d1
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+          file_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          image_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          type: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: d2
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+attach_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://upload.pushbullet.com/abcd123"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: dev1
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+          file_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          image_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          type: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+attach_no_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          file_name: b.txt
+          file_type: text/plain
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+    - body:
+        multipart:
+          - b64: aGk=
+            filename: b.txt
+            name: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://upload.pushbullet.com/efg"
+    - body:
+        json:
+          file_name: b.txt
+          file_type: text/plain
+          file_url: "https://dl.pushbulletusercontent.com/def/b.txt"
+          type: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+attach_non_json:
+  errors:
+    - "upload request: service error: Pushbullet: unexpected upload-request response"
+  ok: false
+  requests:
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+  valid: true
+attach_two_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://upload.pushbullet.com/abcd123"
+    - body:
+        json:
+          file_name: b.txt
+          file_type: text/plain
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+    - body:
+        multipart:
+          - b64: aGVsbG8=
+            filename: b.txt
+            name: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://upload.pushbullet.com/efg"
+    - body:
+        json:
+          body: Mercurio Body
+          channel_tag: chan
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+          file_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          image_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          type: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          file_name: b.txt
+          file_type: text/plain
+          file_url: "https://dl.pushbulletusercontent.com/def/b.txt"
+          type: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: dev1
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+          file_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          image_url: "https://dl.pushbulletusercontent.com/abc/a.png"
+          type: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          file_name: b.txt
+          file_type: text/plain
+          file_url: "https://dl.pushbulletusercontent.com/def/b.txt"
+          type: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+attach_upload_fails:
+  errors:
+    - "upload: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+    - body:
+        multipart:
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: file
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://upload.pushbullet.com/abcd123"
+  valid: true
+attach_upload_request_fails:
+  errors:
+    - "upload request: HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          file_name: a.png
+          file_type: image/png
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/upload-request"
+  valid: true
+basic_all:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+channel:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          channel_tag: channel
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: dev1
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: dev2
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+device:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: device
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+devices:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: device1
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: device2
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+dupes_sorted:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: adev
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: mdev
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: zdev
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+email:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          email: user@example.com
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+emails:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          email: abc@def.com
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          email: user@example.com
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+empty:
+  error: "Pushbullet: an invalid PushBullet Access Token was specified"
+  valid: false
+explicit_all_devices:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: ALL_DEVICES
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+http_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+http_204:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+http_401:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          channel_tag: channel
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: device
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          email: user@example.com
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+no_token:
+  error: "Pushbullet: an invalid PushBullet Access Token was specified"
+  valid: false
+partial_failure:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: dev1
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: dev2
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          device_iden: dev3
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+to_channel:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          channel_tag: channel
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true
+two_channels:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          channel_tag: channel1
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+    - body:
+        json:
+          body: Mercurio Body
+          channel_tag: channel2
+          title: Mercurio Title
+          type: note
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushbullet.com/v2/pushes"
+  valid: true

@@ -1,0 +1,17 @@
+{
+"cases":[
+{"name":"empty","url":"httpsms://"},
+{"name":"no_key","url":"httpsms://15551232000"},
+{"name":"blank_key","url":"httpsms://%20@15551232000"},
+{"name":"bad_source","url":"httpsms://apikey@555"},
+{"name":"self","url":"httpsms://apikey@15551232000"},
+{"name":"targets","url":"httpsms://apikey@15551232000/15551232001/15551232002"},
+{"name":"invalid_target","url":"httpsms://apikey@15551232000/123"},
+{"name":"from_query","url":"httpsms://apikey@15551232001?from=15551232000"},
+{"name":"key_query","url":"httpsms://user@15551232000?key=thekey"},
+{"name":"to_query","url":"httpsms://apikey@15551232000?to=15551232003,15551232004"},
+{"name":"http_500","url":"httpsms://apikey@15551232000","responses":[{"status":500}]},
+{"name":"http_202","url":"httpsms://apikey@15551232000","responses":[{"status":202}]},
+{"name":"conn_error","url":"httpsms://apikey@15551232000","responses":[{"error":true}]},
+{"name":"partial","url":"httpsms://apikey@15551232000/15551232001/15551232002","responses":[{"status":400},{"status":200}],"body":"x"}
+]}

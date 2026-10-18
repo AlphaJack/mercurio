@@ -1,0 +1,446 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.ca
+          personalizations:
+            - to:
+                - email: newuser@example.ca
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+attachment:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - content: iVBORw0KGgo=
+              disposition: attachment
+              filename: a.png
+              type: application/octet-stream
+            - content: aGVsbG8=
+              disposition: attachment
+              filename: b.txt
+              type: application/octet-stream
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+bad_target:
+  errors:
+    - "service error: there are no SendGrid email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - bcc:
+                - email: l2g@nuxref.com
+              to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+cc:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - cc:
+                - email: l2g@nuxref.com
+              to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+cc_also_bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - bcc:
+                - email: l2g@nuxref.com
+              to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+cc_is_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: l2g@nuxref.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.au
+          personalizations:
+            - to:
+                - email: newuser@example.au
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+created_is_failure:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.ca
+          personalizations:
+            - to:
+                - email: newuser@example.ca
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+email_only:
+  error: "SendGrid: no from email specified"
+  valid: false
+empty:
+  error: "SendGrid: an invalid hostname or port was specified"
+  valid: false
+empty_creds:
+  error: "SendGrid: an invalid hostname or port was specified"
+  valid: false
+invalid_api_key:
+  error: "SendGrid: an invalid SendGrid API Key was specified"
+  valid: false
+multi_partial_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: a@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: b@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+no_key_no_email:
+  error: "SendGrid: no API key specified"
+  valid: false
+odd_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.uk
+          personalizations:
+            - to:
+                - email: newuser@example.uk
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+one_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+self_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: user@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.ca
+          personalizations:
+            - to:
+                - email: newuser@example.ca
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+template:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+          template_id: 8b799edf-6f98-4d3a-9be7-2862fb4e5752
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+template_data:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - dynamic_template_data:
+                sub: value
+                sub2: value2
+              to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+          template_id: 8b799edf-6f98-4d3a-9be7-2862fb4e5752
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+template_data_no_template:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+text_format:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/plain
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: newuser@example.com
+          subject: "<no subject>"
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: l2g@nuxref.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+    - body:
+        json:
+          content:
+            - type: text/html
+              value: Mercurio Body
+          from:
+            email: user@example.com
+          personalizations:
+            - to:
+                - email: newuser@example.com
+          subject: Mercurio Title
+      headers:
+        Authorization: Bearer abcd
+        Content-Type: application/json
+      method: POST
+      url: "https://api.sendgrid.com/v3/mail/send"
+  valid: true

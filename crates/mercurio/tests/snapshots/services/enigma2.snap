@@ -1,0 +1,182 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+auth:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+      method: GET
+      url: "http://localhost/api/message?text=hello%0D%0Aworld&type=3&timeout=13"
+  valid: true
+colon_at:
+  error: "Enigma2: an invalid hostname or port was specified"
+  valid: false
+deep_path:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/a/b%20c/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+empty:
+  error: "Enigma2: an invalid hostname or port was specified"
+  valid: false
+empty_secure:
+  error: "Enigma2: an invalid hostname or port was specified"
+  valid: false
+headers:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        HeaderKey: HeaderValue
+      method: GET
+      url: "http://localhost:8080/path/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+http_201:
+  errors:
+    - "HTTP 201: {\"result\":true}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {\"result\":true}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+invalid_json:
+  errors:
+    - "service error: there was no server acknowledgement"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+no_ack_default:
+  errors:
+    - "service error: there was no server acknowledgement"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+port:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost:8080/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=2&timeout=13"
+  valid: true
+result_false:
+  errors:
+    - "service error: there was no server acknowledgement"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+result_list:
+  errors:
+    - "service error: there was no server acknowledgement"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+result_string:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+result_true:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+secure_path:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://localhost:8080/path/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+timeout_30:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=30"
+  valid: true
+timeout_invalid:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: Basic dXNlcjo=
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true
+timeout_neg1:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: Basic dXNlcjo=
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=-1"
+  valid: true
+timeout_neg1000:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: Basic dXNlcjo=
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=-1"
+  valid: true
+user:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: Basic dXNlcjo=
+      method: GET
+      url: "http://localhost/api/message?text=Mercurio+Title%0D%0AMercurio+Body&type=1&timeout=13"
+  valid: true

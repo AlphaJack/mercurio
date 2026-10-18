@@ -1,0 +1,251 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+batch:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "55555555555"
+          - - to
+            - "66666666666,77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+blank:
+  error: "Burst SMS: an invalid Burst SMS API Key was specified"
+  valid: false
+blank_source:
+  error: "Burst SMS: the Account Sender ID specified is invalid"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "66666666666"
+          - - to
+            - "77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+country_invalid:
+  error: "Burst SMS: an invalid Burst SMS country was specified"
+  valid: false
+country_upper:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - au
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "55555555555"
+          - - to
+            - "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+country_us:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - gb
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "55555555555"
+          - - to
+            - "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+empty:
+  error: "Burst SMS: an invalid Burst SMS API Key was specified"
+  valid: false
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "66666666666"
+          - - to
+            - "77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+invalid_targets:
+  errors:
+    - "invalid message: there are no valid Burst SMS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_batch_multi:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "t\r\nb"
+          - - from
+            - Sender
+          - - to
+            - "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "t\r\nb"
+          - - from
+            - Sender
+          - - to
+            - "77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+no_secret:
+  error: "Burst SMS: an invalid Burst SMS API Secret was specified"
+  valid: false
+no_targets:
+  errors:
+    - "invalid message: there are no valid Burst SMS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "66666666666"
+          - - to
+            - "77777777777"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "66666666666"
+          - - to
+            - "88888888888"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+qs_key_secret:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "55555555555"
+          - - to
+            - "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+validity:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - countrycode
+            - us
+          - - message
+            - "Mercurio Title\r\nMercurio Body"
+          - - from
+            - "55555555555"
+          - - to
+            - "66666666666"
+      headers:
+        Accept: application/json
+        Authorization: Basic YWFhYWFhYWE6YmJiYmJiYmJiYmJiYmJiYg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.transmitsms.com/send-sms.json"
+  valid: true
+validity_invalid:
+  error: "Burst SMS: the Burst SMS Validity specified is invalid"
+  valid: false

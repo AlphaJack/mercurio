@@ -1,0 +1,23 @@
+{
+"cases":[
+{"name":"empty","url":"sfr://"},
+{"name":"blank","url":"sfr://:@/"},
+{"name":"no_user","url":"sfr://:service_password"},
+{"name":"bad_at","url":"sfr://testing:serv@ice_password"},
+{"name":"no_space","url":"sfr://testing:service_password@/5555555555"},
+{"name":"no_targets","url":"sfr://testing:service_password@12345/"},
+{"name":"invalid_target","url":"sfr://testing:service_password@12345/targets"},
+{"name":"no_password","url":"sfr://service_id:@000/0000000000"},
+{"name":"good","url":"sfr://service_id:service_password@000/0000000000?from=MyApp&timeout=30","responses":[{"status":200,"body":{"success":true,"response":1}}]},
+{"name":"voice_lang","url":"sfr://service_id:service_password@000/0000000000?voice=laura8k&lang=en_US","responses":[{"status":200,"body":{"success":true}}]},
+{"name":"media_sms","url":"sfr://service_id:service_password@000/0000000000?media=SMS","responses":[{"status":200,"body":{"success":true}}]},
+{"name":"bad_response","url":"sfr://service_id:service_password@000/0000000000","responses":[{"status":200,"body":{"success":false,"errorCode":"AUTHENTICATION_FAILED","fatal":true}}]},
+{"name":"default_response","url":"sfr://service_id:service_password@000/0000000000"},
+{"name":"status_204","url":"sfr://service_id:service_password@000/0000000000","responses":[{"status":204,"body":{"success":true}}]},
+{"name":"http_500","url":"sfr://service_id:service_password@000/0000000000","responses":[{"status":500,"body":{"success":true}}]},
+{"name":"conn_error","url":"sfr://service_id:service_password@000/0000000000","responses":[{"error":true}]},
+{"name":"not_json","url":"sfr://service_id:service_password@000/0000000000","responses":[{"status":200,"body":"invalid"}]},
+{"name":"to_from_unicode","url":"sfr://srv:other_fjv%268password@11111111/?to=0000000000,0000000001&from=MyCustomUser","body":"héllo \"world\"","responses":[{"status":200,"body":{"success":true}},{"status":200,"body":{"success":false}}]},
+{"name":"sender_wins","url":"sfr://srv:pwd@11111111/0000000000?sender=A&from=B&timeout=abc&media=SMSUnicodeLong","responses":[{"status":200,"body":{"success":true}}]},
+{"name":"empty_sender_key","url":"sfr://srv:pwd@11111111/0000000000?sender=&from=B&timeout=%2012%20","responses":[{"status":200,"body":{"success":true}}]}
+]}

@@ -1,0 +1,31 @@
+# updates the mercurio-bin AUR package to the release tag.
+# Secrets:
+#   AUR_SSH_PRIVATE_KEY  private key registered on the AUR account that maintains mercurio-bin.
+name: AUR
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  aur:
+    name: Deploy to AUR
+    # pkgver can not contain `-`, so prereleases (v1.0.0-rc.1) are skipped.
+    if: ${{ !fromJson(inputs.plan).announcement_is_prerelease }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Update PKGBUILD
+        uses: aksh1618/update-aur-package@93d86c3ea6e57fb485881f5ce8b15375dcd23918 # v1.0.5
+        with:
+          tag_version_prefix: v
+          package_name: mercurio-bin
+          commit_username: "Github Action"
+          commit_email: alphajack@aur.arch
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}

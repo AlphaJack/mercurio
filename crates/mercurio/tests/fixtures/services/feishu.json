@@ -1,0 +1,17 @@
+{
+"cases":[
+{"name":"basic","url":"feishu://abc123"},
+{"name":"token_param","url":"feishu://?token=abc123"},
+{"name":"token_param_wins","url":"feishu://other/?token=abc_1-23"},
+{"name":"title_merged","url":"feishu://abc123","title":"My Title","body":"My Body","type":"failure"},
+{"name":"no_title","url":"feishu://abc123","title":""},
+{"name":"unicode","url":"feishu://abc123","title":"","body":"你好 & <world>"},
+{"name":"empty","url":"feishu://"},
+{"name":"empty_userinfo","url":"feishu://:@/"},
+{"name":"bad_token","url":"feishu://%badtoken%"},
+{"name":"dot_token","url":"feishu://abc.def"},
+{"name":"server_error","url":"feishu://token","responses":[{"status":500}]},
+{"name":"bizarre_code","url":"feishu://token","responses":[{"status":999}]},
+{"name":"no_content","url":"feishu://token","responses":[{"status":204}]},
+{"name":"connection_error","url":"feishu://token","responses":[{"error":true}]}
+]}

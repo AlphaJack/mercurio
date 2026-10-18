@@ -1,0 +1,585 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_password:
+  errors:
+    - "service error: Password incorrect: Password incorrect"
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: PASS bad
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+  ok: false
+  valid: true
+banned:
+  errors:
+    - "service error: Banned from server: You are banned"
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+  ok: false
+  valid: true
+bare_user_target:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+basic:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+channel_and_user_multiline:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :line1"
+    - send: "PRIVMSG #chan :line2"
+    - send: "PRIVMSG #chan :line3"
+    - send: "PRIVMSG bob :line1"
+    - send: "PRIVMSG bob :line2"
+    - send: "PRIVMSG bob :line3"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+channel_key_forces_join:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan secret"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+channel_names_reply:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "PRIVMSG chan2 :Mercurio Title"
+    - send: "PRIVMSG chan2 :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+duplicate_targets:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+efnet_template:
+  events:
+    - connect:
+        host: irc.efnet.org
+        port: 6667
+        tls: false
+    - send: PASS pw
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+host_arg:
+  events:
+    - connect:
+        host: "#chan"
+        port: 6667
+        tls: false
+    - send: NICK <nick>
+    - send: "USER <nick> 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+invalid_targets_only:
+  errors:
+    - "invalid message: no IRC targets specified"
+  events: []
+  ok: false
+  valid: true
+invalid_url:
+  errors:
+    - "invalid message: no IRC targets specified"
+  events: []
+  ok: false
+  valid: true
+irc_port:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 7000
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+ircs:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6697
+        tls: true
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+ircs_port:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 7000
+        tls: true
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+join_invite_only:
+  errors:
+    - "service error: Invite only channel: Cannot join channel (+i)"
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+  ok: false
+  valid: true
+join_no:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+libera_explicit_port:
+  events:
+    - connect:
+        host: irc.libera.chat
+        port: 6667
+        tls: false
+    - send: PASS pw
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+libera_mode_override:
+  events:
+    - connect:
+        host: irc.libera.chat
+        port: 6697
+        tls: true
+    - send: PASS pw
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+libera_template:
+  events:
+    - connect:
+        host: irc.libera.chat
+        port: 6697
+        tls: true
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG NickServ :IDENTIFY pw"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+mode_invalid:
+  error: "IRC: The IRC auth mode specified (invalid) is invalid."
+  valid: false
+mode_none:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+name_and_nick:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK other
+    - send: "USER other 0 * :Real Name"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+nick_collision:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: NICK <nick>
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+nick_collision_exhausted:
+  errors:
+    - "service error: IRC nickname is already in use"
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: NICK <nick>
+    - send: NICK <nick>
+    - send: NICK <nick>
+  ok: false
+  valid: true
+nickserv:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG NickServ :IDENTIFY pw"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+nickserv_no_password:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+nickserv_prefix:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG NickServ :IDENTIFY pw"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+no_host:
+  errors:
+    - "invalid message: no IRC targets specified"
+  events: []
+  ok: false
+  valid: true
+no_targets:
+  errors:
+    - "invalid message: no IRC targets specified"
+  events: []
+  ok: false
+  valid: true
+ping_during_registration:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PONG :12345"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+random_nick:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK <nick>
+    - send: "USER <nick> 0 * :Mercurio Notifications"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+refused:
+  errors:
+    - "transport error: no scripted connection for irc.example.com:6667"
+  events: []
+  ok: false
+  valid: true
+server_password:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: PASS pw
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+server_password_explicit:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: PASS pw
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+silent_server:
+  errors:
+    - "transport error: IRC registration timeout"
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+  ok: false
+  valid: true
+synirc_template:
+  events:
+    - connect:
+        host: irc.synirc.net
+        port: 6697
+        tls: true
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+targets_sorted:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #alpha"
+    - send: "PRIVMSG #alpha :Mercurio Title"
+    - send: "PRIVMSG #alpha :Mercurio Body"
+    - send: "JOIN #zeta"
+    - send: "PRIVMSG #zeta :Mercurio Title"
+    - send: "PRIVMSG #zeta :Mercurio Body"
+    - send: "PRIVMSG amy :Mercurio Title"
+    - send: "PRIVMSG amy :Mercurio Body"
+    - send: "PRIVMSG zed :Mercurio Title"
+    - send: "PRIVMSG zed :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+title_body:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Alert"
+    - send: "PRIVMSG #chan :Disk full"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+to_arg:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "JOIN #a"
+    - send: "PRIVMSG #a :Mercurio Title"
+    - send: "PRIVMSG #a :Mercurio Body"
+    - send: "JOIN #c"
+    - send: "PRIVMSG #c :Mercurio Title"
+    - send: "PRIVMSG #c :Mercurio Body"
+    - send: "PRIVMSG b :Mercurio Title"
+    - send: "PRIVMSG b :Mercurio Body"
+    - send: "PRIVMSG d :Mercurio Title"
+    - send: "PRIVMSG d :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+user_target:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+welcome_renames_nick:
+  events:
+    - connect:
+        host: irc.example.com
+        port: 6667
+        tls: false
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PRIVMSG bob :Mercurio Title"
+    - send: "PRIVMSG bob :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+znc:
+  events:
+    - connect:
+        host: znc.example.com
+        port: 6667
+        tls: false
+    - send: "PASS me:pw"
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PING :mercurio"
+    - send: "JOIN #chan"
+    - send: "PRIVMSG #chan :Mercurio Title"
+    - send: "PRIVMSG #chan :Mercurio Body"
+    - send: "QUIT :Mercurio Notifications"
+  ok: true
+  valid: true
+znc_no_pong:
+  errors:
+    - "service error: ZNC connection check failed"
+  events:
+    - connect:
+        host: znc.example.com
+        port: 6667
+        tls: false
+    - send: "PASS me:pw"
+    - send: NICK me
+    - send: "USER me 0 * :Mercurio Notifications"
+    - send: "PING :mercurio"
+  ok: false
+  valid: true

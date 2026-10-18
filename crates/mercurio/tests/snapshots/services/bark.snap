@@ -1,0 +1,433 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+badge_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://192.168.0.6:8081/push"
+  valid: true
+badge_negative_zero:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://192.168.0.6:8081/push"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+call:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          call: 1
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          sound: alarm.caf
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+click_level:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          level: critical
+          title: Mercurio Title
+          url: "http://localhost"
+          volume: 10
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+empty:
+  error: "Bark: an invalid hostname or port was specified"
+  valid: false
+http_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+http_400:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+icon:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.com/logo.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+image_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+image_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+key_128:
+  ok: true
+  requests:
+    - body:
+        json:
+          ciphertext: ~
+          device_key: device_key
+          iv: ~
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+key_192_two:
+  ok: true
+  requests:
+    - body:
+        json:
+          ciphertext: ~
+          device_key: a
+          iv: ~
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+    - body:
+        json:
+          ciphertext: ~
+          device_key: b
+          iv: ~
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+key_256:
+  ok: true
+  requests:
+    - body:
+        json:
+          ciphertext: ~
+          device_key: device_key
+          iv: ~
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+key_bad_length:
+  error: "Bark: the Bark encryption key must contain exactly 16, 24, or 32 ASCII characters"
+  valid: false
+key_non_ascii:
+  error: "Bark: the Bark encryption key must contain only ASCII characters"
+  valid: false
+level_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+level_ts:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          level: timeSensitive
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          markdown: "**bold**"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+no_host:
+  error: "Bark: an invalid hostname or port was specified"
+  valid: false
+no_targets:
+  errors:
+    - "Bark: there are no Bark devices to notify"
+  ok: false
+  requests: []
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Notifications
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+secure_noport:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://192.168.0.7/push"
+  valid: true
+sound_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+sound_prefix:
+  ok: true
+  requests:
+    - body:
+        json:
+          badge: 100
+          body: Mercurio Body
+          category: apprise
+          device_key: device_key
+          group: grp
+          icon: "https://example.org/info-128x128.png"
+          sound: noir.caf
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+to:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: other
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+user:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+user_pass_two:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.5:8086/push"
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key2
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.5:8086/push"
+  valid: true
+volume_negative:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          title: Mercurio Title
+          volume: -1
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true
+volume_out_of_range:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          device_key: device_key
+          icon: "https://example.org/info-128x128.png"
+          level: critical
+          title: Mercurio Title
+          volume: 11
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "http://192.168.0.6:8081/push"
+  valid: true

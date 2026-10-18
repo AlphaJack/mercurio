@@ -1,0 +1,26 @@
+{
+"cases":[
+{"name":"empty","url":"humhub://"},
+{"name":"no_user","url":"humhub://hostname"},
+{"name":"no_targets","url":"humhub://token@hostname"},
+{"name":"invalid_target","url":"humhubs://token@hostname/invalid"},
+{"name":"negative_target","url":"humhubs://token@hostname/-1"},
+{"name":"zero_target","url":"humhubs://token@hostname/0"},
+{"name":"bearer","url":"humhub://mytoken@hostname/1"},
+{"name":"bearer_secure","url":"humhubs://mytoken@hostname/1","type":"warning"},
+{"name":"basic_auth","url":"humhubs://user:pass@hostname/1"},
+{"name":"multi_targets","url":"humhubs://mytoken@hostname/1/2/3"},
+{"name":"to_param","url":"humhubs://mytoken@hostname/1/?to=2,3"},
+{"name":"port_and_mixed","url":"humhubs://mytoken@hostname:8443/007/abc/+5"},
+{"name":"title_merged","url":"humhub://mytoken@hostname/1","title":"Hello","body":"World"},
+{"name":"error_500","url":"humhubs://mytoken@hostname/1","responses":[{"status":500}]},
+{"name":"status_201_fails","url":"humhubs://mytoken@hostname/1","responses":[{"status":201}]},
+{"name":"partial_failure","url":"humhubs://mytoken@hostname/1/2","responses":[{"status":500},{"status":200}]},
+{"name":"connection_error","url":"humhubs://mytoken@hostname/1","responses":[{"error":true}]},
+{"name":"attach","url":"humhubs://mytoken@hostname/1","responses":[{"status":200,"body":{"id":42}},{"status":200}],"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"attach_basic_two_files","url":"humhubs://user:pass@hostname/1","responses":[{"status":200,"body":{"id":"77"}},{"status":200},{"status":200}],"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"},{"name":"b.png","mime":"image/png","b64":"iVBORw0KGgo="}]},
+{"name":"attach_no_id","url":"humhubs://mytoken@hostname/1","responses":[{"status":200,"body":{}}],"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"attach_bad_json","url":"humhubs://mytoken@hostname/1","responses":[{"status":200,"body":"not json"}],"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"attach_upload_fails","url":"humhubs://mytoken@hostname/1","responses":[{"status":200,"body":{"id":5}},{"status":400}],"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]},
+{"name":"attach_post_fails","url":"humhubs://mytoken@hostname/1/2","responses":[{"status":500},{"status":200,"body":{"id":9}},{"status":200}],"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}]}
+]}

@@ -1,0 +1,144 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+empty_all_not_cached:
+  sends:
+    - attempts: 1
+      errors:
+        - "service error: there were no Nextcloud targets to notify"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46cGFzcw==
+            OCS-APIREQUEST: "true"
+          method: GET
+          url: "https://localhost:8443/nc/ocs/v1.php/cloud/users?format=json"
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46cGFzcw==
+            OCS-APIREQUEST: "true"
+          method: GET
+          url: "https://localhost:8443/nc/ocs/v1.php/cloud/users?format=json"
+        - body:
+            form:
+              - - shortMessage
+                - Mercurio Title
+              - - longMessage
+                - Mercurio Body
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46cGFzcw==
+            Content-Type: application/x-www-form-urlencoded
+            OCS-APIREQUEST: "true"
+          method: POST
+          url: "https://localhost:8443/nc/ocs/v2.php/apps/notifications/api/v2/admin_notifications/x"
+  url_id: ec26ed18
+  valid: true
+empty_group_cached:
+  sends:
+    - attempts: 1
+      errors:
+        - "service error: there were no Nextcloud targets to notify"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            OCS-APIREQUEST: "true"
+          method: GET
+          url: "http://localhost/ocs/v1.php/cloud/groups/empty?format=json"
+    - attempts: 1
+      errors:
+        - "service error: there were no Nextcloud targets to notify"
+      ok: false
+      requests: []
+  url_id: b27b9e01
+  valid: true
+failed_lookup_not_cached:
+  sends:
+    - attempts: 1
+      errors:
+        - "group lookup: HTTP 500: {}"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46
+            OCS-APIREQUEST: "true"
+          method: GET
+          url: "http://localhost/ocs/v1.php/cloud/groups/grp?format=json"
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46
+            OCS-APIREQUEST: "true"
+          method: GET
+          url: "http://localhost/ocs/v1.php/cloud/groups/grp?format=json"
+        - body:
+            form:
+              - - shortMessage
+                - Mercurio Title
+              - - longMessage
+                - Mercurio Body
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46
+            Content-Type: application/x-www-form-urlencoded
+            OCS-APIREQUEST: "true"
+          method: POST
+          url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/amy"
+  url_id: 5935d75a
+  valid: true
+group_lookup_cached:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46cGFzcw==
+            OCS-APIREQUEST: "true"
+          method: GET
+          url: "http://localhost/ocs/v1.php/cloud/groups/grp?format=json"
+        - body:
+            form:
+              - - shortMessage
+                - Mercurio Title
+              - - longMessage
+                - Mercurio Body
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46cGFzcw==
+            Content-Type: application/x-www-form-urlencoded
+            OCS-APIREQUEST: "true"
+          method: POST
+          url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/bob"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            form:
+              - - shortMessage
+                - Mercurio Title
+              - - longMessage
+                - Mercurio Body
+          headers:
+            Accept: application/json
+            Authorization: Basic YWRtaW46cGFzcw==
+            Content-Type: application/x-www-form-urlencoded
+            OCS-APIREQUEST: "true"
+          method: POST
+          url: "http://localhost/ocs/v2.php/apps/notifications/api/v2/admin_notifications/bob"
+  url_id: 6fcf49d5
+  valid: true

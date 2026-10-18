@@ -1,0 +1,334 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+fails:
+  errors:
+    - "service error: gdbus exited with status 1"
+  ok: false
+  valid: true
+failure_type:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - T
+        - B
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+image_no_urgency_high:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - ""
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 2
+        - 13000
+  ok: true
+  valid: true
+image_yes:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+kde:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+multiline:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - "1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10"
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+no_title:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Body
+        - ""
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+priority_emergency:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 2
+        - 13000
+  ok: true
+  valid: true
+priority_low:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 0
+        - 13000
+  ok: true
+  valid: true
+priority_moderate:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 0
+        - 13000
+  ok: true
+  valid: true
+qt:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 0
+        - 13000
+  ok: true
+  valid: true
+quotes:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - "it's \"q\" \\ x"
+        - "line1\r\nline2\ttab é ☃"
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+underscore:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+urgency_0:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 0
+        - 13000
+  ok: true
+  valid: true
+urgency_2:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 2
+        - 13000
+  ok: true
+  valid: true
+urgency_invalid:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+        - 13000
+  ok: true
+  valid: true
+urgency_over_priority:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 2
+        - 13000
+  ok: true
+  valid: true
+x_empty:
+  error: "DBus Notification: the x,y coordinates specified are invalid"
+  valid: false
+x_float:
+  error: "DBus Notification: the x,y coordinates specified are invalid"
+  valid: false
+x_invalid:
+  error: "DBus Notification: the x,y coordinates specified are invalid"
+  valid: false
+x_negative:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+          x: -3
+          y: 5
+        - 13000
+  ok: true
+  valid: true
+x_only:
+  error: "DBus Notification: the x,y coordinates specified are invalid"
+  valid: false
+xy:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+          x: 100
+          y: 200
+        - 13000
+  ok: true
+  valid: true
+xy_full:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - ""
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 2
+          x: 5
+          y: 5
+        - 13000
+  ok: true
+  valid: true
+xy_spaces:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+          x: 5
+          y: 6
+        - 13000
+  ok: true
+  valid: true
+xy_zero:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+          x: 0
+          y: 0
+        - 13000
+  ok: true
+  valid: true
+xy_zero_five:
+  events:
+    - notify:
+        - Mercurio
+        - 0
+        - "<tmp>/mercurio/logo.svg"
+        - Mercurio Title
+        - Mercurio Body
+        - []
+        - urgency: 1
+          x: 0
+          y: 5
+        - 13000
+  ok: true
+  valid: true
+y_only:
+  error: "DBus Notification: the x,y coordinates specified are invalid"
+  valid: false

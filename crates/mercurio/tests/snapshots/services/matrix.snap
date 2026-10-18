@@ -1,0 +1,4459 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+alias_create_404:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23newroom%3Alocalhost"
+    - body:
+        json:
+          name: "#newroom - Mercurio Notifications"
+          preset: trusted_private_chat
+          room_alias_name: newroom
+          visibility: private
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21new%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+alias_create_errcode:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23newroom%3Aexample.org"
+    - body:
+        json:
+          name: "#newroom - Mercurio Notifications"
+          preset: trusted_private_chat
+          room_alias_name: newroom
+          visibility: private
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21new%3Aexample.org/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+alias_create_fail:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23busy%3Alocalhost"
+    - body:
+        json:
+          name: "#busy - Mercurio Notifications"
+          preset: trusted_private_chat
+          room_alias_name: busy
+          visibility: private
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+alias_create_in_use:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23busy%3Alocalhost"
+    - body:
+        json:
+          name: "#busy - Mercurio Notifications"
+          preset: trusted_private_chat
+          room_alias_name: busy
+          visibility: private
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/directory/room/%23busy%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21busy%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+alias_join:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/_matrix/client/v3/join/%23general%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost:8080/_matrix/client/v3/rooms/%21gen%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/_matrix/client/v3/logout"
+  valid: true
+alias_join_no_room_id:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23general%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+alias_no_create_403:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23private%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+anon_register:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+  valid: true
+attach_event_fail:
+  errors:
+    - "send: service error: attachment post failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        bytes: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: image/png
+      method: POST
+      url: "http://localhost/_matrix/media/v3/upload?filename=a.png"
+    - body:
+        json:
+          body: a.png
+          info:
+            mimetype: image/png
+            size: 70
+          msgtype: m.image
+          room_id: "!room:localhost"
+          type: m.room.message
+          url: "mxc://x/y"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+attach_two_rooms:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21r1%3Alocalhost"
+    - body:
+        bytes: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: image/png
+      method: POST
+      url: "http://localhost/_matrix/media/v3/upload?filename=a.png"
+    - body:
+        json:
+          body: a.png
+          info:
+            mimetype: image/png
+            size: 70
+          msgtype: m.image
+          room_id: "!r1:localhost"
+          type: m.room.message
+          url: "mxc://localhost/img"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r1%3Alocalhost/send/m.room.message/0"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r1%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21r2%3Alocalhost"
+    - body:
+        json:
+          body: a.png
+          info:
+            mimetype: image/png
+            size: 70
+          msgtype: m.image
+          room_id: "!r2:localhost"
+          type: m.room.message
+          url: "mxc://localhost/img"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r2%3Alocalhost/send/m.room.message/2"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r2%3Alocalhost/send/m.room.message/3"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+attach_upload_fail:
+  errors:
+    - "upload: service error: Matrix attachment upload failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        bytes: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: image/png
+      method: POST
+      url: "http://localhost/_matrix/media/v3/upload?filename=a.png"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+attach_v2:
+  ok: true
+  requests:
+    - body:
+        json:
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+          user: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/join/%21room%3Alocalhost"
+    - body:
+        bytes: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: image/png
+      method: POST
+      url: "http://localhost/_matrix/media/r0/upload?filename=a.png"
+    - body:
+        json:
+          body: tta.webp
+          info:
+            mimetype: image/png
+          msgtype: m.image
+          room_id: "!room:localhost"
+          type: m.room.message
+          url: "mxc://localhost/img"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/logout"
+  valid: true
+attach_v3:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        bytes: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: image/png
+      method: POST
+      url: "http://localhost/_matrix/media/v3/upload?filename=a.png"
+    - body:
+        text: hello
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: text/plain
+      method: POST
+      url: "http://localhost/_matrix/media/v3/upload?filename=notes.txt"
+    - body:
+        json:
+          body: a.png
+          info:
+            mimetype: image/png
+            size: 70
+          msgtype: m.image
+          room_id: "!room:localhost"
+          type: m.room.message
+          url: "mxc://localhost/img"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json:
+          body: notes.txt
+          filename: notes.txt
+          info:
+            mimetype: text/plain
+            size: 5
+          msgtype: m.file
+          room_id: "!room:localhost"
+          type: m.room.message
+          url: "mxc://localhost/txt"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/1"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/2"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+bad_hostname:
+  error: "Matrix: an invalid Matrix hostname was specified"
+  valid: false
+bad_mode:
+  error: "Matrix: the mode specified is invalid"
+  valid: false
+bad_msgtype:
+  error: "Matrix: the msgtype specified is invalid"
+  valid: false
+bad_port_big:
+  error: "Matrix: an invalid Matrix port was specified"
+  valid: false
+bad_port_text:
+  error: "Matrix: an invalid Matrix hostname was specified"
+  valid: false
+bad_port_zero:
+  error: "Matrix: an invalid Matrix port was specified"
+  valid: false
+bad_version:
+  error: "Matrix: the version specified is invalid"
+  valid: false
+created_201_is_failure:
+  errors:
+    - "send: HTTP 201: message post failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+discovery_404:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost:8448/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8448/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8448/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8448/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost:8448/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost:8448/_matrix/client/v3/logout"
+  valid: true
+discovery_500:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+  valid: true
+discovery_empty:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://localhost/.well-known/matrix/client"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+discovery_identity_failure:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://example.com/.well-known/matrix/client"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://matrix.example.com/_matrix/client/versions"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://vector.im/_matrix/identity/v2"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://example.com/.well-known/matrix/client"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: secret
+          username: me
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://example.com/_matrix/client/v3/register?kind=user"
+  valid: true
+discovery_no_room_id:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://example.com/.well-known/matrix/client"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://matrix.example.com/_matrix/client/versions"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://vector.im/_matrix/identity/v2"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: me
+          initial_device_display_name: Mercurio
+          password: secret
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://matrix.example.com/_matrix/client/v3/login"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://matrix.example.com/_matrix/client/v3/join/%23general%3Aexample.com"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://matrix.example.com/_matrix/client/v3/logout"
+  valid: true
+discovery_off:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "https://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/_matrix/client/v3/logout"
+  valid: true
+discovery_resolves_base_url:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://example.com/.well-known/matrix/client"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://matrix.example.com/_matrix/client/versions"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://vector.im/_matrix/identity/v2"
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: me
+          initial_device_display_name: Mercurio
+          password: secret
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://matrix.example.com/_matrix/client/v3/login"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://matrix.example.com/_matrix/client/v3/join/%23general%3Aexample.com"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: PUT
+      url: "https://matrix.example.com/_matrix/client/v3/rooms/%21general%3Aexample.com/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "https://matrix.example.com/_matrix/client/v3/logout"
+  valid: true
+discovery_unsafe_base_url:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://example.com/.well-known/matrix/client"
+    - body: ~
+      headers:
+        Accept: application/json
+      method: GET
+      url: "https://example.com/.well-known/matrix/client"
+  valid: true
+discovery_webhook_skipped:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: plain
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/api/v1/matrix/hook/token"
+  valid: true
+dm_create:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json:
+          invite:
+            - "@bob:example.org"
+          is_direct: true
+          preset: trusted_private_chat
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json:
+          "@bob:example.org":
+            - "!dm:localhost"
+          "@other:localhost":
+            - "!o:localhost"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21dm%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21dm%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+dm_create_fail:
+  errors:
+    - "room lookup: service error: could not find or create a direct-message room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json:
+          invite:
+            - "@bob:localhost"
+          is_direct: true
+          preset: trusted_private_chat
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+dm_create_no_room_id:
+  errors:
+    - "room lookup: service error: could not find or create a direct-message room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json:
+          invite:
+            - "@bob:localhost"
+          is_direct: true
+          preset: trusted_private_chat
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+dm_existing:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21dm%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21dm%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+dm_mdirect_fail:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json:
+          invite:
+            - "@bob:localhost"
+          is_direct: true
+          preset: trusted_private_chat
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json:
+          "@bob:localhost":
+            - "!dm:localhost"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21dm%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21dm%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+dm_only_skips_joined:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/user/%40apprise%3Alocalhost/account_data/m.direct"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21dm%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21dm%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+html_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# <T> & 'x'\r\nHello World\n\n- a"
+          format: org.matrix.custom.html
+          formatted_body: "<h1>&lt;T&gt; &amp; &apos;x&apos;</h1><br/><p>Hello <b>World</b></p><ul><li>a</li></ul>"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+html_passthrough:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "<b>raw</b>"
+          format: org.matrix.custom.html
+          formatted_body: "<b>raw</b>"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+illegal_room:
+  errors:
+    - "room join: service error: could not join the room"
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21ok%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21ok%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23bad%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+invalid_json:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+joined_rooms:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/joined_rooms"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21a%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21a%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21b%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21b%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+joined_rooms_fail:
+  errors:
+    - "room lookup: service error: there were no Matrix rooms to notify"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/joined_rooms"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+joined_rooms_none:
+  errors:
+    - "room lookup: service error: there were no Matrix rooms to notify"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+      method: GET
+      url: "http://localhost/_matrix/client/v3/joined_rooms"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+login_dm_lookup_fails:
+  errors:
+    - "room lookup: service error: could not find or create a direct-message room"
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: me
+          initial_device_display_name: Mercurio
+          password: secret
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+      method: GET
+      url: "http://localhost/_matrix/client/v3/user/%40me%3Alocalhost/account_data/m.direct"
+    - body:
+        json:
+          invite:
+            - "@bob:localhost"
+          is_direct: true
+          preset: trusted_private_chat
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/createRoom"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23general%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+login_rate_limited_then_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: me
+          initial_device_display_name: Mercurio
+          password: secret
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+login_success:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: me
+          initial_device_display_name: Mercurio
+          password: secret
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+markdown_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nHead\n\nSome bold and code.\n\n- a\n- b"
+          format: org.matrix.custom.html
+          formatted_body: "<h1>Mercurio Title</h1><h1>Head</h1>\n<p>Some <strong>bold</strong> and <code>code</code>.</p>\n<ul>\n<li>a</li>\n<li>b</li>\n</ul>"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+markdown_passthrough:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nHello *world*"
+          format: org.matrix.custom.html
+          formatted_body: "<h1>Mercurio Title</h1><p>Hello <em>world</em></p>"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+message_fail:
+  errors:
+    - "send: HTTP 403: message post failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21r1%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r1%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21r2%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r2%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+no_host:
+  error: "Matrix: no host was specified"
+  valid: false
+no_host_secure:
+  error: "Matrix: no host was specified"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: Mercurio Body
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+notice:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.notice
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><br/><h1>Release</h1><p>Hello <b>bold</b> &amp; <i>it</i> <u>u</u> <a href=\"http://example.com\">link</a></p><ul><li>one</li><li>two</li></ul><pre>x  y\nz</pre><script>no()</script><br/>end"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><h1>Release notes</h1>\n<p>This has <strong>bold</strong>, <em>italic</em>, <code>code</code> and a <a href=\"http://example.com/a_b\">link</a>.</p>\n<ul>\n<li>first item</li>\n<li>second <em>item</em></li>\n</ul>\n<blockquote>\n<p>quoted * text &amp; more <stuff></p>\n</blockquote>\n<p>~~gone~~ :smile:</p>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: html
+          text: "<h1>A&nbsp;title&nbsp;that&nbsp;is&nbsp;long&nbsp;enough&nbsp;to&nbsp;be&nbsp;interesting&nbsp;for&nbsp;counters&nbsp;and&nbsp;amalgamation&nbsp;A&nbsp;title&nbsp;that&nbsp;is&nbsp;long&nbsp;enough&nbsp;to&nbsp;be&nbsp;interesting&nbsp;for&nbsp;counters&nbsp;and&nbsp;amalgamation</h1><h2>Section 1</h2>\n<p>Paragraph 1 has <strong>bold 1</strong> and <em>italic</em> words, a <a href=\"http://example.com/1\">link 1</a> and <code>code 1</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 1a</li>\n<li>point 1b</li>\n</ul>\n<h2>Section 2</h2>\n<p>Paragraph 2 has <strong>bold 2</strong> and <em>italic</em> words, a <a href=\"http://example.com/2\">link 2</a> and <code>code 2</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 2a</li>\n<li>point 2b</li>\n</ul>\n<h2>Section 3</h2>\n<p>Paragraph 3 has <strong>bold 3</strong> and <em>italic</em> words, a <a href=\"http://example.com/3\">link 3</a> and <code>code 3</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 3a</li>\n<li>point 3b</li>\n</ul>\n<h2>Section 4</h2>\n<p>Paragraph 4 has <strong>bold 4</strong> and <em>italic</em> words, a <a href=\"http://example.com/4\">link 4</a> and <code>code 4</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 4a</li>\n<li>point 4b</li>\n</ul>\n<h2>Section 5</h2>\n<p>Paragraph 5 has <strong>bold 5</strong> and <em>italic</em> words, a <a href=\"http://example.com/5\">link 5</a> and <code>code 5</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 5a</li>\n<li>point 5b</li>\n</ul>\n<h2>Section 6</h2>\n<p>Paragraph 6 has <strong>bold 6</strong> and <em>italic</em> words, a <a href=\"http://example.com/6\">link 6</a> and <code>code 6</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 6a</li>\n<li>point 6b</li>\n</ul>\n<h2>Section 7</h2>\n<p>Paragraph 7 has <strong>bold 7</strong> and <em>italic</em> words, a <a href=\"http://example.com/7\">link 7</a> and <code>code 7</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 7a</li>\n<li>point 7b</li>\n</ul>\n<h2>Section 8</h2>\n<p>Paragraph 8 has <strong>bold 8</strong> and <em>italic</em> words, a <a href=\"http://example.com/8\">link 8</a> and <code>code 8</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 8a</li>\n<li>point 8b</li>\n</ul>\n<h2>Section 9</h2>\n<p>Paragraph 9 has <strong>bold 9</strong> and <em>italic</em> words, a <a href=\"http://example.com/9\">link 9</a> and <code>code 9</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 9a</li>\n<li>point 9b</li>\n</ul>\n<h2>Section 10</h2>\n<p>Paragraph 10 has <strong>bold 10</strong> and <em>italic</em> words, a <a href=\"http://example.com/10\">link 10</a> and <code>code 10</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 10a</li>\n<li>point 10b</li>\n</ul>\n<h2>Section 11</h2>\n<p>Paragraph 11 has <strong>bold 11</strong> and <em>italic</em> words, a <a href=\"http://example.com/11\">link 11</a> and <code>code 11</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 11a</li>\n<li>point 11b</li>\n</ul>\n<h2>Section 12</h2>\n<p>Paragraph 12 has <strong>bold 12</strong> and <em>italic</em> words, a <a href=\"http://example.com/12\">link 12</a> and <code>code 12</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 12a</li>\n<li>point 12b</li>\n</ul>\n<h2>Section 13</h2>\n<p>Paragraph 13 has <strong>bold 13</strong> and <em>italic</em> words, a <a href=\"http://example.com/13\">link 13</a> and <code>code 13</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 13a</li>\n<li>point 13b</li>\n</ul>\n<h2>Section 14</h2>\n<p>Paragraph 14 has <strong>bold 14</strong> and <em>italic</em> words, a <a href=\"http://example.com/14\">link 14</a> and <code>code 14</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 14a</li>\n<li>point 14b</li>\n</ul>\n<h2>Section 15</h2>\n<p>Paragraph 15 has <strong>bold 15</strong> and <em>italic</em> words, a <a href=\"http://example.com/15\">link 15</a> and <code>code 15</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 15a</li>\n<li>point 15b</li>\n</ul>\n<h2>Section 16</h2>\n<p>Paragraph 16 has <strong>bold 16</strong> and <em>italic</em> words, a <a href=\"http://example.com/16\">link 16</a> and <code>code 16</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 16a</li>\n<li>point 16b</li>\n</ul>\n<h2>Section 17</h2>\n<p>Paragraph 17 has <strong>bold 17</strong> and <em>italic</em> words, a <a href=\"http://example.com/17\">link 17</a> and <code>code 17</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 17a</li>\n<li>point 17b</li>\n</ul>\n<h2>Section 18</h2>\n<p>Paragraph 18 has <strong>bold 18</strong> and <em>italic</em> words, a <a href=\"http://example.com/18\">link 18</a> and <code>code 18</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 18a</li>\n<li>point 18b</li>\n</ul>\n<h2>Section 19</h2>\n<p>Paragraph 19 has <strong>bold 19</strong> and <em>italic</em> words, a <a href=\"http://example.com/19\">link 19</a> and <code>code 19</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 19a</li>\n<li>point 19b</li>\n</ul>\n<h2>Section 20</h2>\n<p>Paragraph 20 has <strong>bold 20</strong> and <em>italic</em> words, a <a href=\"http://example.com/20\">link 20</a> and <code>code 20</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 20a</li>\n<li>point 20b</li>\n</ul>\n<h2>Section 21</h2>\n<p>Paragraph 21 has <strong>bold 21</strong> and <em>italic</em> words, a <a href=\"http://example.com/21\">link 21</a> and <code>code 21</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 21a</li>\n<li>point 21b</li>\n</ul>\n<h2>Section 22</h2>\n<p>Paragraph 22 has <strong>bold 22</strong> and <em>italic</em> words, a <a href=\"http://example.com/22\">link 22</a> and <code>code 22</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 22a</li>\n<li>point 22b</li>\n</ul>\n<h2>Section 23</h2>\n<p>Paragraph 23 has <strong>bold 23</strong> and <em>italic</em> words, a <a href=\"http://example.com/23\">link 23</a> and <code>code 23</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 23a</li>\n<li>point 23b</li>\n</ul>\n<h2>Section 24</h2>\n<p>Paragraph 24 has <strong>bold 24</strong> and <em>italic</em> words, a <a href=\"http://example.com/24\">link 24</a> and <code>code 24</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 24a</li>\n<li>point 24b</li>\n</ul>\n<h2>Section 25</h2>\n<p>Paragraph 25 has <strong>bold 25</strong> and <em>italic</em> words, a <a href=\"http://example.com/25\">link 25</a> and <code>code 25</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 25a</li>\n<li>point 25b</li>\n</ul>\n<h2>Section 26</h2>\n<p>Paragraph 26 has <strong>bold 26</strong> and <em>italic</em> words, a <a href=\"http://example.com/26\">link 26</a> and <code>code 26</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 26a</li>\n<li>point 26b</li>\n</ul>\n<h2>Section 27</h2>\n<p>Paragraph 27 has <strong>bold 27</strong> and <em>italic</em> words, a <a href=\"http://example.com/27\">link 27</a> and <code>code 27</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 27a</li>\n<li>point 27b</li>\n</ul>\n<h2>Section 28</h2>\n<p>Paragraph 28 has <strong>bold 28</strong> and <em>italic</em> words, a <a href=\"http://example.com/28\">link 28</a> and <code>code 28</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 28a</li>\n<li>point 28b</li>\n</ul>\n<h2>Section 29</h2>\n<p>Paragraph 29 has <strong>bold 29</strong> and <em>italic</em> words, a <a href=\"http://example.com/29\">link 29</a> and <code>code 29</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 29a</li>\n<li>point 29b</li>\n</ul>\n<h2>Section 30</h2>\n<p>Paragraph 30 has <strong>bold 30</strong> and <em>italic</em> words, a <a href=\"http://example.com/30\">link 30</a> and <code>code 30</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 30a</li>\n<li>point 30b</li>\n</ul>\n<h2>Section 31</h2>\n<p>Paragraph 31 has <strong>bold 31</strong> and <em>italic</em> words, a <a href=\"http://example.com/31\">link 31</a> and <code>code 31</code>. Sentences keep goi</p>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: plain
+          text: "Mercurio Title\r\nlorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit \n sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing \n elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur \n adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet \n consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit \n amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. \n sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum \n dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem \n ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor \n lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod \n tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do \n eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed \n do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit \n sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing \n elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. \n adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet \n consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit \n amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor \n sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum \n dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem \n ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor \n lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod \n tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do \n eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. \n do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit \n sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing \n elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur \n adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet \n consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit \n amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor \n sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum \n dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem \n ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. \n lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: plain
+          text: "Mercurio Title\r\nPlain <text> & *stars* _under_ [x](y)\nsecond line"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><h2>Section 1</h2>\n<p>Paragraph 1 has <strong>bold 1</strong> and <em>italic</em> words, a <a href=\"http://example.com/1\">link 1</a> and <code>code 1</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 1a</li>\n<li>point 1b</li>\n</ul>\n<h2>Section 2</h2>\n<p>Paragraph 2 has <strong>bold 2</strong> and <em>italic</em> words, a <a href=\"http://example.com/2\">link 2</a> and <code>code 2</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 2a</li>\n<li>point 2b</li>\n</ul>\n<h2>Section 3</h2>\n<p>Paragraph 3 has <strong>bold 3</strong> and <em>italic</em> words, a <a href=\"http://example.com/3\">link 3</a> and <code>code 3</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 3a</li>\n<li>point 3b</li>\n</ul>\n<h2>Section 4</h2>\n<p>Paragraph 4 has <strong>bold 4</strong> and <em>italic</em> words, a <a href=\"http://example.com/4\">link 4</a> and <code>code 4</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 4a</li>\n<li>point 4b</li>\n</ul>\n<h2>Section 5</h2>\n<p>Paragraph 5 has <strong>bold 5</strong> and <em>italic</em> words, a <a href=\"http://example.com/5\">link 5</a> and <code>code 5</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 5a</li>\n<li>point 5b</li>\n</ul>\n<h2>Section 6</h2>\n<p>Paragraph 6 has <strong>bold 6</strong> and <em>italic</em> words, a <a href=\"http://example.com/6\">link 6</a> and <code>code 6</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 6a</li>\n<li>point 6b</li>\n</ul>\n<h2>Section 7</h2>\n<p>Paragraph 7 has <strong>bold 7</strong> and <em>italic</em> words, a <a href=\"http://example.com/7\">link 7</a> and <code>code 7</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 7a</li>\n<li>point 7b</li>\n</ul>\n<h2>Section 8</h2>\n<p>Paragraph 8 has <strong>bold 8</strong> and <em>italic</em> words, a <a href=\"http://example.com/8\">link 8</a> and <code>code 8</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 8a</li>\n<li>point 8b</li>\n</ul>\n<h2>Section 9</h2>\n<p>Paragraph 9 has <strong>bold 9</strong> and <em>italic</em> words, a <a href=\"http://example.com/9\">link 9</a> and <code>code 9</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 9a</li>\n<li>point 9b</li>\n</ul>\n<h2>Section 10</h2>\n<p>Paragraph 10 has <strong>bold 10</strong> and <em>italic</em> words, a <a href=\"http://example.com/10\">link 10</a> and <code>code 10</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 10a</li>\n<li>point 10b</li>\n</ul>\n<h2>Section 11</h2>\n<p>Paragraph 11 has <strong>bold 11</strong> and <em>italic</em> words, a <a href=\"http://example.com/11\">link 11</a> and <code>code 11</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 11a</li>\n<li>point 11b</li>\n</ul>\n<h2>Section 12</h2>\n<p>Paragraph 12 has <strong>bold 12</strong> and <em>italic</em> words, a <a href=\"http://example.com/12\">link 12</a> and <code>code 12</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 12a</li>\n<li>point 12b</li>\n</ul>\n<h2>Section 13</h2>\n<p>Paragraph 13 has <strong>bold 13</strong> and <em>italic</em> words, a <a href=\"http://example.com/13\">link 13</a> and <code>code 13</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 13a</li>\n<li>point 13b</li>\n</ul>\n<h2>Section 14</h2>\n<p>Paragraph 14 has <strong>bold 14</strong> and <em>italic</em> words, a <a href=\"http://example.com/14\">link 14</a> and <code>code 14</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 14a</li>\n<li>point 14b</li>\n</ul>\n<h2>Section 15</h2>\n<p>Paragraph 15 has <strong>bold 15</strong> and <em>italic</em> words, a <a href=\"http://example.com/15\">link 15</a> and <code>code 15</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 15a</li>\n<li>point 15b</li>\n</ul>\n<h2>Section 16</h2>\n<p>Paragraph 16 has <strong>bold 16</strong> and <em>italic</em> words, a <a href=\"http://example.com/16\">link 16</a> and <code>code 16</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 16a</li>\n<li>point 16b</li>\n</ul>\n<h2>Section 17</h2>\n<p>Paragraph 17 has <strong>bold 17</strong> and <em>italic</em> words, a <a href=\"http://example.com/17\">link 17</a> and <code>code 17</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 17a</li>\n<li>point 17b</li>\n</ul>\n<h2>Section 18</h2>\n<p>Paragraph 18 has <strong>bold 18</strong> and <em>italic</em> words, a <a href=\"http://example.com/18\">link 18</a> and <code>code 18</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 18a</li>\n<li>point 18b</li>\n</ul>\n<h2>Section 19</h2>\n<p>Paragraph 19 has <strong>bold 19</strong> and <em>italic</em> words, a <a href=\"http://example.com/19\">link 19</a> and <code>code 19</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 19a</li>\n<li>point 19b</li>\n</ul>\n<h2>Section 20</h2>\n<p>Paragraph 20 has <strong>bold 20</strong> and <em>italic</em> words, a <a href=\"http://example.com/20\">link 20</a> and <code>code 20</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 20a</li>\n<li>point 20b</li>\n</ul>\n<h2>Section 21</h2>\n<p>Paragraph 21 has <strong>bold 21</strong> and <em>italic</em> words, a <a href=\"http://example.com/21\">link 21</a> and <code>code 21</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 21a</li>\n<li>point 21b</li>\n</ul>\n<h2>Section 22</h2>\n<p>Paragraph 22 has <strong>bold 22</strong> and <em>italic</em> words, a <a href=\"http://example.com/22\">link 22</a> and <code>code 22</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 22a</li>\n<li>point 22b</li>\n</ul>\n<h2>Section 23</h2>\n<p>Paragraph 23 has <strong>bold 23</strong> and <em>italic</em> words, a <a href=\"http://example.com/23\">link 23</a> and <code>code 23</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 23a</li>\n<li>point 23b</li>\n</ul>\n<h2>Section 24</h2>\n<p>Paragraph 24 has <strong>bold 24</strong> and <em>italic</em> words, a <a href=\"http://example.com/24\">link 24</a> and <code>code 24</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 24a</li>\n<li>point 24b</li>\n</ul>\n<h2>Section 25</h2>\n<p>Paragraph 25 has <strong>bold 25</strong> and <em>italic</em> words, a <a href=\"http://example.com/25\">link 25</a> and <code>code 25</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 25a</li>\n<li>point 25b</li>\n</ul>\n<h2>Section 26</h2>\n<p>Paragraph 26 has <strong>bold 26</strong> and <em>italic</em> words, a <a href=\"http://example.com/26\">link 26</a> and <code>code 26</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 26a</li>\n<li>point 26b</li>\n</ul>\n<h2>Section 27</h2>\n<p>Paragraph 27 has <strong>bold 27</strong> and <em>italic</em> words, a <a href=\"http://example.com/27\">link 27</a> and <code>code 27</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 27a</li>\n<li>point 27b</li>\n</ul>\n<h2>Section 28</h2>\n<p>Paragraph 28 has <strong>bold 28</strong> and <em>italic</em> words, a <a href=\"http://example.com/28\">link 28</a> and <code>code 28</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 28a</li>\n<li>point 28b</li>\n</ul>\n<h2>Section 29</h2>\n<p>Paragraph 29 has <strong>bold 29</strong> and <em>italic</em> words, a <a href=\"http://example.com/29\">link 29</a> and <code>code 29</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 29a</li>\n<li>point 29b</li>\n</ul>\n<h2>Section 30</h2>\n<p>Paragraph 30 has <strong>bold 30</strong> and <em>italic</em> words, a <a href=\"http://example.com/30\">link 30</a> and <code>code 30</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 30a</li>\n<li>point 30b</li>\n</ul>\n<h2>Section 31</h2>\n<p>Paragraph 31 has <strong>bold 31</strong> and <em>italic</em> words, a <a href=\"http://example.com/31\">link 31</a> and <code>code 31</code>. Sentences keep goi</p>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+rate_limited_bad_wait:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+rate_limited_nested:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+rate_limited_then_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+rate_limited_twice:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+raw_token_alias_regex_ignore:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+      method: GET
+      url: "http://localhost/_matrix/client/v3/account/whoami"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23general%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21general%3Alocalhost<ignored>"
+  valid: true
+raw_token_uuid_txn:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+      method: GET
+      url: "http://localhost/_matrix/client/v3/account/<ignored>"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/<ignored>"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r1%3Alocalhost/send/m.room.message/<ignored>"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/<ignored>"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer rawtoken
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21r2%3Alocalhost/send/m.room.message/<ignored>"
+  valid: true
+register_home_server:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23general%3Aother.example"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21g%3Aother.example/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+register_no_user_id:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+      method: GET
+      url: "http://localhost/_matrix/client/v3/account/whoami"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23general%3Ahs.example"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21g%3Ahs.example/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer t
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+register_room_id:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+register_room_id_join_answer:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21real%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+register_transport_error_after:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+room_id_hsreq_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+rooms_500:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+  valid: true
+rooms_999:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+  valid: true
+t2bot_bad_token:
+  error: "Matrix: an invalid T2Bot/Matrix Webhook ID was specified"
+  valid: false
+t2bot_short_token:
+  error: "Matrix: an invalid T2Bot/Matrix Webhook ID was specified"
+  valid: false
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21a%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21a%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21b%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21b%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+token_alias_uses_whoami_hs:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+      method: GET
+      url: "http://localhost/_matrix/client/v3/account/whoami"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23general%3Aexample.org"
+  valid: true
+token_arg_with_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: secret
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: secret
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+token_whoami_fail:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+      method: GET
+      url: "http://localhost/_matrix/client/v3/account/whoami"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%23general%3Alocalhost"
+  valid: true
+token_whoami_join_fail:
+  errors:
+    - "room join: service error: could not join the room"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+      method: GET
+      url: "http://localhost/_matrix/client/v3/account/whoami"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer tok
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+  valid: true
+transport_error:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:1234/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:1234/_matrix/client/v3/register?kind=user"
+  valid: true
+unicode:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Tïtle 🦀\r\n日本語 \"quoted\""
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+v2_api:
+  ok: true
+  requests:
+    - body:
+        json:
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+          user: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/logout"
+  valid: true
+v2_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+          user: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: Mercurio Title
+          msgtype: m.image
+          url: "https://example.org/info-32x32.png"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/logout"
+  valid: true
+v2_image_fail:
+  errors:
+    - "send: service error: image post failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+          user: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: Mercurio Title
+          msgtype: m.image
+          url: "https://example.org/info-32x32.png"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/logout"
+  valid: true
+v2_image_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+          user: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: success
+          msgtype: m.image
+          url: "https://example.org/success-32x32.png"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json:
+          body: Mercurio Body
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/r0/rooms/%21room%3Alocalhost/send/m.room.message/1"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/r0/logout"
+  valid: true
+v3_image_ignored:
+  ok: true
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: pass
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: pass
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/join/%21room%3Alocalhost"
+    - body:
+        json:
+          body: "# Mercurio Title\r\nMercurio Body"
+          msgtype: m.text
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: PUT
+      url: "http://localhost/_matrix/client/v3/rooms/%21room%3Alocalhost/send/m.room.message/0"
+    - body:
+        json: {}
+      headers:
+        Accept: application/json
+        Authorization: Bearer abcd1234
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/logout"
+  valid: true
+wh_empty_mode:
+  errors:
+    - "service error: Matrix webhook mode is not set"
+  ok: false
+  requests: []
+  valid: true
+wh_hookshot_default_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          html: "Mercurio Title\r<br/>line 1<br/>line 2"
+          text: "Mercurio Title\r\nline 1\nline 2"
+          username: Mercurio
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://hookshot.example:8443/webhook/hooktoken"
+  valid: true
+wh_hookshot_md_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          html: "<h1>Mercurio&nbsp;Title</h1><p><em>hi</em> there</p>"
+          text: "Mercurio Title\r\nhi there"
+          username: Mercurio
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://hookshot.example/webhook/tok"
+  valid: true
+wh_hookshot_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          html: "Mercurio Title\r<br/>Mercurio Body"
+          text: "Mercurio Title\r\nMercurio Body"
+          username: hookuser
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hookshot.example/public-hooks/hooktoken"
+  valid: true
+wh_hookshot_relpath_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          html: "<h1>Mercurio&nbsp;Title</h1><br/><i>x</i>\n<p>y</p>"
+          text: "Mercurio Title\r\n<i>x</i>\n<p>y</p>"
+          username: hookuser
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hookshot.example/public-hooks/hooktoken"
+  valid: true
+wh_hookshot_root:
+  ok: true
+  requests:
+    - body:
+        json:
+          html: Mercurio Body
+          text: Mercurio Body
+          username: Mercurio
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://hookshot.example/tok"
+  valid: true
+wh_matrix_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: plain
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_matrix_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><br/><b>bold</b> & co"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_matrix_html_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><br/><p>x</p>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/api/v1/matrix/hook/token"
+  valid: true
+wh_matrix_md_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><p><strong>bold</strong> text</p>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_matrix_md_passthrough:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><h1>Head</h1>\n<p>body</p>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_matrix_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: plain
+          text: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_matrix_odd_status:
+  errors:
+    - "login: service error: Matrix login and registration failed"
+  ok: false
+  requests:
+    - body:
+        json:
+          identifier:
+            type: m.id.user
+            user: user
+          initial_device_display_name: Mercurio
+          password: token
+          type: m.login.password
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/login"
+    - body:
+        json:
+          auth:
+            type: m.login.dummy
+          initial_device_display_name: Mercurio
+          kind: user
+          password: token
+          username: user
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/_matrix/client/v3/register?kind=user"
+  valid: true
+wh_matrix_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: plain
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_slack_accepted:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          mrkdwn: false
+          username: Mercurio
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/api/v1/matrix/hook/token"
+  valid: true
+wh_slack_html_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: Hello World
+              title: Mercurio Title
+              ts: ~
+          mrkdwn: false
+          username: Mercurio
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/api/v1/matrix/hook/token"
+  valid: true
+wh_slack_md:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          mrkdwn: true
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_slack_md_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: "**bold**"
+              title: Mercurio Title
+              ts: ~
+          mrkdwn: true
+          username: Mercurio
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_slack_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: a &lt; b &amp; c &gt; d
+              title: Mercurio Title
+              ts: ~
+          mrkdwn: false
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/token"
+  valid: true
+wh_slack_token_arg:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#A32037"
+              footer: Mercurio
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          mrkdwn: true
+          username: user
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost/api/v1/matrix/hook/mytoken"
+  valid: true
+wh_slack_transport_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          attachments:
+            - color: "#3AA3E3"
+              footer: Mercurio
+              text: Mercurio Body
+              title: Mercurio Title
+              ts: ~
+          mrkdwn: false
+          username: Mercurio
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://localhost:8080/api/v1/matrix/hook/token"
+  valid: true
+wh_t2bot_default:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: plain
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://webhooks.t2bot.io/api/v1/matrix/hook/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  valid: true
+wh_t2bot_error:
+  errors:
+    - "HTTP 403: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: plain
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://webhooks.t2bot.io/api/v1/matrix/hook/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  valid: true
+wh_t2bot_html_noimage:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: user
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><br/>Mercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://webhooks.t2bot.io/api/v1/matrix/hook/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+  valid: true
+wh_t2bot_image_md:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatarUrl: "https://example.org/warning-32x32.png"
+          displayName: user
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><p>Mercurio Body</p>"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://webhooks.t2bot.io/api/v1/matrix/hook/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  valid: true
+wh_t2bot_native:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: plain
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://webhooks.t2bot.io/api/v1/matrix/hook/dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  valid: true
+wh_t2bot_native_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: html
+          text: "<h1>Mercurio&nbsp;Title</h1><br/>Mercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://webhooks.t2bot.io/api/v1/matrix/hook/dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  valid: true
+wh_t2bot_token_arg:
+  ok: true
+  requests:
+    - body:
+        json:
+          displayName: Mercurio
+          format: plain
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://webhooks.t2bot.io/api/v1/matrix/hook/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  valid: true

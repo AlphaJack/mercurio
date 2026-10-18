@@ -1,0 +1,264 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_206:
+  errors:
+    - "HTTP 206: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+colon_at:
+  error: "Flowtriq: an invalid hostname or port was specified"
+  valid: false
+deep:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "https://flowtriq.com/api/v1/webhook/xyz"
+  valid: true
+empty:
+  error: "Flowtriq: an invalid hostname or port was specified"
+  valid: false
+err_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+err_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: b
+          severity: critical
+          source: apprise
+          title: t
+          type: failure
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+no_apikey:
+  error: "Flowtriq: an invalid Flowtriq API Key was specified"
+  valid: false
+no_path:
+  error: "Flowtriq: a Flowtriq Webhook Path must be specified"
+  valid: false
+ok_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+ok_204:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+port:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname:8080/hooks/abc123"
+  valid: true
+quoted_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: my key
+      method: POST
+      url: "https://flowtriq.com/a%20b/c"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "https://hostname/hooks/abc123"
+  valid: true
+secure_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "https://hostname:8443/hooks/abc123"
+  valid: true
+slash_path:
+  error: "Flowtriq: a Flowtriq Webhook Path must be specified"
+  valid: false
+success:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: success
+          source: apprise
+          title: Mercurio Title
+          type: success
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+warning:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: warning
+          source: apprise
+          title: Mercurio Title
+          type: warning
+      headers:
+        Content-Type: application/json
+        X-API-Key: myapikey
+      method: POST
+      url: "http://hostname/hooks/abc123"
+  valid: true
+with_password:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          severity: info
+          source: apprise
+          title: Mercurio Title
+          type: info
+      headers:
+        Content-Type: application/json
+        X-API-Key: key
+      method: POST
+      url: "https://flowtriq.com/hook"
+  valid: true

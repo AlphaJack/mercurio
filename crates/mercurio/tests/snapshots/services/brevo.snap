@@ -1,0 +1,498 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachments:
+  ok: true
+  requests:
+    - body:
+        json:
+          attachment:
+            - content: iVBORw0KGgo=
+              name: a.png
+            - content: eA==
+              name: run.exe.txt
+            - content: eQ==
+              name: noext.txt
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: a@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+bad_target:
+  errors:
+    - "service error: there are no Brevo email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          bcc:
+            - email: l2g@nuxref.com
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+cc:
+  ok: true
+  requests:
+    - body:
+        json:
+          cc:
+            - email: l2g@nuxref.com
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+cc_in_bcc:
+  ok: true
+  requests:
+    - body:
+        json:
+          bcc:
+            - email: l2g@nuxref.com
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.au
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.au
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+created:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.ca
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.ca
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+empty:
+  error: "Brevo: an invalid hostname or port was specified"
+  valid: false
+empty_creds:
+  error: "Brevo: an invalid hostname or port was specified"
+  valid: false
+html_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "<p>Hello <b>World</b></p><p>next &amp; more</p><br/>end"
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: "Hello World\n\nnext & more\n\nend"
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+html_input_text_service:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "<b>hi</b>"
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: hi
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+invalid_api_key:
+  error: "Brevo: an invalid Brevo API Key was specified"
+  valid: false
+invalid_reply:
+  error: "Brevo: an invalid Brevo Reply To was specified"
+  valid: false
+multi_partial:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: a@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: b@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+no_password:
+  error: "Brevo: no from email specified"
+  valid: false
+odd_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.uk
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.uk
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "<h1>Release</h1><p>Hello <b>bold</b> &amp; <i>it</i> <u>u</u> <a href=\"http://example.com\">link</a></p><ul><li>one</li><li>two</li></ul><pre>x  y\nz</pre><script>no()</script><br/>end"
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: "Release\n\nHello bold & it u link\n\n- one\n- two\n\nx  y\nz\n\nend"
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "<h1>Release notes</h1>\n<p>This has <strong>bold</strong>, <em>italic</em>, <code>code</code> and a <a href=\"http://example.com/a_b\">link</a>.</p>\n<ul>\n<li>first item</li>\n<li>second <em>item</em></li>\n</ul>\n<blockquote>\n<p>quoted * text &amp; more <stuff></p>\n</blockquote>\n<p><del>gone</del> :smile:</p>"
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: "Release notes\n\nThis has bold, italic, code and a link.\n\n- first item\n- second item\n\nquoted * text & more\n\ngone :smile:"
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "<h2>Section 1</h2>\n<p>Paragraph 1 has <strong>bold 1</strong> and <em>italic</em> words, a <a href=\"http://example.com/1\">link 1</a> and <code>code 1</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 1a</li>\n<li>point 1b</li>\n</ul>\n<h2>Section 2</h2>\n<p>Paragraph 2 has <strong>bold 2</strong> and <em>italic</em> words, a <a href=\"http://example.com/2\">link 2</a> and <code>code 2</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 2a</li>\n<li>point 2b</li>\n</ul>\n<h2>Section 3</h2>\n<p>Paragraph 3 has <strong>bold 3</strong> and <em>italic</em> words, a <a href=\"http://example.com/3\">link 3</a> and <code>code 3</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 3a</li>\n<li>point 3b</li>\n</ul>\n<h2>Section 4</h2>\n<p>Paragraph 4 has <strong>bold 4</strong> and <em>italic</em> words, a <a href=\"http://example.com/4\">link 4</a> and <code>code 4</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 4a</li>\n<li>point 4b</li>\n</ul>\n<h2>Section 5</h2>\n<p>Paragraph 5 has <strong>bold 5</strong> and <em>italic</em> words, a <a href=\"http://example.com/5\">link 5</a> and <code>code 5</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 5a</li>\n<li>point 5b</li>\n</ul>\n<h2>Section 6</h2>\n<p>Paragraph 6 has <strong>bold 6</strong> and <em>italic</em> words, a <a href=\"http://example.com/6\">link 6</a> and <code>code 6</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 6a</li>\n<li>point 6b</li>\n</ul>\n<h2>Section 7</h2>\n<p>Paragraph 7 has <strong>bold 7</strong> and <em>italic</em> words, a <a href=\"http://example.com/7\">link 7</a> and <code>code 7</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 7a</li>\n<li>point 7b</li>\n</ul>\n<h2>Section 8</h2>\n<p>Paragraph 8 has <strong>bold 8</strong> and <em>italic</em> words, a <a href=\"http://example.com/8\">link 8</a> and <code>code 8</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 8a</li>\n<li>point 8b</li>\n</ul>\n<h2>Section 9</h2>\n<p>Paragraph 9 has <strong>bold 9</strong> and <em>italic</em> words, a <a href=\"http://example.com/9\">link 9</a> and <code>code 9</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 9a</li>\n<li>point 9b</li>\n</ul>\n<h2>Section 10</h2>\n<p>Paragraph 10 has <strong>bold 10</strong> and <em>italic</em> words, a <a href=\"http://example.com/10\">link 10</a> and <code>code 10</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 10a</li>\n<li>point 10b</li>\n</ul>\n<h2>Section 11</h2>\n<p>Paragraph 11 has <strong>bold 11</strong> and <em>italic</em> words, a <a href=\"http://example.com/11\">link 11</a> and <code>code 11</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 11a</li>\n<li>point 11b</li>\n</ul>\n<h2>Section 12</h2>\n<p>Paragraph 12 has <strong>bold 12</strong> and <em>italic</em> words, a <a href=\"http://example.com/12\">link 12</a> and <code>code 12</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 12a</li>\n<li>point 12b</li>\n</ul>\n<h2>Section 13</h2>\n<p>Paragraph 13 has <strong>bold 13</strong> and <em>italic</em> words, a <a href=\"http://example.com/13\">link 13</a> and <code>code 13</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 13a</li>\n<li>point 13b</li>\n</ul>\n<h2>Section 14</h2>\n<p>Paragraph 14 has <strong>bold 14</strong> and <em>italic</em> words, a <a href=\"http://example.com/14\">link 14</a> and <code>code 14</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 14a</li>\n<li>point 14b</li>\n</ul>\n<h2>Section 15</h2>\n<p>Paragraph 15 has <strong>bold 15</strong> and <em>italic</em> words, a <a href=\"http://example.com/15\">link 15</a> and <code>code 15</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 15a</li>\n<li>point 15b</li>\n</ul>\n<h2>Section 16</h2>\n<p>Paragraph 16 has <strong>bold 16</strong> and <em>italic</em> words, a <a href=\"http://example.com/16\">link 16</a> and <code>code 16</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 16a</li>\n<li>point 16b</li>\n</ul>\n<h2>Section 17</h2>\n<p>Paragraph 17 has <strong>bold 17</strong> and <em>italic</em> words, a <a href=\"http://example.com/17\">link 17</a> and <code>code 17</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 17a</li>\n<li>point 17b</li>\n</ul>\n<h2>Section 18</h2>\n<p>Paragraph 18 has <strong>bold 18</strong> and <em>italic</em> words, a <a href=\"http://example.com/18\">link 18</a> and <code>code 18</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 18a</li>\n<li>point 18b</li>\n</ul>\n<h2>Section 19</h2>\n<p>Paragraph 19 has <strong>bold 19</strong> and <em>italic</em> words, a <a href=\"http://example.com/19\">link 19</a> and <code>code 19</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 19a</li>\n<li>point 19b</li>\n</ul>\n<h2>Section 20</h2>\n<p>Paragraph 20 has <strong>bold 20</strong> and <em>italic</em> words, a <a href=\"http://example.com/20\">link 20</a> and <code>code 20</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 20a</li>\n<li>point 20b</li>\n</ul>\n<h2>Section 21</h2>\n<p>Paragraph 21 has <strong>bold 21</strong> and <em>italic</em> words, a <a href=\"http://example.com/21\">link 21</a> and <code>code 21</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 21a</li>\n<li>point 21b</li>\n</ul>\n<h2>Section 22</h2>\n<p>Paragraph 22 has <strong>bold 22</strong> and <em>italic</em> words, a <a href=\"http://example.com/22\">link 22</a> and <code>code 22</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 22a</li>\n<li>point 22b</li>\n</ul>\n<h2>Section 23</h2>\n<p>Paragraph 23 has <strong>bold 23</strong> and <em>italic</em> words, a <a href=\"http://example.com/23\">link 23</a> and <code>code 23</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 23a</li>\n<li>point 23b</li>\n</ul>\n<h2>Section 24</h2>\n<p>Paragraph 24 has <strong>bold 24</strong> and <em>italic</em> words, a <a href=\"http://example.com/24\">link 24</a> and <code>code 24</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 24a</li>\n<li>point 24b</li>\n</ul>\n<h2>Section 25</h2>\n<p>Paragraph 25 has <strong>bold 25</strong> and <em>italic</em> words, a <a href=\"http://example.com/25\">link 25</a> and <code>code 25</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 25a</li>\n<li>point 25b</li>\n</ul>\n<h2>Section 26</h2>\n<p>Paragraph 26 has <strong>bold 26</strong> and <em>italic</em> words, a <a href=\"http://example.com/26\">link 26</a> and <code>code 26</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 26a</li>\n<li>point 26b</li>\n</ul>\n<h2>Section 27</h2>\n<p>Paragraph 27 has <strong>bold 27</strong> and <em>italic</em> words, a <a href=\"http://example.com/27\">link 27</a> and <code>code 27</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 27a</li>\n<li>point 27b</li>\n</ul>\n<h2>Section 28</h2>\n<p>Paragraph 28 has <strong>bold 28</strong> and <em>italic</em> words, a <a href=\"http://example.com/28\">link 28</a> and <code>code 28</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 28a</li>\n<li>point 28b</li>\n</ul>\n<h2>Section 29</h2>\n<p>Paragraph 29 has <strong>bold 29</strong> and <em>italic</em> words, a <a href=\"http://example.com/29\">link 29</a> and <code>code 29</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 29a</li>\n<li>point 29b</li>\n</ul>\n<h2>Section 30</h2>\n<p>Paragraph 30 has <strong>bold 30</strong> and <em>italic</em> words, a <a href=\"http://example.com/30\">link 30</a> and <code>code 30</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 30a</li>\n<li>point 30b</li>\n</ul>\n<h2>Section 31</h2>\n<p>Paragraph 31 has <strong>bold 31</strong> and <em>italic</em> words, a <a href=\"http://example.com/31\">link 31</a> and <code>code 31</code>. Sentences keep goi</p>"
+          sender:
+            email: user@example.com
+          subject: A title that is long enough to be interesting for counters and amalgamation A title that is long enough to be interesting for counters and amalgamation
+          textContent: "Section 1\n\nParagraph 1 has bold 1 and italic words, a link 1 and code 1. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\nSection 2\n\nParagraph 2 has bold 2 and italic words, a link 2 and code 2. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\nSection 3\n\nParagraph 3 has bold 3 and italic words, a link 3 and code 3. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\nSection 4\n\nParagraph 4 has bold 4 and italic words, a link 4 and code 4. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\nSection 5\n\nParagraph 5 has bold 5 and italic words, a link 5 and code 5. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\nSection 6\n\nParagraph 6 has bold 6 and italic words, a link 6 and code 6. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\nSection 7\n\nParagraph 7 has bold 7 and italic words, a link 7 and code 7. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\nSection 8\n\nParagraph 8 has bold 8 and italic words, a link 8 and code 8. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\nSection 9\n\nParagraph 9 has bold 9 and italic words, a link 9 and code 9. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\nSection 10\n\nParagraph 10 has bold 10 and italic words, a link 10 and code 10. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\nSection 11\n\nParagraph 11 has bold 11 and italic words, a link 11 and code 11. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\nSection 12\n\nParagraph 12 has bold 12 and italic words, a link 12 and code 12. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\nSection 13\n\nParagraph 13 has bold 13 and italic words, a link 13 and code 13. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\nSection 14\n\nParagraph 14 has bold 14 and italic words, a link 14 and code 14. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\nSection 15\n\nParagraph 15 has bold 15 and italic words, a link 15 and code 15. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\nSection 16\n\nParagraph 16 has bold 16 and italic words, a link 16 and code 16. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\nSection 17\n\nParagraph 17 has bold 17 and italic words, a link 17 and code 17. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\nSection 18\n\nParagraph 18 has bold 18 and italic words, a link 18 and code 18. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\nSection 19\n\nParagraph 19 has bold 19 and italic words, a link 19 and code 19. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\nSection 20\n\nParagraph 20 has bold 20 and italic words, a link 20 and code 20. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\nSection 21\n\nParagraph 21 has bold 21 and italic words, a link 21 and code 21. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\nSection 22\n\nParagraph 22 has bold 22 and italic words, a link 22 and code 22. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\nSection 23\n\nParagraph 23 has bold 23 and italic words, a link 23 and code 23. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\nSection 24\n\nParagraph 24 has bold 24 and italic words, a link 24 and code 24. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\nSection 25\n\nParagraph 25 has bold 25 and italic words, a link 25 and code 25. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\nSection 26\n\nParagraph 26 has bold 26 and italic words, a link 26 and code 26. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\nSection 27\n\nParagraph 27 has bold 27 and italic words, a link 27 and code 27. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\nSection 28\n\nParagraph 28 has bold 28 and italic words, a link 28 and code 28. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\nSection 29\n\nParagraph 29 has bold 29 and italic words, a link 29 and code 29. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\nSection 30\n\nParagraph 30 has bold 30 and italic words, a link 30 and code 30. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\nSection 31\n\nParagraph 31 has bold 31 and italic words, a link 31 and code 31. Sentences keep goi"
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit \n sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing \n elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur \n adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet \n consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit \n amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. \n sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum \n dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem \n ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor \n lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod \n tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do \n eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed \n do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit \n sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing \n elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. \n adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet \n consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit \n amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor \n sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum \n dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem \n ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor \n lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod \n tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do \n eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. \n do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit \n sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing \n elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur \n adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet \n consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit \n amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor \n sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum \n dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem \n ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. \n lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci"
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "Plain&nbsp;&lt;text&gt;&nbsp;&amp;&nbsp;*stars*&nbsp;_under_&nbsp;[x](y)<br/>second&nbsp;line"
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: "Plain <text> & *stars* _under_ [x](y)\nsecond line"
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: "<h2>Section 1</h2>\n<p>Paragraph 1 has <strong>bold 1</strong> and <em>italic</em> words, a <a href=\"http://example.com/1\">link 1</a> and <code>code 1</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 1a</li>\n<li>point 1b</li>\n</ul>\n<h2>Section 2</h2>\n<p>Paragraph 2 has <strong>bold 2</strong> and <em>italic</em> words, a <a href=\"http://example.com/2\">link 2</a> and <code>code 2</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 2a</li>\n<li>point 2b</li>\n</ul>\n<h2>Section 3</h2>\n<p>Paragraph 3 has <strong>bold 3</strong> and <em>italic</em> words, a <a href=\"http://example.com/3\">link 3</a> and <code>code 3</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 3a</li>\n<li>point 3b</li>\n</ul>\n<h2>Section 4</h2>\n<p>Paragraph 4 has <strong>bold 4</strong> and <em>italic</em> words, a <a href=\"http://example.com/4\">link 4</a> and <code>code 4</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 4a</li>\n<li>point 4b</li>\n</ul>\n<h2>Section 5</h2>\n<p>Paragraph 5 has <strong>bold 5</strong> and <em>italic</em> words, a <a href=\"http://example.com/5\">link 5</a> and <code>code 5</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 5a</li>\n<li>point 5b</li>\n</ul>\n<h2>Section 6</h2>\n<p>Paragraph 6 has <strong>bold 6</strong> and <em>italic</em> words, a <a href=\"http://example.com/6\">link 6</a> and <code>code 6</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 6a</li>\n<li>point 6b</li>\n</ul>\n<h2>Section 7</h2>\n<p>Paragraph 7 has <strong>bold 7</strong> and <em>italic</em> words, a <a href=\"http://example.com/7\">link 7</a> and <code>code 7</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 7a</li>\n<li>point 7b</li>\n</ul>\n<h2>Section 8</h2>\n<p>Paragraph 8 has <strong>bold 8</strong> and <em>italic</em> words, a <a href=\"http://example.com/8\">link 8</a> and <code>code 8</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 8a</li>\n<li>point 8b</li>\n</ul>\n<h2>Section 9</h2>\n<p>Paragraph 9 has <strong>bold 9</strong> and <em>italic</em> words, a <a href=\"http://example.com/9\">link 9</a> and <code>code 9</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 9a</li>\n<li>point 9b</li>\n</ul>\n<h2>Section 10</h2>\n<p>Paragraph 10 has <strong>bold 10</strong> and <em>italic</em> words, a <a href=\"http://example.com/10\">link 10</a> and <code>code 10</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 10a</li>\n<li>point 10b</li>\n</ul>\n<h2>Section 11</h2>\n<p>Paragraph 11 has <strong>bold 11</strong> and <em>italic</em> words, a <a href=\"http://example.com/11\">link 11</a> and <code>code 11</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 11a</li>\n<li>point 11b</li>\n</ul>\n<h2>Section 12</h2>\n<p>Paragraph 12 has <strong>bold 12</strong> and <em>italic</em> words, a <a href=\"http://example.com/12\">link 12</a> and <code>code 12</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 12a</li>\n<li>point 12b</li>\n</ul>\n<h2>Section 13</h2>\n<p>Paragraph 13 has <strong>bold 13</strong> and <em>italic</em> words, a <a href=\"http://example.com/13\">link 13</a> and <code>code 13</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 13a</li>\n<li>point 13b</li>\n</ul>\n<h2>Section 14</h2>\n<p>Paragraph 14 has <strong>bold 14</strong> and <em>italic</em> words, a <a href=\"http://example.com/14\">link 14</a> and <code>code 14</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 14a</li>\n<li>point 14b</li>\n</ul>\n<h2>Section 15</h2>\n<p>Paragraph 15 has <strong>bold 15</strong> and <em>italic</em> words, a <a href=\"http://example.com/15\">link 15</a> and <code>code 15</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 15a</li>\n<li>point 15b</li>\n</ul>\n<h2>Section 16</h2>\n<p>Paragraph 16 has <strong>bold 16</strong> and <em>italic</em> words, a <a href=\"http://example.com/16\">link 16</a> and <code>code 16</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 16a</li>\n<li>point 16b</li>\n</ul>\n<h2>Section 17</h2>\n<p>Paragraph 17 has <strong>bold 17</strong> and <em>italic</em> words, a <a href=\"http://example.com/17\">link 17</a> and <code>code 17</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 17a</li>\n<li>point 17b</li>\n</ul>\n<h2>Section 18</h2>\n<p>Paragraph 18 has <strong>bold 18</strong> and <em>italic</em> words, a <a href=\"http://example.com/18\">link 18</a> and <code>code 18</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 18a</li>\n<li>point 18b</li>\n</ul>\n<h2>Section 19</h2>\n<p>Paragraph 19 has <strong>bold 19</strong> and <em>italic</em> words, a <a href=\"http://example.com/19\">link 19</a> and <code>code 19</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 19a</li>\n<li>point 19b</li>\n</ul>\n<h2>Section 20</h2>\n<p>Paragraph 20 has <strong>bold 20</strong> and <em>italic</em> words, a <a href=\"http://example.com/20\">link 20</a> and <code>code 20</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 20a</li>\n<li>point 20b</li>\n</ul>\n<h2>Section 21</h2>\n<p>Paragraph 21 has <strong>bold 21</strong> and <em>italic</em> words, a <a href=\"http://example.com/21\">link 21</a> and <code>code 21</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 21a</li>\n<li>point 21b</li>\n</ul>\n<h2>Section 22</h2>\n<p>Paragraph 22 has <strong>bold 22</strong> and <em>italic</em> words, a <a href=\"http://example.com/22\">link 22</a> and <code>code 22</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 22a</li>\n<li>point 22b</li>\n</ul>\n<h2>Section 23</h2>\n<p>Paragraph 23 has <strong>bold 23</strong> and <em>italic</em> words, a <a href=\"http://example.com/23\">link 23</a> and <code>code 23</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 23a</li>\n<li>point 23b</li>\n</ul>\n<h2>Section 24</h2>\n<p>Paragraph 24 has <strong>bold 24</strong> and <em>italic</em> words, a <a href=\"http://example.com/24\">link 24</a> and <code>code 24</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 24a</li>\n<li>point 24b</li>\n</ul>\n<h2>Section 25</h2>\n<p>Paragraph 25 has <strong>bold 25</strong> and <em>italic</em> words, a <a href=\"http://example.com/25\">link 25</a> and <code>code 25</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 25a</li>\n<li>point 25b</li>\n</ul>\n<h2>Section 26</h2>\n<p>Paragraph 26 has <strong>bold 26</strong> and <em>italic</em> words, a <a href=\"http://example.com/26\">link 26</a> and <code>code 26</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 26a</li>\n<li>point 26b</li>\n</ul>\n<h2>Section 27</h2>\n<p>Paragraph 27 has <strong>bold 27</strong> and <em>italic</em> words, a <a href=\"http://example.com/27\">link 27</a> and <code>code 27</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 27a</li>\n<li>point 27b</li>\n</ul>\n<h2>Section 28</h2>\n<p>Paragraph 28 has <strong>bold 28</strong> and <em>italic</em> words, a <a href=\"http://example.com/28\">link 28</a> and <code>code 28</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 28a</li>\n<li>point 28b</li>\n</ul>\n<h2>Section 29</h2>\n<p>Paragraph 29 has <strong>bold 29</strong> and <em>italic</em> words, a <a href=\"http://example.com/29\">link 29</a> and <code>code 29</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 29a</li>\n<li>point 29b</li>\n</ul>\n<h2>Section 30</h2>\n<p>Paragraph 30 has <strong>bold 30</strong> and <em>italic</em> words, a <a href=\"http://example.com/30\">link 30</a> and <code>code 30</code>. Sentences keep going so splitting has to pick a boundary.</p>\n<ul>\n<li>point 30a</li>\n<li>point 30b</li>\n</ul>\n<h2>Section 31</h2>\n<p>Paragraph 31 has <strong>bold 31</strong> and <em>italic</em> words, a <a href=\"http://example.com/31\">link 31</a> and <code>code 31</code>. Sentences keep goi</p>"
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: "Section 1\n\nParagraph 1 has bold 1 and italic words, a link 1 and code 1. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\nSection 2\n\nParagraph 2 has bold 2 and italic words, a link 2 and code 2. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\nSection 3\n\nParagraph 3 has bold 3 and italic words, a link 3 and code 3. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\nSection 4\n\nParagraph 4 has bold 4 and italic words, a link 4 and code 4. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\nSection 5\n\nParagraph 5 has bold 5 and italic words, a link 5 and code 5. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\nSection 6\n\nParagraph 6 has bold 6 and italic words, a link 6 and code 6. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\nSection 7\n\nParagraph 7 has bold 7 and italic words, a link 7 and code 7. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\nSection 8\n\nParagraph 8 has bold 8 and italic words, a link 8 and code 8. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\nSection 9\n\nParagraph 9 has bold 9 and italic words, a link 9 and code 9. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\nSection 10\n\nParagraph 10 has bold 10 and italic words, a link 10 and code 10. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\nSection 11\n\nParagraph 11 has bold 11 and italic words, a link 11 and code 11. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\nSection 12\n\nParagraph 12 has bold 12 and italic words, a link 12 and code 12. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\nSection 13\n\nParagraph 13 has bold 13 and italic words, a link 13 and code 13. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\nSection 14\n\nParagraph 14 has bold 14 and italic words, a link 14 and code 14. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\nSection 15\n\nParagraph 15 has bold 15 and italic words, a link 15 and code 15. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\nSection 16\n\nParagraph 16 has bold 16 and italic words, a link 16 and code 16. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\nSection 17\n\nParagraph 17 has bold 17 and italic words, a link 17 and code 17. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\nSection 18\n\nParagraph 18 has bold 18 and italic words, a link 18 and code 18. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\nSection 19\n\nParagraph 19 has bold 19 and italic words, a link 19 and code 19. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\nSection 20\n\nParagraph 20 has bold 20 and italic words, a link 20 and code 20. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\nSection 21\n\nParagraph 21 has bold 21 and italic words, a link 21 and code 21. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\nSection 22\n\nParagraph 22 has bold 22 and italic words, a link 22 and code 22. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\nSection 23\n\nParagraph 23 has bold 23 and italic words, a link 23 and code 23. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\nSection 24\n\nParagraph 24 has bold 24 and italic words, a link 24 and code 24. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\nSection 25\n\nParagraph 25 has bold 25 and italic words, a link 25 and code 25. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\nSection 26\n\nParagraph 26 has bold 26 and italic words, a link 26 and code 26. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\nSection 27\n\nParagraph 27 has bold 27 and italic words, a link 27 and code 27. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\nSection 28\n\nParagraph 28 has bold 28 and italic words, a link 28 and code 28. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\nSection 29\n\nParagraph 29 has bold 29 and italic words, a link 29 and code 29. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\nSection 30\n\nParagraph 30 has bold 30 and italic words, a link 30 and code 30. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\nSection 31\n\nParagraph 31 has bold 31 and italic words, a link 31 and code 31. Sentences keep goi"
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+reply:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          replyTo:
+            email: bob@example.com
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+self_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.ca
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.ca
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+text_format:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: line&nbsp;one<br/>line&nbsp;&lt;two&gt;&nbsp;&amp;&nbsp;three
+          sender:
+            email: user@example.com
+          subject: "<no subject>"
+          textContent: "line one\nline <two> & three"
+          to:
+            - email: user@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+text_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: plain
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: plain
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: l2g@nuxref.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+    - body:
+        json:
+          htmlContent: Mercurio Body
+          sender:
+            email: user@example.com
+          subject: Mercurio Title
+          textContent: Mercurio Body
+          to:
+            - email: newuser@example.com
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        api-key: abcd
+      method: POST
+      url: "https://api.brevo.com/v3/smtp/email"
+  valid: true
+token_only:
+  error: "Brevo: no API key specified"
+  valid: false

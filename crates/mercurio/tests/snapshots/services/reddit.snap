@@ -1,0 +1,1006 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+auto_link:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Authorization: Basic aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub
+          - - title
+            - Mercurio Notifications
+          - - kind
+            - link
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - url
+            - "https://example.com/path?a=1"
+      headers:
+        Authorization: Bearer t
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+bad_app_id:
+  error: "Reddit: an invalid Reddit App ID was specified"
+  valid: false
+bad_kind:
+  error: "Reddit: an invalid Reddit message kind was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - mercurio
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+bizarre_code:
+  errors:
+    - "login: HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+connection_error:
+  errors:
+    - "login: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+default_response_login_fails:
+  errors:
+    - "login: service error: Reddit login failed"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+empty:
+  error: "Reddit: an invalid Reddit User ID was specified"
+  valid: false
+empty_userinfo:
+  error: "Reddit: an invalid Reddit User ID was specified"
+  valid: false
+flair:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Authorization: Basic aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub6
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - flair_id
+            - wonder
+          - - flair_text
+            - not for you
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub7
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - flair_id
+            - wonder
+          - - flair_text
+            - not for you
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+kind_link:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Authorization: Basic aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub
+          - - title
+            - Mercurio Title
+          - - kind
+            - link
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - url
+            - not a url
+      headers:
+        Authorization: Bearer t
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+login_bad_expires:
+  errors:
+    - "login: service error: unexpected Reddit expires_in"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+login_errors:
+  errors:
+    - "login: service error: Reddit reported errors"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+login_http_error:
+  errors:
+    - "login: HTTP 401: {\"error\":\"x\"}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+login_no_token:
+  errors:
+    - "login: service error: Reddit login returned no token"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+login_not_json:
+  errors:
+    - "login: HTTP 200: server error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+markdown_escapes_link:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Authorization: Basic aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub
+          - - title
+            - Mercurio Title
+          - - kind
+            - link
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - url
+            - "https://example.com/a_b"
+      headers:
+        Authorization: Bearer t
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+no_password:
+  error: "Reddit: an invalid Reddit Password was specified"
+  valid: false
+no_secret:
+  error: "Reddit: an invalid Reddit App Secret was specified"
+  valid: false
+no_subreddits:
+  errors:
+    - "service error: there are no Reddit subreddits to notify"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+options:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - pass
+      headers:
+        Authorization: Basic aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "true"
+          - - resubmit
+            - "true"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "true"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+query_creds:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - l2g
+          - - password
+            - pass
+      headers:
+        Authorization: Basic NTQzMjE6YWJjMTIz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub2
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - sub1
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+submit_connection_error:
+  errors:
+    - "post: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - mercurio
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+submit_errors:
+  errors:
+    - "post: service error: Reddit reported errors"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - b
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - a
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+submit_fail_relogin_fails:
+  errors:
+    - "post: login: HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - b
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - a
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+  valid: true
+submit_fail_relogin_ok:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - a
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - a
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer new
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+submit_json_list_aborts:
+  errors:
+    - "post: service error: unexpected Reddit response"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - b
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true
+two_subreddits_reverse_order:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - user
+          - - password
+            - password
+      headers:
+        Authorization: Basic YXBwLWlkOmFwcC1zZWNyZXQ=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://www.reddit.com/api/v1/access_token"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - subreddit2
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+    - body:
+        form:
+          - - ad
+            - "false"
+          - - api_type
+            - json
+          - - extension
+            - json
+          - - sr
+            - mercurio
+          - - title
+            - Mercurio Title
+          - - kind
+            - self
+          - - nsfw
+            - "false"
+          - - resubmit
+            - "false"
+          - - sendreplies
+            - "true"
+          - - spoiler
+            - "false"
+          - - text
+            - Mercurio Body
+      headers:
+        Authorization: Bearer abc123
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://oauth.reddit.com/api/submit"
+  valid: true

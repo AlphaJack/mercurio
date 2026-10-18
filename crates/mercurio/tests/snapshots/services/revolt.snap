@@ -1,0 +1,475 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic_markdown_implied:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+blank_creds:
+  error: "Revolt: an invalid Revolt Bot Token was specified"
+  valid: false
+bot_token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+channel_list_blank:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+channel_only:
+  error: "Revolt: an invalid Revolt Bot Token was specified"
+  valid: false
+channel_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+empty:
+  error: "Revolt: an invalid Revolt Bot Token was specified"
+  valid: false
+format_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\nMercurio Body"
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+format_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+format_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\nMercurio Body"
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+format_text_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: Mercurio Body
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+format_text_url:
+  ok: true
+  requests:
+    - body:
+        json:
+          content: "Mercurio Title\nMercurio Body"
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+http_204:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+icon_url:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#A32037"
+              description: Mercurio Body
+              icon_url: "http://localhost/test.jpg"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+long_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+markdown_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#CACF29"
+              description: Mercurio Body
+              icon_url: "https://example.org/warning-256x256.png"
+              replies: ~
+              title: ~
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+multi_partial_fail:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/aaa/messages"
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/bbb/messages"
+  valid: true
+multi_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/aaa/messages"
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/mmm/messages"
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/zzz/messages"
+  valid: true
+no_channels:
+  errors:
+    - "service error: there were no Revolt channels to notify"
+  ok: false
+  requests: []
+  valid: true
+rate_limited_then_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+rate_limited_twice:
+  errors:
+    - "HTTP 429: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true
+url_link:
+  ok: true
+  requests:
+    - body:
+        json:
+          embeds:
+            - colour: "#3AA3E3"
+              description: Mercurio Body
+              icon_url: "https://example.org/info-256x256.png"
+              replies: ~
+              title: Mercurio Title
+              url: "http://localhost"
+      headers:
+        Accept: application/json; charset=utf-8
+        Content-Type: application/json; charset=utf-8
+        X-Bot-Token: iiiiiiiiiiiiiiiiiiiiiiii
+      method: POST
+      url: "https://api.revolt.chat/channels/tttttttttttttttttttttttt/messages"
+  valid: true

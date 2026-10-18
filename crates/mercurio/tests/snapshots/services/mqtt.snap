@@ -1,0 +1,532 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+client_id_only:
+  events:
+    - client:
+        clean_session: true
+        client_id: my client
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+connack_refused:
+  errors:
+    - "service error: MQTT broker refused the connection: not authorised (code 5)"
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - username_pw_set:
+        password: bad
+        username: user
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+  ok: false
+  valid: true
+connect_refused:
+  errors:
+    - "transport error: no scripted connection for localhost:1883"
+  events: []
+  ok: false
+  valid: true
+empty_password:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - username_pw_set:
+        password: ""
+        username: user
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: t
+  ok: true
+  valid: true
+no_host:
+  error: "MQTT Notification: an invalid hostname or port was specified"
+  valid: false
+no_puback:
+  errors:
+    - "transport error: connection closed"
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 1
+        retain: false
+        topic: t
+  ok: false
+  valid: true
+no_pubrec:
+  errors:
+    - "transport error: connection closed"
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 2
+        retain: false
+        topic: t
+  ok: false
+  valid: true
+no_title:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: only body
+        qos: 0
+        retain: false
+        topic: t
+  ok: true
+  valid: true
+no_topic:
+  errors:
+    - "invalid message: there were no MQTT topics to notify"
+  events: []
+  ok: false
+  valid: true
+port:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1234
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+qos2_auth:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - username_pw_set:
+        password: pass
+        username: user
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 2
+        retain: false
+        topic: a/b
+  ok: true
+  valid: true
+qos_invalid:
+  error: "MQTT Notification: An invalid MQTT QOS (invalid) was specified."
+  valid: false
+qos_negative:
+  error: "MQTT Notification: An invalid MQTT QOS (-1) was specified."
+  valid: false
+qos_too_big:
+  error: "MQTT Notification: An invalid MQTT QOS (123) was specified."
+  valid: false
+qos_v31:
+  events:
+    - client:
+        clean_session: true
+        client_id: "<random-client-id>"
+        protocol: 3
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 1
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+retain:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - username_pw_set:
+        password: ~
+        username: user
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: true
+        topic: my/topic
+  ok: true
+  valid: true
+session_client_id:
+  events:
+    - client:
+        clean_session: false
+        client_id: apprise
+        protocol: 4
+    - username_pw_set:
+        password: ~
+        username: user
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+session_without_client_id:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+title_body:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "My Title\r\nMy Body"
+        qos: 0
+        retain: false
+        topic: t
+  ok: true
+  valid: true
+tls:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - username_pw_set:
+        password: pass
+        username: user
+    - tls:
+        verify: true
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 8883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+tls_no_verify:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - username_pw_set:
+        password: pass
+        username: user
+    - tls:
+        verify: false
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 8883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+tls_port:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - tls:
+        verify: true
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 8884
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: t
+  ok: true
+  valid: true
+to_and_path:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: first
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: second
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: third
+  ok: true
+  valid: true
+to_arg:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+topic_list_spaces:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: a
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: b
+  ok: true
+  valid: true
+two_topics:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nhello"
+        qos: 0
+        retain: false
+        topic: my/other/topic
+    - publish:
+        payload: "Mercurio Title\r\nhello"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+user_only:
+  errors:
+    - "invalid message: there were no MQTT topics to notify"
+  events: []
+  ok: false
+  valid: true
+user_topic:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - username_pw_set:
+        password: ~
+        username: user
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: t
+  ok: true
+  valid: true
+v5:
+  events:
+    - client:
+        clean_session: ~
+        client_id: ""
+        protocol: 5
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: my/topic
+  ok: true
+  valid: true
+v5_qos2_retain_auth:
+  events:
+    - client:
+        clean_session: ~
+        client_id: me
+        protocol: 5
+    - username_pw_set:
+        password: pass
+        username: user
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 2
+        retain: true
+        topic: x
+  ok: true
+  valid: true
+version_311:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: t
+  ok: true
+  valid: true
+version_invalid:
+  error: "MQTT Notification: An invalid MQTT Protocol version (v1.0.0.0) was specified."
+  valid: false
+version_v311:
+  events:
+    - client:
+        clean_session: true
+        client_id: ""
+        protocol: 4
+    - connect:
+        host: localhost
+        keepalive: 30
+        port: 1883
+    - publish:
+        payload: "Mercurio Title\r\nMercurio Body"
+        qos: 0
+        retain: false
+        topic: t
+  ok: true
+  valid: true

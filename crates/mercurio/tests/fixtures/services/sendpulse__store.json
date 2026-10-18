@@ -1,0 +1,9 @@
+{
+"cases":[
+{"name":"token_reused","url":"sendpulse://user@example.com/client_id/cs1/","sends":3,"responses":[{"status":200,"body":{"access_token":"abc123","expires_in":3600}},{"status":200},{"status":200},{"status":200}]},
+{"name":"two_targets_token_reused","url":"sendpulse://user@example.com/client_id/cs1/a@example.com/b@example.com","sends":2,"responses":[{"status":200,"body":{"access_token":"tok","expires_in":7200}},{"status":200},{"status":200},{"status":200},{"status":200}]},
+{"name":"unauthorized_relogin_persists","url":"sendpulse://user@example.com/client_id/cs1/","sends":2,"responses":[{"status":200,"body":{"access_token":"old","expires_in":3600}},{"status":401,"body":{}},{"status":200,"body":{"access_token":"new","expires_in":3600}},{"status":200},{"status":200}]},
+{"name":"login_fails_then_works","url":"sendpulse://user@example.com/client_id/cs1/","sends":3,"responses":[{"status":500,"body":{}},{"status":200,"body":{"access_token":"t2"}},{"status":200},{"status":200}]},
+{"name":"store_no","url":"sendpulse://user@example.com/client_id/cs1/?store=no","sends":2,"responses":[{"status":200,"body":{"access_token":"abc","expires_in":3600}},{"status":200},{"status":200}]},
+{"name":"retry_skips_delivered","url":"sendpulse://user@example.com/client_id/cs1/a@example.com/b@example.com?retry=1","sends":1,"responses":[{"status":200,"body":{"access_token":"abc","expires_in":3600}},{"status":200},{"status":500,"body":{}},{"status":200}]}
+]}

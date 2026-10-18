@@ -1,0 +1,18 @@
+{
+"cases":[
+{"name":"basic","url":"schan://12345678"},
+{"name":"trailing_slash","url":"schan://12345678/"},
+{"name":"query","url":"schan://abcdEFGH123?format=markdown"},
+{"name":"title_body_type","url":"schan://12345678","title":"Hello & bye","body":"line1\nline2 é","type":"failure"},
+{"name":"no_title","url":"schan://12345678","title":""},
+{"name":"empty","url":"schan://"},
+{"name":"invalid_token","url":"schan://a_bd_/"},
+{"name":"extra_path_trailing","url":"schan://abcd/efgh/"},
+{"name":"extra_path","url":"schan://abcd/efgh"},
+{"name":"dash_token","url":"schan://ab-cd"},
+{"name":"upper_scheme","url":"SCHAN://12345678"},
+{"name":"server_error","url":"schan://aaaaaaaa","responses":[{"status":500,"body":"server error"}]},
+{"name":"bizarre_code","url":"schan://aaaaaaaa","responses":[{"status":999,"body":""}]},
+{"name":"created_201","url":"schan://aaaaaaaa","responses":[{"status":201}]},
+{"name":"connection_error","url":"schan://aaaaaaaa","responses":[{"error":true}]}
+]}

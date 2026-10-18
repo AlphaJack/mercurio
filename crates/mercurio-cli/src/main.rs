@@ -1,0 +1,756 @@
+//! `mercurio`: send notifications from the command line.
+//!
+//! `mercurio -t title -b body URL...`, body from stdin when `-b` is absent, configuration files (`-c` or the default locations), `--tag`, `--template-var` and the same exit codes (0 ok, 1 failure, 2 usage, 3 nothing matched, 4 partial).
+//!
+//! Sources, first match wins: URLs on the command line, `--config`, `$APPRISE_URLS`, the default configuration files.
+
+#![cfg_attr(not(test), deny(clippy::print_stdout, clippy::print_stderr))]
+
+/// `println!` that never panics: a closed stdout (`mercurio services | head`) ends the program quietly instead.
+macro_rules! outln {
+    ($($arg:tt)*) => {{
+        use std::io::Write as _;
+        if let Err(e) = writeln!(std::io::stdout().lock(), $($arg)*) {
+            $crate::stdout_failed(e);
+        }
+    }};
+}
+
+/// `eprintln!` that never panics (a closed stderr drops the message).
+macro_rules! errln {
+    ($($arg:tt)*) => {{
+        use std::io::Write as _;
+        writeln!(std::io::stderr().lock(), $($arg)*).ok();
+    }};
+}
+
+mod logger;
+mod serve;
+
+use std::io::Read;
+use std::process::ExitCode;
+use std::sync::Arc;
+
+use mercurio::config::{ConfigOptions, default_paths, expand_path};
+use mercurio::{
+    Asset, Attachment, DefaultTransport, Mercurio, Message, NotifyFormat, NotifyType, TagFilter, TemplateVars,
+    Transport,
+};
+
+/// stdout went away: exit 0 when the reader closed the pipe (as `head` does), 1 otherwise.
+fn stdout_failed(e: std::io::Error) -> ! {
+    if e.kind() == std::io::ErrorKind::BrokenPipe {
+        std::process::exit(0);
+    }
+    errln!("error: writing to stdout: {e}");
+    std::process::exit(1);
+}
+
+/// Default levels of configuration `include` to follow.
+const DEFAULT_RECURSION: u32 = 1;
+/// Default age, in days, after which `storage prune` removes files.
+const DEFAULT_PRUNE_DAYS: i64 = 30;
+
+#[derive(Debug, clap::Parser)]
+#[command(name = "mercurio", version, about, disable_help_subcommand = true, max_term_width = 100)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Cmd>,
+    /// Notification URLs
+    #[arg(value_name = "URL")]
+    urls: Vec<String>,
+    #[command(flatten)]
+    opts: Opts,
+}
+
+#[derive(Debug, clap::Subcommand)]
+enum Cmd {
+    /// List the supported services
+    Services,
+    /// Validate URLs or configuration; send nothing
+    Check {
+        #[arg(value_name = "URL")]
+        urls: Vec<String>,
+    },
+    /// Run the HTTP notification server
+    #[command(after_help = serve::help_tables())]
+    Serve {
+        /// Check the server at `--bind` instead of starting one: exit 0 when `GET /status` answers 200
+        #[arg(long)]
+        healthcheck: bool,
+        #[command(flatten)]
+        settings: Box<serve::ServeArgs>,
+    },
+    /// Show (`list`) or clean (`prune`, `clear`) the persistent storage
+    Storage {
+        #[arg(value_name = "ACTION|UID|URL")]
+        args: Vec<String>,
+    },
+    /// Same as giving the URLs directly
+    #[command(hide = true)]
+    Send {
+        #[arg(value_name = "URL")]
+        urls: Vec<String>,
+    },
+}
+
+/// Options accepted before or after the command word.
+#[derive(Debug, clap::Args)]
+struct Opts {
+    /// Message body [default: read stdin]
+    #[arg(short, long, global = true, value_name = "TEXT")]
+    body: Option<String>,
+    /// Message title
+    #[arg(short, long, global = true, value_name = "TEXT")]
+    title: Option<String>,
+    /// `info`, `success`, `warning` or `failure`
+    #[arg(short = 'n', long, global = true, value_name = "TYPE", default_value = "info", value_parser = parse_type)]
+    notification_type: NotifyType,
+    /// Markup of the body: `text`, `html` or `markdown`
+    #[arg(short, long, global = true, value_name = "FORMAT", value_parser = parse_format)]
+    input_format: Option<NotifyFormat>,
+    /// Attach a file: path, `file://`, `http(s)://` or `memory://` (repeatable)
+    #[arg(short, long, global = true, value_name = "PATH|URL")]
+    attach: Vec<String>,
+    /// Load a TEXT or YAML configuration (repeatable)
+    #[arg(short, long, global = true, value_name = "PATH|URL")]
+    config: Vec<String>,
+    /// Notify services tagged TAG; `a,b` needs both, repeat for either, `all` notifies everything
+    #[arg(short = 'g', long, global = true, value_name = "TAG")]
+    tag: Vec<String>,
+    /// Value for `${NAME}` in a YAML configuration (`-tv`, repeatable)
+    #[arg(long, global = true, value_name = "NAME=VALUE")]
+    template_var: Vec<String>,
+    /// Configuration `include` levels to follow
+    #[arg(short = 'R', long, global = true, value_name = "N", default_value_t = DEFAULT_RECURSION)]
+    recursion_depth: u32,
+    /// Turn `\n`, `\r`, `\t` and `\\` in the title and body into the characters
+    #[arg(short = 'e', long, global = true)]
+    interpret_escapes: bool,
+    /// Show what would be notified; send nothing
+    #[arg(short, long, global = true)]
+    dry_run: bool,
+    /// Notify services one after another (`-Da`)
+    #[arg(long, global = true)]
+    disable_async: bool,
+    /// Persistent storage directory
+    #[arg(short = 'S', long, global = true, value_name = "PATH", env = "APPRISE_STORAGE_PATH", default_value = DEFAULT_STORAGE_PATH)]
+    storage_path: String,
+    /// `storage prune` removes files older than N days (`-SPD`)
+    #[arg(long, global = true, value_name = "N", env = "APPRISE_STORAGE_PRUNE_DAYS", default_value_t = DEFAULT_PRUNE_DAYS, allow_negative_numbers = true, value_parser = parse_days)]
+    storage_prune_days: i64,
+    /// Same as `mercurio services`
+    #[arg(short = 'l', long, global = true)]
+    details: bool,
+    /// With `services`: print JSON
+    #[arg(long, global = true)]
+    json: bool,
+    /// With `serve`: address to listen on
+    #[arg(long, global = true, value_name = "ADDR", default_value = "127.0.0.1:8000")]
+    bind: String,
+    /// More log output on stderr (repeat for more)
+    #[arg(short, long, global = true, action = clap::ArgAction::Count)]
+    verbose: u8,
+}
+
+const DEFAULT_STORAGE_PATH: &str =
+    if cfg!(windows) { "%APPDATA%/Mercurio/cache" } else { "~/.local/share/mercurio/cache" };
+
+/// Exit codes; `--help` lists them with their meaning.
+mod exit {
+    // Meanings are in `ALL`.
+    pub const OK: u8 = 0;
+    pub const FAILURE: u8 = 1;
+    pub const USAGE: u8 = 2;
+    pub const NO_MATCH: u8 = 3;
+    pub const PARTIAL: u8 = 4;
+
+    /// Each code with its meaning, for `--help`.
+    pub const ALL: &[(u8, &str)] = &[
+        (OK, "every selected service was notified (or -d, check, services, storage succeeded)"),
+        (FAILURE, "every selected service failed, or a source, attachment or stdin could not be read"),
+        (USAGE, "usage error, or no URLs given or configured"),
+        (NO_MATCH, "services were loaded but none matched the tags (-g)"),
+        (PARTIAL, "some services were notified and some failed"),
+    ];
+}
+
+/// Environment variables read outside clap (shown under `--help`).
+const ENVIRONMENT: &[(&str, &str)] = &[
+    ("APPRISE_URLS", "URLs to notify when none are given and there is no -c"),
+    ("APPRISE_CONFIG_PATH", "configuration files instead of the defaults (separated by ; or newlines)"),
+    ("APPRISE_TEMPLATE_<NAME>", "value for ${NAME} when -tv and the configuration give none"),
+];
+
+/// `-SPD` / `$APPRISE_STORAGE_PRUNE_DAYS`; empty means the default.
+fn parse_days(v: &str) -> Result<i64, String> {
+    if v.trim().is_empty() {
+        return Ok(DEFAULT_PRUNE_DAYS);
+    }
+    v.trim().parse().map_err(|_| format!("{v:?} is not a number"))
+}
+
+fn parse_type(v: &str) -> Result<NotifyType, String> {
+    NotifyType::parse(v).ok_or(format!("invalid notification type {v:?}"))
+}
+
+fn parse_format(v: &str) -> Result<NotifyFormat, String> {
+    NotifyFormat::parse(v).ok_or(format!("invalid input format {v:?}"))
+}
+
+/// The text after the options in `--help`: environment and default files, both from the code that reads them.
+fn after_help() -> String {
+    let mut out = String::from("Environment:\n");
+    for (name, meaning) in ENVIRONMENT {
+        out.push_str(&format!("  {name:<26} {meaning}\n"));
+    }
+    out.push_str("\nExit codes:\n");
+    for (code, meaning) in exit::ALL {
+        out.push_str(&format!("  {code}  {meaning}\n"));
+    }
+    // The locations current Apprise documents; the older ones in `default_paths` are still read, and the book lists them all.
+    let (user, system) = if cfg!(windows) {
+        (r"%APPDATA%\Apprise\apprise.conf", r"%ALLUSERSPROFILE%\Apprise\apprise.conf")
+    } else {
+        ("~/.config/apprise/apprise.conf", "/etc/apprise/apprise.conf")
+    };
+    out.push_str("\nDefault configuration files (.yaml instead of .conf for YAML):\n");
+    out.push_str(&format!("  {user}\n  {system}\n"));
+    out
+}
+
+#[derive(Default)]
+struct Args {
+    command: Option<String>,
+    urls: Vec<String>,
+    body: Option<String>,
+    title: Option<String>,
+    kind: NotifyType,
+    format: Option<NotifyFormat>,
+    attach: Vec<String>,
+    tags: Vec<String>,
+    configs: Vec<String>,
+    template_vars: Vec<String>,
+    recursion: Option<u32>,
+    escapes: bool,
+    dry_run: bool,
+    sequential: bool,
+    verbose: u8,
+    json: bool,
+    bind: Option<String>,
+    storage_path: Option<String>,
+    storage_prune_days: Option<i64>,
+    serve: Option<serve::ServeArgs>,
+}
+
+fn parse_args() -> Args {
+    use clap::{CommandFactory, FromArgMatches};
+    // Multi-letter short options are rewritten to their long forms.
+    let raw = std::env::args().map(|s| match s.as_str() {
+        "-Da" => "--disable-async".into(),
+        "-tv" => "--template-var".into(),
+        "-SPD" => "--storage-prune-days".into(),
+        _ => s,
+    });
+    let matches = Cli::command().after_help(after_help()).get_matches_from(raw);
+    let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
+    let o = cli.opts;
+    let mut a = Args {
+        command: None,
+        urls: cli.urls,
+        body: o.body,
+        title: o.title,
+        kind: o.notification_type,
+        format: o.input_format,
+        attach: o.attach,
+        tags: o.tag,
+        configs: o.config,
+        template_vars: o.template_var,
+        recursion: Some(o.recursion_depth),
+        escapes: o.interpret_escapes,
+        dry_run: o.dry_run,
+        sequential: o.disable_async,
+        verbose: o.verbose,
+        json: o.json,
+        bind: Some(o.bind),
+        storage_path: Some(o.storage_path),
+        storage_prune_days: Some(o.storage_prune_days),
+        serve: None,
+    };
+    match cli.command {
+        Some(Cmd::Services) => a.command = Some("services".into()),
+        Some(Cmd::Check { urls }) => {
+            a.command = Some("check".into());
+            a.urls.extend(urls);
+        }
+        Some(Cmd::Serve { healthcheck, settings }) => {
+            a.command = Some(if healthcheck { "healthcheck" } else { "serve" }.into());
+            a.serve = Some(*settings);
+        }
+        Some(Cmd::Storage { args }) => {
+            a.command = Some("storage".into());
+            a.urls.extend(args);
+        }
+        Some(Cmd::Send { urls }) => a.urls.extend(urls),
+        None => {}
+    }
+    if o.details {
+        a.command = Some("services".into());
+    }
+    a
+}
+
+fn unescape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            out.push(c);
+            continue;
+        }
+        match chars.next() {
+            Some('n') => out.push('\n'),
+            Some('r') => out.push('\r'),
+            Some('t') => out.push('\t'),
+            Some('\\') => out.push('\\'),
+            Some(o) => {
+                out.push('\\');
+                out.push(o);
+            }
+            None => out.push('\\'),
+        }
+    }
+    out
+}
+
+/// A path, `file://`, `http(s)://` or `memory://` attachment (`mercurio::attachment`).
+fn load_attachment(spec: &str, transport: &dyn Transport) -> Result<Attachment, String> {
+    let source =
+        mercurio::AttachSource::parse(spec).map_err(|e| format!("{}: {e}", mercurio::plan::redact_url(spec)))?;
+    source.load(transport, &mercurio::Asset::default()).map_err(|e| e.to_string())
+}
+
+fn cmd_services(json: bool) -> ExitCode {
+    let mut defs: Vec<_> = mercurio::services().to_vec();
+    defs.sort_by_key(|d| d.name.to_lowercase());
+    if json {
+        let list: Vec<serde_json::Value> = defs
+            .iter()
+            .map(|d| {
+                serde_json::json!({
+                    "id": d.id,
+                    "name": d.name,
+                    "schemes": d.schemes,
+                    "service_url": d.service_url,
+                    "attachments": d.attachments,
+                    "formats": d.formats.iter().map(|f| f.as_str()).collect::<Vec<_>>(),
+                    "title_maxlen": d.limits.title_maxlen,
+                    "body_maxlen": d.limits.body_maxlen,
+                    "body_max_line_count": d.limits.body_max_line_count,
+                    "throttle_ms": d.throttle.as_millis() as u64,
+                    "native_url": d.parse_native.is_some(),
+                    "templates": d.templates,
+                    "tokens": d.tokens.iter().map(mercurio::Param::to_json).collect::<Vec<_>>(),
+                    "params": d.params.iter().map(mercurio::Param::to_json).collect::<Vec<_>>(),
+                })
+            })
+            .collect();
+        match serde_json::to_string_pretty(&list) {
+            Ok(text) => outln!("{text}"),
+            Err(e) => {
+                errln!("error: {e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    } else {
+        for d in &defs {
+            outln!("{:<34} {}", d.name, d.schemes.iter().map(|s| format!("{s}://")).collect::<Vec<_>>().join(" "));
+        }
+        outln!("\n{} services", defs.len());
+    }
+    ExitCode::SUCCESS
+}
+
+fn env_urls() -> Vec<String> {
+    match std::env::var("APPRISE_URLS") {
+        Ok(v) if !v.trim().is_empty() => mercurio::parse::parse_urls([v.as_str()], true),
+        _ => Vec::new(),
+    }
+}
+
+/// `$APPRISE_CONFIG_PATH` / `$APPRISE_CONFIG` (`;` or newline separated), else the default locations.
+fn config_search_paths() -> Vec<String> {
+    for var in ["APPRISE_CONFIG_PATH", "APPRISE_CONFIG"] {
+        if let Ok(v) = std::env::var(var) {
+            return v.trim().split(['\r', '\n', ';']).filter(|p| !p.is_empty()).map(str::to_string).collect();
+        }
+    }
+    default_paths()
+}
+
+/// Where the services come from, in priority order.
+enum Source {
+    Urls(Vec<String>),
+    Configs(Vec<String>),
+}
+
+fn source(args: &Args) -> Source {
+    if !args.urls.is_empty() {
+        if !args.configs.is_empty() {
+            log::warn!("You defined both URLs and a --config (-c) entry; Only the URLs will be referenced.");
+        }
+        return Source::Urls(args.urls.clone());
+    }
+    if !args.configs.is_empty() {
+        return Source::Configs(args.configs.clone());
+    }
+    let env = env_urls();
+    if !env.is_empty() {
+        return Source::Urls(env);
+    }
+    Source::Configs(config_search_paths().into_iter().filter(|p| expand_path(p).is_file()).collect())
+}
+
+/// Load every service; returns the notifier, the number of sources that failed and the tag filter to apply.
+fn build(args: &Args, transport: Arc<dyn Transport>) -> Result<(Mercurio, usize, TagFilter), u8> {
+    let opts = ConfigOptions { recursion: args.recursion.unwrap_or(DEFAULT_RECURSION), ..ConfigOptions::default() };
+    let mut m = Mercurio::with_transport(transport).config_options(opts).asset(storage_asset(args)?.0);
+    if args.sequential {
+        m = m.sequential();
+    }
+    let mut bad = 0;
+    let filter = match source(args) {
+        Source::Urls(urls) => {
+            for url in &urls {
+                if let Err(e) = m.add(url) {
+                    errln!("error: {}: {e}", mercurio::plan::redact_url(url));
+                    bad += 1;
+                }
+            }
+            // --tag also applies to URLs given directly, through their `?tag=` values.
+            if args.tags.is_empty() { TagFilter::all() } else { TagFilter::from_cli(&args.tags) }
+        }
+        Source::Configs(paths) => {
+            for path in &paths {
+                match m.add_config(path) {
+                    Ok(0) => log::warn!("no services loaded from {}", mercurio::plan::redact_url(path)),
+                    Ok(_) => {}
+                    Err(e) => {
+                        errln!("error: {}: {e}", mercurio::plan::redact_url(path));
+                        bad += 1;
+                    }
+                }
+            }
+            // Without --tag only untagged services are notified.
+            TagFilter::from_cli(&args.tags)
+        }
+    };
+    if m.is_empty() {
+        if bad == 0 {
+            errln!(
+                "error: no URLs given (pass them as arguments, use --config, set APPRISE_URLS, \
+                 or create ~/.config/apprise/apprise.yml)"
+            );
+            return Err(exit::USAGE);
+        }
+        return Err(exit::FAILURE);
+    }
+    Ok((m, bad, filter))
+}
+
+/// `-tv NAME=VALUE` entries (exit 2 on a malformed or repeated name).
+fn template_vars(args: &Args) -> Result<TemplateVars, u8> {
+    let mut vars = TemplateVars::new();
+    for entry in &args.template_vars {
+        let (name, value) = match entry.split_once('=') {
+            Some((n, v)) if mercurio::config::template::valid_name(n.trim()) => (n.trim(), v),
+            other => {
+                // Only the name is echoed: the value may be a secret.
+                let name = other.map(|(n, _)| n).unwrap_or(entry).trim();
+                errln!("error: the --template-var (-tv) name '{name}' is not in the expected NAME=VALUE format.");
+                return Err(exit::USAGE);
+            }
+        };
+        if vars.set(name, value).is_err() {
+            errln!("error: the --template-var (-tv) name '{name}' was provided more than once.");
+            return Err(exit::USAGE);
+        }
+    }
+    Ok(vars)
+}
+
+fn print_tags(tags: &[mercurio::Tag]) {
+    if !tags.is_empty() {
+        let mut t: Vec<&str> = tags.iter().map(|t| t.name.as_str()).collect();
+        t.sort();
+        outln!("{:>10}: {}", "tags", t.join(", "));
+    }
+}
+
+/// `--dry-run`: what would be notified, with tags and template needs.
+fn print_dry_run(m: &Mercurio, filter: &TagFilter, vars: &TemplateVars) {
+    let sel = m.select(filter, vars);
+    let mut n = 0;
+    for t in sel.iter() {
+        n += 1;
+        outln!("{n:4}. {}", mercurio::plan::redact_url(t.url()));
+        print_tags(t.tag_set());
+    }
+    for (p, _) in &sel.unresolved {
+        n += 1;
+        outln!("{n:4}. {}", mercurio::plan::redact_url(&p.url()));
+        outln!("{:>10}: - template; unresolved, would not send -", "uid");
+        print_tags(&p.tags);
+        let required = p.template_required();
+        let names: Vec<String> = p
+            .template_names()
+            .iter()
+            .map(|n| format!("{n} ({})", if required.contains(n) { "required" } else { "has default" }))
+            .collect();
+        outln!("{:>10}: {}", "template", names.join(", "));
+    }
+    if !sel.unresolved.is_empty() {
+        outln!("\n{} of {n} matched entries could not be resolved and would not be sent.", sel.unresolved.len());
+    }
+}
+
+/// The asset carrying the storage options, plus the prune age in days.
+fn storage_asset(args: &Args) -> Result<(Asset, i64), u8> {
+    let days = args.storage_prune_days.unwrap_or(DEFAULT_PRUNE_DAYS);
+    let path = args.storage_path.clone().filter(|p| !p.trim().is_empty());
+    let path = path.unwrap_or_else(|| DEFAULT_STORAGE_PATH.to_string());
+    Ok((Asset::default().with_storage(expand_path(path.trim())), days))
+}
+
+/// Human-readable size: `1.50KB`, `2.00MB`, ...
+fn bytes_to_str(n: u64) -> String {
+    let mut v = n as f64;
+    let mut unit = "B";
+    for u in ["KB", "MB", "GB", "TB"] {
+        if v < 1024.0 {
+            break;
+        }
+        v /= 1024.0;
+        unit = u;
+    }
+    format!("{v:.2}{unit}")
+}
+
+/// `mercurio storage [list|prune|clear] [UID-prefix...|URL...]`: URL ids of the configured services next to what is on disk (list); removal of old (prune) or all (clear) cached files.
+fn cmd_storage(args: &Args, transport: Arc<dyn Transport>) -> Result<u8, u8> {
+    const ACTIONS: [&str; 3] = ["list", "prune", "clear"];
+    let (asset, mut days) = storage_asset(args)?;
+    if days < 0 {
+        errln!("error: the --storage-prune-days (-SPD) value can not be lower than zero (0).");
+        return Err(exit::USAGE);
+    }
+    let mut rest = args.urls.clone();
+    let mut action = "list";
+    if let Some(first) = rest.first() {
+        let found = if first == "clean" {
+            Some("clear")
+        } else {
+            ACTIONS.iter().copied().find(|a| a.starts_with(first.as_str()))
+        };
+        if let Some(a) = found {
+            action = a;
+            rest.remove(0);
+        }
+    }
+    let (url_filters, uid_filters): (Vec<String>, Vec<String>) = rest.into_iter().partition(|f| f.contains("://"));
+    let uid_filters: Vec<String> = uid_filters.into_iter().map(|u| u.to_lowercase()).collect();
+    let had_url_filters = !url_filters.is_empty();
+
+    // The services whose URL ids are cross-referenced.
+    let mut load = Args { urls: url_filters, ..Args::default() };
+    load.configs = args.configs.clone();
+    load.tags = args.tags.clone();
+    load.recursion = args.recursion;
+    load.storage_path = args.storage_path.clone();
+    let has_source = match source(&load) {
+        Source::Urls(u) => !u.is_empty(),
+        Source::Configs(c) => !c.is_empty(),
+    };
+    let mut uids: Vec<(String, Vec<&mercurio::Target>)> = Vec::new();
+    let loaded = if has_source { build(&load, transport).ok() } else { None };
+    let vars = TemplateVars::new();
+    let selection = loaded.as_ref().map(|(m, _, filter)| m.select(filter, &vars));
+    for t in selection.iter().flat_map(|s| s.targets.iter().copied()) {
+        let Some(id) = t.url_id(&asset) else { continue };
+        if !uid_filters.is_empty() && !uid_filters.iter().any(|u| id.starts_with(u.as_str())) {
+            continue;
+        }
+        match uids.iter_mut().find(|(u, _)| *u == id) {
+            Some((_, list)) => list.push(t),
+            None => uids.push((id, vec![t])),
+        }
+    }
+    let Some(base) = asset.storage_path.clone() else { return Ok(exit::OK) };
+
+    if action == "list" {
+        let ns: Vec<String> = if had_url_filters {
+            uids.iter().map(|(u, _)| u.clone()).chain(uid_filters.iter().cloned()).collect()
+        } else {
+            uid_filters.clone()
+        };
+        let on_disk =
+            if had_url_filters && ns.is_empty() { Vec::new() } else { mercurio::store::disk_scan(&base, &ns) };
+        let mut rows: Vec<(String, u64, &str, Vec<&mercurio::Target>)> =
+            uids.into_iter().map(|(u, t)| (u, 0, "unused", t)).collect();
+        for id in on_disk {
+            let size = mercurio::store::dir_size(&base.join(&id));
+            match rows.iter_mut().find(|r| r.0 == id) {
+                Some(r) => {
+                    r.1 = size;
+                    r.2 = "active";
+                }
+                None if args.tags.is_empty() => rows.push((id, size, "stale", Vec::new())),
+                None => {}
+            }
+        }
+        for (idx, (uid, size, state, targets)) in rows.iter().enumerate() {
+            if idx > 0 {
+                outln!("");
+            }
+            outln!("{:4}. {uid:<52} {:<8} {state}", idx + 1, bytes_to_str(*size));
+            for t in targets {
+                outln!("{:>7} {}", "-", mercurio::plan::redact_url(t.url()));
+                print_tags(t.tag_set());
+            }
+        }
+        return Ok(exit::OK);
+    }
+
+    if action == "clear" {
+        days = 0;
+    }
+    let ns: Vec<String> = if had_url_filters || !args.tags.is_empty() {
+        let ns: Vec<String> = uids.iter().map(|(u, _)| u.clone()).chain(uid_filters.iter().cloned()).collect();
+        if ns.is_empty() {
+            return Ok(exit::OK);
+        }
+        ns
+    } else {
+        uid_filters
+    };
+    let age = std::time::Duration::from_secs(days as u64 * 86400);
+    let results = mercurio::store::disk_prune(&base, &ns, age, !args.dry_run);
+    for (uid, files) in results {
+        for f in files {
+            let what = if args.dry_run {
+                "would remove"
+            } else if f.removed {
+                "removed"
+            } else {
+                "kept"
+            };
+            outln!("{uid}: {what} {}", f.path.display());
+        }
+    }
+    Ok(exit::OK)
+}
+
+fn run() -> Result<u8, u8> {
+    let args = parse_args();
+    logger::init(args.verbose);
+    let transport: Arc<dyn Transport> = Arc::new(DefaultTransport::new());
+
+    match args.command.as_deref() {
+        Some("services") => {
+            return Ok(if cmd_services(args.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE });
+        }
+        Some("serve") => {
+            let bind = args.bind.clone().unwrap_or_else(|| "127.0.0.1:8000".into());
+            let Some(settings) = &args.serve else { return Err(exit::USAGE) };
+            return serve::run(&bind, settings, transport).map(|_| exit::OK).map_err(|e| {
+                errln!("error: {e}");
+                exit::FAILURE
+            });
+        }
+        Some("healthcheck") => {
+            let bind = args.bind.clone().unwrap_or_else(|| "127.0.0.1:8000".into());
+            return serve::healthcheck(&bind).map(|()| exit::OK).map_err(|e| {
+                errln!("unhealthy: {e}");
+                exit::FAILURE
+            });
+        }
+        Some("storage") => return cmd_storage(&args, transport),
+        Some("check") => {
+            let (mercurio, bad, _) = build(&args, transport)?;
+            for t in mercurio.targets() {
+                outln!("ok   {}", t.label());
+            }
+            for p in mercurio.pending() {
+                outln!("ok   {} (template: {})", p.label(), p.template_names().join(", "));
+            }
+            return Ok(if bad == 0 { exit::OK } else { exit::FAILURE });
+        }
+        _ => {}
+    }
+
+    let vars = template_vars(&args)?;
+    let (selected, bad, filter) = build(&args, transport.clone())?;
+    if bad > 0 {
+        errln!("error: {bad} invalid URL or configuration source; nothing was sent");
+        return Err(exit::USAGE);
+    }
+    if selected.select(&filter, &vars).is_empty() {
+        errln!("no URLs matched the given tags");
+        return Err(exit::NO_MATCH);
+    }
+
+    if args.dry_run {
+        print_dry_run(&selected, &filter, &vars);
+        return Ok(exit::OK);
+    }
+
+    let mut body = match &args.body {
+        Some(b) => b.clone(),
+        None => {
+            let mut s = String::new();
+            std::io::stdin().read_to_string(&mut s).map_err(|e| {
+                errln!("error: reading stdin: {e}");
+                exit::FAILURE
+            })?;
+            s
+        }
+    };
+    let mut title = args.title.clone().unwrap_or_default();
+    if args.escapes {
+        body = unescape(&body);
+        title = unescape(&title);
+    }
+    let mut msg = Message::new(body).title(title).kind(args.kind);
+    msg.format = args.format;
+    for spec in &args.attach {
+        match load_attachment(spec, transport.as_ref()) {
+            Ok(a) => msg.attachments.push(a),
+            Err(e) => {
+                errln!("error: attachment {e}");
+                return Err(exit::FAILURE);
+            }
+        }
+    }
+
+    let report = selected.notify_with(&msg, &filter, &vars);
+    let total = report.entries.len();
+    let ok = report.entries.iter().filter(|e| e.delivery.is_success()).count();
+    for (entry, outcome) in report.failures() {
+        let target = outcome.target.as_deref().map(|t| format!(" [{t}]")).unwrap_or_default();
+        if let Err(e) = &outcome.result {
+            errln!("failed: {}{target}: {e}", entry.label);
+        }
+    }
+    log::info!("{ok} of {total} services notified");
+    Ok(match (ok, total) {
+        (o, t) if o == t => exit::OK,
+        (0, _) => exit::FAILURE,
+        _ => exit::PARTIAL,
+    })
+}
+
+fn main() -> ExitCode {
+    match run() {
+        Ok(code) | Err(code) => ExitCode::from(code),
+    }
+}

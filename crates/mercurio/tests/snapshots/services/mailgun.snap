@@ -1,0 +1,607 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attachment:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: "o:skip-verification"
+            value: "False"
+          - name: from
+            value: Mercurio <user@localhost.localdomain>
+          - name: subject
+            value: Mercurio Title
+          - name: html
+            value: Mercurio Body
+          - name: to
+            value: a@example.com
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: "attachment[0]"
+          - b64: aGVsbG8=
+            filename: b.txt
+            name: "attachment[1]"
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+    - body:
+        multipart:
+          - name: "o:skip-verification"
+            value: "False"
+          - name: from
+            value: Mercurio <user@localhost.localdomain>
+          - name: subject
+            value: Mercurio Title
+          - name: html
+            value: Mercurio Body
+          - name: to
+            value: b@example.com
+          - b64: iVBORw0KGgo=
+            filename: a.png
+            name: "attachment[0]"
+          - b64: aGVsbG8=
+            filename: b.txt
+            name: "attachment[1]"
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+batch:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <no-reply@example.com>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - "user1@example.com,User2 <user2@example.com>"
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/example.com/messages"
+  valid: true
+bcc_cc:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+          - - cc
+            - Chris <user2@example.com>
+          - - bcc
+            - user@example.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+cc_matches_target:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user1@example.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/example.com/messages"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+created_is_failure:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+empty:
+  error: "Mailgun: an invalid Mailgun API Key was specified"
+  valid: false
+empty_creds:
+  error: "Mailgun: an invalid Mailgun API Key was specified"
+  valid: false
+from_and_name:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Jason <jason@gmail.com>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - jason@gmail.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+from_invalid:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - "\"bad@\" <user@localhost.localdomain>"
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+from_name_only:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Luke Skywalker <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+from_named_email:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Chris <luke@rebels.com>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - luke@rebels.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+          - - "h:X-Customer-Campaign-ID"
+            - Apprise
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+invalid_to:
+  errors:
+    - "service error: there are no Email recipients to notify"
+  ok: false
+  requests: []
+  valid: true
+markdown:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - text
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+multi_with_invalid:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user1@example.com
+          - - cc
+            - Da <user5@example.com>
+          - - bcc
+            - user3@example.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/example.com/messages"
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - User2 <user2@example.com>
+          - - cc
+            - Da <user5@example.com>
+          - - bcc
+            - user3@example.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/example.com/messages"
+  valid: true
+name_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - "=?utf-8?b?SsO2cmc=?= <user@localhost.localdomain>"
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+no_apikey:
+  error: "Mailgun: an invalid Mailgun API Key was specified"
+  valid: false
+no_user:
+  error: "Mailgun: no Mailgun username was specified"
+  valid: false
+one_to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - test@example.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+quote_user:
+  error: "Mailgun: invalid ~From~ email format"
+  valid: false
+region_eu:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.eu.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+region_invalid:
+  error: "Mailgun: the Mailgun region specified is invalid"
+  valid: false
+region_us:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+text:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - text
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - test@example.com
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+tokens:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "False"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+          - - "v:name"
+            - Chris
+          - - "v:status"
+            - admin
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhLWJiYmJiYmJiLWNjY2NjY2Nj
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true
+verify_no:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "o:skip-verification"
+            - "True"
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - html
+            - Mercurio Body
+          - - to
+            - user@localhost.localdomain
+      headers:
+        Accept: application/json
+        Authorization: Basic YXBpOmFwaWtleQ==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.mailgun.net/v3/localhost.localdomain/messages"
+  valid: true

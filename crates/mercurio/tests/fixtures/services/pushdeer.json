@@ -1,0 +1,19 @@
+{
+"cases":[
+{"name":"basic","url":"pushdeer://aaaaaaaa"},
+{"name":"secure","url":"pushdeers://aaaaaaaa"},
+{"name":"host","url":"pushdeer://localhost/aaaaaaaa"},
+{"name":"host_port","url":"pushdeer://localhost:8080/aaaaaaaa"},
+{"name":"secure_host_port","url":"pushdeers://example.com:8443/AbC123"},
+{"name":"host_multi_path","url":"pushdeer://localhost/ignored/aaaaaaaa"},
+{"name":"no_title","url":"pushdeer://aaaaaaaa","title":""},
+{"name":"title_body","url":"pushdeer://aaaaaaaa","title":"Hi there","body":"line\nbody é","type":"success"},
+{"name":"empty","url":"pushdeer://"},
+{"name":"empty_secure","url":"pushdeers://"},
+{"name":"bad_key","url":"pushdeer://localhost/abc_def"},
+{"name":"bad_host_key","url":"pushdeer://abc-def"},
+{"name":"bizarre_code","url":"pushdeer://localhost/aaaaaaaa","responses":[{"status":999}]},
+{"name":"server_error","url":"pushdeer://aaaaaaaa","responses":[{"status":500}]},
+{"name":"accepted","url":"pushdeer://aaaaaaaa","responses":[{"status":202}]},
+{"name":"connection_error","url":"pushdeer://localhost:80/aaaaaaaa","responses":[{"error":true}]}
+]}

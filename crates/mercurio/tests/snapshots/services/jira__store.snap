@@ -1,0 +1,309 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+batch_retry_skips_delivered:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              description: a
+              details:
+                type: failure
+              message: t
+              priority: P3
+              responders:
+                - type: user
+                  username: user1
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+        - body:
+            json:
+              description: a
+              details:
+                type: failure
+              message: t
+              priority: P3
+              responders:
+                - type: user
+                  username: user2
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+        - body:
+            json:
+              description: a
+              details:
+                type: failure
+              message: t
+              priority: P3
+              responders:
+                - type: user
+                  username: user2
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              note: b
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts/r1/close?identifierType=id"
+        - body:
+            json:
+              note: b
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts/r2/close?identifierType=id"
+  url_id: 5865355b
+  valid: true
+close_without_ids:
+  sends:
+    - attempts: 1
+      ok: true
+      requests: []
+    - attempts: 1
+      ok: true
+      requests: []
+  url_id: 5865355b
+  valid: true
+delete_then_nothing:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              description: a
+              details:
+                type: failure
+              entity: web
+              message: Mercurio Title
+              priority: P3
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              note: b
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: DELETE
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts/r1?identifierType=id"
+    - attempts: 1
+      ok: true
+      requests: []
+  url_id: 0afb0647
+  valid: true
+failed_delete_keeps_ids:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              description: a
+              details:
+                type: failure
+              entity: web
+              message: Mercurio Title
+              priority: P3
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - attempts: 1
+      errors:
+        - "HTTP 500: {}"
+      ok: false
+      requests:
+        - body:
+            json:
+              note: b
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: DELETE
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts/r1?identifierType=id"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              note: c
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: DELETE
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts/r1?identifierType=id"
+  url_id: 5865355b
+  valid: true
+new_note_close:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              description: full
+              details:
+                type: failure
+              message: disk
+              priority: P3
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              note: still full
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts/req-1/notes?identifierType=id"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              note: fixed
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts/req-1/close?identifierType=id"
+  url_id: 5865355b
+  valid: true
+no_request_id_is_error:
+  sends:
+    - attempts: 1
+      errors:
+        - "service error: Jira returned no requestId"
+      ok: false
+      requests:
+        - body:
+            json:
+              description: a
+              details:
+                type: info
+              message: t
+              priority: P3
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              description: b
+              details:
+                type: info
+              message: t
+              priority: P3
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  url_id: 5865355b
+  valid: true
+two_new_accumulate_then_delete:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              alias: db
+              description: a
+              details:
+                type: info
+              message: Mercurio Title
+              priority: P3
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              alias: db
+              description: b
+              details:
+                type: info
+              message: Mercurio Title
+              priority: P3
+              source: Mercurio Notifications
+          headers:
+            Accepts: application/json
+            Authorization: GenieKey apikey
+            Content-Type: application/json
+          method: POST
+          url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  url_id: 5865355b
+  valid: true

@@ -1,0 +1,26 @@
+{
+"pipeline":{"url":"signal://localhost/15551234567"},
+"cases":[
+{"name":"empty","url":"signal://"},
+{"name":"no_source","url":"signal://localhost"},
+{"name":"invalid_source","url":"signal://localhost/123"},
+{"name":"self_notify","url":"signal://localhost/15551234567"},
+{"name":"one_target_port","url":"signal://localhost:8080/+1 555 123 4567/15559876543","type":"warning"},
+{"name":"secure_auth","url":"signals://user:pass@localhost/15551234567/15559876543"},
+{"name":"user_only","url":"signal://user@localhost/15551234567/15559876543"},
+{"name":"groups","url":"signal://localhost/15551234567/@abcd=/group.efgh/%40ijkl/15559876543"},
+{"name":"invalid_targets_only","url":"signal://localhost/15551234567/123/!!"},
+{"name":"mixed_invalid","url":"signal://localhost/15551234567/123/15559876543"},
+{"name":"from_and_to","url":"signal://localhost/?from=15551234567&to=15559876543,15550001111"},
+{"name":"batch","url":"signal://localhost/15551234567/15559876543/15550001111/@grp?batch=yes"},
+{"name":"no_batch_partial_failure","url":"signal://localhost/15551234567/15559876543/15550001111","responses":[{"status":500},{"status":201}]},
+{"name":"status_prefix","url":"signal://localhost/15551234567?status=yes","type":"failure"},
+{"name":"trailing_whitespace","url":"signal://localhost/15551234567","body":"hello  \n\n"},
+{"name":"no_title","url":"signal://localhost/15551234567","title":""},
+{"name":"markdown_plain_body","url":"signal://localhost/15551234567?format=markdown","title":"","body":"hello world"},
+{"name":"html_format","url":"signal://localhost/15551234567?format=html","body":"<b>hi</b>"},
+{"name":"status_202_fails","url":"signal://localhost/15551234567","responses":[{"status":202}]},
+{"name":"connection_error","url":"signal://localhost/15551234567","responses":[{"error":true}]},
+{"name":"attachment","url":"signal://localhost/15551234567","attachments":[{"name":"a.png","mime":"image/png","b64":"iVBORw0KGgo="},{"name":"b.txt","mime":"text/plain","text":"hello"}]},
+{"name":"markdown_heading","url":"signal://localhost/15551234567?format=markdown","format":"markdown","body":"~~gone~~"}
+]}

@@ -1,0 +1,32 @@
+---
+source: crates/mercurio/src/testing/fixtures/runner.rs
+---
+template:
+  ok: true
+  requests:
+    - body:
+        json:
+          avatar_url: "https://example.org/warning-256x256.png"
+          content: "Mercurio Title: line1\nline2 \"q\" by W\"x"
+          embeds:
+            - title: Mercurio
+          extra: "13291305|warning|https://example.org/warning-256x256.png"
+          tts: false
+          wait: true
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://discord.com/api/webhooks/iiiiiiii/tttttttt"
+    - body:
+        multipart:
+          - name: payload_json
+            value: "{\"avatar_url\":\"https://example.org/warning-256x256.png\",\"extra\":\"13291305|warning|https://example.org/warning-256x256.png\",\"tts\":false,\"wait\":true}"
+          - b64: aGk=
+            content_type: text/plain
+            filename: a.txt
+            name: "files[0]"
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://discord.com/api/webhooks/iiiiiiii/tttttttt"
+  valid: true

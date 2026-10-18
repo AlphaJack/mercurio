@@ -1,0 +1,7 @@
+{
+"cases":[
+{"name":"retry_uploads_missing_attachment_only","url":"humhubs://user:pass@hostname/1?retry=1","sends":1,"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"},{"name":"b.png","mime":"image/png","b64":"iVBORw0KGgo="}],"responses":[{"status":200,"body":{"id":"77"}},{"status":200},{"status":500},{"status":200}]},
+{"name":"retry_skips_posted_container","url":"humhubs://mytoken@hostname/1/2?retry=1","sends":1,"responses":[{"status":200,"body":{"id":1}},{"status":500},{"status":200,"body":{"id":2}}]},
+{"name":"retry_without_post_id","url":"humhubs://mytoken@hostname/1?retry=1","sends":1,"attachments":[{"name":"a.txt","mime":"text/plain","text":"hello"}],"responses":[{"status":200,"body":{}},{"status":200}]},
+{"name":"two_sends_post_again","url":"humhubs://mytoken@hostname/1","sends":2,"responses":[{"status":200,"body":{"id":1}},{"status":200,"body":{"id":2}}]}
+]}

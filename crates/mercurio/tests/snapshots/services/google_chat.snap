@@ -1,0 +1,280 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+blank:
+  error: "Google Chat: an invalid Google Chat Workspace was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+empty:
+  error: "Google Chat: an invalid Google Chat Workspace was specified"
+  valid: false
+http_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+http_204_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/myworkspace/messages?token=mytoken&key=mykey"
+  valid: true
+native_no_params:
+  error: "unsupported URL scheme: https://"
+  valid: false
+native_thread:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          thread:
+            thread_key: mythreadkey
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/myworkspace/messages?token=mytoken&key=mykey&messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: World
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+no_token:
+  error: "Google Chat: an invalid Google Chat Webhook Token was specified"
+  valid: false
+params:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/ws/messages?token=mytoken&key=mykey"
+  valid: true
+params_empty_key:
+  error: "Google Chat: an invalid Google Chat Webhook Key was specified"
+  valid: false
+params_override:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/ws/messages?token=mytoken&key=my%2Bkey"
+  valid: true
+pipeline_html:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "*Mercurio Title*\n\n*Release*\n\nHello *bold* &amp; _it_ u <http://example.com|link>\n\n- one\n- two\n\n```\nx  y\nz\n```\n\nend"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+pipeline_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "*Mercurio Title*\n\n*Release notes*\n\nThis has *bold*, _italic_, `code` and a <http://example.com/a_b|link>.\n\n- first item\n- second _item_\n\n> quoted * text &amp; more &lt;stuff&gt;\n\n~gone~ :smile:"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+pipeline_split_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "*A title that is long enough to be interesting for counters and amalgamation A title that is long enough to be interesting for counters and amalgamation*\n\n*Section 1*\n\nParagraph 1 has *bold 1* and _italic_ words, a <http://example.com/1|link 1> and `code 1`. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\n*Section 2*\n\nParagraph 2 has *bold 2* and _italic_ words, a <http://example.com/2|link 2> and `code 2`. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\n*Section 3*\n\nParagraph 3 has *bold 3* and _italic_ words, a <http://example.com/3|link 3> and `code 3`. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\n*Section 4*\n\nParagraph 4 has *bold 4* and _italic_ words, a <http://example.com/4|link 4> and `code 4`. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\n*Section 5*\n\nParagraph 5 has *bold 5* and _italic_ words, a <http://example.com/5|link 5> and `code 5`. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\n*Section 6*\n\nParagraph 6 has *bold 6* and _italic_ words, a <http://example.com/6|link 6> and `code 6`. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\n*Section 7*\n\nParagraph 7 has *bold 7* and _italic_ words, a <http://example.com/7|link 7> and `code 7`. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\n*Section 8*\n\nParagraph 8 has *bold 8* and _italic_ words, a <http://example.com/8|link 8> and `code 8`. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\n*Section 9*\n\nParagraph 9 has *bold 9* and _italic_ words, a <http://example.com/9|link 9> and `code 9`. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\n*Section 10*\n\nParagraph 10 has *bold 10* and _italic_ words, a <http://example.com/10|link 10> and `code 10`. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\n*Section 11*\n\nParagraph 11 has *bold 11* and _italic_ words, a <http://example.com/11|link 11> and `code 11`. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\n*Section 12*\n\nParagraph 12 has *bold 12* and _italic_ words, a <http://example.com/12|link 12> and `code 12`. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\n*Section 13*\n\nParagraph 13 has *bold 13* and _italic_ words, a <http://example.com/13|link 13> and `code 13`. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\n*Section 14*\n\nParagraph 14 has *bold 14* and _italic_ words, a <http://example.com/14|link 14> and `code 14`. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\n*Section 15*\n\nParagraph 15 has *bold 15* and _italic_ words, a <http://example.com/15|link 15> and `code 15`. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\n*Section 16*\n\nParagraph 16 has *bold 16* and _italic_ words, a <http://example.com/16|link 16> and `code 16`. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\n*Section 17*\n\nParagraph 17 has *bold 17* and _italic_ words, a <http://example.com/17|link 17> and `code 17`. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\n*Section 18*\n\nParagraph 18 has *bold 18* and _italic_ words, a <http://example.com/18|link 18> and `code 18`. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\n*Section 19*\n\nParagraph 19 has *bold 19* and _italic_ words, a <http://example.com/19|link 19> and `code 19`. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\n*Section 20*"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+    - body:
+        json:
+          text: "Paragraph 20 has *bold 20* and _italic_ words, a <http://example.com/20|link 20> and `code 20`. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\n*Section 21*\n\nParagraph 21 has *bold 21* and _italic_ words, a <http://example.com/21|link 21> and `code 21`. Sentences keep going so splitting has to pick a boundary.\n\n- point 21a\n- point 21b\n\n*Section 22*\n\nParagraph 22 has *bold 22* and _italic_ words, a <http://example.com/22|link 22> and `code 22`. Sentences keep going so splitting has to pick a boundary.\n\n- point 22a\n- point 22b\n\n*Section 23*\n\nParagraph 23 has *bold 23* and _italic_ words, a <http://example.com/23|link 23> and `code 23`. Sentences keep going so splitting has to pick a boundary.\n\n- point 23a\n- point 23b\n\n*Section 24*\n\nParagraph 24 has *bold 24* and _italic_ words, a <http://example.com/24|link 24> and `code 24`. Sentences keep going so splitting has to pick a boundary.\n\n- point 24a\n- point 24b\n\n*Section 25*\n\nParagraph 25 has *bold 25* and _italic_ words, a <http://example.com/25|link 25> and `code 25`. Sentences keep going so splitting has to pick a boundary.\n\n- point 25a\n- point 25b\n\n*Section 26*\n\nParagraph 26 has *bold 26* and _italic_ words, a <http://example.com/26|link 26> and `code 26`. Sentences keep going so splitting has to pick a boundary.\n\n- point 26a\n- point 26b\n\n*Section 27*\n\nParagraph 27 has *bold 27* and _italic_ words, a <http://example.com/27|link 27> and `code 27`. Sentences keep going so splitting has to pick a boundary.\n\n- point 27a\n- point 27b\n\n*Section 28*\n\nParagraph 28 has *bold 28* and _italic_ words, a <http://example.com/28|link 28> and `code 28`. Sentences keep going so splitting has to pick a boundary.\n\n- point 28a\n- point 28b\n\n*Section 29*\n\nParagraph 29 has *bold 29* and _italic_ words, a <http://example.com/29|link 29> and `code 29`. Sentences keep going so splitting has to pick a boundary.\n\n- point 29a\n- point 29b\n\n*Section 30*\n\nParagraph 30 has *bold 30* and _italic_ words, a <http://example.com/30|link 30> and `code 30`. Sentences keep going so splitting has to pick a boundary.\n\n- point 30a\n- point 30b\n\n*Section 31*\n\nParagraph 31 has *bold 31* and _italic_ words, a <http://example.com/31|link 31> and `code 31`. Sentences keep goi"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+pipeline_split_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nlorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit \n sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing \n elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur \n adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet \n consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit \n amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. \n sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum \n dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem \n ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor \n lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod \n tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do \n eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed \n do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit \n sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing \n elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. \n adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet \n consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit \n amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor \n sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum \n dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem \n ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor \n lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod \n tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+    - body:
+        json:
+          text: " eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. \n do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit \n sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing \n elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur \n adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet \n consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit \n amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor \n sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum \n dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem \n ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. \n lorem ipsum dolor sit amet consectetur adipiscing elit sed. do eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod \n tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipiscing elit sed. do \n eiusmod tempor lorem ipsum dolor sit amet consectetur. adipiscing elit sed do eiusmod tempor lorem ipsum dolor. sit amet consectetur adipiscing elit sed \n do eiusmod tempor. lorem ipsum dolor sit amet consectetur adipisci"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+pipeline_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "*Mercurio Title*\n\nPlain &lt;text&gt; &amp; *stars* _under_ [x](y)\nsecond line"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+pipeline_truncate_markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "*Mercurio Title*\n\n*Section 1*\n\nParagraph 1 has *bold 1* and _italic_ words, a <http://example.com/1|link 1> and `code 1`. Sentences keep going so splitting has to pick a boundary.\n\n- point 1a\n- point 1b\n\n*Section 2*\n\nParagraph 2 has *bold 2* and _italic_ words, a <http://example.com/2|link 2> and `code 2`. Sentences keep going so splitting has to pick a boundary.\n\n- point 2a\n- point 2b\n\n*Section 3*\n\nParagraph 3 has *bold 3* and _italic_ words, a <http://example.com/3|link 3> and `code 3`. Sentences keep going so splitting has to pick a boundary.\n\n- point 3a\n- point 3b\n\n*Section 4*\n\nParagraph 4 has *bold 4* and _italic_ words, a <http://example.com/4|link 4> and `code 4`. Sentences keep going so splitting has to pick a boundary.\n\n- point 4a\n- point 4b\n\n*Section 5*\n\nParagraph 5 has *bold 5* and _italic_ words, a <http://example.com/5|link 5> and `code 5`. Sentences keep going so splitting has to pick a boundary.\n\n- point 5a\n- point 5b\n\n*Section 6*\n\nParagraph 6 has *bold 6* and _italic_ words, a <http://example.com/6|link 6> and `code 6`. Sentences keep going so splitting has to pick a boundary.\n\n- point 6a\n- point 6b\n\n*Section 7*\n\nParagraph 7 has *bold 7* and _italic_ words, a <http://example.com/7|link 7> and `code 7`. Sentences keep going so splitting has to pick a boundary.\n\n- point 7a\n- point 7b\n\n*Section 8*\n\nParagraph 8 has *bold 8* and _italic_ words, a <http://example.com/8|link 8> and `code 8`. Sentences keep going so splitting has to pick a boundary.\n\n- point 8a\n- point 8b\n\n*Section 9*\n\nParagraph 9 has *bold 9* and _italic_ words, a <http://example.com/9|link 9> and `code 9`. Sentences keep going so splitting has to pick a boundary.\n\n- point 9a\n- point 9b\n\n*Section 10*\n\nParagraph 10 has *bold 10* and _italic_ words, a <http://example.com/10|link 10> and `code 10`. Sentences keep going so splitting has to pick a boundary.\n\n- point 10a\n- point 10b\n\n*Section 11*\n\nParagraph 11 has *bold 11* and _italic_ words, a <http://example.com/11|link 11> and `code 11`. Sentences keep going so splitting has to pick a boundary.\n\n- point 11a\n- point 11b\n\n*Section 12*\n\nParagraph 12 has *bold 12* and _italic_ words, a <http://example.com/12|link 12> and `code 12`. Sentences keep going so splitting has to pick a boundary.\n\n- point 12a\n- point 12b\n\n*Section 13*\n\nParagraph 13 has *bold 13* and _italic_ words, a <http://example.com/13|link 13> and `code 13`. Sentences keep going so splitting has to pick a boundary.\n\n- point 13a\n- point 13b\n\n*Section 14*\n\nParagraph 14 has *bold 14* and _italic_ words, a <http://example.com/14|link 14> and `code 14`. Sentences keep going so splitting has to pick a boundary.\n\n- point 14a\n- point 14b\n\n*Section 15*\n\nParagraph 15 has *bold 15* and _italic_ words, a <http://example.com/15|link 15> and `code 15`. Sentences keep going so splitting has to pick a boundary.\n\n- point 15a\n- point 15b\n\n*Section 16*\n\nParagraph 16 has *bold 16* and _italic_ words, a <http://example.com/16|link 16> and `code 16`. Sentences keep going so splitting has to pick a boundary.\n\n- point 16a\n- point 16b\n\n*Section 17*\n\nParagraph 17 has *bold 17* and _italic_ words, a <http://example.com/17|link 17> and `code 17`. Sentences keep going so splitting has to pick a boundary.\n\n- point 17a\n- point 17b\n\n*Section 18*\n\nParagraph 18 has *bold 18* and _italic_ words, a <http://example.com/18|link 18> and `code 18`. Sentences keep going so splitting has to pick a boundary.\n\n- point 18a\n- point 18b\n\n*Section 19*\n\nParagraph 19 has *bold 19* and _italic_ words, a <http://example.com/19|link 19> and `code 19`. Sentences keep going so splitting has to pick a boundary.\n\n- point 19a\n- point 19b\n\n*Section 20*\n\nParagraph 20 has *bold 20* and _italic_ words, a <http://example.com/20|link 20> and `code 20`. Sentences keep going so splitting has to pick a boundary.\n\n- point 20a\n- point 20b\n\n*Section 21*"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+thread_empty:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+thread_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          thread:
+            thread_key: abc123
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/ws/messages?token=mytoken&key=mykey&messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
+  valid: true
+thread_path:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          thread:
+            thread_key: thread123
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key&messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
+  valid: true
+threadkey_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          thread:
+            thread_key: abc345
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/ws/messages?token=mytoken&key=mykey&messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
+  valid: true
+title_merge_text:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Hello\r\nWorld"
+      headers:
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://chat.googleapis.com/v1/spaces/workspace/messages?token=token&key=key"
+  valid: true
+workspace_only:
+  error: "Google Chat: an invalid Google Chat Webhook Key was specified"
+  valid: false

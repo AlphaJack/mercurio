@@ -1,0 +1,289 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_sender:
+  error: "Mobile Message: the Mobile Message Sender ID specified is invalid"
+  valid: false
+batch_len_mismatch:
+  errors:
+    - "service error: Mobile Message returned an unexpected response"
+    - "service error: Mobile Message returned an unexpected response"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345679"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+batch_partial:
+  errors:
+    - "service error: Mobile Message rejected the message"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - custom_ref: abc
+              message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+            - custom_ref: abc
+              message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345679"
+            - custom_ref: abc
+              message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345670"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+default_response:
+  errors:
+    - "service error: Mobile Message returned an unexpected response"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+empty:
+  error: "Mobile Message: a Mobile Message API username and password must be specified"
+  valid: false
+http_403:
+  errors:
+    - "HTTP 403: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+max_parts_bad:
+  error: "Mobile Message: the Mobile Message max_parts specified is invalid"
+  valid: false
+max_parts_range:
+  error: "Mobile Message: the Mobile Message max_parts must be between 1 and 99"
+  valid: false
+max_parts_zero:
+  error: "Mobile Message: the Mobile Message max_parts must be between 1 and 99"
+  valid: false
+no_batch:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345679"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+no_password:
+  error: "Mobile Message: a Mobile Message API username and password must be specified"
+  valid: false
+no_targets:
+  errors:
+    - "Mobile Message: there are no valid Mobile Message targets to notify"
+  ok: false
+  requests: []
+  valid: true
+not_au:
+  errors:
+    - "Mobile Message: there are no valid Mobile Message targets to notify"
+  ok: false
+  requests: []
+  valid: true
+numeric_sender:
+  ok: true
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: "61412345670"
+              to: "61412345678"
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: "61412345670"
+              to: "61412345679"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+result_not_dict:
+  errors:
+    - "service error: Mobile Message rejected the message"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+status_not_complete:
+  errors:
+    - "service error: Mobile Message returned an unexpected response"
+  ok: false
+  requests:
+    - body:
+        json:
+          enable_unicode: false
+          max_parts: 10
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true
+unicode_maxparts:
+  ok: true
+  requests:
+    - body:
+        json:
+          enable_unicode: true
+          max_parts: 2
+          messages:
+            - message: "Mercurio Title\r\nMercurio Body"
+              sender: MyBiz
+              to: "61412345678"
+      headers:
+        Accept: application/json
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/json
+        Idempotency-Key: "<ignored>"
+      method: POST
+      url: "https://api.mobilemessage.com.au/v1/messages"
+  valid: true

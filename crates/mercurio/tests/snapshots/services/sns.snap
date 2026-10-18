@@ -1,0 +1,606 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+empty:
+  error: "AWS Simple Notification Service (SNS): an invalid AWS Access Key ID was specified"
+  valid: false
+invalid_mode:
+  error: "AWS Simple Notification Service (SNS): the AWS SNS mode specified is invalid"
+  valid: false
+invalid_region_param:
+  error: "AWS Simple Notification Service (SNS): an invalid AWS Region was specified"
+  valid: false
+invalid_targets_dropped:
+  errors:
+    - "topic lookup: service error: could not acquire the AWS topic ARN"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - "12"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+long_sms_truncated:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+mixed_sms_mode:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Hi\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Version
+            - 2010-03-31
+          - - TopicArn
+            - "arn:aws:sns:us-east-1:000000000000:abcd"
+          - - Message
+            - "Hi\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+mixed_topic_mode:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Hi\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Version
+            - 2010-03-31
+          - - TopicArn
+            - "arn:aws:sns:us-east-1:000000000000:abcd"
+          - - Message
+            - Mercurio Body
+          - - Subject
+            - Hi
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+no_region:
+  error: "AWS Simple Notification Service (SNS): an invalid AWS Secret Access Key was specified"
+  valid: false
+no_secret:
+  error: "AWS Simple Notification Service (SNS): an invalid AWS Secret Access Key was specified"
+  valid: false
+no_targets:
+  errors:
+    - "invalid message: no AWS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+phone:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-west-2.amazonaws.com/"
+  valid: true
+phone_fail_continue:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334445"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+phone_title_body:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Alert\r\nSomething happened"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-west-2.amazonaws.com/"
+  valid: true
+phones_two:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-west-2.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334445"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-west-2.amazonaws.com/"
+  valid: true
+query_creds:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-west-2.amazonaws.com/"
+  valid: true
+query_key_alias:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.US-WEST-2.amazonaws.com/"
+  valid: true
+region_uppercase_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+session_token_param:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+        X-Amz-Security-Token: TOK+x=
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+session_token_user:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+        X-Amz-Security-Token: SESSIONTOKEN
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+status_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Message
+            - "Mercurio Title\r\nMercurio Body"
+          - - Version
+            - 2010-03-31
+          - - PhoneNumber
+            - "+12223334444"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+topic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Version
+            - 2010-03-31
+          - - TopicArn
+            - "arn:aws:sns:us-east-1:000000000000:abcd"
+          - - Message
+            - Mercurio Body
+          - - Subject
+            - Mercurio Title
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+topic_create_fail:
+  errors:
+    - "topic lookup: HTTP 403: Unauthorized - Invalid Access/Secret Key Combination."
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+topic_long_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Version
+            - 2010-03-31
+          - - TopicArn
+            - "arn:aws:sns:us-east-1:000000000000:abcd"
+          - - Message
+            - Mercurio Body
+          - - Subject
+            - TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+topic_no_arn:
+  errors:
+    - "topic lookup: service error: could not acquire the AWS topic ARN"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+topic_no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Version
+            - 2010-03-31
+          - - TopicArn
+            - "arn:aws:sns:us-east-1:000000000000:abcd"
+          - - Message
+            - Mercurio Body
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true
+topic_sms_mode:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - Action
+            - CreateTopic
+          - - Version
+            - 2010-03-31
+          - - Name
+            - MyTopic
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+    - body:
+        form:
+          - - Action
+            - Publish
+          - - Version
+            - 2010-03-31
+          - - TopicArn
+            - "arn:aws:sns:us-east-1:000000000000:abcd"
+          - - Message
+            - "Hi\r\nMercurio Body"
+      headers:
+        Authorization: "<ignored>"
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+        X-Amz-Date: "<ignored>"
+      method: POST
+      url: "https://sns.us-east-1.amazonaws.com/"
+  valid: true

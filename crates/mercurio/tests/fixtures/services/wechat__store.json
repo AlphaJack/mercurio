@@ -1,0 +1,7 @@
+{
+"cases":[
+{"name":"token_reused","url":"wechat://corpid:secret@1000002/johndoe","sends":3,"responses":[{"body":{"errcode":0,"access_token":"TOKEN1","expires_in":7200}},{"body":{"errcode":0}},{"body":{"errcode":0}},{"body":{"errcode":0}}]},
+{"name":"expired_token_evicted","url":"wechat://corpid:secret@1000002/johndoe","sends":3,"responses":[{"body":{"access_token":"OLD"}},{"body":{"errcode":0}},{"body":{"errcode":42001,"errmsg":"expired"}},{"body":{"access_token":"NEW","expires_in":100}},{"body":{"errcode":0}}]},
+{"name":"other_error_keeps_token","url":"wechat://corpid:secret@1000002/johndoe","sends":2,"responses":[{"body":{"access_token":"T"}},{"body":{"errcode":81013,"errmsg":"bad user"}},{"body":{"errcode":0}}]},
+{"name":"token_failure_not_cached","url":"wechat://corpid:secret@1000002/johndoe","sends":2,"responses":[{"body":{"errcode":40013,"errmsg":"bad corp"}},{"body":{"access_token":"T"}},{"body":{"errcode":0}}]}
+]}

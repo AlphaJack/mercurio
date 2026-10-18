@@ -1,0 +1,5 @@
+{
+"cases":[
+{"name":"retry_skips_delivered","url":"pingram://pingram_sk_abc123/a@example.ca/b@example.ca/+15551234567?retry=2","sends":1,"responses":[{"status":202},{"status":500},{"status":500},{"status":500},{"status":202},{"status":202}]},
+{"name":"retry_exhausted","url":"pingram://pingram_sk_abc123/a@example.ca?retry=1","sends":2,"responses":[{"status":500},{"status":500},{"status":202}]}
+]}

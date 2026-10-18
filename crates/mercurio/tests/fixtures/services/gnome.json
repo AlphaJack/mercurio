@@ -1,0 +1,21 @@
+{
+"cases":[
+{"name":"basic","url":"gnome://"},
+{"name":"underscore","url":"gnome://_/"},
+{"name":"no_title","url":"gnome://","title":""},
+{"name":"failure_type","url":"gnome://","type":"failure","title":"T","body":"B"},
+{"name":"image_yes","url":"gnome://?image=yes"},
+{"name":"image_no_urgency_high","url":"gnome://_/?image=no&urgency=high"},
+{"name":"priority_low","url":"gnome://?priority=low"},
+{"name":"priority_moderate","url":"gnome://?priority=moderate"},
+{"name":"priority_emergency","url":"gnome://?priority=emergency"},
+{"name":"urgency_2","url":"gnome://?urgency=2"},
+{"name":"urgency_0","url":"gnome://?urgency=0"},
+{"name":"urgency_invalid","url":"gnome://?urgency=invalid"},
+{"name":"urgency_over_priority","url":"gnome://?priority=low&urgency=high"},
+{"name":"quotes","url":"gnome://","title":"it's \"q\" \\ x","body":"line1\nline2\ttab é ☃"},
+{"name":"multiline","url":"gnome://","body":"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12"},
+{"name":"fails","url":"gnome://","responses":[{"exit":1}]},
+{"name":"priority_invalid","url":"gnome://_/?priority=invalid"},
+{"name":"image_false","url":"gnome://_/?image=False"}
+]}

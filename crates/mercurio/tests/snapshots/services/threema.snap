@@ -1,0 +1,177 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134443333"
+  valid: true
+body_unicode:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Title%0D%0Ah%C3%A9llo+%26+world%2B1&to=ECHOECHO"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134443333"
+  valid: true
+created:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134443333"
+  valid: true
+email:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&email=user%40example.com"
+  valid: true
+empty:
+  error: "Threema Gateway: Threema Gateway ID must be specified"
+  valid: false
+from_param:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134442222"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&to=ECHOECHO"
+  valid: true
+gwid_param:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134442222"
+  valid: true
+invalid_target_only:
+  errors:
+    - "service error: there were no Threema Gateway targets to notify"
+  ok: false
+  requests: []
+  valid: true
+mixed:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134442222"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&to=ECHOECHO"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&email=user%40example.com"
+  valid: true
+no_secret:
+  error: "Threema Gateway: an invalid Threema API Secret was specified"
+  valid: false
+no_targets:
+  errors:
+    - "service error: there were no Threema Gateway targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_user:
+  error: "Threema Gateway: Threema Gateway ID must be specified"
+  valid: false
+partial_failure:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134442222"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134443333"
+  valid: true
+phone:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134442222"
+  valid: true
+phones_two:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134442222"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&phone=16134443333"
+  valid: true
+quoted_user:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&to=ECHOECHO"
+  valid: true
+short_user:
+  error: "Threema Gateway: Threema Gateway ID must be 8 characters in length"
+  valid: false
+threema_id:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: POST
+      url: "https://msgapi.threema.ch/send_simple?secret=secret&from=%2ATHEGWID&text=Mercurio+Title%0D%0AMercurio+Body&to=ECHOECHO"
+  valid: true

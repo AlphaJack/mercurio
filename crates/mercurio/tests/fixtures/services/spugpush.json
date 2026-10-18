@@ -1,0 +1,20 @@
+{
+"cases":[
+{"name":"basic","url":"spugpush://abc123def456ghi789jkl012mno345pq"},
+{"name":"token_param","url":"spugpush://?token=abc123def456ghi789jkl012mno345pq"},
+{"name":"token_param_overrides_host","url":"spugpush://short/?token=abc123def456ghi789jkl012mno345pq"},
+{"name":"native","url":"https://push.spug.cc/send/abc123def456ghi789jkl012mno345pq"},
+{"name":"native_old_host","url":"https://push.spug.dev/send/abc123def456ghi789jkl012mno345pq"},
+{"name":"native_upper","url":"HTTPS://PUSH.SPUG.CC/send/ABC123def456ghi789jkl012mno345pq"},
+{"name":"native_too_short","url":"https://push.spug.cc/send/abc"},
+{"name":"no_title_uses_body","url":"spugpush://abc123def456ghi789jkl012mno345pq","title":""},
+{"name":"title_body_type","url":"spugpush://abc123def456ghi789jkl012mno345pq/","title":"T é","body":"B\nC","type":"warning"},
+{"name":"long_token","url":"spugpush://abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij1234"},
+{"name":"too_long_token","url":"spugpush://abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij12345"},
+{"name":"empty","url":"spugpush://"},
+{"name":"invalid","url":"spugpush://invalid!"},
+{"name":"server_error","url":"spugpush://abc123def456ghi789jkl012mno345pq","responses":[{"status":500}]},
+{"name":"bizarre_code","url":"spugpush://abc123def456ghi789jkl012mno345pq","responses":[{"status":999}]},
+{"name":"no_content","url":"spugpush://abc123def456ghi789jkl012mno345pq","responses":[{"status":204,"body":""}]},
+{"name":"connection_error","url":"spugpush://ffffffffffffffffffffffffffffffff","responses":[{"error":true}]}
+]}

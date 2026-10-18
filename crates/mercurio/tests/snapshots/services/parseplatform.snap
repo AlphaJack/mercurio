@@ -1,0 +1,270 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "https://localhost/parse/push/"
+  valid: true
+device_all:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "http://localhost/parse/push/"
+  valid: true
+device_android:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "http://localhost/parse/push/"
+  valid: true
+device_invalid:
+  error: "Parse Platform: an invalid Parse Platform device was specified"
+  valid: false
+device_ios_port:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "http://localhost:8080/parse/push/"
+  valid: true
+device_upper_invalid:
+  error: "Parse Platform: an invalid Parse Platform device was specified"
+  valid: false
+empty:
+  error: "Parse Platform: an invalid hostname or port was specified"
+  valid: false
+empty_creds:
+  error: "Parse Platform: an invalid hostname or port was specified"
+  valid: false
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "https://localhost/parse/push/"
+  valid: true
+error_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "https://localhost/parse/push/"
+  valid: true
+host_only:
+  error: "Parse Platform: an invalid Parse Platform Application ID was specified"
+  valid: false
+no_app_id:
+  error: "Parse Platform: an invalid Parse Platform Application ID was specified"
+  valid: false
+no_master_key:
+  error: "Parse Platform: an invalid Parse Platform Master Key was specified"
+  valid: false
+path:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "https://localhost/sub/path/parse/push/"
+  valid: true
+query_keys:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: aaaaaaaa
+        X-Parse-Master-Key: dddddddd
+      method: POST
+      url: "https://localhost/parse/push/"
+  valid: true
+query_overrides:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: qapp
+        X-Parse-Master-Key: qkey
+      method: POST
+      url: "https://localhost/parse/push/"
+  valid: true
+quoted_creds:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app id
+        X-Parse-Master-Key: key/x
+      method: POST
+      url: "http://localhost/parse/push/"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            alert: b
+            title: t
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "https://localhost/parse/push/"
+  valid: true
+status_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            alert: Mercurio Body
+            title: Mercurio Title
+          where:
+            deviceType:
+              $in:
+                - ios
+                - android
+      headers:
+        Content-Type: application/json
+        X-Parse-Application-Id: app_id
+        X-Parse-Master-Key: master_key
+      method: POST
+      url: "https://localhost/parse/push/"
+  valid: true

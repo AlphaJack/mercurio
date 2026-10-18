@@ -1,0 +1,15 @@
+{
+"source":"hand-written from vendor API docs https://www.courier.com/docs/reference/send/message",
+"cases":[
+{"name":"empty","url":"courier://"},
+{"name":"no_recipient","url":"courier://pk_prod_abc"},
+{"name":"bad_host","url":"courier://pk_prod_abc/u1?host=bad_host!"},
+{"name":"user_id","url":"courier://pk_prod_abc/example_user","responses":[{"status":202,"body":{"requestId":"1-67f340b1-58b7b231d9485ef0cda0a38b"}}]},
+{"name":"email_single","url":"courier://pk_prod_abc/ben@example.com","type":"success","responses":[{"status":202}]},
+{"name":"multi_array","url":"courier://pk_prod_abc/ben@example.com/+15551234567/user42","responses":[{"status":202}]},
+{"name":"digits_without_plus_are_user_ids","url":"courier://pk_prod_abc/15551234567","responses":[{"status":202}]},
+{"name":"template_routing_data","url":"courier://pk_prod_abc/example_user?template=nt_01abc&channels=email,sms&:name=Ben","responses":[{"status":202}]},
+{"name":"to_param_custom_host_header","url":"courier://pk_prod_abc?to=u1,u2&host=courier.internal:8443&+Idempotency-Key=abc123","responses":[{"status":200}]},
+{"name":"bad_request","url":"courier://pk_prod_abc/example_user","responses":[{"status":400,"body":{"message":"Bad Request","type":"invalid_request_error"}}]},
+{"name":"connection_error","url":"courier://pk_prod_abc/example_user","responses":[{"error":true}]}
+]}

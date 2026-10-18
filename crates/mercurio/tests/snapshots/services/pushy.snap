@@ -1,0 +1,345 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+badge:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            badge: 100
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+badge_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+badge_negative:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+badge_zero:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            badge: 0
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+blank:
+  error: "Pushy: an invalid Pushy Secret API Key was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+device:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+empty:
+  error: "Pushy: an invalid Pushy Secret API Key was specified"
+  valid: false
+err_999:
+  errors:
+    - "HTTP 999: {\"id\":\"x\",\"info\":{\"devices\":1},\"success\":true}"
+    - "HTTP 999: {\"id\":\"x\",\"info\":{\"devices\":1},\"success\":true}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+invalid_target:
+  errors:
+    - "service error: there are no Pushy targets to notify"
+  ok: false
+  requests: []
+  valid: true
+key_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+no_targets:
+  errors:
+    - "service error: there are no Pushy targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+partial:
+  errors:
+    - "HTTP 500: {\"id\":\"x\",\"info\":{\"devices\":1},\"success\":true}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: top
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: dev
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+sound:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            sound: alarm.aiff
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+success_int:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: device
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+topic:
+  ok: true
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+topic_bad_json:
+  errors:
+    - "HTTP 200: }"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true
+topic_unsuccessful:
+  errors:
+    - "HTTP 200: {\"success\":false}"
+  ok: false
+  requests:
+    - body:
+        json:
+          data:
+            message: Mercurio Body
+          notification:
+            body: Mercurio Body
+            title: Mercurio Title
+          to: topic
+      headers:
+        Accepts: application/json
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pushy.me/push?api_key=apikey"
+  valid: true

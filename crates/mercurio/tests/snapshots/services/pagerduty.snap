@@ -1,0 +1,370 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all_qs:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: c
+            severity: info
+            source: s
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: r
+      headers:
+        Authorization: Token token=a
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+bad_region:
+  error: "Pager Duty: the PagerDuty region specified is invalid"
+  valid: false
+bad_severity:
+  error: "Pager Duty: the PagerDuty severity specified is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: info
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+blank_both:
+  error: "Pager Duty: an invalid Pager Duty API Key was specified"
+  valid: false
+blank_component:
+  error: "Pager Duty: an invalid Pager Duty Notification Component was specified"
+  valid: false
+blank_host:
+  error: "Pager Duty: an invalid Pager Duty API Key was specified"
+  valid: false
+blank_source:
+  error: "Pager Duty: an invalid Pager Duty Notification Source was specified"
+  valid: false
+blank_user:
+  error: "Pager Duty: an invalid Pager Duty Routing Key was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: info
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: somerkey
+      headers:
+        Authorization: Token token=someapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+details:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            custom_details:
+              key: value
+              key2: value two
+            severity: info
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+empty:
+  error: "Pager Duty: an invalid Pager Duty API Key was specified"
+  valid: false
+group_class_click:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          links:
+            - href: "http://example.com"
+          payload:
+            class: myclass
+            component: mc
+            group: mygroup
+            severity: info
+            source: ms
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: routekey
+      headers:
+        Authorization: Token token=apikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+http_202:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: info
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: somerkey
+      headers:
+        Authorization: Token token=someapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+http_204:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: info
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: somerkey
+      headers:
+        Authorization: Token token=someapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: code
+            severity: info
+            source: bizarre
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: somerkey
+      headers:
+        Authorization: Token token=someapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+no_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          payload:
+            component: Notification
+            severity: warning
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+region_eu:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: failure
+              src: "https://example.org/failure-128x128.png"
+          payload:
+            component: Notification
+            severity: critical
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.eu.pagerduty.com/v2/enqueue"
+  valid: true
+severity_critical:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: success
+              src: "https://example.org/success-128x128.png"
+          payload:
+            component: Notification
+            severity: critical
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+severity_err:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: error
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+severity_w:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: warning
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+source_component:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: mycomponent
+            severity: info
+            source: mysource
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+title_body:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: info
+            source: Mercurio
+            summary: "My Title\r\nLine1\nLine2"
+          routing_key: k
+      headers:
+        Authorization: Token token=a
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+upper_severity:
+  error: "Pager Duty: the PagerDuty severity specified is invalid"
+  valid: false

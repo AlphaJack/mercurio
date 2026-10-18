@@ -1,0 +1,283 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+add_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          templatekey: TemplateVal
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+del_token:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+dup_events:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/ev/with/key/WebHookID"
+  valid: true
+empty:
+  error: "IFTTT: an invalid IFTTT Webhook ID was specified"
+  valid: false
+empty_creds:
+  error: "IFTTT: an invalid IFTTT Webhook ID was specified"
+  valid: false
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+error_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+multi_events_sorted:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/alpha/with/key/WebHookID"
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/beta/with/key/WebHookID"
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/zeta/with/key/WebHookID"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+native_no_event:
+  error: "IFTTT: you must specify at least one event you wish to trigger on"
+  valid: false
+native_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/More/with/key/WebHookID"
+  valid: true
+native_two_events:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/Other/with/key/WebHookID"
+  valid: true
+no_event:
+  error: "IFTTT: you must specify at least one event you wish to trigger on"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: ""
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+partial_failure:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/a/with/key/WebHookID"
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/b/with/key/WebHookID"
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/c/with/key/WebHookID"
+  valid: true
+status_204_fails:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+    - body:
+        json:
+          value1: Mercurio Title
+          value2: Mercurio Body
+          value3: info
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID2/with/key/WebHookID"
+  valid: true
+user_host:
+  ok: true
+  requests:
+    - body:
+        json:
+          value1: t
+          value2: b
+          value3: warning
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://maker.ifttt.com/trigger/EventID/with/key/WebHookID"
+  valid: true

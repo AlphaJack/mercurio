@@ -1,0 +1,198 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+failed_lookup_not_cached:
+  sends:
+    - attempts: 1
+      errors:
+        - "channel lookup: HTTP 404: {}"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Bearer token
+          method: GET
+          url: "http://localhost/api/v4/teams/name/my%20team/channels/name/chan"
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Bearer token
+          method: GET
+          url: "http://localhost/api/v4/teams/name/my%20team/channels/name/chan"
+        - body:
+            json:
+              channel_id: r2
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/api/v4/posts"
+  url_id: 2d2492d8
+  valid: true
+lookup_cached:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Bearer token
+          method: GET
+          url: "http://localhost/api/v4/teams/name/team/channels/name/chan"
+        - body:
+            json:
+              channel_id: resolved1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/api/v4/posts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              channel_id: resolved1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/api/v4/posts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              channel_id: resolved1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/api/v4/posts"
+  url_id: f97513ac
+  valid: true
+lookup_cached_secure_port_path:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Bearer token
+          method: GET
+          url: "https://localhost:8443/sub/path/api/v4/teams/name/team/channels/name/chan"
+        - body:
+            json:
+              channel_id: resolved1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "https://localhost:8443/sub/path/api/v4/posts"
+        - body:
+            json:
+              channel_id: id1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "https://localhost:8443/sub/path/api/v4/posts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              channel_id: resolved1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "https://localhost:8443/sub/path/api/v4/posts"
+        - body:
+            json:
+              channel_id: id1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "https://localhost:8443/sub/path/api/v4/posts"
+  url_id: dcb5e721
+  valid: true
+post_fails_lookup_kept:
+  sends:
+    - attempts: 1
+      errors:
+        - "HTTP 500: {}"
+      ok: false
+      requests:
+        - body: ~
+          headers:
+            Accept: application/json
+            Authorization: Bearer token
+          method: GET
+          url: "http://localhost/api/v4/teams/name/team/channels/name/chan"
+        - body:
+            json:
+              channel_id: resolved1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/api/v4/posts"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              channel_id: resolved1
+              message: "Mercurio Title\r\nMercurio Body"
+          headers:
+            Authorization: Bearer token
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost/api/v4/posts"
+  url_id: f97513ac
+  valid: true
+webhook_url_id:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              icon_url: "https://example.org/info-72x72.png"
+              text: "Mercurio Title\r\nMercurio Body"
+              username: user
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost:8065/hooks/token"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              icon_url: "https://example.org/info-72x72.png"
+              text: "Mercurio Title\r\nMercurio Body"
+              username: user
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "http://localhost:8065/hooks/token"
+  url_id: d5c5c80c
+  valid: true

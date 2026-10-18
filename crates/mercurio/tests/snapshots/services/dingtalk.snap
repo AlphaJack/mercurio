@@ -1,0 +1,304 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles:
+              - "11111111111111"
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=bbbbbbbb&timestamp=<ignored>&sign=<ignored>"
+  valid: true
+bad_secret:
+  error: "DingTalk: an invalid DingTalk Secret was specified"
+  valid: false
+bad_secret_user:
+  error: "DingTalk: an invalid DingTalk Secret was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=12345678"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+created:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+empty:
+  error: "DingTalk: an invalid DingTalk API Token was specified"
+  valid: false
+invalid_targets_dropped:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+invalid_token:
+  error: "DingTalk: an invalid DingTalk API Token was specified"
+  valid: false
+markdown:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          markdown:
+            text: "# My Title here\n**bold**"
+            title: My Title here
+          msgtype: markdown
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+markdown_hash_only_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          markdown:
+            text: x
+            title: Mercurio Notifications
+          msgtype: markdown
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+markdown_input:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          markdown:
+            text: "# T\n# hi"
+            title: T
+          msgtype: markdown
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+markdown_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          markdown:
+            text: "**bold**"
+            title: Mercurio Notifications
+          msgtype: markdown
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+phone_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles:
+              - "11111111111111"
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+secret_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles:
+              - "11111111111111"
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa&timestamp=<ignored>&sign=<ignored>"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: err"
+  ok: false
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+text_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: only body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+text_title_type:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Title é\r\nBody\nmore"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles:
+              - "11111111111111"
+              - "22222222222"
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true
+too_long_phone:
+  ok: true
+  requests:
+    - body:
+        json:
+          at:
+            atMobiles: []
+            isAtAll: false
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://oapi.dingtalk.com/robot/send?access_token=aaaaaaaa"
+  valid: true

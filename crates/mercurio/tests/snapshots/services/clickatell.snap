@@ -1,0 +1,146 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_202:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&from=1111111111&content=Mercurio+Title%0D%0AMercurio+Body&to=1111111111"
+  valid: true
+at_slash:
+  error: "Clickatell: an invalid Clickatell API Token was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&from=1111111111&content=Mercurio+Title%0D%0AMercurio+Body&to=1111111111"
+  valid: true
+empty:
+  error: "Clickatell: an invalid Clickatell API Token was specified"
+  valid: false
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&from=1111111111&content=Mercurio+Title%0D%0AMercurio+Body&to=1111111111"
+  valid: true
+invalid_targets:
+  errors:
+    - "invalid message: there are no valid Clickatell targets to notify"
+  ok: false
+  requests: []
+  valid: true
+key_in_path:
+  errors:
+    - "invalid message: there are no valid Clickatell targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_source:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&content=t%0D%0Ab&to=1111111111"
+  valid: true
+no_targets:
+  errors:
+    - "invalid message: there are no valid Clickatell targets to notify"
+  ok: false
+  requests: []
+  valid: true
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&content=Mercurio+Title%0D%0AMercurio+Body&to=1111111111"
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&content=Mercurio+Title%0D%0AMercurio+Body&to=2222222222"
+  valid: true
+prefix_targets:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&content=Mercurio+Title%0D%0AMercurio+Body&to=15551234567"
+  valid: true
+qs_apikey_from_to:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&from=1111111111&content=Mercurio+Title%0D%0AMercurio+Body&to=1111111111"
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&from=1111111111&content=Mercurio+Title%0D%0AMercurio+Body&to=2222222222"
+  valid: true
+qs_from_only:
+  errors:
+    - "invalid message: there are no valid Clickatell targets to notify"
+  ok: false
+  requests: []
+  valid: true
+short_source:
+  error: "Clickatell: the Account (From) Phone # specified is invalid"
+  valid: false
+slash:
+  error: "Clickatell: an invalid Clickatell API Token was specified"
+  valid: false
+source_no_key:
+  error: "Clickatell: an invalid Clickatell API Token was specified"
+  valid: false
+source_no_targets:
+  errors:
+    - "invalid message: there are no valid Clickatell targets to notify"
+  ok: false
+  requests: []
+  valid: true
+source_target:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      method: GET
+      url: "https://platform.clickatell.com/messages/http/send?apiKey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&from=1111111111&content=Mercurio+Title%0D%0AMercurio+Body&to=1111111111"
+  valid: true

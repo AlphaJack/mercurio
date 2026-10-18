@@ -1,0 +1,654 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_client_id:
+  error: "RingCentral: an invalid RingCentral Client ID was specified"
+  valid: false
+bad_secret:
+  error: "RingCentral: an invalid RingCentral Client Secret was specified"
+  valid: false
+bad_source:
+  error: "RingCentral: the RingCentral source (From) phone # is invalid"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+    - body:
+        form:
+          - - token
+            - abc
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/revoke"
+  valid: true
+basic_login_fail:
+  errors:
+    - "login: service error: RingCentral login returned no access token"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+  valid: true
+basic_no_expiry:
+  errors:
+    - "send: HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232002"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+  valid: true
+empty:
+  error: "RingCentral: an invalid RingCentral Client ID was specified"
+  valid: false
+env_bad:
+  error: "RingCentral: an invalid RingCentral environment was specified"
+  valid: false
+env_prod:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+  valid: true
+invalid_targets_dropped:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+  valid: true
+jwt_auto:
+  error: "RingCentral: the RingCentral source (From) phone # is invalid"
+  valid: false
+jwt_auto_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+          - - assertion
+            - eyJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJodHRwczovL3BsYXRmb3JtLnJpbmdjZW50cmFsLmNvbSJ9.sig
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+  valid: true
+jwt_bad_token:
+  error: "RingCentral: an invalid RingCentral JWT Token was specified"
+  valid: false
+jwt_mode:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - "urn:ietf:params:oauth:grant-type:jwt-bearer"
+          - - assertion
+            - eyJ0eXAi.abc-def_1
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+    - body:
+        form:
+          - - token
+            - abc
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/revoke"
+  valid: true
+login_conn_error:
+  errors:
+    - "login: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+  valid: true
+login_http_401:
+  errors:
+    - "login: HTTP 401: {\"access_token\":\"abc\"}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+  valid: true
+login_not_json:
+  errors:
+    - "login: service error: RingCentral login returned no access token"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+  valid: true
+mms:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        multipart:
+          - content_type: application/json
+            name: json
+            value: "{\"from\":{\"phoneNumber\":\"+15551232000\"},\"text\":\"Mercurio Title\\r\\nMercurio Body\",\"to\":[{\"phoneNumber\":\"+15551232001\"}]}"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: attachment
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/mms"
+    - body:
+        form:
+          - - token
+            - abc
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/revoke"
+  valid: true
+mms_fail:
+  errors:
+    - "send: HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        multipart:
+          - content_type: application/json
+            name: json
+            value: "{\"from\":{\"phoneNumber\":\"+15551232000\"},\"text\":\"Mercurio Title\\r\\nMercurio Body\",\"to\":[{\"phoneNumber\":\"+15551232000\"}]}"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: attachment
+          - b64: /9j/4AA=
+            content_type: image/jpeg
+            filename: b.jpg
+            name: attachment
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/mms"
+  valid: true
+mode_bad:
+  error: "RingCentral: an invalid RingCentral Authentication Mode was specified"
+  valid: false
+no_secret:
+  error: "RingCentral: an invalid RingCentral Client Secret was specified"
+  valid: false
+query_overrides:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - tok
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6bmV3c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232009"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+  valid: true
+sandbox_retired:
+  error: "RingCentral: the RingCentral sandbox (platform.devtest.ringcentral.com) was retired on 2025-01-01; remove ?env= to use production"
+  valid: false
+send_conn_error:
+  errors:
+    - "send: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+    - body:
+        form:
+          - - token
+            - abc
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/revoke"
+  valid: true
+send_http_201:
+  errors:
+    - "send: HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+  valid: true
+source_query:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - y
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232000"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+  valid: true
+token_layout:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - grant_type
+            - password
+          - - username
+            - "+15551232000"
+          - - password
+            - password
+          - - access_token_ttl
+            - "3600"
+          - - refresh_token_ttl
+            - "604800"
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/token"
+    - body:
+        json:
+          from:
+            phoneNumber: "+15551232000"
+          text: "Mercurio Title\r\nMercurio Body"
+          to:
+            - phoneNumber: "+15551232001"
+      headers:
+        Accept: application/json
+        Authorization: Bearer abc
+        Content-Type: application/json
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/sms"
+    - body:
+        form:
+          - - token
+            - abc
+      headers:
+        Accept: application/json
+        Authorization: Basic Y2xpZW50aWQ6c2VjcmV0
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://platform.ringcentral.com/restapi/oauth/revoke"
+  valid: true
+token_layout_no_source:
+  error: "RingCentral: the RingCentral source (From) phone # is invalid"
+  valid: false

@@ -1,0 +1,66 @@
+# Release flow:
+#   1. Every push to main updates a "release" PR (version bump + changelog). 2. Merging that PR publishes mercurio, then mercurio-cli, to crates.io and pushes the `vX.Y.Z` tag. 3. The tag starts release.yml (dist): binaries, installers, GitHub  Release, then the ghcr.io image.
+#
+# Secrets:
+#   RELEASE_PLZ_TOKEN     fine-grained PAT (contents + pull-requests: write). CARGO_REGISTRY_TOKEN  crates.io token with publish rights for both crates.
+name: Release-plz
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  release:
+    name: Publish crates and tag
+    if: ${{ !github.event.repository.fork }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: "stable"
+      - name: Publish crates and push tag
+        uses: release-plz/action@8921286633dfa0c4020f7f30bd1c14fe19cbb10e # v0.5.142
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  release-pr:
+    name: Open or update the release PR
+    if: ${{ !github.event.repository.fork }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: release-plz-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: "stable"
+      - name: Open or update release PR
+        uses: release-plz/action@8921286633dfa0c4020f7f30bd1c14fe19cbb10e # v0.5.142
+        with:
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

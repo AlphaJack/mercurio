@@ -1,0 +1,188 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/12345678.send"
+  valid: true
+bizarre_code:
+  errors:
+    - "HTTP 999 "
+  ok: false
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/aaaaaaaa.send"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/aaaaaaaa.send"
+  valid: true
+created_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/aaaaaaaa.send"
+  valid: true
+dash_token:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/ab.send"
+  valid: true
+empty:
+  error: "ServerChan: an invalid ServerChan API Token was specified"
+  valid: false
+extra_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/abcd.send"
+  valid: true
+extra_path_trailing:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/abcd.send"
+  valid: true
+invalid_token:
+  error: "ServerChan: an invalid ServerChan API Token was specified"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - ""
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/12345678.send"
+  valid: true
+query:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/abcdEFGH123.send"
+  valid: true
+server_error:
+  errors:
+    - "HTTP 500: server error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/aaaaaaaa.send"
+  valid: true
+title_body_type:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Hello & bye
+          - - desp
+            - "line1\nline2 é"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/12345678.send"
+  valid: true
+trailing_slash:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - title
+            - Mercurio Title
+          - - desp
+            - Mercurio Body
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://sctapi.ftqq.com/12345678.send"
+  valid: true
+upper_scheme:
+  error: "ServerChan: an invalid ServerChan API Token was specified"
+  valid: false

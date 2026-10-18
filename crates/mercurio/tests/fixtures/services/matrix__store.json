@@ -1,0 +1,7 @@
+{
+"cases":[
+{"name":"session_and_room_cache_kept","url":"matrix://user:pass@localhost/!room:localhost","sends":3,"responses":[{"status":200,"body":{}},{"status":200,"body":{"access_token":"abcd1234","user_id":"@apprise:localhost","device_id":"DEVICE1"}},{"status":200,"body":{"room_id":"!room:localhost"}},{"status":200,"body":{"event_id":"e1"}},{"status":200,"body":{"event_id":"e2"}},{"status":200,"body":{"event_id":"e3"}}]},
+{"name":"alias_resolved_once","url":"matrix://user:pass@localhost:8080/#general","sends":2,"responses":[{"status":200,"body":{}},{"status":200,"body":{"access_token":"abcd1234","user_id":"@apprise:localhost","device_id":"DEVICE1"}},{"status":200,"body":{"room_id":"!gen:localhost"}},{"status":200},{"status":200}]},
+{"name":"retry_skips_delivered_room","url":"matrix://user:pass@localhost/!a:localhost/!b:localhost?retry=1","sends":1,"responses":[{"status":200,"body":{}},{"status":200,"body":{"access_token":"abcd1234","user_id":"@apprise:localhost","device_id":"DEVICE1"}},{"status":200,"body":{"room_id":"!a:localhost"}},{"status":200},{"status":200,"body":{"room_id":"!b:localhost"}},{"status":500},{"status":200}]},
+{"name":"login_fails_then_works","url":"matrix://user:pass@localhost/!room:localhost","sends":2,"responses":[{"status":403},{"status":403},{"status":200,"body":{"access_token":"t","user_id":"@u:localhost"}},{"status":200,"body":{"room_id":"!room:localhost"}},{"status":200}]}
+]}

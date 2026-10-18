@@ -1,0 +1,244 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+apikey_only:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+blank:
+  error: "Join: an invalid Join API Key was specified"
+  valid: false
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+dedupe_sort:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceNames=alpha&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceNames=zeta&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+device_id:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=dddddddddddddddddddddddddddddddd&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+device_name:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceNames=MyDevice&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+device_name_space:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceNames=Device&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceNames=My&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+empty:
+  error: "Join: an invalid Join API Key was specified"
+  valid: false
+error_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+group:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=dddddddddddddddddddddddddddddddd&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.chrome&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+group_bare:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.phone&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.android&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+no_image_title:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=&text=just+body&deviceId=group.all"
+  valid: true
+partial_fail:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=dddddddddddddddddddddddddddddddd&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+priority_emergency:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=2&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+priority_empty:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+priority_high:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=1&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+priority_invalid:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+priority_num:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=-2&title=Mercurio+Title&text=Mercurio+Body&deviceId=group.all&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+short_key:
+  error: "Join: an invalid Join API Key was specified"
+  valid: false
+to_param:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=dddddddddddddddddddddddddddddddd&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+two_devices:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=dddddddddddddddddddddddddddddddd&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&icon=https%3A%2F%2Fexample.org%2Finfo-72x72.png"
+  valid: true
+user_host_image_false:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=dddddddddddddddddddddddddddddddd"
+  valid: true
+user_host_image_true:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&priority=0&title=Mercurio+Title&text=Mercurio+Body&deviceId=dddddddddddddddddddddddddddddddd&icon=https%3A%2F%2Fexample.org%2Fwarning-72x72.png"
+  valid: true

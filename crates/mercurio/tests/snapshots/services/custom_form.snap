@@ -1,0 +1,181 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_as_invalid:
+  error: "Form: invalid attach-as \"!!!\""
+  valid: false
+attach_as_single:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: version
+            value: "1.0"
+          - name: title
+            value: Mercurio Title
+          - name: message
+            value: Mercurio Body
+          - name: type
+            value: info
+          - b64: aGVsbG8=
+            content_type: text/plain
+            filename: a.txt
+            name: meta
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "http://localhost"
+  valid: true
+attach_as_wildcard:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: version
+            value: "1.0"
+          - name: title
+            value: Mercurio Title
+          - name: message
+            value: Mercurio Body
+          - name: type
+            value: info
+          - b64: aGVsbG8=
+            content_type: text/plain
+            filename: a.txt
+            name: file01
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "http://localhost"
+  valid: true
+attachment_default:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: version
+            value: "1.0"
+          - name: title
+            value: Mercurio Title
+          - name: message
+            value: Mercurio Body
+          - name: type
+            value: info
+          - b64: aGVsbG8=
+            content_type: text/plain
+            filename: a.txt
+            name: file01
+          - b64: Ynll
+            content_type: text/plain
+            filename: b.txt
+            name: file02
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "http://localhost"
+  valid: true
+auth_port_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - version
+            - "1.0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost:8080/path/to/hook"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - version
+            - "1.0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost"
+  valid: true
+headers_params_payload:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - version
+            - "1.0"
+          - - subject
+            - Mercurio Title
+          - - type
+            - info
+          - - extra
+            - value
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+        X-Custom: "yes"
+      method: POST
+      url: "http://localhost/?param=1"
+  valid: true
+method_delete:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - version
+            - "1.0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: DELETE
+      url: "http://localhost/"
+  valid: true
+method_get:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "http://localhost/?version=1.0&title=Mercurio+Title&message=Mercurio+Body&type=info&p=1"
+  valid: true
+method_invalid:
+  error: "Form: invalid method \"invalid\""
+  valid: false
+server_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - version
+            - "1.0"
+          - - title
+            - Mercurio Title
+          - - message
+            - Mercurio Body
+          - - type
+            - info
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost"
+  valid: true

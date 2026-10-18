@@ -1,0 +1,401 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_error:
+  errors:
+    - "HTTP 400: bad"
+  ok: false
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+bad_from:
+  error: "WhatsApp: an invalid WhatsApp From Phone ID was specified"
+  valid: false
+bad_token:
+  error: "WhatsApp: an invalid WhatsApp Access Token was specified"
+  valid: false
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+components:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          template:
+            components:
+              - parameters:
+                  - text: test
+                    type: text
+                  - text: "Mercurio Title\r\nMercurio Body"
+                    type: text
+                  - text: warning
+                    type: text
+                type: body
+            language:
+              code: en_US
+            name: template
+          to: "+44444444444"
+          type: template
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+components_duplicate:
+  error: "WhatsApp: the Template Component index was already assigned"
+  valid: false
+components_empty_map:
+  error: "WhatsApp: an invalid Template Component Mapping was specified"
+  valid: false
+components_invalid_key:
+  error: "WhatsApp: an invalid Template Component ID was specified"
+  valid: false
+components_no_template:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: group
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: 120363043968066561@g.us
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+created_ok:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+empty:
+  error: "WhatsApp: an invalid WhatsApp Access Token was specified"
+  valid: false
+empty_userinfo:
+  error: "WhatsApp: an invalid WhatsApp Access Token was specified"
+  valid: false
+group:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: group
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: 120363043968066561@g.us
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+group_suffix_and_phone:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: group
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: 120363043968066561@g.us
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+mixed_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+no_content_fails:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+no_targets:
+  errors:
+    - "service error: there are no valid WhatsApp targets to notify"
+  ok: false
+  requests: []
+  valid: true
+no_valid_targets:
+  errors:
+    - "service error: there are no valid WhatsApp targets to notify"
+  ok: false
+  requests: []
+  valid: true
+partial_failure:
+  errors:
+    - "HTTP 500: x"
+  ok: false
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+55555555555"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+plus_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+query_only:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: group
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: 120363043968066561@g.us
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+source_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          text:
+            body: "Mercurio Title\r\nMercurio Body"
+          to: "+44444444444"
+          type: text
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/54321/messages"
+  valid: true
+template:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          template:
+            language:
+              code: en_US
+            name: template
+          to: "+44444444444"
+          type: template
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+template_bad_lang:
+  error: "WhatsApp: an invalid WhatsApp Template Language Code was specified"
+  valid: false
+template_blank:
+  error: "WhatsApp: an invalid WhatsApp Template Name was specified"
+  valid: false
+template_lang:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          template:
+            language:
+              code: fr_CA
+            name: template
+          to: "+44444444444"
+          type: template
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true
+template_param_language:
+  ok: true
+  requests:
+    - body:
+        json:
+          messaging_product: whatsapp
+          recipient_type: individual
+          template:
+            language:
+              code: de_DE
+            name: template
+          to: "+44444444444"
+          type: template
+      headers:
+        Accept: application/json
+        Authorization: Bearer eeeeeeee
+        Content-Type: application/json
+      method: POST
+      url: "https://graph.facebook.com/v26.0/12345/messages"
+  valid: true

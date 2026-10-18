@@ -1,0 +1,422 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+login_fails_then_works:
+  sends:
+    - attempts: 1
+      errors:
+        - "token: HTTP 500: {}"
+      ok: false
+      requests:
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer t2
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer t2
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+  url_id: bca5d3e0
+  valid: true
+retry_skips_delivered:
+  sends:
+    - attempts: 2
+      ok: true
+      requests:
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: a@example.com
+          headers:
+            Authorization: Bearer abc
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: b@example.com
+          headers:
+            Authorization: Bearer abc
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: b@example.com
+          headers:
+            Authorization: Bearer abc
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+  url_id: bca5d3e0
+  valid: true
+store_no:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer abc
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer abc
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+  url_id: bca5d3e0
+  valid: true
+token_reused:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer abc123
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+  url_id: bca5d3e0
+  valid: true
+two_targets_token_reused:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: a@example.com
+          headers:
+            Authorization: Bearer tok
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: b@example.com
+          headers:
+            Authorization: Bearer tok
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: a@example.com
+          headers:
+            Authorization: Bearer tok
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: b@example.com
+          headers:
+            Authorization: Bearer tok
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+  url_id: bca5d3e0
+  valid: true
+unauthorized_relogin_persists:
+  sends:
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer old
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+        - body:
+            json:
+              client_id: client_id
+              client_secret: cs1
+              grant_type: client_credentials
+          headers:
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/oauth/access_token"
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer new
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+    - attempts: 1
+      ok: true
+      requests:
+        - body:
+            json:
+              email:
+                from:
+                  email: user@example.com
+                  name: Mercurio
+                html: TWVyY3VyaW8gQm9keQ==
+                subject: Mercurio Title
+                text: Mercurio Body
+                to:
+                  - email: user@example.com
+                    name: Mercurio
+          headers:
+            Authorization: Bearer new
+            Content-Type: application/json
+          method: POST
+          url: "https://api.sendpulse.com/smtp/emails"
+  url_id: bca5d3e0
+  valid: true

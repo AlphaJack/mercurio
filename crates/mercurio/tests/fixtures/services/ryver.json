@@ -1,0 +1,24 @@
+{
+"cases":[
+{"name":"empty","url":"ryver://"},
+{"name":"blank","url":"ryver://:@/"},
+{"name":"no_token","url":"ryver://mercurio"},
+{"name":"mode_invalid","url":"ryver://mercurio/ckhrjW8w672m6HG?mode=invalid"},
+{"name":"mode_empty","url":"ryver://mercurio/ckhrjW8w672m6HG?mode="},
+{"name":"org_too_short","url":"ryver://x/ckhrjW8w672m6HG?mode=slack"},
+{"name":"token_short","url":"ryver://mercurio/ckhrjW8w672m6H"},
+{"name":"mode_slack","url":"ryver://mercurio/ckhrjW8w672m6HG?mode=slack","title":"A & <b>","body":"x > y & z"},
+{"name":"mode_slack_upper","url":"ryver://mercurio/ckhrjW8w672m6HG?mode=SLACK"},
+{"name":"mode_slack_crash","url":"ryver://mercurio/ckhrjW8w672m6HG?mode=slack","body":"line\r*\nnext"},
+{"name":"mode_ryver","url":"ryver://mercurio/ckhrjW8w672m6HG?mode=ryver","title":"A & <b>","body":"x > y"},
+{"name":"webhook_param_ignored","url":"ryver://mercurio/ckhrjW8w672m6HG?webhook=slack"},
+{"name":"native","url":"https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"},
+{"name":"native_params","url":"https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG/?mode=slack&image=no"},
+{"name":"botname","url":"ryver://caronc@mercurio/ckhrjW8w672m6HG","type":"success"},
+{"name":"no_image","url":"ryver://mercurio/ckhrjW8w672m6HG?image=no"},
+{"name":"image_invalid","url":"ryver://mercurio/ckhrjW8w672m6HG?image=invalid"},
+{"name":"no_title","url":"ryver://mercurio/ckhrjW8w672m6HG","title":""},
+{"name":"http_500","url":"ryver://mercurio/ckhrjW8w672m6HG","responses":[{"status":500}]},
+{"name":"http_204_fails","url":"ryver://mercurio/ckhrjW8w672m6HG","responses":[{"status":204}]},
+{"name":"conn_error","url":"ryver://mercurio/ckhrjW8w672m6HG","responses":[{"error":true}]}
+]}

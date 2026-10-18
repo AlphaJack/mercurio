@@ -1,0 +1,218 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+blank:
+  error: "Ryver: an invalid Ryver API Token was specified"
+  valid: false
+botname:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: "https://example.org/success-72x72.png"
+            displayName: caronc
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+empty:
+  error: "Ryver: an invalid Ryver API Token was specified"
+  valid: false
+http_204_fails:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+image_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: ~
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+mode_empty:
+  error: "Ryver: the Ryver webhook mode specified is invalid"
+  valid: false
+mode_invalid:
+  error: "Ryver: the Ryver webhook mode specified is invalid"
+  valid: false
+mode_ryver:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**A & <b>**\r\nx > y"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+mode_slack:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**A &amp; &lt;b&gt;**\r\nx &gt; y &amp; z"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+mode_slack_crash:
+  errors:
+    - "invalid message: unsupported formatting sequence in message"
+  ok: false
+  requests: []
+  valid: true
+mode_slack_upper:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+native_params:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: ~
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+no_image:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: ~
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true
+no_token:
+  error: "Ryver: an invalid Ryver API Token was specified"
+  valid: false
+org_too_short:
+  error: "Ryver: an invalid Ryver Organization was specified"
+  valid: false
+token_short:
+  error: "Ryver: an invalid Ryver API Token was specified"
+  valid: false
+webhook_param_ignored:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "**Mercurio Title**\r\nMercurio Body"
+          createSource:
+            avatar: "https://example.org/info-72x72.png"
+            displayName: ~
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://mercurio.ryver.com/application/webhook/ckhrjW8w672m6HG"
+  valid: true

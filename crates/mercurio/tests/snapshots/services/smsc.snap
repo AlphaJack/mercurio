@@ -1,0 +1,442 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+api_error:
+  errors:
+    - "service error: SMSC error 2: \"invalid login\""
+  ok: false
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+api_error_nomsg:
+  errors:
+    - "service error: SMSC error 99: Unknown error."
+  ok: false
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+api_ok:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+empty:
+  error: "SMSC: an SMSC login must be specified"
+  valid: false
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+list_json:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+mms:
+  ok: true
+  requests:
+    - body:
+        multipart:
+          - name: login
+            value: login
+          - name: psw
+            value: pass
+          - name: phones
+            value: "71234567890"
+          - name: fmt
+            value: "3"
+          - name: sender
+            value: Biz
+          - name: translit
+            value: "1"
+          - name: mes
+            value: "Mercurio Title\r\nMercurio Body"
+          - name: mms
+            value: "1"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: mes0
+          - b64: aGVsbG8=
+            content_type: text/plain
+            filename: b.txt
+            name: mes1
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+mms_error:
+  errors:
+    - "service error: SMSC error 7: Unknown error."
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: login
+            value: login
+          - name: psw
+            value: pass
+          - name: phones
+            value: "71234567890"
+          - name: fmt
+            value: "3"
+          - name: mes
+            value: "Mercurio Title\r\nMercurio Body"
+          - name: mms
+            value: "1"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: mes0
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+mms_http_fail:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        multipart:
+          - name: login
+            value: login
+          - name: psw
+            value: pass
+          - name: phones
+            value: "71234567890"
+          - name: fmt
+            value: "3"
+          - name: mes
+            value: "Mercurio Title\r\nMercurio Body"
+          - name: mms
+            value: "1"
+          - b64: iVBORw0KGgo=
+            content_type: image/png
+            filename: a.png
+            name: mes0
+      headers:
+        Content-Type: multipart/form-data
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+no_login:
+  error: "SMSC: an SMSC login must be specified"
+  valid: false
+no_password:
+  error: "SMSC: an SMSC password must be specified"
+  valid: false
+not_json:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+only_invalid:
+  errors:
+    - "SMSC: there are no valid SMSC targets to notify"
+  ok: false
+  requests: []
+  valid: true
+sender:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - sender
+            - MySender
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+sender_blank:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+to:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890,79876543210"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+translit:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - translit
+            - "1"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+translit_no:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+two_targets:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890,79876543210"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true
+with_invalid:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - login
+            - login
+          - - psw
+            - password
+          - - phones
+            - "71234567890"
+          - - fmt
+            - "3"
+          - - mes
+            - "Mercurio Title\r\nMercurio Body"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://smsc.ru/sys/send.php"
+  valid: true

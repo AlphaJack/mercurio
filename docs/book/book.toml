@@ -1,0 +1,24 @@
+[book]
+title = "mercurio"
+authors = ["mercurio contributors"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+# Fills {{repository}}, {{pages}} and {{image}} (xtask/src/vars.rs).
+[preprocessor.vars]
+command = "cargo run -q -p xtask -- mdbook-vars"
+after = ["links"]
+
+[output.html]
+site-url = "/mercurio/"
+
+[output.html.search]
+limit-results = 30
+
+[output.html.fold]
+enable = true
+level = 1

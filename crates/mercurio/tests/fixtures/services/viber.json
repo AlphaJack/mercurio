@@ -1,0 +1,22 @@
+{
+"cases":[
+{"name":"basic","url":"viber://token/targetx","responses":[{"body":{"status":0,"status_message":"ok"}}]},
+{"name":"default_response_fails","url":"viber://token/targetx"},
+{"name":"two_targets_from","url":"viber://token/t1/t2?from=Viber%20Bot","responses":[{"body":{"status":0}},{"body":{"status":0}}]},
+{"name":"token_param_host_target","url":"viber://t1/t2?token=token","responses":[{"body":{"status":0}},{"body":{"status":0}}]},
+{"name":"avatar","url":"viber://token/t3?avatar=https://example.com/a.png","responses":[{"body":{"status":0}}]},
+{"name":"long_from_truncated","url":"viber://token/m12/?from=abcdefghijklmnopqrstuvwxyz0123456789","responses":[{"body":{"status":0}}]},
+{"name":"status_string_zero","url":"viber://token/m12","responses":[{"body":{"status":"0"}}]},
+{"name":"title_merged","url":"viber://token/m12","title":"T","body":"B é","type":"warning","responses":[{"body":{"status":0}}]},
+{"name":"no_targets","url":"viber://tokena"},
+{"name":"token_param_no_targets","url":"viber://?token=tokenb"},
+{"name":"empty","url":"viber://"},
+{"name":"empty_slash","url":"viber:///"},
+{"name":"api_error","url":"viber://token/t10","responses":[{"body":{"status":2,"status_message":"invalidAuthToken"}}]},
+{"name":"http_error","url":"viber://token/targetZ","responses":[{"status":500,"body":{"status_message":"internal error"}}]},
+{"name":"http_error_not_json","url":"viber://token/targetZ","responses":[{"status":500,"body":"internal error"}]},
+{"name":"not_json","url":"viber://token/targetY","responses":[{"body":"server error"}]},
+{"name":"partial_failure","url":"viber://token/a1/a2","responses":[{"body":{"status":1}},{"body":{"status":0}}]},
+{"name":"connection_error","url":"viber://token/target2","responses":[{"error":true}]},
+{"name":"to_param","url":"viber://?token=token&to=t5","responses":[{"body":{"status":0}},{"body":{"status":0}}]}
+]}

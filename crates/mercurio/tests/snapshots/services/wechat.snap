@@ -1,0 +1,306 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+all:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: "@all"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=TOKEN1"
+  valid: true
+bad_agent:
+  error: "WeChat (WeCom): the WeChat (WeCom) Agent ID is invalid; it must be a non-negative integer"
+  valid: false
+dept_tag_user:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          toparty: "200"
+          totag: "3"
+          touser: john
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+empty:
+  error: "WeChat (WeCom): a WeChat (WeCom) Corp ID must be specified"
+  valid: false
+markdown:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          markdown:
+            content: "Hi\r\n**b**"
+          msgtype: markdown
+          touser: "@all"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+multi_users:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: user1|user2|user3
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+no_agent:
+  error: "WeChat (WeCom): the WeChat (WeCom) Agent ID is invalid; it must be a non-negative integer"
+  valid: false
+no_secret:
+  error: "WeChat (WeCom): a WeChat (WeCom) Corp ID must be specified"
+  valid: false
+no_targets:
+  errors:
+    - "service error: no WeChat (WeCom) recipients configured"
+  ok: false
+  requests: []
+  valid: true
+only_invalid_targets:
+  errors:
+    - "service error: no WeChat (WeCom) recipients configured"
+  ok: false
+  requests: []
+  valid: true
+quoted_creds:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corp+id&corpsecret=sec%2Fret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          totag: "42"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+send_connection_error:
+  errors:
+    - "send: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: alice
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+send_default_response_fails:
+  errors:
+    - "send: service error: failed to send WeChat (WeCom) notification: unexpected response"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: alice
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+send_errcode:
+  errors:
+    - "send: service error: failed to send WeChat (WeCom) notification: errcode=81013: all invalid"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: alice
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+send_http_error:
+  errors:
+    - "send: HTTP 403: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: alice
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=T"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: "@all"
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=TOKEN1"
+  valid: true
+token_connection_error:
+  errors:
+    - "token: transport error: scripted connection error"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+  valid: true
+token_default_response_fails:
+  errors:
+    - "token: service error: WeChat access token request failed: unexpected response"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+  valid: true
+token_errcode:
+  errors:
+    - "token: service error: WeChat access token request failed: errcode=40001: invalid credential"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+  valid: true
+token_http_error:
+  errors:
+    - "token: HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+  valid: true
+token_missing:
+  errors:
+    - "token: service error: WeChat access token response contained no token"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+  valid: true
+token_not_json:
+  errors:
+    - "token: service error: WeChat access token request failed: unexpected response"
+  ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+  valid: true
+user:
+  ok: true
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=corpid&corpsecret=secret"
+    - body:
+        json:
+          agentid: 1000002
+          msgtype: text
+          text:
+            content: "Mercurio Title\r\nMercurio Body"
+          touser: johndoe
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=TOKEN1"
+  valid: true

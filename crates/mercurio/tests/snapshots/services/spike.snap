@@ -1,0 +1,117 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          message: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/1234567890abcdef1234567890abcdef"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          message: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/ffffffffffffffffffffffffffffffff"
+  valid: true
+empty:
+  error: "Spike.sh: the Spike.sh integration key is invalid"
+  valid: false
+http_201:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          message: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/1234567890abcdef1234567890abcdef"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          message: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/1234567890abcdef1234567890abcdef"
+  valid: true
+invalid_key:
+  error: "Spike.sh: the Spike.sh integration key is invalid"
+  valid: false
+native:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          message: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/1234567890abcdef1234567890abcdef"
+  valid: true
+native_bad:
+  error: "unsupported URL scheme: https://"
+  valid: false
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          message: Mercurio Body
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/1234567890abcdef1234567890abcdef"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          message: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/1234567890ABCDEF1234567890abcdef"
+  valid: true
+too_long_key:
+  error: "Spike.sh: the Spike.sh integration key is invalid"
+  valid: false
+type_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: b
+          message: t
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.spike.sh/v1/alerts/1234567890abcdef1234567890abcdef"
+  valid: true

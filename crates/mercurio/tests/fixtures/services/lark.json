@@ -1,0 +1,18 @@
+{
+"cases":[
+{"name":"basic","url":"lark://abcd-1234"},
+{"name":"trailing_slash","url":"lark://abcd-1234/"},
+{"name":"token_param","url":"lark://?token=abcd-1234"},
+{"name":"native","url":"https://open.larksuite.com/open-apis/bot/v2/hook/abcd-1234"},
+{"name":"native_upper","url":"HTTPS://OPEN.LARKSUITE.COM/open-apis/bot/v2/hook/ABCD-1234"},
+{"name":"native_underscore_invalid","url":"https://open.larksuite.com/open-apis/bot/v2/hook/abc_d"},
+{"name":"no_title","url":"lark://abcd-1234","title":""},
+{"name":"title_body","url":"lark://abcd-1234","title":"Hello","body":"World\nline é","type":"success"},
+{"name":"empty","url":"lark://"},
+{"name":"empty_userinfo","url":"lark://:@/"},
+{"name":"bad_token","url":"lark://abc_def"},
+{"name":"long_token","url":"lark://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+{"name":"server_error","url":"lark://abcd-1234","responses":[{"status":500}]},
+{"name":"bizarre_code","url":"lark://abcd-1234","responses":[{"status":999}]},
+{"name":"connection_error","url":"lark://abcd-1234","responses":[{"error":true}]}
+]}

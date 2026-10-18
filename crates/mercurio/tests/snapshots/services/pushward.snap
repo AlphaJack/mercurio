@@ -1,0 +1,257 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_fails:
+  errors:
+    - "HTTP 202: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+apikey_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+created:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+critical_volume:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: critical
+          title: Mercurio Title
+          volume: 0.8
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+empty:
+  error: "PushWard: an invalid PushWard Integration Key was specified"
+  valid: false
+invalid_info:
+  error: "PushWard: an invalid PushWard level was specified"
+  valid: false
+invalid_key:
+  error: "PushWard: an invalid PushWard Integration Key was specified"
+  valid: false
+invalid_level:
+  error: "PushWard: an invalid PushWard level was specified"
+  valid: false
+level_overrides_type:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: passive
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+mixed_case:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_AbC123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Notifications
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+per_type_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/failure-128x128.png"
+          level: critical
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+per_type_info:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: passive
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+unauthorized:
+  errors:
+    - "HTTP 401: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+volume_invalid:
+  error: "PushWard: an invalid PushWard volume was specified"
+  valid: false
+volume_negative:
+  error: "PushWard: an invalid PushWard volume was specified"
+  valid: false
+volume_not_critical:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: active
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+volume_one:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/info-128x128.png"
+          level: critical
+          title: Mercurio Title
+          volume: 1
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true
+volume_too_high:
+  error: "PushWard: an invalid PushWard volume was specified"
+  valid: false
+warning_default:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: Mercurio Body
+          icon_url: "https://example.org/warning-128x128.png"
+          level: time-sensitive
+          title: Mercurio Title
+      headers:
+        Authorization: Bearer hlk_abc123
+        Content-Type: application/json; charset=utf-8
+      method: POST
+      url: "https://api.pushward.app/notifications"
+  valid: true

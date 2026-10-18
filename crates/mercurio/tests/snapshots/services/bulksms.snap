@@ -1,0 +1,311 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+batch_multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to:
+            - "+44444444444"
+            - "+55555555555"
+      headers:
+        Authorization: Basic YmJiYmI6Y2NjY2NjY2NjYw==
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to:
+            name: grp
+            type: GROUP
+      headers:
+        Authorization: Basic YmJiYmI6Y2NjY2NjY2NjYw==
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+batch_no_unicode:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: TEXT
+          routingGroup: STANDARD
+          to:
+            - "+44444444444"
+      headers:
+        Authorization: Basic YmJiYmI6Y2NjY2NjY2NjYw==
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+blank:
+  errors:
+    - "invalid message: there were no valid login credentials provided"
+  ok: false
+  requests: []
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to: "+66666666666"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+empty:
+  errors:
+    - "invalid message: there were no valid login credentials provided"
+  ok: false
+  requests: []
+  valid: true
+group_route:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: PREMIUM
+          to:
+            name: admin
+            type: GROUP
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to:
+            name: aaa
+            type: GROUP
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+mixed:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to: "+33333333333"
+      headers:
+        Authorization: Basic YWFhYWE6YmJiYmJiYmJiYg==
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to:
+            name: abcd
+            type: GROUP
+      headers:
+        Authorization: Basic YWFhYWE6YmJiYmJiYmJiYg==
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+no_password:
+  errors:
+    - "invalid message: there were no valid login credentials provided"
+  ok: false
+  requests: []
+  valid: true
+partial:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to: "+55555555555"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to: "+66666666666"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to:
+            name: team
+            type: GROUP
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+qs_short_from:
+  error: "BulkSMS: the Account (From) Phone # specified is invalid"
+  valid: false
+qs_to:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          from: "+55555555555"
+          routingGroup: STANDARD
+          to: "+7777777777777"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          from: "+55555555555"
+          routingGroup: STANDARD
+          to:
+            name: _
+            type: GROUP
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+qs_user_from:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          from: "+55555555555"
+          routingGroup: STANDARD
+          to:
+            name: _
+            type: GROUP
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+route_invalid:
+  error: "BulkSMS: the route specified is invalid"
+  valid: false
+short_target:
+  errors:
+    - "invalid message: there are no BulkSMS targets to notify"
+  ok: false
+  requests: []
+  valid: true
+single:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "t\r\nb"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to: "+55555555555"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+six_digit:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: UNICODE
+          routingGroup: STANDARD
+          to: "+44444444444"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true
+unicode_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          body: "Mercurio Title\r\nMercurio Body"
+          deliveryReports: ERRORS
+          encoding: TEXT
+          routingGroup: STANDARD
+          to: "+55555555555"
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYTpiYmJiYmJiYmJi
+        Content-Type: application/json
+      method: POST
+      url: "https://api.bulksms.com/v1/messages"
+  valid: true

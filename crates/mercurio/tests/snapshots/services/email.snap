@@ -1,0 +1,2629 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+attach_png_html:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - parts:
+                - charset: utf-8
+                  text: Mercurio Body
+                  type: text/plain
+                - charset: utf-8
+                  text: Mercurio Body
+                  type: text/html
+              type: multipart/alternative
+            - b64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+              disposition: attachment
+              filename: a.png
+              type: image/png
+          type: multipart/mixed
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+attach_text:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - b64: aGVsbG8gZmlsZQ==
+              disposition: attachment
+              filename: notes.txt
+              type: text/plain
+          type: multipart/mixed
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+attach_two:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - parts:
+                - charset: utf-8
+                  text: Mercurio Body
+                  type: text/plain
+                - charset: utf-8
+                  text: Mercurio Body
+                  type: text/html
+              type: multipart/alternative
+            - b64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+              disposition: attachment
+              filename: a.png
+              type: image/png
+            - b64: eyJrIjogMX0=
+              disposition: attachment
+              filename: data.json
+              type: application/json
+          type: multipart/mixed
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+bcc:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - l2g <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - noreply@example.com
+        - test@example.com
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+cc:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - cc
+            - "noreply@example.com,test@example.com"
+          - - from
+            - l2g <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - noreply@example.com
+        - test@example.com
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+cc_invalid_entry:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - cc
+            - noreply@example.com
+          - - from
+            - l2g <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - noreply@example.com
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+cc_named:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - cc
+            - "Chris <chris@example.ca>,Dee Ann <dee@example.ca>"
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - chris@example.ca
+        - dee@example.ca
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+comcast:
+  events:
+    - host: smtp.comcast.net
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user@comcast.net
+    - from: user@comcast.net
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@comcast.net>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@comcast.net
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@comcast.net
+    - smtp: quit
+  ok: true
+  valid: true
+custom_header:
+  events:
+    - host: localhost.localdomain
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@localhost.localdomain
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@localhost.localdomain>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@localhost.localdomain
+          - - x-application
+            - Mercurio
+          - - x-customer-campaign-id
+            - Apprise
+      smtp: sendmail
+      to:
+        - user@localhost.localdomain
+    - smtp: quit
+  ok: true
+  valid: true
+custom_header_unicode:
+  events:
+    - host: localhost
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@localhost
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@localhost>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@localhost
+          - - x-application
+            - Override
+          - - x-note
+            - Grüße
+      smtp: sendmail
+      to:
+        - user@localhost
+    - smtp: quit
+  ok: true
+  valid: true
+custom_port:
+  events:
+    - host: nuxref.com
+      port: 567
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+dot_stuffing:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          charset: utf-8
+          text: "first\n.\n..second\n.third"
+          type: text/plain
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+empty:
+  error: "E-Mail: an invalid ~From~ email was specified"
+  valid: false
+empty_secure:
+  error: "E-Mail: an invalid ~From~ email was specified"
+  valid: false
+empty_title:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: just a body
+              type: text/plain
+            - charset: utf-8
+              text: just a body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - ""
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+empty_user_dot_pass:
+  error: "E-Mail: an invalid ~From~ email was specified"
+  valid: false
+fail_connect:
+  errors:
+    - "transport error: no scripted connection for example.com:587"
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+  ok: false
+  valid: true
+fail_login:
+  errors:
+    - "service error: SMTP authentication failed: 535 bad credentials"
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - smtp: quit
+  ok: false
+  valid: true
+fail_refused:
+  errors:
+    - "service error: 2 of 2 messages failed; first: service error: SMTP server refused all 1 recipient(s)"
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      refused: true
+      smtp: sendmail
+      to:
+        - a@example.com
+    - from: user@example.com
+      refused: true
+      smtp: sendmail
+      to:
+        - b@example.com
+    - smtp: quit
+  ok: false
+  valid: true
+fail_sender:
+  errors:
+    - "service error: SMTP MAIL FROM failed: 550 sender refused"
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - failed: true
+      from: user@example.com
+      smtp: sendmail
+    - smtp: quit
+  ok: false
+  valid: true
+fail_ssl_login:
+  errors:
+    - "service error: SMTP authentication failed: 535 bad credentials"
+  events:
+    - host: nuxref.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user
+    - smtp: quit
+  ok: false
+  valid: true
+fail_starttls:
+  errors:
+    - "service error: SMTP STARTTLS failed: 454 TLS not available"
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - smtp: quit
+  ok: false
+  valid: true
+fastmail:
+  events:
+    - host: smtp.fastmail.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user@fastmail.com
+    - from: user@fastmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@fastmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@fastmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@fastmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+fastmail_custom_user:
+  events:
+    - host: smtp.fastmail.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: password123
+      smtp: login
+      user: username@customdomain.com
+    - from: username@customdomain.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <username@customdomain.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - username@customdomain.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - username@customdomain.com
+    - smtp: quit
+  ok: true
+  valid: true
+format_html:
+  events:
+    - host: nuxref.com
+      port: 567
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+format_text:
+  events:
+    - host: example.com
+      port: 2525
+      smtp: connect
+      ssl: false
+    - password: l2g@apprise!is!Awesome
+      smtp: login
+      user: l2g@example.com
+    - from: l2g@example.com
+      message:
+        body:
+          charset: utf-8
+          text: Mercurio Body
+          type: text/plain
+        headers:
+          - - from
+            - Mercurio <l2g@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - l2g@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - l2g@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+from_and_name:
+  events:
+    - host: nuxref.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: jason@gmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Jason <jason@gmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - jason@gmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - jason@gmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+from_invalid:
+  events:
+    - host: nuxref.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - "\"@\" <user@nuxref.com>"
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+gmail:
+  events:
+    - host: smtp.gmail.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user@gmail.com
+    - from: user@gmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@gmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@gmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@gmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+gmail_mode_ssl:
+  events:
+    - host: smtp.gmail.com
+      port: 587
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user@gmail.com
+    - from: user@gmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@gmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@gmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@gmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+gmx_starttls:
+  events:
+    - host: mail.gmx.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user@gmx.net
+    - from: user@gmx.net
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@gmx.net>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@gmx.net
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@gmx.net
+    - smtp: quit
+  ok: true
+  valid: true
+hotmail:
+  events:
+    - host: smtp-mail.outlook.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user@hotmail.com
+    - from: user@hotmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@hotmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@hotmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@hotmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+html_body:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: "Hello World & friends\n\nNext line\n\n- one\n- two"
+              type: text/plain
+            - charset: utf-8
+              text: "<p>Hello <b>World</b> &amp; friends</p><br/>Next line<ul><li>one</li><li>two</li></ul><script>var x = '<b>';</script>"
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+inline_html:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - parts:
+                - charset: utf-8
+                  text: Mercurio Body
+                  type: text/plain
+                - charset: utf-8
+                  text: "Mercurio Body<br/><img src=\"cid:my%20image.png\">"
+                  type: text/html
+              type: multipart/alternative
+            - b64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+              content_id: "<my%20image.png>"
+              disposition: inline
+              filename: my image.png
+              type: image/png
+            - b64: JVBERi0xLjQK
+              disposition: attachment
+              filename: doc.pdf
+              type: application/pdf
+          type: multipart/related
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+inline_html_cid:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - parts:
+                - charset: utf-8
+                  text: See
+                  type: text/plain
+                - charset: utf-8
+                  text: "<p>See <img src=\"cid:doc.pdf\"></p><br/><img src=\"cid:a.png\">"
+                  type: text/html
+              type: multipart/alternative
+            - b64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+              content_id: "<a.png>"
+              disposition: inline
+              filename: a.png
+              type: image/png
+            - b64: JVBERi0xLjQK
+              content_id: "<doc.pdf>"
+              disposition: inline
+              filename: doc.pdf
+              type: application/pdf
+          type: multipart/related
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+inline_no:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - parts:
+                - charset: utf-8
+                  text: Mercurio Body
+                  type: text/plain
+                - charset: utf-8
+                  text: Mercurio Body
+                  type: text/html
+              type: multipart/alternative
+            - b64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+              disposition: attachment
+              filename: a.png
+              type: image/png
+          type: multipart/mixed
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+inline_text:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: "Mercurio Body\n[Image: a.png]"
+              type: text/plain
+            - b64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+              disposition: attachment
+              filename: a.png
+              type: image/png
+          type: multipart/mixed
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+ip_host:
+  events:
+    - host: 10.0.0.195
+      port: 25
+      smtp: connect
+      ssl: false
+    - from: sender@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - sender@example.com
+          - - subject
+            - Mercurio Title
+          - - to
+            - alerts@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - alerts@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+live:
+  events:
+    - host: smtp-mail.outlook.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user@live.com
+    - from: user@live.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@live.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@live.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@live.com
+    - smtp: quit
+  ok: true
+  valid: true
+localhost_from_to:
+  events:
+    - host: localhost
+      port: 25
+      smtp: connect
+      ssl: false
+    - from: test@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - test@example.com
+          - - subject
+            - Mercurio Title
+          - - to
+            - test@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - test@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+localhost_root:
+  events:
+    - host: localhost
+      port: 25
+      smtp: connect
+      ssl: false
+    - from: root@localhost
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - root@localhost
+          - - subject
+            - Mercurio Title
+          - - to
+            - root@localhost
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - root@localhost
+    - smtp: quit
+  ok: true
+  valid: true
+long_line:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          charset: utf-8
+          text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing
+          type: text/plain
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+mode_invalid:
+  error: "E-Mail: the secure mode specified (notamode) is invalid"
+  valid: false
+mode_ssl:
+  events:
+    - host: nuxref.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+mode_ssl_noverify:
+  events:
+    - host: example.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+multi_target_cc_bcc:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - cc
+            - c@example.com
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - a@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - a@example.com
+        - c@example.com
+        - d@example.com
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - cc
+            - "a@example.com,c@example.com"
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - b@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - a@example.com
+        - b@example.com
+        - c@example.com
+        - d@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+name_only:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio Bot <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+name_unicode:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Jörg <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+named_host:
+  events:
+    - host: mobile.charter.net
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pw
+      smtp: login
+      user: john@yahoo.ca
+    - from: john@yahoo.ca
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <john@yahoo.ca>
+          - - subject
+            - Mercurio Title
+          - - to
+            - John Doe <john@yahoo.ca>
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - john@yahoo.ca
+    - smtp: quit
+  ok: true
+  valid: true
+no_host:
+  error: "E-Mail: an invalid ~From~ email was specified"
+  valid: false
+no_password:
+  events:
+    - host: nuxref.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+no_user:
+  error: "E-Mail: an invalid ~From~ email was specified"
+  valid: false
+outlook_au:
+  events:
+    - host: smtp.outlook.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass123
+      smtp: login
+      user: user@outlook.com.au
+    - from: user@outlook.com.au
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@outlook.com.au>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@outlook.com.au
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@outlook.com.au
+    - smtp: quit
+  ok: true
+  valid: true
+passthrough_newlines:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: line one line two spaced
+              type: text/plain
+            - charset: utf-8
+              text: "line one\nline two   spaced"
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+path_mixed_invalid:
+  events:
+    - host: localhost
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@localhost
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@localhost>
+          - - subject
+            - Mercurio Title
+          - - to
+            - test@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - test@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+path_target:
+  events:
+    - host: nuxref.com
+      port: 567
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - l2g@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - l2g@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+path_target_quoted:
+  events:
+    - host: smtp-mail.outlook.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass123
+      smtp: login
+      user: user@hotmail.com
+    - from: user@hotmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@hotmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user2@yahoo.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user2@yahoo.com
+    - smtp: quit
+  ok: true
+  valid: true
+pgp_encrypt:
+  errors:
+    - "unsupported: PGP signing/encryption of e-mail is not supported"
+  events: []
+  ok: false
+  valid: true
+pgp_invalid:
+  error: "E-Mail: the Email PGP mode specified (yes) is invalid"
+  valid: false
+pgp_no_prefix:
+  events:
+    - host: nuxref.com
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+pgp_no_wkd:
+  events:
+    - host: nuxref.com
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+pgp_none:
+  events:
+    - host: nuxref.com
+      port: 25
+      smtp: connect
+      ssl: false
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+pgp_sign_prefix:
+  errors:
+    - "unsupported: PGP signing/encryption of e-mail is not supported"
+  events: []
+  ok: false
+  valid: true
+reply:
+  events:
+    - host: smtp.example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - l2g <user@example.com>
+          - - reply-to
+            - "test2@example.com,test@example.com"
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+reply_named:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - reply-to
+            - Chris <noreply@example.ca>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+reply_two_targets:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - reply-to
+            - noreply@example.com
+          - - subject
+            - Mercurio Title
+          - - to
+            - a@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - a@example.com
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - reply-to
+            - noreply@example.com
+          - - subject
+            - Mercurio Title
+          - - to
+            - b@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - b@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+sendgrid:
+  events:
+    - host: smtp.sendgrid.net
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@sendgrid.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@sendgrid.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@sendgrid.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@sendgrid.com
+    - smtp: quit
+  ok: true
+  valid: true
+smtp_override:
+  events:
+    - host: override.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass123
+      smtp: login
+      user: user
+    - from: user@hotmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@hotmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@hotmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@hotmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+space_password:
+  events:
+    - host: domain.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: " "
+      smtp: login
+      user: admin@mail-domain.com
+    - from: admin@domain.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <admin@domain.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - admin@domain.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - admin@domain.com
+    - smtp: quit
+  ok: true
+  valid: true
+ssl_custom_smtp:
+  events:
+    - host: smtp.exmail.qq.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: password
+      smtp: login
+      user: abc
+    - from: abc@xyz.cn
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <abc@xyz.cn>
+          - - subject
+            - Mercurio Title
+          - - to
+            - abc@xyz.cn
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - abc@xyz.cn
+    - smtp: quit
+  ok: true
+  valid: true
+text_body:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          charset: utf-8
+          text: "line one\nline two\n  indented = equals"
+          type: text/plain
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+title_whitespace:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: body
+              type: text/plain
+            - charset: utf-8
+              text: body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - multi line title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+to_invalid:
+  errors:
+    - "invalid message: there are no Email recipients to notify"
+  events: []
+  ok: false
+  valid: true
+to_label:
+  events:
+    - host: smtp.gmail.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass123
+      smtp: login
+      user: user@gmail.com
+    - from: user@gmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@gmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - test+notification@gmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - test+notification@gmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+to_not_email:
+  error: "E-Mail: an invalid ~From~ email was specified"
+  valid: false
+to_param:
+  events:
+    - host: nuxref.com
+      port: 567
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - l2g@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - l2g@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+type_failure:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+tz_invalid:
+  events:
+    - host: smtp.fastmail.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user@fastmail.com
+    - from: user@fastmail.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@fastmail.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@fastmail.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@fastmail.com
+    - smtp: quit
+  ok: true
+  valid: true
+unicode_title_body:
+  events:
+    - host: example.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@example.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Grüße aus Köln Zweite Zeile ✓
+              type: text/plain
+            - charset: utf-8
+              text: "Grüße aus Köln\nZweite Zeile ✓"
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@example.com>
+          - - subject
+            - Héllo wörld ✓
+          - - to
+            - user@example.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@example.com
+    - smtp: quit
+  ok: true
+  valid: true
+user_override:
+  events:
+    - host: domain.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: pass
+      smtp: login
+      user: admin@mail-domain.com
+    - from: admin@domain.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <admin@domain.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - admin@domain.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - admin@domain.com
+    - smtp: quit
+  ok: true
+  valid: true
+user_param:
+  events:
+    - host: nuxref.com
+      port: 587
+      smtp: connect
+      ssl: false
+    - smtp: starttls
+    - password: "."
+      smtp: login
+      user: l2g
+    - from: l2g@nuxref.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <l2g@nuxref.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - l2g@nuxref.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - l2g@nuxref.com
+    - smtp: quit
+  ok: true
+  valid: true
+wkd_implies_encrypt:
+  errors:
+    - "unsupported: PGP signing/encryption of e-mail is not supported"
+  events: []
+  ok: false
+  valid: true
+yahoo:
+  events:
+    - host: smtp.mail.yahoo.com
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user@yahoo.com
+    - from: user@yahoo.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@yahoo.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@yahoo.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@yahoo.com
+    - smtp: quit
+  ok: true
+  valid: true
+yandex_email_user:
+  events:
+    - host: smtp.yandex.ru
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pw
+      smtp: login
+      user: bob
+    - from: bob@yandex.com
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <bob@yandex.com>
+          - - subject
+            - Mercurio Title
+          - - to
+            - bob@yandex.com
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - bob@yandex.com
+    - smtp: quit
+  ok: true
+  valid: true
+yandex_userid:
+  events:
+    - host: smtp.yandex.ru
+      port: 465
+      smtp: connect
+      ssl: true
+    - password: pass
+      smtp: login
+      user: user
+    - from: user@yandex.ru
+      message:
+        body:
+          parts:
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/plain
+            - charset: utf-8
+              text: Mercurio Body
+              type: text/html
+          type: multipart/alternative
+        headers:
+          - - from
+            - Mercurio <user@yandex.ru>
+          - - subject
+            - Mercurio Title
+          - - to
+            - user@yandex.ru
+          - - x-application
+            - Mercurio
+      smtp: sendmail
+      to:
+        - user@yandex.ru
+    - smtp: quit
+  ok: true
+  valid: true

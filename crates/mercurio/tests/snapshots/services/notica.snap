@@ -1,0 +1,264 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?eeeeeeee"
+  valid: true
+empty:
+  error: "Notica: an invalid Notica token was specified"
+  valid: false
+empty_creds:
+  error: "Notica: an invalid Notica token was specified"
+  valid: false
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?cccccc"
+  valid: true
+error_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?ddddddd"
+  valid: true
+headers:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+        HeaderKey: HeaderValue
+      method: POST
+      url: "http://localhost:8080/?token=777777"
+  valid: true
+headers_ignored_official:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?777777"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?zzzzzz"
+  valid: true
+native_params:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?zzzzzz"
+  valid: true
+no_host_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?tokenonly"
+  valid: true
+official:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:My Title\r\nline1\nline2"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?aaaaaa"
+  valid: true
+official_no_title:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?aaaaaa"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost/?token=jjjjjj"
+  valid: true
+secure_port_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost:8080/path/?token=555555"
+  valid: true
+secure_userpass_port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://localhost:8080/?token=666666"
+  valid: true
+selfhosted:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/?token=bbbbbb"
+  valid: true
+selfhosted_path:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/a/path/?token=rrrrrr"
+  valid: true
+selfhosted_port:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost:8080/?token=aaaaaa"
+  valid: true
+selfhosted_user:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/?token=cccccc"
+  valid: true
+selfhosted_userpass:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/?token=dddddd"
+  valid: true
+status_201_fails:
+  errors:
+    - "HTTP 201: {}"
+  ok: false
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\nMercurio Body"
+            - ""
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "http://localhost/?token=eeeeee"
+  valid: true
+type_failure:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - "d:Mercurio Title\r\na "
+            - ""
+          - - " b "
+            - " c"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://notica.us/?aaaaaa"
+  valid: true

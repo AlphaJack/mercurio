@@ -1,0 +1,22 @@
+{
+"cases":[
+{"name":"empty","url":"strmlabs://"},
+{"name":"bad_token","url":"strmlabs://a_bd_/"},
+{"name":"long_token","url":"strmlabs://eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl"},
+{"name":"basic_alert","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso"},
+{"name":"alert_no_title","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso","title":"","body":"only body"},
+{"name":"bad_currency","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?currency=ABCD"},
+{"name":"alert_options","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=alerts&alert_type=follow&image_href=https%3A%2F%2Fexample.com%2Fi.png&sound_href=https%3A%2F%2Fexample.com%2Fs.mp3&duration=1500&special_text_color=b"},
+{"name":"alert_type_subscription","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?alert_type=subscription","type":"warning"},
+{"name":"bad_alert_type","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?alert_type=invalid"},
+{"name":"upper_alert_type","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?alert_type=FOLLOW"},
+{"name":"bad_call","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=invalid"},
+{"name":"short_name","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?name=t"},
+{"name":"donation_basic","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=donations"},
+{"name":"donation_options","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=donations&amount=10&currency=eur&name=Joe&identifier=me","title":"","body":"body only"},
+{"name":"donation_amount_decimal","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=donations&amount=2.5"},
+{"name":"donation_long","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=DONATIONS","title":"a title","body":"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"},
+{"name":"donation_error","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=donations","responses":[{"status":999}]},
+{"name":"alert_error","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=alerts","responses":[{"status":500}]},
+{"name":"alert_201","url":"strmlabs://IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso/?call=alerts","responses":[{"status":201}]}
+]}

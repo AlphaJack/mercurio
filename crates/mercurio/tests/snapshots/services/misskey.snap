@@ -1,0 +1,141 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: public
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/api/notes/create"
+  valid: true
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: public
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/notes/create"
+  valid: true
+error_204:
+  errors:
+    - "HTTP 204: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: public
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/notes/create"
+  valid: true
+error_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: public
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/notes/create"
+  valid: true
+invalid_blank:
+  error: "Misskey: an invalid hostname or port was specified"
+  valid: false
+invalid_empty:
+  error: "Misskey: an invalid hostname or port was specified"
+  valid: false
+no_token:
+  error: "Misskey: an invalid Misskey Access Token was specified"
+  valid: false
+port:
+  ok: true
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: public
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname:8443/api/notes/create"
+  valid: true
+secure:
+  ok: true
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "T\r\nB"
+          visibility: public
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/notes/create"
+  valid: true
+token_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          i: abcd123
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: public
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "http://hostname/api/notes/create"
+  valid: true
+user_pass_no_token:
+  error: "Misskey: an invalid Misskey Access Token was specified"
+  valid: false
+visibility_invalid:
+  error: "Misskey: the Misskey visibility specified is invalid"
+  valid: false
+visibility_prefix:
+  ok: true
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: followers
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/notes/create"
+  valid: true
+visibility_specified:
+  ok: true
+  requests:
+    - body:
+        json:
+          i: access_token
+          text: "Mercurio Title\r\nMercurio Body"
+          visibility: specified
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://hostname/api/notes/create"
+  valid: true

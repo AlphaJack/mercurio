@@ -1,0 +1,296 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: aaaaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: aaaaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+flash:
+  ok: true
+  requests:
+    - body:
+        json:
+          flash: true
+          from: mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+flash_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+from:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+http_500:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: aaaaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+http_999:
+  errors:
+    - "HTTP 999: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: aaaaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+invalid_phone:
+  errors:
+    - "seven: there were no seven targets to notify"
+  ok: false
+  requests: []
+  valid: true
+label:
+  ok: true
+  requests:
+    - body:
+        json:
+          flash: true
+          from: AR
+          label: "123"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+label_spaces:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: me
+          label: abc
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+multi:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "T\r\nhello"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+    - body:
+        json:
+          text: "T\r\nhello"
+          to: "+442079460958"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+multi_partial:
+  errors:
+    - "HTTP 400: {}"
+  ok: false
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232001"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+no_key:
+  error: "seven: an invalid seven API Key was specified"
+  valid: false
+no_targets:
+  errors:
+    - "seven: there were no seven targets to notify"
+  ok: false
+  requests: []
+  valid: true
+source:
+  ok: true
+  requests:
+    - body:
+        json:
+          from: mercurio
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+status_201:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: aaaaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+to_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: aaaaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+    - body:
+        json:
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551234567"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: aaaaaaaaaaaaaaaaaaaaaaaaa
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true
+verify_no:
+  ok: true
+  requests:
+    - body:
+        json:
+          flash: true
+          from: AR
+          label: "123"
+          text: "Mercurio Title\r\nMercurio Body"
+          to: "+15551232000"
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        SentWith: Mercurio
+        X-Api-Key: "33333333333333"
+      method: POST
+      url: "https://gateway.seven.io/api/sms"
+  valid: true

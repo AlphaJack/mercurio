@@ -1,0 +1,179 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+default:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+empty_auth:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+facility_arg:
+  events:
+    - syslog:
+        facility: 168
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+facility_arg_overrides_host:
+  events:
+    - syslog:
+        facility: 24
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+facility_bad_host:
+  error: "Syslog: An invalid syslog facility (notafacility) was specified."
+  valid: false
+facility_host:
+  events:
+    - syslog:
+        facility: 0
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: false
+        priority: 6
+  ok: true
+  valid: true
+facility_invalid:
+  error: "Syslog: An invalid syslog facility (invalid) was specified."
+  valid: false
+facility_local7:
+  events:
+    - syslog:
+        facility: 184
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+facility_path:
+  events:
+    - syslog:
+        facility: 72
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+facility_prefix:
+  events:
+    - syslog:
+        facility: 24
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+facility_upper:
+  events:
+    - syslog:
+        facility: 16
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+multiline:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: "Mercurio Title: line one\nline two"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+no_pid_perror:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: "Mercurio Title: body"
+        pid: false
+        priority: 6
+  ok: true
+  valid: true
+no_title:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: just a body
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+title_body:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: "title: body"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true
+type_failure:
+  events:
+    - syslog:
+        facility: 24
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 2
+  ok: true
+  valid: true
+type_success:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 5
+  ok: true
+  valid: true
+type_warning:
+  events:
+    - syslog:
+        facility: 32
+        ident: Mercurio
+        message: "Mercurio Title: Mercurio Body"
+        pid: true
+        priority: 4
+  ok: true
+  valid: true
+unicode:
+  events:
+    - syslog:
+        facility: 8
+        ident: Mercurio
+        message: "Grüße: ✓ done"
+        pid: true
+        priority: 6
+  ok: true
+  valid: true

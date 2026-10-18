@@ -1,0 +1,394 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+accepted_codes:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://push.example.com:8443/push/self"
+  valid: true
+all_missing:
+  errors:
+    - "service error: Vapid user not found in the subscriptions"
+    - "service error: no Vapid subscriptions could be notified"
+  ok: false
+  requests: []
+  valid: true
+bad_subfile:
+  errors:
+    - "service error: Vapid/WebPush subscriptions could not be loaded"
+  ok: false
+  requests: []
+  valid: true
+broken_entry_target:
+  errors:
+    - "service error: Vapid user not found in the subscriptions"
+    - "service error: no Vapid subscriptions could be notified"
+  ok: false
+  requests: []
+  valid: true
+case_insensitive_names:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "15"
+      method: POST
+      url: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl"
+  valid: true
+conn_error:
+  errors:
+    - "transport error: scripted connection error"
+    - "service error: no Vapid subscriptions could be notified"
+  ok: false
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+empty:
+  error: "Vapid Web Push Notifications: an invalid Vapid Subscriber was specified"
+  valid: false
+file_url:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+from:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl"
+  valid: true
+from_no_host:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl"
+  valid: true
+from_user_host:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://push.example.com:8443/push/self"
+  valid: true
+invalid_files:
+  errors:
+    - "service error: no Vapid/WebPush (PEM) private key could be loaded"
+  ok: false
+  requests: []
+  valid: true
+invalid_subscriber:
+  error: "Vapid Web Push Notifications: an invalid Vapid Subscriber was specified"
+  valid: false
+key_no_subfile:
+  errors:
+    - "service error: Vapid/WebPush subscriptions could not be loaded"
+  ok: false
+  requests: []
+  valid: true
+list_subfile:
+  errors:
+    - "service error: Vapid/WebPush subscriptions could not be loaded"
+  ok: false
+  requests: []
+  valid: true
+mode_edge:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+mode_empty:
+  error: "Vapid Web Push Notifications: the Vapid mode specified is invalid"
+  valid: false
+mode_invalid:
+  error: "Vapid Web Push Notifications: the Vapid mode specified is invalid"
+  valid: false
+no_files:
+  errors:
+    - "service error: no Vapid/WebPush (PEM) private key could be loaded"
+  ok: false
+  requests: []
+  valid: true
+no_host:
+  error: "Vapid Web Push Notifications: an invalid Vapid Subscriber was specified"
+  valid: false
+one_target:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+partial_failure:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl"
+  valid: true
+public_key_as_keyfile:
+  errors:
+    - "service error: no Vapid/WebPush (PEM) private key could be loaded"
+  ok: false
+  requests: []
+  valid: true
+sec1_key:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+self_target:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://push.example.com:8443/push/self"
+  valid: true
+single_file:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://web.push.apple.com/QGuQyavXutnMH8"
+  valid: true
+single_file_404:
+  errors:
+    - "HTTP 404: expired Vapid subscription"
+    - "service error: no Vapid subscriptions could be notified"
+  ok: false
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://web.push.apple.com/QGuQyavXutnMH8"
+  valid: true
+single_file_expired:
+  errors:
+    - "HTTP 410: expired Vapid subscription"
+    - "service error: no Vapid subscriptions could be notified"
+  ok: false
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://web.push.apple.com/QGuQyavXutnMH8"
+  valid: true
+subfile_no_key:
+  errors:
+    - "service error: no Vapid/WebPush (PEM) private key could be loaded"
+  ok: false
+  requests: []
+  valid: true
+title_merged:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+to_and_missing:
+  errors:
+    - "service error: Vapid user not found in the subscriptions"
+  ok: false
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABl"
+  valid: true
+ttl_empty:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+ttl_invalid:
+  ok: true
+  requests:
+    - body:
+        bytes: "<ignored>"
+      headers:
+        Authorization: "<ignored>"
+        Content-Encoding: aes128gcm
+        Content-Type: application/octet-stream
+        TTL: "0"
+      method: POST
+      url: "https://fcm.googleapis.com/fcm/send/abcdef1234567890"
+  valid: true
+ttl_negative:
+  error: "Vapid Web Push Notifications: the Vapid TTL specified is out of range"
+  valid: false
+ttl_too_big:
+  error: "Vapid Web Push Notifications: the Vapid TTL specified is out of range"
+  valid: false

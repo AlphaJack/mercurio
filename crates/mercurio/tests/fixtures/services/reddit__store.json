@@ -1,0 +1,7 @@
+{
+"cases":[
+{"name":"token_reused","url":"reddit://user:password@app-id/app-secret/mercurio","sends":3,"responses":[{"body":{"access_token":"abc123","expires_in":3600}},{},{},{}]},
+{"name":"failed_submit_relogin_kept","url":"reddit://user:password@app-id/app-secret/mercurio","sends":2,"responses":[{"body":{"access_token":"old"}},{"status":401,"body":{}},{"body":{"access_token":"new"}},{},{}]},
+{"name":"login_fails_then_works","url":"reddit://user:password@app-id/app-secret/mercurio","sends":2,"responses":[{"status":500,"body":{}},{"body":{"access_token":"t"}},{}]},
+{"name":"relogin_fails_clears_token","url":"reddit://user:password@app-id/app-secret/mercurio","sends":2,"responses":[{"body":{"access_token":"old"}},{"status":401,"body":{}},{"status":500,"body":{}},{"body":{"access_token":"t2"}},{}]}
+]}

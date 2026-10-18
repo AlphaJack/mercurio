@@ -1,0 +1,584 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+action_ack:
+  ok: true
+  requests: []
+  valid: true
+action_close:
+  ok: true
+  requests: []
+  valid: true
+action_invalid:
+  error: "Jira: the Jira action specified (invalid) is invalid"
+  valid: false
+apikey_param:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey abc
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+bad_region:
+  error: "Jira: the Jira region specified is invalid"
+  valid: false
+batch_partial_fail:
+  errors:
+    - "HTTP 500: {\"requestId\":\"x\"}"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - name: team
+              type: team
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k20
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k20
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+blank_key:
+  error: "Jira: an invalid Jira API Key was specified"
+  valid: false
+connection_error:
+  errors:
+    - "transport error: scripted connection error"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k25
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+default_info_note:
+  ok: true
+  requests: []
+  valid: true
+empty:
+  error: "Jira: an invalid Jira API Key was specified"
+  valid: false
+empty_creds:
+  error: "Jira: an invalid Jira API Key was specified"
+  valid: false
+entity_alias:
+  ok: true
+  requests:
+    - body:
+        json:
+          alias: An Alias
+          description: Mercurio Body
+          details:
+            type: info
+          entity: A Entity
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k7
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+long_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...
+          priority: P3
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k21
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+map_empty_value:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: success
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k13b
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+map_info_new:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          entity: index2
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k13
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+map_key_invalid:
+  error: "Jira: the Jira mapping key specified (invalid) is invalid"
+  valid: false
+map_value_invalid:
+  error: "Jira: the Jira mapping value specified (invalid) is invalid"
+  valid: false
+mixed_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - name: team
+              type: team
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k17
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - name: sche
+              type: schedule
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k17
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - name: esc
+              type: escalation
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k17
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user@email.com
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k17
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+new_basic:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: failure
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k5
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+new_no_requestid:
+  errors:
+    - "service error: Jira returned no requestId"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k4
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+          details:
+            type: info
+          message: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB...
+          priority: P3
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k22
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+non_json_response:
+  errors:
+    - "service error: Jira returned no requestId"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k24
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+opsgenie_scheme:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+priority_high:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P4
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k14b
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+priority_invalid:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k15
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+priority_p3_user:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+          user: joe
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k14
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+region_eu:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k6
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+requestid_false:
+  errors:
+    - "service error: Jira returned no requestId"
+  ok: false
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k23
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+tags:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          source: Mercurio Notifications
+          tags:
+            - comma
+            - separated
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k16
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+to_and_details:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            key: value
+            type: override
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - name: team
+              type: team
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k19
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            key: value
+            type: override
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - type: user
+              username: user
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k19
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+user_no_target:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: warning
+          message: Mercurio Title
+          priority: P3
+          source: Mercurio Notifications
+          user: user
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k2
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true
+uuid_targets:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          details:
+            type: info
+          message: Mercurio Title
+          priority: P3
+          responders:
+            - id: 8b799edf-6f98-4d3a-9be7-2862fb4e5752
+              type: team
+            - id: 8b799edf-6f98-4d3a-9be7-2862fb4e5752
+              type: schedule
+            - id: 8b799edf-6f98-4d3a-9be7-2862fb4e5752
+              type: user
+            - id: 8b799edf-6f98-4d3a-9be7-2862fb4e5752
+              type: user
+            - id: 8b799edf-6f98-4d3a-9be7-2862fb4e5752
+              type: escalation
+          source: Mercurio Notifications
+      headers:
+        Accepts: application/json
+        Authorization: GenieKey k18
+        Content-Type: application/json
+      method: POST
+      url: "https://api.atlassian.com/jsm/ops/integration/v2/alerts"
+  valid: true

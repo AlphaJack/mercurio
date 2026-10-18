@@ -1,0 +1,10 @@
+{
+"cases":[
+{"name":"new_note_close","url":"jira://apikey/","messages":[{"title":"disk","body":"full","type":"failure"},{"title":"disk","body":"still full","type":"info"},{"title":"disk","body":"fixed","type":"success"}],"responses":[{"status":202,"body":{"requestId":"req-1"}},{"status":202},{"status":202}]},
+{"name":"two_new_accumulate_then_delete","url":"jira://apikey/?action=new&alias=db","messages":[{"body":"a"},{"body":"b"}],"responses":[{"status":202,"body":{"requestId":"r1"}},{"status":202,"body":{"requestId":"r2"}}]},
+{"name":"delete_then_nothing","url":"jira://apikey/?action=map&:failure=new&:warning=delete&:success=close&entity=web&region=eu","messages":[{"body":"a","type":"failure"},{"body":"b","type":"warning"},{"body":"c","type":"success"}],"responses":[{"status":202,"body":{"requestId":"r1"}},{"status":202}]},
+{"name":"failed_delete_keeps_ids","url":"jira://apikey/?action=map&:failure=new&:warning=delete&entity=web","messages":[{"body":"a","type":"failure"},{"body":"b","type":"warning"},{"body":"c","type":"warning"}],"responses":[{"status":202,"body":{"requestId":"r1"}},{"status":500},{"status":202}]},
+{"name":"close_without_ids","url":"jira://apikey/?action=close","sends":2},
+{"name":"batch_retry_skips_delivered","url":"jira://apikey/@user1/@user2/?action=map&batch=no&retry=1","messages":[{"title":"t","body":"a","type":"failure"},{"title":"t","body":"b","type":"success"}],"responses":[{"status":202,"body":{"requestId":"r1"}},{"status":500},{"status":202,"body":{"requestId":"r2"}}]},
+{"name":"no_request_id_is_error","url":"jira://apikey/?action=new","messages":[{"title":"t","body":"a"},{"title":"t","body":"b"}],"responses":[{"status":202,"body":{}},{"status":202,"body":{"requestId":"r9"}}]}
+]}
