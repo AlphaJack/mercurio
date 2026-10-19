@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
-use std::sync::{Arc, LazyLock, OnceLock};
+use std::sync::{Arc, Condvar, LazyLock, Mutex, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
 
 use crate::asset::Asset;
@@ -520,6 +520,40 @@ impl Report {
     }
 }
 
+/// Most sends in progress at once across every [`Mercurio`] in the process. Targets of a service with a [`ServiceDef::throttle`] go one at a time, with the throttle between them.
+const MAX_PARALLEL: usize = 128;
+
+/// The process-wide budget of [`MAX_PARALLEL`] sends, shared so that concurrent `notify` calls (the HTTP server's requests) cannot multiply it.
+static SEND_SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: MAX_PARALLEL };
+
+/// A counting semaphore.
+struct Slots {
+    used: Mutex<usize>,
+    freed: Condvar,
+    max: usize,
+}
+
+impl Slots {
+    /// Block until a slot is free and take it; the guard gives it back.
+    fn acquire(&'static self) -> SlotGuard {
+        let mut used = self.used.lock().unwrap_or_else(PoisonError::into_inner);
+        while *used >= self.max {
+            used = self.freed.wait(used).unwrap_or_else(PoisonError::into_inner);
+        }
+        *used += 1;
+        SlotGuard(self)
+    }
+}
+
+struct SlotGuard(&'static Slots);
+
+impl Drop for SlotGuard {
+    fn drop(&mut self) {
+        *self.0.used.lock().unwrap_or_else(PoisonError::into_inner) -= 1;
+        self.0.freed.notify_one();
+    }
+}
+
 /// A set of notification targets sharing a transport and branding.
 ///
 /// ```no_run
@@ -810,14 +844,66 @@ impl Mercurio {
                 url_id: t.url_id(asset),
             }
         };
+        // Wait out the service's throttle since its previous target, so throttled services also pace across targets.
+        let pace = |t: &Target, last: Option<Instant>| {
+            if let Some(gap) = last.map(|at| t.def.throttle.saturating_sub(at.elapsed())).filter(|g| !g.is_zero()) {
+                self.transport.sleep(gap);
+            }
+        };
         let entries = if self.parallel && targets.len() > 1 {
-            std::thread::scope(|s| {
-                let handles: Vec<_> = targets.iter().map(|t| s.spawn(move || send(t))).collect();
+            // Targets of a throttled service share one lane, sent in order; every other target is a lane of its own.
+            let mut lanes: Vec<Vec<usize>> = Vec::new();
+            let mut lane_of: BTreeMap<&str, usize> = BTreeMap::new();
+            for (i, t) in targets.iter().enumerate() {
+                if t.def.throttle.is_zero() {
+                    lanes.push(vec![i]);
+                } else if let Some(&l) = lane_of.get(t.def.id) {
+                    lanes[l].push(i);
+                } else {
+                    lane_of.insert(t.def.id, lanes.len());
+                    lanes.push(vec![i]);
+                }
+            }
+            let run_lane = |lane: &[usize]| {
+                let mut last = None;
+                lane.iter()
+                    .map(|&i| {
+                        pace(targets[i], last);
+                        let entry = send(targets[i]);
+                        last = Some(Instant::now());
+                        (i, entry)
+                    })
+                    .collect::<Vec<_>>()
+            };
+            // One thread per lane, each started only once it holds a slot: threads and sockets stay within the process-wide budget.
+            let mut done: Vec<(usize, ReportEntry)> = std::thread::scope(|s| {
+                let handles: Vec<_> = lanes
+                    .iter()
+                    .map(|lane| {
+                        let slot = SEND_SLOTS.acquire();
+                        s.spawn(move || {
+                            let _slot = slot;
+                            run_lane(lane)
+                        })
+                    })
+                    .collect();
                 // Re-raise a service thread's panic on the caller's thread unchanged.
-                handles.into_iter().map(|h| h.join().unwrap_or_else(|p| std::panic::resume_unwind(p))).collect()
-            })
+                handles.into_iter().flat_map(|h| h.join().unwrap_or_else(|p| std::panic::resume_unwind(p))).collect()
+            });
+            done.sort_by_key(|(i, _)| *i);
+            done.into_iter().map(|(_, entry)| entry).collect()
         } else {
-            targets.into_iter().map(send).collect()
+            let _slot = SEND_SLOTS.acquire();
+            let mut last: BTreeMap<&str, Instant> = BTreeMap::new();
+            targets
+                .into_iter()
+                .map(|t| {
+                    pace(t, last.get(t.def.id).copied());
+                    let entry = send(t);
+                    last.insert(t.def.id, Instant::now());
+                    entry
+                })
+                .collect()
         };
         Report { entries }
     }
@@ -826,6 +912,85 @@ impl Mercurio {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn send_slots_block_beyond_the_budget() {
+        static SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: 2 };
+        let (first, second) = (SLOTS.acquire(), SLOTS.acquire());
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::scope(|s| {
+            s.spawn(move || {
+                let _third = SLOTS.acquire();
+                tx.send(()).unwrap();
+            });
+            assert!(rx.recv_timeout(Duration::from_millis(100)).is_err(), "a third slot was handed out");
+            drop(first);
+            rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        });
+        drop(second);
+    }
+
+    #[test]
+    fn throttled_service_paces_across_targets() {
+        use crate::testing::FakeTransport;
+
+        #[derive(Debug)]
+        struct Throttled;
+        impl Notify for Throttled {
+            fn plan(&self, _: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
+                Plan::send(ctx.post("http://localhost/throttled"))
+            }
+        }
+        static THROTTLED: ServiceDef = ServiceDef {
+            id: "throttled_test",
+            name: "Throttled",
+            schemes: &["throttledtest"],
+            parse: |_| Ok(Box::new(Throttled)),
+            throttle: Duration::from_secs(5),
+            ..ServiceDef::DEFAULTS
+        };
+        Mercurio::register(&THROTTLED).unwrap();
+
+        for sequential in [false, true] {
+            let fake = Arc::new(FakeTransport::new());
+            fake.default_response(crate::Response::new(200, b"{}".to_vec()));
+            let mut m = Mercurio::with_transport(fake.clone());
+            if sequential {
+                m = m.sequential();
+            }
+            for i in 0..3 {
+                m.add(&format!("throttledtest://t{i}")).unwrap();
+                m.add(&format!("json://localhost/t{i}/")).unwrap();
+            }
+            assert!(m.notify(&Message::new("b")).is_success());
+            assert_eq!(fake.requests().len(), 6);
+            // Two gaps between the three throttled targets; the fake does not sleep, so each is nearly the full throttle.
+            let sleeps = fake.sleeps();
+            assert_eq!(sleeps.len(), 2, "sequential={sequential}");
+            assert!(sleeps.iter().all(|d| *d > Duration::from_secs(4)), "{sleeps:?}");
+        }
+    }
+
+    #[test]
+    fn parallel_pool_sends_every_target_in_order() {
+        use crate::testing::FakeTransport;
+        let fake = Arc::new(FakeTransport::new());
+        fake.default_response(crate::Response::new(200, b"{}".to_vec()));
+        // More targets than workers: every odd target fails, so the report order is visible.
+        let n = MAX_PARALLEL * 3 + 1;
+        let mut m = Mercurio::with_transport(fake.clone());
+        for i in 0..n {
+            if i % 2 == 1 {
+                fake.on_url(format!("/t{i}/"), crate::Response::new(500, b"{}".to_vec()));
+            }
+            m.add(&format!("json://localhost/t{i}/")).unwrap();
+        }
+        let r = m.notify(&Message::new("b"));
+        assert_eq!(fake.requests().len(), n);
+        let statuses: Vec<_> = r.entries.iter().map(ReportEntry::status).collect();
+        let expected: Vec<_> = (0..n).map(|i| if i % 2 == 1 { Status::Failure } else { Status::Success }).collect();
+        assert_eq!(statuses, expected);
+    }
 
     #[test]
     fn report_statuses_and_attempts() {
