@@ -115,6 +115,8 @@ pub enum DatagramTarget {
     },
     /// Unix datagram socket path (e.g. `/dev/log`).
     Unix(String),
+    /// Local file the payload is appended to in one write, created when missing (its directory must exist).
+    File(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -282,6 +284,12 @@ impl Transport for DefaultTransport {
             }
             #[cfg(not(unix))]
             DatagramTarget::Unix(_) => Err(Error::Unsupported("unix sockets".into())),
+            DatagramTarget::File(path) => std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(path)
+                .and_then(|mut f| f.write_all(&dg.payload))
+                .map_err(|e| Error::transport(format!("{path}: {e}"))),
         }
     }
 
