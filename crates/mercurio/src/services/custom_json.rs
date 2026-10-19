@@ -1,8 +1,5 @@
 //! JSON webhook (`json://`, `jsons://`): posts the notification as a JSON object to any HTTP endpoint.
 
-use serde_json::{Map, Value, json};
-
-use crate::crypto::b64;
 use crate::http::Method;
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -87,28 +84,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 impl Notify for Json {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let attachments: Vec<Value> = msg
-            .attachments
-            .iter()
-            .enumerate()
-            .map(|(i, a)| {
-                let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
-                json!({"filename": name, "base64": b64(&a.data), "mimetype": a.mime})
-            })
-            .collect();
-        let mut payload = Map::new();
-        payload.insert("version".into(), json!("1.0"));
-        payload.insert("title".into(), json!(msg.title));
-        payload.insert("message".into(), json!(msg.body));
-        payload.insert("attachments".into(), Value::Array(attachments));
-        payload.insert("type".into(), json!(msg.kind.as_str()));
-        crate::util::remap_payload(&mut payload, self.payload.iter().map(|(k, v)| (k.as_str(), v.as_str())));
-
         let mut req = ctx.request(self.method, &self.url)
             .header("Content-Type", "application/json")
             .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())))
             .query(&self.params)
-            .body(serde_json::to_vec(&Value::Object(payload)).unwrap_or_default(), None);
+            .body(super::_json::encode(super::_json::object(msg), &self.payload), None);
         req = req.basic_auth_opt(self.user.as_deref(), self.password.as_ref().map(Secret::expose));
         Plan::send(req)
     }
