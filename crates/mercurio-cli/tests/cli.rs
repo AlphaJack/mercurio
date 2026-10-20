@@ -111,6 +111,25 @@ fn emoji_shortcodes_follow_j_and_the_url() {
 }
 
 #[test]
+fn theme_goes_into_image_urls() {
+    // The bundled image has no `{THEME}`; a mask from the configuration does.
+    let dir = tempdir("theme");
+    for (flag, theme) in [(None, "default"), (Some(["-T", "dark"]), "dark")] {
+        let (addr, rx) = server(200);
+        let yaml = format!(
+            "version: 1\nasset:\n  image_url_mask: http://img.example/{{THEME}}/{{TYPE}}-{{XY}}{{EXTENSION}}\nurls:\n  - mmost://{addr}/token\n"
+        );
+        let config = write(&dir, "theme.yml", &yaml);
+        let mut c = bin();
+        c.args(["-b", "b", "-c", &config]).args(flag.iter().flatten());
+        assert!(c.status().unwrap().success(), "{flag:?}");
+        let v = json(&rx.recv().unwrap());
+        let icon = v["icon_url"].as_str().unwrap_or_default();
+        assert!(icon.starts_with(&format!("http://img.example/{theme}/")), "{flag:?}: {icon}");
+    }
+}
+
+#[test]
 fn attaches_files_with_url_options() {
     let dir = std::env::temp_dir().join(format!("mercurio-cli-attach-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
