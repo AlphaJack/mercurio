@@ -156,7 +156,8 @@ impl Notify for Xmpp {
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.mode == Mode::Tls);
         ep.verify_tls = self.verify;
         Plan::socket(ep, move |conn, transport| {
-            Box::pin(async move { client::run(conn, &session, transport.env().as_ref()).await })
+            let client = client::Client::new(session, conn.is_tls(), transport.env());
+            Box::pin(crate::machine::drive(client, conn))
         })
     }
 
