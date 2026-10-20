@@ -428,7 +428,7 @@ pub static COMMON_PARAMS: &[Param] = &[
     Param::new("wait", "Pause before each retry, in seconds").float().range(0, 20).default("0.5"),
     Param::new("store", "Use the persistent store on disk").bool(true),
     Param::new("tag", "Tags for `--tag` filtering").list(", "),
-    Param::new("tz", "Time zone name").note("passed to the services that use one, not validated"),
+    Param::new("tz", "Time zone name").note("an unknown zone rejects the URL; e-mail and syslog dates use it"),
     Param::new("user", "User name; replaces the one in the URL"),
     Param::new("password", "Password; replaces the one in the URL").aliases(&["pass"]).secret(),
     Param::new("port", "Port; replaces the one in the URL").port(),

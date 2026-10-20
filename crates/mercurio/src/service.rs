@@ -413,12 +413,24 @@ pub struct Context<'a> {
     pub memo: &'a Memo,
     /// The results of [`Notify::files`].
     files: &'a [(FileOp, Result<FileOutput>)],
+    /// The URL's `?tz=`.
+    tz: Option<&'a jiff::tz::TimeZone>,
 }
 
 impl<'a> Context<'a> {
     /// A context over `asset`, `store` and `memo`.
     pub fn new(asset: &'a Asset, store: &'a StoreRef, memo: &'a Memo) -> Self {
-        Self { asset, store, memo, files: &[] }
+        Self { asset, store, memo, files: &[], tz: None }
+    }
+
+    /// This context with the URL's time zone.
+    pub(crate) fn with_tz(self, tz: Option<&'a jiff::tz::TimeZone>) -> Self {
+        Self { tz, ..self }
+    }
+
+    /// The zone for dates a service writes: the URL's `?tz=`, else the machine's, as Apprise.
+    pub(crate) fn time_zone(&self) -> jiff::tz::TimeZone {
+        self.tz.cloned().unwrap_or_else(crate::time::local_zone)
     }
 
     /// This context with the results of [`Notify::files`].

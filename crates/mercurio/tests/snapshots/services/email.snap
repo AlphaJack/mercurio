@@ -1,5 +1,6 @@
 ---
 source: crates/mercurio/tests/it/services.rs
+assertion_line: 17
 ---
 attach_png_html:
   events:
@@ -2374,40 +2375,8 @@ type_failure:
   ok: true
   valid: true
 tz_invalid:
-  events:
-    - host: smtp.fastmail.com
-      port: 465
-      smtp: connect
-      ssl: true
-    - password: pass
-      smtp: login
-      user: user@fastmail.com
-    - from: user@fastmail.com
-      message:
-        body:
-          parts:
-            - charset: utf-8
-              text: Mercurio Body
-              type: text/plain
-            - charset: utf-8
-              text: Mercurio Body
-              type: text/html
-          type: multipart/alternative
-        headers:
-          - - from
-            - Mercurio <user@fastmail.com>
-          - - subject
-            - Mercurio Title
-          - - to
-            - user@fastmail.com
-          - - x-application
-            - Mercurio
-      smtp: sendmail
-      to:
-        - user@fastmail.com
-    - smtp: quit
-  ok: true
-  valid: true
+  error: "E-Mail: An invalid notification timezone (invalid) was specified."
+  valid: false
 unicode_title_body:
   events:
     - host: example.com

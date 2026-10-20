@@ -62,6 +62,8 @@ pub struct Target {
     exec: ExecOptions,
     /// The URL sets `?redirect=`, which wins over [`Asset::http_redirects`].
     redirect_set: bool,
+    /// `?tz=`, when the URL has a valid one.
+    tz: Option<jiff::tz::TimeZone>,
     /// `?emojis=`, when the URL has it.
     emojis: Option<bool>,
     retry: u32,
@@ -113,6 +115,11 @@ pub fn parse(url: &str) -> Result<Target> {
 fn build(def: &'static ServiceDef, url: &str) -> Result<Target> {
     let opts = ParseOptions { verify_host: false, ..Default::default() };
     let parsed = parse_url_with(url, opts).ok_or_else(|| Error::InvalidUrl(format!("{}://...", def.schemes[0])))?;
+    if let Some(tz) = parsed.tz.as_deref()
+        && crate::time::zone(tz).is_none()
+    {
+        return Err(Error::config(def.name, format!("An invalid notification timezone ({tz}) was specified.")));
+    }
     let service = (def.parse)(&parsed)?;
     Ok(Target::new(def, service, &parsed))
 }
@@ -144,6 +151,7 @@ impl Target {
                 flush_each_step: false,
             },
             redirect_set: parsed.query.get("redirect").is_some(),
+            tz: parsed.tz.as_deref().and_then(crate::time::zone),
             emojis: parsed.query.get("emojis").map(|v| crate::parse::parse_bool(v, false)),
             retry: parsed.retry.unwrap_or(0).min(MAX_RETRY),
             wait: Duration::from_secs_f64(parsed.wait.unwrap_or(DEFAULT_WAIT).clamp(0.0, MAX_WAIT)),
@@ -228,7 +236,7 @@ impl Target {
 
     /// Run the message pipeline (payload cap, escapes, conversion, title merging, overflow) without planning anything.
     pub fn prepare(&self, msg: &Message, asset: &Asset) -> Result<PreparedMessage> {
-        self.prepare_in(msg, &Context::new(asset, self.store(asset), &Memo::disabled()))
+        self.prepare_in(msg, &Context::new(asset, self.store(asset), &Memo::disabled()).with_tz(self.tz.as_ref()))
     }
 
     fn prepare_in(&self, msg: &Message, ctx: &Context<'_>) -> Result<PreparedMessage> {
@@ -336,7 +344,7 @@ impl Target {
         let started = Instant::now();
         let store = self.store(asset);
         let memo = if retry > 0 { Memo::enabled() } else { Memo::disabled() };
-        let ctx = Context::new(asset, store, &memo);
+        let ctx = Context::new(asset, store, &memo).with_tz(self.tz.as_ref());
         let stores = self.stores(&ctx);
         for s in &stores {
             run_files(s.clone().load(), transport).await;
@@ -428,7 +436,7 @@ impl Target {
     pub async fn close_async(&self, transport: &dyn AsyncTransport, asset: &Asset) -> Option<Delivery> {
         let store = self.storage.store.get()?;
         let memo = Memo::disabled();
-        let ctx = Context::new(asset, store, &memo);
+        let ctx = Context::new(asset, store, &memo).with_tz(self.tz.as_ref());
         let plan = self.service.close(&ctx)?;
         let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(self.stores(&ctx));
         let ok = ex.run(plan).await;
@@ -438,7 +446,7 @@ impl Target {
     /// Build the plan for the first piece without executing it (for inspection).
     pub fn plan(&self, msg: &Message, asset: &Asset) -> Result<Plan> {
         let memo = Memo::disabled();
-        let ctx = Context::new(asset, self.store(asset), &memo);
+        let ctx = Context::new(asset, self.store(asset), &memo).with_tz(self.tz.as_ref());
         let prep = self.prepare_in(msg, &ctx)?;
         Ok(self.service.plan(&self.piece(&prep, msg, 0), &ctx))
     }

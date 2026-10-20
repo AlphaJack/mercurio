@@ -4,7 +4,6 @@
 //!
 //! # Differences with Apprise
 //!
-//! - The timestamp is UTC (libc uses local time). *todo*
 //! - `logperror` copies the line to stderr like `LOG_PERROR`. *intentional*
 
 use super::_sockets::{syslog_facility, syslog_level};
@@ -63,17 +62,17 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }))
 }
 
-/// `Mmm dd hh:mm:ss` (RFC 3164 timestamp, day space-padded).
-pub fn rfc3164_timestamp(secs: u64) -> String {
+/// `Mmm dd hh:mm:ss` in `tz` (RFC 3164 timestamp, day space-padded; libc writes local time).
+pub fn rfc3164_timestamp(secs: u64, tz: &jiff::tz::TimeZone) -> String {
     const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    let (_, mo, d, h, mi, s) = crate::time::utc_parts(secs);
+    let (mo, d, h, mi, s) = crate::time::local_parts(secs, tz);
     format!("{} {d:>2} {h:02}:{mi:02}:{s:02}", MONTHS[(mo as usize).saturating_sub(1) % 12])
 }
 
 /// The datagram libc `syslog(3)` sends for one message.
-pub fn format_line(pri: u32, secs: u64, ident: &str, pid: Option<u32>, message: &str) -> String {
+pub fn format_line(pri: u32, secs: u64, tz: &jiff::tz::TimeZone, ident: &str, pid: Option<u32>, message: &str) -> String {
     let pid = pid.map(|p| format!("[{p}]")).unwrap_or_default();
-    format!("<{pri}>{} {ident}{pid}: {message}", rfc3164_timestamp(secs))
+    format!("<{pri}>{} {ident}{pid}: {message}", rfc3164_timestamp(secs, tz))
 }
 
 impl Notify for Syslog {
@@ -84,8 +83,9 @@ impl Notify for Syslog {
         let pid = std::process::id();
         let log_pid = self.log_pid;
         let log_perror = self.log_perror;
+        let tz = ctx.time_zone();
         Plan::defer(move || {
-            let line = format_line(pri, crate::time::unix_time(), &ident, log_pid.then_some(pid), &body);
+            let line = format_line(pri, crate::time::unix_time(), &tz, &ident, log_pid.then_some(pid), &body);
             if log_perror {
                 let tag = if log_pid { format!("{ident}[{pid}]") } else { ident.clone() };
                 eprintln!("{tag}: {body}");
@@ -110,8 +110,12 @@ mod tests {
     #[test]
     fn line_format() {
         // 2024-03-05 07:08:09 UTC
-        assert_eq!(rfc3164_timestamp(1_709_622_489), "Mar  5 07:08:09");
-        assert_eq!(format_line(14, 1_709_622_489, "Mercurio", Some(42), "t: b"), "<14>Mar  5 07:08:09 Mercurio[42]: t: b");
-        assert_eq!(format_line(13, 1_709_622_489, "x", None, "m"), "<13>Mar  5 07:08:09 x: m");
+        let utc = jiff::tz::TimeZone::UTC;
+        assert_eq!(rfc3164_timestamp(1_709_622_489, &utc), "Mar  5 07:08:09");
+        assert_eq!(format_line(14, 1_709_622_489, &utc, "Mercurio", Some(42), "t: b"), "<14>Mar  5 07:08:09 Mercurio[42]: t: b");
+        assert_eq!(format_line(13, 1_709_622_489, &utc, "x", None, "m"), "<13>Mar  5 07:08:09 x: m");
+        // libc writes local time: the URL's ?tz= or the machine's zone.
+        let paris = crate::time::zone("Europe/Paris").unwrap();
+        assert_eq!(rfc3164_timestamp(1_709_622_489, &paris), "Mar  5 08:08:09");
     }
 }
