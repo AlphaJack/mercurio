@@ -30,10 +30,11 @@ on its page (see the [service list](services/index.md)), taken from the
   😀, not 😄; `:beetle:` 🪲, not 🐞), `:blond_woman:` and
   `:information_deskperson:` stay as text, and about 70 gemoji names that
   Apprise lacks are expanded. *intentional*
-- **`%2F` in a URL path.** Both decode it into a separator, so
-  `json://`, `xml://` and `form://` request another path (Apprise issue
-  #1799). Keeping it encoded for every service would also change xmpp
-  JIDs and signalgrid channels. *todo*
+- **`%2F` in a URL path.** Apprise decodes it into a separator, so
+  `json://`, `xml://` and `form://` request another path (its issue #1799)
+  -> mercurio keeps it encoded for those three, so `a%2Fb` stays one path
+  segment. Other services decode it as Apprise does (xmpp JIDs, signalgrid
+  channels). *intentional*
 - **`?tz=`.** Validated as in Apprise (the UTC family, any case, or the
   location alone such as `paris`; an unknown zone rejects the URL). E-mail
   `Date:` and syslog timestamps use it, else the machine's zone. A YAML

@@ -177,10 +177,47 @@ pub fn parse_url_with(url: &str, opts: ParseOptions) -> Option<ParsedUrl> {
     Some(r)
 }
 
-fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<ParsedUrl> {
-    // Optional `scheme://`, then everything up to `?` (host and path), then the query string.
+/// Optional `scheme://`, then everything up to `?` (host and path), then the query string.
+fn url_parts(url: &str) -> Option<regex::Captures<'_>> {
     let re = regex!(r"^\s*(?:(?P<schema>[^:\s]+):[/\\]+)?(?:(?P<path>[^?]+)(?:\?(?P<query>.+))?)?\s*$");
-    let caps = re.captures(url)?;
+    re.captures(url)
+}
+
+/// The re-quoted path of `rest` (what follows the netloc) as `urlparse` leaves it: no fragment, query or `;params` of the last segment, tidied, then unquoted and quoted again. With `keep_encoded_slash` a `%2F` stays encoded instead of becoming a separator.
+fn quoted_path(rest: &str, url: &str, keep_encoded_slash: bool) -> String {
+    let raw_path = rest.split(['#', '?']).next().unwrap_or("");
+    let raw_path = match raw_path.rfind('/').map(|slash| raw_path.split_at(slash).1.find(';').map(|i| slash + i)) {
+        Some(Some(i)) => raw_path.split_at(i).0,
+        Some(None) => raw_path,
+        None => raw_path.split(';').next().unwrap_or(""),
+    };
+    let tidy = tidy_path(raw_path.trim());
+    let mut fullpath = if keep_encoded_slash {
+        regex!(r"(?i)%2f").split(&tidy).map(|part| quote(&unquote(part), PATH_SAFE)).collect::<Vec<_>>().join("%2F")
+    } else {
+        quote(&unquote(&tidy), PATH_SAFE)
+    };
+    let trimmed_url = url.trim();
+    if !fullpath.is_empty()
+        && !fullpath.ends_with(['/', '\\'])
+        && (url.ends_with('/') || url.ends_with('\\'))
+        && let Some(last) = trimmed_url.chars().last()
+    {
+        fullpath.push(last);
+    }
+    fullpath
+}
+
+/// [`ParsedUrl::fullpath`] with each `%2F` kept encoded (Apprise issue #1799), for services that send the path on as is.
+pub(crate) fn fullpath_keeping_encoded_slashes(u: &ParsedUrl) -> Option<String> {
+    let caps = url_parts(&u.original)?;
+    let host_part = caps.name("path").map(|m| m.as_str().trim().replace(['\t', '\r', '\n'], "")).unwrap_or_default();
+    let (_, rest) = split_netloc(&host_part);
+    Some(quoted_path(rest, &u.original, true)).filter(|p| !p.is_empty())
+}
+
+fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<ParsedUrl> {
+    let caps = url_parts(url)?;
     let scheme =
         caps.name("schema").map(|m| m.as_str().trim().to_lowercase()).unwrap_or_else(|| default_schema.to_string());
     let host_part = caps.name("path").map(|m| m.as_str().trim().to_string()).unwrap_or_default();
@@ -225,22 +262,7 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
     let (netloc, rest) = split_netloc(&host_part);
     out.host = netloc.trim().to_string();
     // urlparse drops the fragment, the query and `;params` of the last segment.
-    let raw_path = rest.split(['#', '?']).next().unwrap_or("");
-    let raw_path = match raw_path.rfind('/').map(|slash| raw_path.split_at(slash).1.find(';').map(|i| slash + i)) {
-        Some(Some(i)) => raw_path.split_at(i).0,
-        Some(None) => raw_path,
-        None => raw_path.split(';').next().unwrap_or(""),
-    };
-    let tidy = tidy_path(raw_path.trim());
-    let mut fullpath = quote(&unquote(&tidy), PATH_SAFE);
-    let trimmed_url = url.trim();
-    if !fullpath.is_empty()
-        && !fullpath.ends_with(['/', '\\'])
-        && (url.ends_with('/') || url.ends_with('\\'))
-        && let Some(last) = trimmed_url.chars().last()
-    {
-        fullpath.push(last);
-    }
+    let fullpath = quoted_path(rest, url, false);
     if !fullpath.is_empty() {
         if let Some(i) = fullpath.rfind(['/', '\\']) {
             // Both separators are one byte, so `i + 1` is a char boundary.
