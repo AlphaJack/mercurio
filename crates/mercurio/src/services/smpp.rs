@@ -135,7 +135,7 @@ impl Notify for Smpp {
             esm,
         };
         let ep = Endpoint::new(self.host.clone(), self.port, self.tls);
-        Plan::socket(ep, move |conn, _| Box::pin(crate::machine::drive(Session::new(job), conn)))
+        Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(Session::new(job), conn, transport)))
     }
 
 }

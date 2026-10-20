@@ -436,7 +436,7 @@ impl Notify for Mqtt {
             retain: self.retain,
         };
         let ep = Endpoint::new(self.host.clone(), self.port, self.secure);
-        Plan::socket(ep, move |conn, _| Box::pin(crate::machine::drive(Client::new(session), conn)))
+        Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(Client::new(session), conn, transport)))
     }
 
 }
@@ -530,6 +530,7 @@ mod tests {
                     c.input(Input::Data(&[b]));
                 }
                 Output::StartTls => c.input(Input::Tls(Ok(()))),
+                Output::Sleep(_) => {}
                 Output::Done(r) => break r,
             }
         };

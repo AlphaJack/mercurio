@@ -1,9 +1,10 @@
 //! Sans-IO socket protocols: a [`Protocol`] never does I/O. [`Protocol::next`] says what it needs ([`Output`]) and [`Protocol::input`] hands it the result. [`drive`] pumps a real [`AsyncConn`]; a test feeds bytes directly.
 
 use std::io;
+use std::time::Duration;
 
 use crate::error::Result;
-use crate::transport::AsyncConn;
+use crate::transport::{AsyncConn, AsyncTransport};
 
 /// A socket protocol as a state machine over bytes: [`Protocol::next`] says what it needs, [`Protocol::input`] answers [`Output::Read`] and [`Output::StartTls`] (and reports a failed [`Output::Write`]).
 pub trait Protocol: Send {
@@ -16,12 +17,14 @@ pub trait Protocol: Send {
 /// What the protocol needs next.
 #[derive(Debug)]
 pub enum Output {
-    /// Send these bytes, then call [`Machine::next`] again.
+    /// Send these bytes, then call [`Protocol::next`] again.
     Write(Vec<u8>),
-    /// Read from the peer and pass the result to [`Machine::input`].
+    /// Read from the peer and pass the result to [`Protocol::input`].
     Read,
-    /// Upgrade the connection to TLS and pass the result to [`Machine::input`].
+    /// Upgrade the connection to TLS and pass the result to [`Protocol::input`].
     StartTls,
+    /// Wait this long (through the transport), then call [`Protocol::next`] again.
+    Sleep(Duration),
     /// The session ended.
     Done(Result<()>),
 }
@@ -66,8 +69,8 @@ impl LineBuf {
     }
 }
 
-/// Run `machine` on a real connection until it is done.
-pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn) -> Result<()> {
+/// Run `machine` on a real connection until it is done; waits go through `transport`.
+pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn, transport: &dyn AsyncTransport) -> Result<()> {
     let mut buf = [0u8; crate::net::READ_CHUNK];
     loop {
         match machine.next() {
@@ -89,6 +92,7 @@ pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn) -> Resu
                 let r = conn.start_tls().await;
                 machine.input(Input::Tls(r));
             }
+            Output::Sleep(d) => transport.sleep(d).await,
             Output::Done(r) => return r,
         }
     }

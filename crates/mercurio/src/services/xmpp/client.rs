@@ -519,7 +519,10 @@ mod tests {
             }
         });
         let mut conn: Box<dyn crate::transport::Conn> = Box::new(conn);
-        let err = pollster::block_on(crate::machine::drive(Client::new(session(), false, Arc::new(crate::testing::FixedEnv::new(0))), &mut conn)).unwrap_err();
+        let err = pollster::block_on(crate::machine::drive(Client::new(session(), false, Arc::new(crate::testing::FixedEnv::new(0))),
+            &mut conn,
+            &crate::Blocking(crate::testing::FakeTransport::new()),
+        )).unwrap_err();
         assert!(err.to_string().contains("after STARTTLS"), "{err}");
         assert!(!AsyncConn::is_tls(&conn));
     }

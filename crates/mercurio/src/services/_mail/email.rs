@@ -659,9 +659,9 @@ impl Notify for Email {
         let mut ep = Endpoint::new(self.smtp_host.clone(), self.port, self.mode == Mode::Ssl);
         ep.connect_timeout = SMTP_TIMEOUT;
         ep.read_timeout = SMTP_TIMEOUT;
-        Plan::socket(ep, move |conn, _| {
+        Plan::socket(ep, move |conn, transport| {
             let machine = session(job, conn.is_tls());
-            Box::pin(crate::machine::drive(machine, conn))
+            Box::pin(crate::machine::drive(machine, conn, transport))
         })
     }
 

@@ -1,8 +1,6 @@
-//! Helpers shared by the raw protocol services: syslog facilities and levels; a small writer for socket sessions.
+//! Helpers shared by the raw protocol services: syslog facilities and levels.
 
 use crate::NotifyType;
-use crate::error::{Error, Result};
-use crate::transport::AsyncConn;
 
 /// Syslog facilities in lookup order (prefix lookups depend on it). Values are the shifted facility codes (`LOG_USER = 8`).
 pub const SYSLOG_FACILITIES: &[(&str, u32)] = &[
@@ -51,12 +49,6 @@ pub fn syslog_level(kind: NotifyType) -> u32 {
         NotifyType::Warning => 4,
         NotifyType::Failure => 2,
     }
-}
-
-/// Write and flush `data`; failures are transport errors.
-pub async fn send(conn: &mut dyn AsyncConn, data: &[u8]) -> Result<()> {
-    conn.write_all(data).await.map_err(Error::transport)?;
-    conn.flush().await.map_err(Error::transport)
 }
 
 #[cfg(test)]

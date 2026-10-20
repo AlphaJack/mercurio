@@ -459,6 +459,7 @@ mod tests {
                 }
                 Output::Read => m.input(Input::Data(std::mem::take(&mut pending).as_bytes())),
                 Output::StartTls => m.input(Input::Tls(Ok(()))),
+                Output::Sleep(_) => {}
                 Output::Done(r) => return (sent, r),
             }
         }

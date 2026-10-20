@@ -157,7 +157,7 @@ impl Notify for Xmpp {
         ep.verify_tls = self.verify;
         Plan::socket(ep, move |conn, transport| {
             let client = client::Client::new(session, conn.is_tls(), transport.env());
-            Box::pin(crate::machine::drive(client, conn))
+            Box::pin(crate::machine::drive(client, conn, transport))
         })
     }
 

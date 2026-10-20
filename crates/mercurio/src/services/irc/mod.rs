@@ -463,7 +463,7 @@ impl Notify for Irc {
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.secure);
         ep.read_timeout = REGISTER_TIMEOUT;
-        Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(Client::new(session, transport.env()), conn)))
+        Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(Client::new(session, transport.env()), conn, transport)))
     }
 
 }
@@ -495,6 +495,7 @@ mod tests {
                 Output::Write(data) => sent.push_str(&String::from_utf8(data).unwrap()),
                 Output::Read => c.input(Input::Data(replies.next().unwrap_or("").as_bytes())),
                 Output::StartTls => c.input(Input::Tls(Ok(()))),
+                Output::Sleep(_) => {}
                 Output::Done(r) => break r,
             }
         };
