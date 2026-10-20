@@ -26,6 +26,7 @@ pub fn port(s: &str) -> Option<u16> {
     s.bytes().all(|b| b.is_ascii_digit()).then(|| s.parse().ok()).flatten().filter(|p| *p > 0)
 }
 
+/// Apprise's boolean: `yes`, `true`, `on`, `1`, ... are `true`, `no`, `false`, `off`, `0`, ... are `false`; anything else is `default`.
 pub fn parse_bool(arg: &str, default: bool) -> bool {
     let lower = arg.to_lowercase();
     let head: String = lower.chars().take(2).collect();

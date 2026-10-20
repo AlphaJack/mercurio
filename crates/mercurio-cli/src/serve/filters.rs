@@ -196,8 +196,8 @@ pub async fn send_webhook(
     let mut req = match authority.rsplit_once('@') {
         Some((userinfo, host)) => {
             let (u, p) = userinfo.split_once(':').map(|(u, p)| (u, Some(p))).unwrap_or((userinfo, None));
-            let u = mercurio::url::unquote(u);
-            let p = p.map(mercurio::url::unquote);
+            let u = mercurio::__private::unquote(u);
+            let p = p.map(mercurio::__private::unquote);
             mercurio::Request::post(format!("{scheme}://{host}{tail}")).basic_auth(&u, p.as_deref())
         }
         None => mercurio::Request::post(url.to_string()),

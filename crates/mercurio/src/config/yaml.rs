@@ -18,9 +18,11 @@ pub enum Yaml {
     Bool(bool),
     /// An integer (decimal, octal, hex, binary or sexagesimal).
     Int(i128),
+    /// A float (also `.inf` and `.nan`).
     Float(f64),
     /// A string (also timestamps).
     Str(String),
+    /// A sequence.
     Seq(Vec<Yaml>),
     /// Insertion-ordered; a repeated key keeps its first position and the last value.
     Map(Vec<(Yaml, Yaml)>),

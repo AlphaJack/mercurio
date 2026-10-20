@@ -249,7 +249,7 @@ fn loopback_plain_delivery() {
     assert!(d.is_success(), "{d:?}");
     let lines = server.join().unwrap();
     assert!(lines[0].starts_with("EHLO "));
-    assert!(lines.contains(&format!("AUTH PLAIN {}", mercurio::crypto::b64(b"\0bob\0pw"))), "{lines:?}");
+    assert!(lines.contains(&format!("AUTH PLAIN {}", mercurio::__private::b64(b"\0bob\0pw"))), "{lines:?}");
     assert!(lines.contains(&"MAIL FROM:<bob@example.com>".to_string()), "{lines:?}");
     assert!(lines.contains(&"RCPT TO:<alice@example.com>".to_string()));
     let start = lines.iter().position(|l| l == "DATA").unwrap() + 1;

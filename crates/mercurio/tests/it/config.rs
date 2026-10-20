@@ -6,10 +6,11 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::Path;
 
-use mercurio::config::yaml::{self, Yaml};
-use mercurio::config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService};
+use mercurio::__private::parse_url_unverified;
+use mercurio::__private::yaml::{self, Yaml};
+use mercurio::ParsedUrl;
 use mercurio::testing::FakeTransport;
-use mercurio::url::{ParsedUrl, parse_url_unverified};
+use mercurio::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService};
 use mercurio::{Tag, TagFilter, TemplateVars};
 use serde_json::{Map, Value, json};
 
@@ -33,7 +34,7 @@ fn tags_json(tags: &[Tag]) -> Value {
     json!(v)
 }
 
-fn pairs(p: &mercurio::url::Pairs) -> Map<String, Value> {
+fn pairs(p: &mercurio::Pairs) -> Map<String, Value> {
     p.iter().map(|(k, v)| (k.to_string(), json!(v))).collect()
 }
 
@@ -62,7 +63,7 @@ const OMITTED_DEFAULTS: &[(&str, &str)] = &[("verify", "yes")];
 
 /// Expected URLs quote fields once more than the URL that built them.
 fn same_text(exp: &Value, got: &Value) -> bool {
-    use mercurio::url::unquote;
+    use mercurio::__private::unquote;
     match (exp, got) {
         (Value::String(e), Value::String(g)) => e == g || unquote(e) == *g || unquote(e) == unquote(g),
         (Value::Array(e), Value::Array(g)) => e.len() == g.len() && e.iter().zip(g).all(|(a, b)| same_text(a, b)),

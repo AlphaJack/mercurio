@@ -20,7 +20,7 @@ use std::time::Duration;
 
 use axum::extract::ConnectInfo;
 use mercurio::AsyncTransport;
-use mercurio::config::{Config, ConfigFormat, ConfigOptions, ConfigService};
+use mercurio::{Config, ConfigFormat, ConfigOptions, ConfigService};
 use tower::ServiceExt;
 
 use auth::{KeyState, Role};

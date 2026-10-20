@@ -57,10 +57,6 @@ pub fn sha1(data: &[u8]) -> Vec<u8> {
 pub fn sha256(data: &[u8]) -> Vec<u8> {
     digest::digest(&digest::SHA256, data).as_ref().to_vec()
 }
-/// SHA-384 digest.
-pub fn sha384(data: &[u8]) -> Vec<u8> {
-    digest::digest(&digest::SHA384, data).as_ref().to_vec()
-}
 /// SHA-512 digest.
 pub fn sha512(data: &[u8]) -> Vec<u8> {
     digest::digest(&digest::SHA512, data).as_ref().to_vec()
@@ -82,10 +78,6 @@ pub fn hmac_sha512(key: &[u8], data: &[u8]) -> Vec<u8> {
 /// Standard base64 with padding.
 pub fn b64(data: &[u8]) -> String {
     base64::engine::general_purpose::STANDARD.encode(data)
-}
-/// URL-safe base64 with padding.
-pub fn b64_url(data: &[u8]) -> String {
-    base64::engine::general_purpose::URL_SAFE.encode(data)
 }
 /// URL-safe base64 without padding.
 pub fn b64_url_nopad(data: &[u8]) -> String {

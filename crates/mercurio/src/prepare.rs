@@ -8,7 +8,9 @@ use crate::service::{Context, Limits, Notify, ServiceDef};
 /// One piece of a message after the pipeline, ready for `plan`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Piece {
+    /// Title, converted to the service's format.
     pub title: String,
+    /// Body, converted to the service's format.
     pub body: String,
     /// This piece carries the message's attachments.
     pub attach: bool,
@@ -17,6 +19,7 @@ pub struct Piece {
 /// All pieces of one message for one service.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreparedMessage {
+    /// The pieces to send, in order (more than one when the body was split).
     pub pieces: Vec<Piece>,
     /// Resolved format the service renders.
     pub format: NotifyFormat,

@@ -1,6 +1,6 @@
 //! Reading notification payloads: form, JSON, multipart or a plain text body; `X-Apprise-*` headers; `?:src=dest` field mapping; tag expressions; templates and attachments.
 
-use mercurio::config::yaml::Yaml;
+use mercurio::__private::yaml::Yaml;
 use mercurio::{Attachment, TagFilter, TemplateVars};
 use serde_json::{Map, Value};
 
@@ -57,7 +57,7 @@ pub fn form_fields(req: &Req) -> FormFields {
         for part in mercurio::parse_multipart(ct, &req.body) {
             let name = part["name"].as_str().unwrap_or("").to_string();
             if let Some(filename) = part["filename"].as_str() {
-                let data = part["b64"].as_str().and_then(mercurio::crypto::b64_decode).unwrap_or_default();
+                let data = part["b64"].as_str().and_then(mercurio::__private::b64_decode).unwrap_or_default();
                 let mime = part["content_type"].as_str().map(str::to_ascii_lowercase);
                 uploads.push(Upload { name: filename.trim().to_string(), mime, data });
             } else if let Some(v) = part["value"].as_str() {
@@ -195,7 +195,7 @@ fn apply_headers(req: &Req, c: &mut Content) -> Result<(), Reply> {
         if has_bad_escape(k) || has_bad_escape(v) {
             return Err(bad());
         }
-        entries.push((mercurio::url::unquote_plus(k), mercurio::url::unquote_plus(v)));
+        entries.push((mercurio::__private::unquote_plus(k), mercurio::__private::unquote_plus(v)));
     }
     c.template = template_vars(entries.into_iter().map(|(k, v)| (k, Value::String(v)))).map_err(|_| bad())?;
     Ok(())
@@ -214,7 +214,7 @@ fn template_vars(entries: impl IntoIterator<Item = (String, Value)>) -> Result<O
     let mut vars = TemplateVars::new();
     let mut seen = std::collections::BTreeSet::new();
     for (name, value) in entries {
-        if !mercurio::config::template::valid_name(&name) || !seen.insert(name.to_lowercase()) {
+        if !mercurio::__private::valid_name(&name) || !seen.insert(name.to_lowercase()) {
             return Err(());
         }
         let yaml = match value {
@@ -228,7 +228,7 @@ fn template_vars(entries: impl IntoIterator<Item = (String, Value)>) -> Result<O
             Value::Null => continue,
             Value::Array(_) | Value::Object(_) => return Err(()),
         };
-        let v = mercurio::config::template::validate_value(&name, &yaml).map_err(|_| ())?;
+        let v = mercurio::__private::validate_value(&name, &yaml).map_err(|_| ())?;
         vars.set(&name, v).map_err(|_| ())?;
     }
     Ok(if vars.is_empty() { None } else { Some(vars) })
@@ -546,12 +546,12 @@ pub async fn attachments(
                 .ok_or(format!("Invalid file content was provided for attachment {name}"))?
                 .split_whitespace()
                 .collect();
-            let data = mercurio::crypto::b64_decode(&text)
+            let data = mercurio::__private::b64_decode(&text)
                 .ok_or(format!("Invalid file content was provided for attachment {name}"))?;
             if data.len() as u64 > rules.size {
                 return Err(format!("Attachment {name}'s file size is too large"));
             }
-            let mime = mercurio::message::guess_mime(&name).to_string();
+            let mime = mercurio::__private::guess_mime(&name).to_string();
             out.push(Attachment::new(name, mime, data));
             continue;
         }
@@ -565,7 +565,7 @@ pub async fn attachments(
         }
         let mut source =
             mercurio::AttachSource::parse(&url).map_err(|_| format!("Failed to parse attachment {no} URL"))?;
-        if source.location() != mercurio::attachment::Location::Hosted {
+        if source.location() != mercurio::Location::Hosted {
             return Err(format!("Denied attachment {no} (not a hosted resource)"));
         }
         if let Some(n) = name {
@@ -589,7 +589,7 @@ pub async fn attachments(
         let mime = up
             .mime
             .filter(|m| !m.is_empty() && m != "application/octet-stream")
-            .unwrap_or_else(|| mercurio::message::guess_mime(&name).to_string());
+            .unwrap_or_else(|| mercurio::__private::guess_mime(&name).to_string());
         out.push(Attachment::new(name, mime, up.data));
     }
     Ok(out)

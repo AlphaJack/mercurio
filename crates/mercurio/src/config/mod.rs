@@ -1,7 +1,7 @@
 //! Configuration files: TEXT and YAML, from local files, HTTP(S) or memory, with `include` directives, tag groups and `${NAME}` templates.
 //!
 //! ```
-//! use mercurio::config::{Config, ConfigOptions};
+//! use mercurio::{Config, ConfigOptions};
 //! use mercurio::testing::FakeTransport;
 //!
 //! let text = "dev, ops=json://localhost/a\njson://localhost/b\n";
@@ -24,7 +24,7 @@ pub mod yaml;
 mod yaml_doc;
 
 pub use loader::{default_paths, expand_path};
-pub use model::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, MAX_BUFFER_SIZE, TemplateValues};
+pub use model::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService};
 pub use pending::PendingTarget;
 pub use text::detect_format;
 

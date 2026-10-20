@@ -113,7 +113,7 @@ fn param(p: &Param, delim: &[&str]) -> Value {
 /// The declared default as a JSON value of the parameter's type.
 fn default(p: &Param) -> Value {
     match p.kind {
-        Kind::Bool => Value::Bool(mercurio::parse::parse_bool(p.default, false)),
+        Kind::Bool => Value::Bool(mercurio::__private::parse_bool(p.default, false)),
         Kind::Int => p.default.parse::<i64>().map(Value::from).unwrap_or_else(|_| p.default.into()),
         Kind::Float => p.default.parse::<f64>().map(Value::from).unwrap_or_else(|_| p.default.into()),
         Kind::String | Kind::Email | Kind::Choice | Kind::List => p.default.into(),

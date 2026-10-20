@@ -1,6 +1,5 @@
 //! Public configuration types and the parsed form shared by the TEXT and YAML readers.
 
-use std::collections::BTreeMap;
 use std::fmt;
 
 use super::assets::apply_asset_value;
@@ -201,6 +200,3 @@ pub(super) struct Parsed {
     pub(super) warnings: Vec<String>,
     pub(super) placeholders: Option<Placeholders>,
 }
-
-/// Values of template variables by name (convenience for callers).
-pub type TemplateValues = BTreeMap<String, String>;

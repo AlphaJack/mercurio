@@ -221,22 +221,16 @@
 
 // Hidden modules are public only for the CLI and the integration tests; they are not a stable API. Use the re-exports below.
 mod asset;
-#[doc(hidden)]
-pub mod attachment;
-#[doc(hidden)]
-pub mod config;
+mod attachment;
+mod config;
 mod convert;
-#[doc(hidden)]
-pub mod crypto;
+mod crypto;
 mod error;
 mod http;
-#[doc(hidden)]
-pub mod message;
+mod message;
 mod net;
-#[doc(hidden)]
-pub mod parse;
-#[doc(hidden)]
-pub mod plan;
+mod parse;
+mod plan;
 mod prepare;
 mod registry;
 mod service;
@@ -250,11 +244,9 @@ mod target;
     expect(clippy::expect_used, clippy::panic, reason = "fixtures fail loudly by design")
 )]
 pub mod testing;
-#[doc(hidden)]
-pub mod time;
+mod time;
 mod transport;
-#[doc(hidden)]
-pub mod url;
+mod url;
 mod util;
 
 #[cfg(feature = "transport-blocking")]
@@ -265,10 +257,10 @@ mod report;
 #[cfg(feature = "transport-tokio")]
 mod tokio;
 
-pub use asset::{Asset, ICON_PNG, ICON_SVG, IconFile, PAGES_URL, REPOSITORY_URL};
-pub use attachment::{AttachSource, AttachmentSet};
-pub use config::template::TemplateVars;
-pub use config::{Config, ConfigFormat, ConfigOptions};
+pub use asset::{Asset, ICON_PNG, ICON_SVG, IconFile, ImageSize, PAGES_URL, REPOSITORY_URL};
+pub use attachment::{AttachSource, AttachmentSet, Cache, Location};
+pub use config::template::{TemplateError, TemplateVars};
+pub use config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
 pub use error::{Error, ErrorClass, Result, ResultExt};
 #[doc(hidden)]
 pub use http::parse_multipart;
@@ -288,6 +280,7 @@ pub use crate::tokio::TokioTransport;
 #[cfg(feature = "transport-blocking")]
 pub use blocking::BlockingTransport;
 pub use mercurio_async::AsyncMercurio;
+pub use prepare::{Piece, PreparedMessage};
 pub use service::{Context, Kind, Limits, Notify, Param, Secret, ServiceDef, UrlIdentifier};
 pub use store::{Memo, PersistentStore, Store, StoreRef};
 pub use tag::{Tag, TagFilter};
@@ -296,10 +289,18 @@ pub use transport::{
     FileMeta, FileOp, FileOutput, Transport,
 };
 pub use url::COMMON_PARAMS;
-pub use url::ParsedUrl;
+pub use url::{Pairs, ParsedUrl};
 
+/// Helpers for the CLI, the integration tests, `xtask` and the crate's macros. Not a stable API: anything here may change in any release.
 #[doc(hidden)]
 pub mod __private {
+    pub use crate::config::template::{TemplateSchema, valid_name, validate_value};
+    pub use crate::config::{default_paths, detect_format, expand_path, spec, yaml};
+    pub use crate::crypto::{b64, b64_decode, hmac_sha256, random_bytes, random_hex};
+    pub use crate::message::guess_mime;
+    pub use crate::parse::{parse_bool, parse_urls};
+    pub use crate::time::utc_parts;
+    pub use crate::url::{parse_url_unverified, unquote, unquote_plus};
     pub use regex::Regex;
 }
 
