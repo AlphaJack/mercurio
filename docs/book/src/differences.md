@@ -71,8 +71,8 @@ on its page (see the [service list](services/index.md)), taken from the
   *intentional*
 - **Not implemented:** `-P/--plugin-path` (register custom services from
   Rust), `-T/--theme`, `-j/--interpret-emojis`, `-SM/--storage-mode`,
-  `-SUL/--storage-uid-length`, `-D/--debug` (use `-vvv`). *todo* for
-  `-T`, `-SM`, `-SUL`; *intentional* for the rest.
+  `-D/--debug` (use `-vvv`). *todo* for `-T`, `-SM`; *intentional* for the
+  rest.
 - **`-d`** does not print storage URL ids; use `mercurio storage`.
   *intentional*
 - **`check`, `serve`, `services`** are mercurio subcommands. *intentional*
@@ -96,10 +96,9 @@ on its page (see the [service list](services/index.md)), taken from the
   request's level and stream them live while sending. mercurio's lines
   have their own wording, redact URLs, and add one INFO or ERROR line per
   finished service; `APPRISE_WEBHOOK_URL` gets INFO and up. *intentional*
-- **Persistent storage.** apprise-api sizes URL ids by
-  `STORAGE_UID_LENGTH` and prunes storage and logins on a schedule ->
-  mercurio uses fixed 8-character ids, a different layout and no
-  automatic pruning. *todo*
+- **Persistent storage.** apprise-api prunes storage and logins on a
+  schedule -> mercurio uses a different layout and no automatic pruning;
+  `APPRISE_STORAGE_UID_LENGTH` works the same. *todo*
 - **Workers.** apprise-api sizes gunicorn by `WORKER_COUNT` /
   `WORKER_TIMEOUT` -> mercurio allows 512 requests in flight and a 30 s
   socket timeout. *intentional*
@@ -157,8 +156,6 @@ on its page (see the [service list](services/index.md)), taken from the
 - **Modes.** Apprise has `auto`, `flush` and `memory` -> mercurio writes
   saved entries on every change; entries carry no checksum and there is no
   size cap. *todo* (`-SM`)
-- **URL ids** are always 8 hex characters and unsalted (no `-SUL`,
-  `storage_salt`, `storage_idlen`). *todo*
 - **`mercurio storage list`** shows every configured URL, including
   services that never store anything (`unused`); Apprise omits them.
   *intentional*

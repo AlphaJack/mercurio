@@ -226,7 +226,11 @@ impl Server {
 
     /// The asset for a send, with persistent storage when enabled.
     fn asset(&self, persistent: bool) -> mercurio::Asset {
-        let asset = mercurio::Asset { http_redirects: self.s.http_redirects, ..mercurio::Asset::default() };
+        let asset = mercurio::Asset {
+            http_redirects: self.s.http_redirects,
+            storage_idlen: self.s.storage_idlen,
+            ..mercurio::Asset::default()
+        };
         match (&self.s.storage, persistent) {
             (Some(dir), true) => asset.with_storage(dir.clone()),
             (Some(_) | None, _) => asset,

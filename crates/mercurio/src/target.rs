@@ -254,11 +254,13 @@ impl Target {
         }
     }
 
-    /// URL id: the first 8 hex characters of a SHA-256 of the URL's identifying parts. Names the store.
-    pub fn url_id(&self, _asset: &Asset) -> Option<String> {
+    /// URL id: the SHA-256 of [`Asset::storage_salt`] and the URL's identifying parts, as hex cut to [`Asset::storage_idlen`] characters (8 by default; 0 keeps all 64). Names the store; the same as Apprise's `url_id()`.
+    pub fn url_id(&self, asset: &Asset) -> Option<String> {
         let material = self.storage.id_material.as_ref()?;
-        let mut id = crate::crypto::hex(&crate::crypto::sha256(material));
-        id.truncate(8);
+        let mut id = crate::crypto::hex(&crate::crypto::sha256(&[asset.storage_salt.as_slice(), material].concat()));
+        if asset.storage_idlen > 0 {
+            id.truncate(asset.storage_idlen);
+        }
         Some(id)
     }
 
@@ -428,4 +430,23 @@ fn default_url_identifier(p: &ParsedUrl) -> Vec<u8> {
     out.extend_from_slice(path.trim_end_matches('/').as_bytes());
     out.push(if p.secure { b's' } else { b'i' });
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The ids Apprise's `url_id()` gives: SHA-256 of salt, scheme, password, user, host, port, path and `s`/`i`.
+    #[test]
+    fn url_id_follows_salt_and_length() {
+        let t = parse("json://user:pass@example.com:8080/a/b?x=1").unwrap();
+        let full = "1a10d7c9a31fd4f80a54ea3d6a27ca35861e455d23b9724284699aeb07b7b9ba";
+        assert_eq!(t.url_id(&Asset::default()).as_deref(), Some("1a10d7c9"));
+        let all = Asset { storage_idlen: 0, ..Asset::default() };
+        assert_eq!(t.url_id(&all).as_deref(), Some(full));
+        let short = Asset { storage_idlen: 2, ..Asset::default() };
+        assert_eq!(t.url_id(&short).as_deref(), Some("1a"));
+        let salted = Asset { storage_salt: b"pepper".to_vec(), ..Asset::default() };
+        assert_eq!(t.url_id(&salted).as_deref(), Some("504f5bc0"));
+    }
 }
