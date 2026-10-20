@@ -412,3 +412,7 @@ harness = false
 [[bench]]
 name = "xmpp"
 harness = false
+
+[[bench]]
+name = "aprs"
+harness = false
