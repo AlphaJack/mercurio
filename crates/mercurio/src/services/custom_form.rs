@@ -2,7 +2,7 @@
 
 use crate::http::{Method, Multipart};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
-use crate::services::custom_json::{double_unquoted, endpoint, parse_method};
+use crate::services::_webhook::{double_unquoted, endpoint, parse_method};
 use crate::url::ParsedUrl;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 

@@ -5,7 +5,7 @@
 
 use crate::service::{Context, Notify, Param, ServiceDef};
 use crate::transport::{Datagram, DatagramTarget};
-use crate::services::custom_json::double_unquoted;
+use crate::services::_webhook::double_unquoted;
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 

@@ -123,7 +123,7 @@ impl Fetch {
         self.params.push((k.into(), v.into()));
         self
     }
-    #[cfg_attr(not(feature = "extra"), expect(dead_code, reason = "used by end-to-end encryption only"))]
+    #[cfg_attr(not(feature = "service-matrix-e2ee"), expect(dead_code, reason = "used by end-to-end encryption only"))]
     pub fn ok_status(mut self, s: &'static [u16]) -> Self {
         self.ok_status = s;
         self
@@ -140,12 +140,12 @@ impl Fetch {
         self.max_bytes = Some(max);
         self
     }
-    #[cfg_attr(not(feature = "extra"), expect(dead_code, reason = "used by end-to-end encryption only"))]
+    #[cfg_attr(not(feature = "service-matrix-e2ee"), expect(dead_code, reason = "used by end-to-end encryption only"))]
     pub fn timeout(mut self, t: Duration) -> Self {
         self.timeout = Some(t);
         self
     }
-    #[cfg_attr(not(feature = "extra"), expect(dead_code, reason = "used by end-to-end encryption only"))]
+    #[cfg_attr(not(feature = "service-matrix-e2ee"), expect(dead_code, reason = "used by end-to-end encryption only"))]
     pub fn retry_budget(mut self, t: Duration) -> Self {
         self.max_retry_wait = Some(t);
         self
@@ -269,7 +269,7 @@ pub(super) struct Session {
     outcomes: Vec<(String, Option<Error>)>,
     /// Plaintext attachment events, uploaded once per send.
     attachments: Option<Vec<Value>>,
-    #[cfg(feature = "extra")]
+    #[cfg(feature = "service-matrix-e2ee")]
     pub e2ee: super::e2ee_flow::E2ee,
 }
 
@@ -289,7 +289,7 @@ impl Session {
             queue: VecDeque::new(),
             outcomes: Vec::new(),
             attachments: None,
-            #[cfg(feature = "extra")]
+            #[cfg(feature = "service-matrix-e2ee")]
             e2ee: Default::default(),
         };
         if s.cfg.mode != Mode::T2bot {
@@ -308,7 +308,7 @@ impl Session {
             let n = s.store.get("transaction_id").and_then(|v| v.as_u64()).unwrap_or(0);
             s.txn = Txn::Counter(n);
         }
-        #[cfg(feature = "extra")]
+        #[cfg(feature = "service-matrix-e2ee")]
         super::e2ee_flow::restore(&mut s);
         s
     }
@@ -323,7 +323,7 @@ impl Session {
     }
 
     pub fn e2ee_wanted(&self) -> bool {
-        cfg!(feature = "extra") && self.cfg.e2ee && self.cfg.secure
+        cfg!(feature = "service-matrix-e2ee") && self.cfg.e2ee && self.cfg.secure
     }
 
     fn token_is_not_password(&self) -> bool {
@@ -780,7 +780,7 @@ impl Session {
     }
 
     fn after_dm_rooms(self) -> Plan {
-        #[cfg(feature = "extra")]
+        #[cfg(feature = "service-matrix-e2ee")]
         if self.e2ee_wanted() {
             return super::e2ee_flow::setup(self, Box::new(|s, ()| s.next_room()));
         }
@@ -807,7 +807,7 @@ impl Session {
 
     fn deliver(self, label: String, room_id: String) -> Plan {
         // With E2EE wanted, a room is sent plaintext only after the server said it has no encryption state; an encrypted room never gets plaintext, even when E2EE setup failed.
-        #[cfg(feature = "extra")]
+        #[cfg(feature = "service-matrix-e2ee")]
         if self.e2ee_wanted() {
             return super::e2ee_flow::room_encrypted(
                 self,
@@ -904,7 +904,7 @@ impl Session {
     }
 
     fn after_rooms(self) -> Plan {
-        #[cfg(feature = "extra")]
+        #[cfg(feature = "service-matrix-e2ee")]
         if self.e2ee.capable && self.cfg.autoverify && self.outcomes.iter().all(|(_, e)| e.is_none()) {
             super::sas::refresh_verified_state(&self);
         }

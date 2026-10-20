@@ -3,7 +3,7 @@
 //! Modes:
 //! - Server (default): log in with `user:password` (falling back to registration) or use a raw access token (`matrixs://token@host/...`), then join rooms (`!id`, `#alias`, auto-created when missing), open direct-message rooms for `@user` targets, upload attachments to the media repository and send `m.text`/`m.notice` events (API v3 or `?v=2`). Homeserver discovery (`.well-known`) runs for `matrixs://`.
 //! - Webhooks (`?mode=matrix|slack|t2bot|hookshot`, t2bot also as `matrix://{64-char-token}` or the native t2bot URL).
-//! - End-to-end encryption (cargo feature `extra`; `?e2ee=no` disables it): device keys are uploaded, encrypted rooms get Megolm events, room keys are shared over Olm, attachments are AES-CTR encrypted. `?autoverify=yes` answers one same-user SAS verification.
+//! - End-to-end encryption (cargo feature `service-matrix-e2ee`; `?e2ee=no` disables it): device keys are uploaded, encrypted rooms get Megolm events, room keys are shared over Olm, attachments are AES-CTR encrypted. `?autoverify=yes` answers one same-user SAS verification.
 //!
 //! Persistent state (session, transaction counter, room cache, discovery, E2EE identity and Megolm sessions) lives in the target's [`crate::Store`]. In memory mode the session lasts as long as the target and [`Target::close`](crate::Target::close) logs out; with a storage path it survives between runs and is never logged out. `?keystore=DIR` keeps this URL's state under `DIR` (flush mode) whatever the asset's storage settings are.
 //!
@@ -24,11 +24,11 @@
 mod server;
 pub mod sizing;
 
-#[cfg(feature = "extra")]
+#[cfg(feature = "service-matrix-e2ee")]
 pub mod e2ee;
-#[cfg(feature = "extra")]
+#[cfg(feature = "service-matrix-e2ee")]
 mod e2ee_flow;
-#[cfg(feature = "extra")]
+#[cfg(feature = "service-matrix-e2ee")]
 mod sas;
 
 use std::path::PathBuf;
@@ -135,7 +135,7 @@ pub(crate) struct Config {
     pub hsreq: bool,
     pub webhook_path: String,
     pub e2ee: bool,
-    #[cfg_attr(not(feature = "extra"), expect(dead_code, reason = "used by end-to-end encryption only"))]
+    #[cfg_attr(not(feature = "service-matrix-e2ee"), expect(dead_code, reason = "used by end-to-end encryption only"))]
     pub autoverify: bool,
     /// t2bot webhook id.
     pub t2bot_token: Option<Secret>,
@@ -293,7 +293,7 @@ fn parse_native(url: &str) -> Option<String> {
 
 impl Config {
     fn e2ee_capable(&self) -> bool {
-        cfg!(feature = "extra") && self.e2ee && self.secure
+        cfg!(feature = "service-matrix-e2ee") && self.e2ee && self.secure
     }
 
     /// Store namespace: the URL identity (scheme, mode, host, port, path, credentials), hashed.

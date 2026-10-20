@@ -47,23 +47,329 @@ mercurio = { path = ".", default-features = false, features = ["testing"] }
 insta = { version = "1.49.0", features = ["yaml"] }
 
 [features]
-# Every service. `default-features = false` drops the `extra` services and the crates they pull in.
-default = ["extra"]
-# Services that need extra cryptography crates (listed below), and Matrix end-to-end encryption.
-extra = [
-  "dep:aes",
-  "dep:aes-gcm",
-  "dep:argon2",
-  "dep:blake2",
-  "dep:chacha20poly1305",
-  "dep:curve25519-dalek",
-  "dep:poly1305",
-  "dep:salsa20",
-  "dep:zeroize",
+default = ["all-services"]
+all-services = [
+  "service-africas-talking",
+  "service-apprise-api",
+  "service-aprs",
+  "service-bark",
+  "service-blink1",
+  "service-bluesky",
+  "service-brevo",
+  "service-bulksms",
+  "service-bulkvs",
+  "service-burstsms",
+  "service-chanify",
+  "service-clickatell",
+  "service-clicksend",
+  "service-courier",
+  "service-custom-form",
+  "service-custom-json",
+  "service-custom-xml",
+  "service-d7networks",
+  "service-dapnet",
+  "service-dbus",
+  "service-deltachat",
+  "service-dingtalk",
+  "service-discord",
+  "service-dot",
+  "service-eight00com",
+  "service-email",
+  "service-emby",
+  "service-enigma2",
+  "service-evolution",
+  "service-exotel",
+  "service-fcm",
+  "service-feishu",
+  "service-file",
+  "service-flock",
+  "service-flowtriq",
+  "service-fluxer",
+  "service-fortysixelks",
+  "service-freemobile",
+  "service-glib",
+  "service-gnome",
+  "service-goalert",
+  "service-google-chat",
+  "service-gotify",
+  "service-groupme",
+  "service-home-assistant",
+  "service-httpsms",
+  "service-humhub",
+  "service-ifttt",
+  "service-irc",
+  "service-jellyfin",
+  "service-jira",
+  "service-join",
+  "service-kavenegar",
+  "service-knock",
+  "service-kodi",
+  "service-kook",
+  "service-lametric",
+  "service-lark",
+  "service-lauther",
+  "service-line",
+  "service-logger",
+  "service-macosx",
+  "service-mailersend",
+  "service-mailgun",
+  "service-mastodon",
+  "service-matrix",
+  "service-mattermost",
+  "service-messagebird",
+  "service-misskey",
+  "service-mobilemessage",
+  "service-mqtt",
+  "service-msg91",
+  "service-nextcloud",
+  "service-nextcloudtalk",
+  "service-notica",
+  "service-notifiarr",
+  "service-notifyre",
+  "service-novu",
+  "service-ntfy",
+  "service-octopush",
+  "service-office365",
+  "service-one-signal",
+  "service-onebot",
+  "service-pagerduty",
+  "service-pagertree",
+  "service-parseplatform",
+  "service-pinglet",
+  "service-pingram",
+  "service-plivo",
+  "service-postmark",
+  "service-prowl",
+  "service-pushbullet",
+  "service-pushdeer",
+  "service-pushme",
+  "service-pushover",
+  "service-pushplus",
+  "service-pushsafer",
+  "service-pushward",
+  "service-pushy",
+  "service-qq",
+  "service-reddit",
+  "service-resend",
+  "service-revolt",
+  "service-ringcentral",
+  "service-rocketchat",
+  "service-rsyslog",
+  "service-ryver",
+  "service-sendgrid",
+  "service-sendpulse",
+  "service-serverchan",
+  "service-serwersms",
+  "service-ses",
+  "service-seven",
+  "service-sfr",
+  "service-signal-api",
+  "service-signalgrid",
+  "service-signl4",
+  "service-simplepush",
+  "service-sinch",
+  "service-slack",
+  "service-smpp",
+  "service-smsc",
+  "service-smseagle",
+  "service-smsmanager",
+  "service-smtp2go",
+  "service-sns",
+  "service-sogs",
+  "service-sparkpost",
+  "service-spike",
+  "service-splunk",
+  "service-spugpush",
+  "service-stackfield",
+  "service-streamlabs",
+  "service-synology",
+  "service-syslog",
+  "service-techuluspush",
+  "service-telegram",
+  "service-telnyx",
+  "service-threema",
+  "service-trigv",
+  "service-twilio",
+  "service-twist",
+  "service-twitter",
+  "service-vapid",
+  "service-viber",
+  "service-voipms",
+  "service-vonage",
+  "service-webexteams",
+  "service-wechat",
+  "service-wecombot",
+  "service-whatsapp",
+  "service-windows",
+  "service-workflows",
+  "service-wpush",
+  "service-wxpusher",
+  "service-xmpp",
+  "service-youlmk",
+  "service-zoom",
+  "service-zulip",
+  "service-matrix-e2ee",
 ]
-# Compile the fixture runner (`testing::fixtures`); `testing::FakeTransport` is always available.
+
 testing = []
 
-# The services each feature gates. This list is read by build.rs and the book generator.
-[package.metadata.mercurio.feature-services]
-extra = ["bark", "emby", "jellyfin", "pushover", "simplepush", "sogs"]
+service-africas-talking = []
+service-apprise-api = []
+service-aprs = []
+service-bark = ["dep:aes-gcm"]
+service-blink1 = []
+service-bluesky = []
+service-brevo = []
+service-bulksms = []
+service-bulkvs = []
+service-burstsms = []
+service-chanify = []
+service-clickatell = []
+service-clicksend = []
+service-courier = []
+service-custom-form = []
+service-custom-json = []
+service-custom-xml = []
+service-d7networks = []
+service-dapnet = []
+service-dbus = []
+service-deltachat = []
+service-dingtalk = []
+service-discord = []
+service-dot = []
+service-eight00com = []
+service-email = []
+service-emby = []
+service-enigma2 = []
+service-evolution = []
+service-exotel = []
+service-fcm = []
+service-feishu = []
+service-file = []
+service-flock = []
+service-flowtriq = []
+service-fluxer = []
+service-fortysixelks = []
+service-freemobile = []
+service-glib = []
+service-gnome = []
+service-goalert = []
+service-google-chat = []
+service-gotify = []
+service-groupme = []
+service-home-assistant = []
+service-httpsms = []
+service-humhub = []
+service-ifttt = []
+service-irc = []
+service-jellyfin = []
+service-jira = []
+service-join = []
+service-kavenegar = []
+service-knock = []
+service-kodi = []
+service-kook = []
+service-lametric = []
+service-lark = []
+service-lauther = []
+service-line = []
+service-logger = []
+service-macosx = []
+service-mailersend = []
+service-mailgun = []
+service-mastodon = []
+service-matrix = []
+service-matrix-e2ee = ["service-matrix", "dep:aes", "dep:curve25519-dalek", "dep:zeroize"]
+service-mattermost = []
+service-messagebird = []
+service-misskey = []
+service-mobilemessage = []
+service-mqtt = []
+service-msg91 = []
+service-nextcloud = []
+service-nextcloudtalk = []
+service-notica = []
+service-notifiarr = []
+service-notifyre = []
+service-novu = []
+service-ntfy = []
+service-octopush = []
+service-office365 = []
+service-one-signal = []
+service-onebot = []
+service-pagerduty = []
+service-pagertree = []
+service-parseplatform = []
+service-pinglet = []
+service-pingram = []
+service-plivo = []
+service-postmark = []
+service-prowl = []
+service-pushbullet = []
+service-pushdeer = []
+service-pushme = []
+service-pushover = ["dep:aes"]
+service-pushplus = []
+service-pushsafer = []
+service-pushward = []
+service-pushy = []
+service-qq = []
+service-reddit = []
+service-resend = []
+service-revolt = []
+service-ringcentral = []
+service-rocketchat = []
+service-rsyslog = []
+service-ryver = []
+service-sendgrid = []
+service-sendpulse = []
+service-serverchan = []
+service-serwersms = []
+service-ses = []
+service-seven = []
+service-sfr = []
+service-signal-api = []
+service-signalgrid = []
+service-signl4 = []
+service-simplepush = ["dep:argon2", "dep:chacha20poly1305", "dep:curve25519-dalek", "dep:poly1305", "dep:salsa20"]
+service-sinch = []
+service-slack = []
+service-smpp = []
+service-smsc = []
+service-smseagle = []
+service-smsmanager = []
+service-smtp2go = []
+service-sns = []
+service-sogs = ["dep:blake2"]
+service-sparkpost = []
+service-spike = []
+service-splunk = []
+service-spugpush = []
+service-stackfield = []
+service-streamlabs = []
+service-synology = []
+service-syslog = []
+service-techuluspush = []
+service-telegram = []
+service-telnyx = []
+service-threema = []
+service-trigv = []
+service-twilio = []
+service-twist = []
+service-twitter = []
+service-vapid = []
+service-viber = []
+service-voipms = []
+service-vonage = []
+service-webexteams = []
+service-wechat = []
+service-wecombot = []
+service-whatsapp = []
+service-windows = []
+service-workflows = []
+service-wpush = []
+service-wxpusher = []
+service-xmpp = []
+service-youlmk = []
+service-zoom = []
+service-zulip = []

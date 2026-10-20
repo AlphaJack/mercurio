@@ -1,6 +1,6 @@
 //! Generates the service registry and the per-fixture tests.
 //!
-//! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `<id>`. It must export `pub static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
+//! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `service-<id>` (`_` becomes `-`), which `Cargo.toml` must declare and list in `all-services`. It must export `pub static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
 
 #![expect(clippy::unwrap_used, clippy::expect_used, clippy::panic, reason = "a build script should fail loudly")]
 
@@ -14,15 +14,9 @@ fn main() {
     let root = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
     let manifest = root.join("Cargo.toml");
-    let features: BTreeSet<String> = toml_table(&manifest, "[features]").into_keys().collect();
-    // Service id -> the feature that gates it
-    let mut gated: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
-    for (feature, services) in toml_table(&manifest, "[package.metadata.mercurio.feature-services]") {
-        assert!(features.contains(&feature), "feature-services names `{feature}`, which is not a Cargo feature");
-        for service in services {
-            gated.insert(service, feature.clone());
-        }
-    }
+    let table = toml_table(&manifest, "[features]");
+    let features: BTreeSet<&String> = table.keys().collect();
+    let all_services: BTreeSet<&String> = table.get("all-services").into_iter().flatten().collect();
 
     // The GitHub Pages site of the repository (`[workspace.package] repository`): the book, and the icons services link to.
     let repository = env::var("CARGO_PKG_REPOSITORY").unwrap();
@@ -55,18 +49,23 @@ fn main() {
     // `_name.rs` files are shared helpers for a group of services: always compiled, never registered, no feature of their own.
     let (helpers, modules): (Vec<_>, Vec<_>) = modules.into_iter().partition(|(n, _)| n.starts_with('_'));
     let mut code = String::new();
-    // Without `extra` some helpers lose their only callers. Which ones depends on the features, so `expect(dead_code)` could go unfulfilled: allow it and expect the `allow_attributes` lint that `allow` trips.
-    let helper_attr = "#[cfg_attr(not(feature = \"extra\"), \
+    // Without `all-services` some helpers lose their only callers. Which ones depends on the features, so `expect(dead_code)` could go unfulfilled: allow it and expect the `allow_attributes` lint that `allow` trips.
+    let helper_attr = "#[cfg_attr(not(feature = \"all-services\"), \
         expect(clippy::allow_attributes, reason = \"generated: which helpers go unused depends on the features\"), \
         allow(dead_code, reason = \"helpers serve optional services\"))]";
     for (name, path) in &helpers {
         writeln!(code, "{helper_attr}\n#[path = {path:?}]\npub mod {name};").unwrap();
     }
-    // A service listed under a feature in `feature-services` is compiled with that feature; every other service always is.
-    let gate = |name: &str| match gated.get(name) {
-        Some(feature) => format!("#[cfg(feature = \"{feature}\")]\n"),
-        None => String::new(),
-    };
+    // Every service is compiled only with its own feature.
+    for (name, _) in &modules {
+        let feature = service_feature(name);
+        assert!(
+            features.contains(&feature),
+            "service `{name}` has no Cargo feature: add `{feature} = []` to [features] in Cargo.toml"
+        );
+        assert!(all_services.contains(&feature), "`{feature}` is missing from `all-services` in Cargo.toml");
+    }
+    let gate = |name: &str| format!("#[cfg(feature = \"{}\")]\n", service_feature(name));
     for (name, path) in &modules {
         writeln!(code, "{}#[path = {path:?}]\npub mod {name};", gate(name)).unwrap();
     }
@@ -79,13 +78,19 @@ fn main() {
     code.push_str("];\n");
     fs::write(out.join("services_generated.rs"), code).unwrap();
 
-    // A misspelt id in `feature-services` would leave its service ungated.
-    for name in gated.keys() {
-        assert!(modules.iter().any(|(m, _)| m == name), "feature-services lists `{name}`, which is not a service");
+    // A `service-*` feature either gates a service or adds to one it turns on (`service-matrix-e2ee` turns on `service-matrix`).
+    for feature in features.iter().filter(|f| f.starts_with("service-")) {
+        let gates = modules.iter().any(|(m, _)| service_feature(m) == **feature);
+        let extends =
+            table[*feature].iter().any(|f| f.starts_with("service-") && feature.starts_with(&format!("{f}-")));
+        assert!(
+            gates || extends,
+            "`{feature}` names no service in src/services and turns on no `service-<id>` it extends"
+        );
     }
 
     book_doctests(&root, &out);
-    features_doc(&manifest, &toml_table(&manifest, "[features]"), &gated, &out);
+    features_doc(&manifest, &table, &out);
 
     let mut tests = String::new();
     let fixtures_dir = root.join("tests/fixtures/services");
@@ -110,6 +115,11 @@ fn main() {
         }
     }
     fs::write(out.join("fixtures_generated.rs"), tests).unwrap();
+}
+
+/// `service-google-chat` for `google_chat`.
+fn service_feature(id: &str) -> String {
+    format!("service-{}", id.replace('_', "-"))
 }
 
 fn display(p: &Path) -> String {
@@ -200,13 +210,8 @@ fn pages_url(repository: &str) -> String {
     format!("https://{}.{domain}/{repo}", owner.to_lowercase())
 }
 
-/// The crate docs' feature table: every feature with a comment directly above it in `Cargo.toml`, in file order, with the features and services it turns on (`feature-services`).
-fn features_doc(
-    manifest: &Path,
-    table: &std::collections::BTreeMap<String, Vec<String>>,
-    gated: &std::collections::BTreeMap<String, String>,
-    out: &Path,
-) {
+/// The crate docs' feature table: every feature with a comment directly above it in `Cargo.toml`, in file order, with the features it turns on (a count for the `service-*` ones).
+fn features_doc(manifest: &Path, table: &std::collections::BTreeMap<String, Vec<String>>, out: &Path) {
     let text = fs::read_to_string(manifest).unwrap();
     let mut doc = String::from("| Feature | Description | Turns on |\n|---|---|---|\n");
     let (mut in_features, mut comment) = (false, Vec::new());
@@ -224,9 +229,14 @@ fn features_doc(
         }
         if let Some((key, _)) = line.split_once('=').filter(|_| !comment.is_empty()) {
             let key = key.trim();
-            let features = table.get(key).into_iter().flatten().filter(|f| !f.starts_with("dep:"));
-            let services = gated.iter().filter(|(_, f)| *f == key).map(|(s, _)| s);
-            let on: Vec<String> = features.chain(services).map(|f| format!("`{f}`")).collect();
+            let features: Vec<&String> =
+                table.get(key).into_iter().flatten().filter(|f| !f.starts_with("dep:")).collect();
+            let services = features.iter().filter(|f| f.starts_with("service-")).count();
+            let mut on: Vec<String> = features.iter().filter(|_| services <= 1).map(|f| format!("`{f}`")).collect();
+            if services > 1 {
+                on = vec![format!("{services} `service-*` features")];
+                on.extend(features.iter().filter(|f| !f.starts_with("service-")).map(|f| format!("`{f}`")));
+            }
             writeln!(doc, "| `{key}` | {} | {} |", comment.join(" "), on.join(", ")).unwrap();
         }
         comment.clear();

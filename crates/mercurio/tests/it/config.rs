@@ -192,7 +192,7 @@ fn entry_scheme(e: &Value) -> &str {
     e["url"]["schema"].as_str().or_else(|| e["schema"].as_str()).unwrap_or_default()
 }
 
-/// Drop the expected services whose scheme this build does not compile in (the services behind the `extra` feature), together with their template resolutions and tag-matching indices. Returns the expectations and how many services were dropped.
+/// Drop the expected services whose scheme this build does not compile in (services whose `service-<id>` feature is off), together with their template resolutions and tag-matching indices. Returns the expectations and how many services were dropped.
 fn compiled_in(exp: &Value) -> (Value, usize) {
     let services = exp["services"].as_array().unwrap();
     let keep: Vec<bool> = services.iter().map(|e| mercurio::service_for_scheme(entry_scheme(e)).is_some()).collect();
