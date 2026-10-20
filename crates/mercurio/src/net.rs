@@ -7,7 +7,6 @@ use rustls::pki_types::{CertificateDer, ServerName};
 use rustls::{ClientConfig, RootCertStore};
 
 use crate::error::{Error, Result};
-use crate::transport::AsyncConn;
 
 /// Root certificates from the PEM bundle named by `SSL_CERT_FILE` (or `REQUESTS_CA_BUNDLE`), read once: both transports build their clients from it, so a changed bundle takes a restart. The bundle replaces the Mozilla roots; `None` when neither is set or the file has no usable certificate.
 pub(crate) fn ca_bundle() -> Option<&'static [CertificateDer<'static>]> {
@@ -97,48 +96,3 @@ impl rustls::client::danger::ServerCertVerifier for NoVerify {
 
 /// Bytes asked for in one read of a socket.
 pub(crate) const READ_CHUNK: usize = 4096;
-
-/// Line-oriented helpers shared by text protocols (SMTP, IRC, ...).
-pub struct LineConn<'a> {
-    conn: &'a mut dyn AsyncConn,
-    buf: Vec<u8>,
-}
-
-impl<'a> LineConn<'a> {
-    pub fn new(conn: &'a mut dyn AsyncConn) -> Self {
-        Self { conn, buf: Vec::new() }
-    }
-
-    /// Read one line without its trailing `\r\n`.
-    pub async fn read_line(&mut self) -> Result<String> {
-        loop {
-            if let Some(pos) = self.buf.iter().position(|b| *b == b'\n') {
-                let mut line: Vec<u8> = self.buf.drain(..=pos).collect();
-                line.pop();
-                if line.last() == Some(&b'\r') {
-                    line.pop();
-                }
-                return Ok(String::from_utf8_lossy(&line).into_owned());
-            }
-            let mut chunk = [0u8; READ_CHUNK];
-            let n = self.conn.read(&mut chunk).await.map_err(Error::unconfirmed)?;
-            if n == 0 {
-                return Err(Error::unconfirmed("connection closed"));
-            }
-            self.buf.extend_from_slice(&chunk[..n]);
-        }
-    }
-
-    /// Write `line` followed by `\r\n`.
-    pub async fn write_line(&mut self, line: &str) -> Result<()> {
-        self.conn.write_all(line.as_bytes()).await.map_err(Error::unconfirmed)?;
-        self.conn.write_all(b"\r\n").await.map_err(Error::unconfirmed)?;
-        self.conn.flush().await.map_err(Error::unconfirmed)
-    }
-}
-
-impl std::fmt::Debug for LineConn<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("LineConn").field("buffered", &self.buf.len()).finish()
-    }
-}

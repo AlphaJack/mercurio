@@ -35,8 +35,35 @@ pub enum Input<'a> {
     ReadError(io::Error),
     /// The TLS upgrade finished.
     Tls(Result<()>),
-    /// Sending the last [`Output::Write`] failed; the protocol sees the error on its next read, as on a socket.
+    /// Sending the last [`Output::Write`] failed.
     WriteError(io::Error),
+}
+
+/// Received bytes cut into lines, for line-based protocols.
+#[derive(Debug, Default)]
+pub struct LineBuf(Vec<u8>);
+
+impl LineBuf {
+    /// Append bytes from the peer.
+    pub fn push(&mut self, data: &[u8]) {
+        self.0.extend_from_slice(data);
+    }
+
+    /// The next complete line without its `\r\n` (or `\n`); `None` until one has arrived.
+    pub fn next_line(&mut self) -> Option<String> {
+        let pos = self.0.iter().position(|b| *b == b'\n')?;
+        let mut line: Vec<u8> = self.0.drain(..=pos).collect();
+        line.pop();
+        if line.last() == Some(&b'\r') {
+            line.pop();
+        }
+        Some(String::from_utf8_lossy(&line).into_owned())
+    }
+
+    /// Drop what is buffered (plaintext left over before a TLS upgrade).
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
 }
 
 /// Run `machine` on a real connection until it is done.

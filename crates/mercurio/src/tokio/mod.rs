@@ -388,8 +388,9 @@ mod tests {
         });
         let t = TokioTransport::new();
         let mut conn = t.connect(&Endpoint::new("127.0.0.1", port, false)).await.unwrap();
-        let mut line = crate::net::LineConn::new(conn.as_mut());
-        assert_eq!(line.read_line().await.unwrap(), "220 hi");
+        let mut buf = [0u8; 8];
+        conn.read_exact(&mut buf).await.unwrap();
+        assert_eq!(&buf, b"220 hi\r\n");
 
         #[expect(clippy::disallowed_methods, reason = "temporary directories need names unique across runs")]
         let unique = crate::env::system().random_hex(6);

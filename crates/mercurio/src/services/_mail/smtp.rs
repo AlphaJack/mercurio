@@ -6,7 +6,7 @@ use md5::{Digest, Md5};
 
 use crate::crypto;
 use crate::error::{Error, Result};
-use crate::machine::{Input, Output, Protocol};
+use crate::machine::{Input, LineBuf, Output, Protocol};
 use crate::service::Secret;
 
 /// Transport security of the session.
@@ -139,7 +139,7 @@ pub struct Smtp {
     state: State,
     ext: Extensions,
     /// Received bytes not yet split into lines.
-    rx: Vec<u8>,
+    rx: LineBuf,
     /// The lines of a multi-line reply so far.
     reply: Vec<String>,
     out: Vec<u8>,
@@ -155,7 +155,7 @@ pub fn session(job: Job, _tls: bool) -> Smtp {
         job,
         state: State::Greeting,
         ext: Extensions::default(),
-        rx: Vec::new(),
+        rx: LineBuf::default(),
         reply: Vec::new(),
         out: Vec::new(),
         failures: Vec::new(),
@@ -204,17 +204,9 @@ impl Smtp {
 
     /// Split received bytes into lines and replies, acting on each complete reply.
     fn received(&mut self, data: &[u8]) {
-        self.rx.extend_from_slice(data);
-        while let Some(pos) = self.rx.iter().position(|b| *b == b'\n') {
-            if !self.reading() {
-                return;
-            }
-            let mut line: Vec<u8> = self.rx.drain(..=pos).collect();
-            line.pop();
-            if line.last() == Some(&b'\r') {
-                line.pop();
-            }
-            let line = String::from_utf8_lossy(&line).into_owned();
+        self.rx.push(data);
+        while self.reading() {
+            let Some(line) = self.rx.next_line() else { return };
             let Some(code) = line.get(..3).and_then(|s| s.parse::<u16>().ok()) else {
                 self.io_failed(Error::transport(format!("malformed SMTP reply: {:.80}", line)));
                 continue;
