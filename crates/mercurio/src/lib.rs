@@ -269,9 +269,9 @@ pub use config::template::{TemplateError, TemplateVars};
 pub use config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
 pub use env::{Env, SystemEnv};
 pub use error::{Error, ErrorClass, Result, ResultExt};
-#[doc(hidden)]
-pub use http::parse_multipart;
 pub use http::{MAX_BODY, Method, Multipart, Request, Response, body_too_large};
+#[doc(hidden)]
+pub use http::{MultipartPart, multipart_parts, parse_multipart};
 pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode, Prepared};
 pub use notify::{Mercurio, Selection};
 pub use plan::{Delivery, Outcome, Plan, redact_url};
