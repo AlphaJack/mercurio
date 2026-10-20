@@ -216,6 +216,16 @@ on its page (see the [service list](services/index.md)), taken from the
 
 - **Microsoft Teams (`msteams://`).** Apprise's retired plugin is not
   provided; use `workflows://`. *intentional*
+- **Discontinued services.** Apprise still ships plugins for services that
+  no longer run -> mercurio does not provide them, and their URLs fail as an
+  unknown scheme. *intentional*
+  - Growl (`growl://`): the project was retired in November 2020.
+  - Guilded (`guilded://`): Roblox shut it down on 19 December 2025.
+  - Kumulos (`kumulos://`): acquired by Optimove in 2022; the API host
+    `messages.kumulos.com` no longer resolves.
+  - Pushed (`pushed://`): the API host `api.pushed.co` no longer resolves.
+  - Pushjet (`pjet://`, `pjets://`): the project is abandoned and its
+    domain redirects to an unrelated site.
 
 ## Later
 
