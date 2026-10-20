@@ -74,15 +74,17 @@ impl Visit for Fields {
 /// How the log looks on stderr.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Style {
-    /// `LEVEL - message` lines (every command but `serve`).
+    /// `LEVEL - message` lines on stderr (every command but `notify` and `serve`).
     Cli,
+    /// `LEVEL - message` lines on stdout, as Apprise writes them: callers such as Uptime Kuma read stdout only.
+    Notify,
     /// `serve`: timestamped `tracing` lines.
     Server,
     /// `serve --log-format json`: one JSON object per line, fields included.
     Json,
 }
 
-/// Log to stderr at the `-v` level. `serve` adds one `request` event per request at INFO and hands library lines to the request that caused them ([`capture`]).
+/// Log at the `-v` level, to stderr (stdout for [`Style::Notify`]). `serve` adds one `request` event per request at INFO and hands library lines to the request that caused them ([`capture`]).
 pub fn init(verbose: u8, style: Style) {
     let level = match verbose {
         0 => LevelFilter::ERROR,
@@ -105,6 +107,10 @@ pub fn init(verbose: u8, style: Style) {
             .with(Capture.with_filter(LevelFilter::DEBUG))
             .try_init(),
         Style::Cli => tracing_subscriber::registry().with(output.event_format(Plain)).with(filter).try_init(),
+        Style::Notify => tracing_subscriber::registry()
+            .with(tracing_subscriber::fmt::layer().with_writer(std::io::stdout).event_format(Plain))
+            .with(filter)
+            .try_init(),
     };
     if let Err(e) = result {
         errln!("logging: {e}");
