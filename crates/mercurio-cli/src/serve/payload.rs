@@ -46,7 +46,10 @@ const NOTIFY_FIELDS: &[&str] = &["format", "type", "title", "body", "attachment"
 const NOTIFY_TYPES: &[&str] = &["info", "success", "warning", "failure"];
 const NOTIFY_FORMATS: &[&str] = &["text", "markdown", "html"];
 
-/// Form fields (`application/x-www-form-urlencoded` or multipart): the last value per name, every `(name, value)` pair and the uploaded files.
+/// Fields that name attachments in a form.
+const ATTACH_FIELDS: [&str; 3] = ["attach", "attachment", "attachments"];
+
+/// Form fields (`application/x-www-form-urlencoded` or multipart): the last value per name, the `(name, value)` pairs of `template[...]` and attachment fields (every repeat) and the uploaded files.
 pub type FormFields = (Map<String, Value>, Vec<(String, String)>, Vec<Upload>);
 
 pub fn form_fields(req: &Req) -> FormFields {
@@ -54,7 +57,7 @@ pub fn form_fields(req: &Req) -> FormFields {
     let mut uploads = Vec::new();
     if req.content_type() == "multipart/form-data" {
         let ct = req.header("content-type").unwrap_or("");
-        for part in mercurio::parse_multipart(ct, &req.body) {
+        for part in mercurio::parse_multipart(ct, &req.body()) {
             let name = part["name"].as_str().unwrap_or("").to_string();
             if let Some(filename) = part["filename"].as_str() {
                 let data = part["b64"].as_str().and_then(mercurio::__private::b64_decode).unwrap_or_default();
@@ -64,19 +67,27 @@ pub fn form_fields(req: &Req) -> FormFields {
                 pairs.push((name, v.to_string()));
             }
         }
-    } else if !req.body.is_empty() {
-        pairs = form_pairs(&String::from_utf8_lossy(&req.body));
+    } else {
+        let body = req.body();
+        if !body.is_empty() {
+            pairs = form_pairs(&String::from_utf8_lossy(&body));
+        }
     }
+    // Values move into the map; only the pairs `load_notify` still reads by name are copied (the body field can be huge).
     let mut map = Map::new();
-    for (k, v) in &pairs {
-        map.insert(k.clone(), Value::String(v.clone()));
+    let mut kept = Vec::new();
+    for (k, v) in pairs {
+        if k.starts_with("template[") || ATTACH_FIELDS.contains(&k.as_str()) {
+            kept.push((k.clone(), v.clone()));
+        }
+        map.insert(k, Value::String(v));
     }
-    (map, pairs, uploads)
+    (map, kept, uploads)
 }
 
 pub fn json_object(req: &Req) -> Result<Map<String, Value>, Reply> {
     let v: Value =
-        serde_json::from_slice(&req.body).map_err(|_| Reply::error(req, 400, "Invalid JSON Payload provided"))?;
+        serde_json::from_slice(&req.body()).map_err(|_| Reply::error(req, 400, "Invalid JSON Payload provided"))?;
     match v {
         Value::Object(m) => Ok(m),
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Array(_) => {
@@ -96,8 +107,10 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
         _ => None,
     };
     if let Some(fmt) = raw_format {
-        let body = String::from_utf8(req.body.clone())
+        let body = std::str::from_utf8(&req.body())
+            .map(str::to_owned)
             .map_err(|_| Reply::error(req, 400, "The message body could not be decoded"))?;
+        req.release_body();
         let mut c = Content::default();
         c.fields.insert("body".into(), Value::String(body));
         c.fields.insert(
@@ -113,6 +126,7 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
     }
     let json = req.json_payload();
     let (mut data, pairs, uploads) = if json { (json_object(req)?, Vec::new(), Vec::new()) } else { form_fields(req) };
+    req.release_body();
     if !rules.is_empty() && !remap_fields(&rules, &mut data, &expected, max_depth) {
         let msg = match key {
             Some(k) => format!("Payload field mapping failed using KEY: {k}"),
@@ -151,8 +165,7 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
             return Err(Reply::error(req, 400, "Bad FORM Payload provided"));
         }
         c.template = template.unwrap_or_default();
-        let attach_key =
-            ["attach", "attachment", "attachments"].into_iter().find(|k| pairs.iter().any(|(n, _)| n == k));
+        let attach_key = ATTACH_FIELDS.into_iter().find(|k| pairs.iter().any(|(n, _)| n == k));
         if let Some(k) = attach_key {
             c.form_attach =
                 Some(pairs.iter().filter(|(n, v)| n == k && !v.trim().is_empty()).map(|(_, v)| v.clone()).collect());

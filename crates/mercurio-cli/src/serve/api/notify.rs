@@ -50,7 +50,7 @@ impl Server {
             Err(r) => return r,
         };
         query_overrides(req, &mut content);
-        let message = match self.message(req, &content, attachments) {
+        let message = match self.message(req, &mut content, attachments) {
             Ok(m) => m,
             Err(r) => return r,
         };
@@ -126,7 +126,7 @@ impl Server {
             Ok(a) => a,
             Err(r) => return r,
         };
-        let message = match self.message(req, &content, attachments) {
+        let message = match self.message(req, &mut content, attachments) {
             Ok(m) => m,
             Err(r) => return r,
         };
@@ -219,8 +219,12 @@ impl Server {
     }
 
     /// Body, title, type and format checks; the message to send.
-    fn message(&self, req: &Req, c: &Content, attachments: Vec<mercurio::Attachment>) -> Result<Message, Reply> {
-        let body = c.str("body").unwrap_or_default();
+    fn message(&self, req: &Req, c: &mut Content, attachments: Vec<mercurio::Attachment>) -> Result<Message, Reply> {
+        // Moved out, not copied: the body can be megabytes.
+        let body = match c.fields.remove("body") {
+            Some(Value::String(s)) => s,
+            _ => String::new(),
+        };
         let kind = c.str("type").unwrap_or("info");
         if (body.is_empty() && attachments.is_empty()) || !["info", "success", "warning", "failure"].contains(&kind) {
             return Err(Reply::error(req, 400, "Payload lacks minimum requirements"));
