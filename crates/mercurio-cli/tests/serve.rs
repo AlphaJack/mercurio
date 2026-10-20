@@ -618,6 +618,19 @@ fn json_log_format_writes_one_object_per_line() {
     assert_eq!(request["status"], 400);
 }
 
+#[test]
+fn interpret_emojis_setting() {
+    let s = start_with(&tmpdir("emojis"), &[("APPRISE_INTERPRET_EMOJIS", "yes")]);
+    let ct = "application/x-www-form-urlencoded";
+    let (up, rx) = upstream(2, 200);
+    assert_eq!(http(&s.addr, "POST", "/notify", ct, &format!("urls=json://{up}&body=go%20:rocket:")).0, 200);
+    assert_eq!(rx.recv().unwrap()["message"], "go 🚀");
+    // A URL's ?emojis=no still wins.
+    let form = format!("urls=json://{up}%3Femojis%3Dno&body=go%20:rocket:");
+    assert_eq!(http(&s.addr, "POST", "/notify", ct, &form).0, 200);
+    assert_eq!(rx.recv().unwrap()["message"], "go :rocket:");
+}
+
 /// Send raw bytes, half-close and return everything the server wrote.
 fn raw(addr: &str, bytes: &[u8]) -> String {
     let mut s = TcpStream::connect(addr).unwrap();

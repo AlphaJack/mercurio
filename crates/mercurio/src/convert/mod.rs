@@ -1,6 +1,7 @@
 //! Body format conversion: Markdown to HTML, HTML to text / Markdown, text to HTML / Markdown, Markdown to a service's own markup and the size-aware splitting helpers. All index arithmetic is in code points.
 
 pub mod dialect;
+pub mod emoji;
 pub mod html;
 mod markdown;
 pub mod markup;

@@ -129,6 +129,9 @@ struct Opts {
     /// Turn `\n`, `\r`, `\t` and `\\` in the title and body into the characters
     #[arg(short = 'e', long, global = true)]
     interpret_escapes: bool,
+    /// Replace `:shortcode:` emoji in the title and body (a URL's `?emojis=no` still wins)
+    #[arg(short = 'j', long, global = true)]
+    interpret_emojis: bool,
     /// Show what would be notified; send nothing
     #[arg(short, long, global = true)]
     dry_run: bool,
@@ -506,6 +509,7 @@ fn storage_asset(o: &Opts) -> (Asset, i64) {
         storage_idlen: o.storage_uid_length,
         // `run` has checked the mode.
         storage_mode: StorageMode::parse(&o.storage_mode).unwrap_or_default(),
+        interpret_emojis: o.interpret_emojis.then_some(true),
         ..Asset::default()
     };
     (asset.with_storage(expand_path(path.trim())), o.storage_prune_days)
@@ -659,6 +663,9 @@ fn run() -> u8 {
         Command::Services => Ok(if cmd_services(o.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE }),
         Command::Serve(mut settings) => {
             settings.storage_uid_length = o.storage_uid_length;
+            if o.interpret_emojis {
+                settings.emojis = Some("yes".into());
+            }
             cmd_serve(&o.bind, &settings)
         }
         Command::Healthcheck => serve::healthcheck(&o.bind).map(|()| exit::OK).map_err(|e| {

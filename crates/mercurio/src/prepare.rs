@@ -34,6 +34,8 @@ pub struct PreparedMessage {
 pub struct PipelineOptions {
     pub format_override: Option<NotifyFormat>,
     pub overflow: OverflowMode,
+    /// Replace `:shortcode:` emoji in the title and body before anything else.
+    pub emojis: bool,
 }
 
 /// The format a service receives: the override when the service accepts it, else the body format when accepted, else the service's first format. A service with one format takes the override as is.
@@ -79,6 +81,10 @@ pub fn prepare(
     }
 
     let (mut title, mut body) = (msg.title.clone(), msg.body.clone());
+    if opts.emojis {
+        title = convert::emoji::apply(&title);
+        body = convert::emoji::apply(&body);
+    }
     if let Some(input) = input_format {
         body = convert::convert_between(input, format, &body);
         if !title.is_empty() && def.limits.title_maxlen == 0 {

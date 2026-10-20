@@ -101,6 +101,9 @@ pub(crate) struct ServeArgs {
     /// `--storage-uid-length` / `APPRISE_STORAGE_UID_LENGTH`, an option every command shares (set by `main`).
     #[arg(skip = mercurio::DEFAULT_STORAGE_IDLEN)]
     pub(crate) storage_uid_length: usize,
+    /// `yes` replaces `:shortcode:` emoji unless a URL says `?emojis=no` (also `-j`); `no` never does; unset lets each URL decide
+    #[arg(long, env = "APPRISE_INTERPRET_EMOJIS", value_name = "YES|NO")]
+    pub(crate) emojis: Option<String>,
     /// Live streams sending at the same time
     #[arg(long, env = "APPRISE_STREAM_WORKER_COUNT", default_value = "4", value_name = "N")]
     stream_worker_count: String,
@@ -158,6 +161,7 @@ pub(crate) struct Settings {
     pub(super) storage: Option<PathBuf>,
     pub(super) stateless_storage: bool,
     pub(super) http_redirects: bool,
+    pub(super) interpret_emojis: Option<bool>,
     pub(super) log_level: u8,
     pub(super) stream_slots: usize,
     pub(super) storage_idlen: usize,
@@ -223,6 +227,7 @@ impl Settings {
             storage,
             stateless_storage: flag(&a.stateless_storage, false),
             http_redirects: flag(&a.http_redirects, true),
+            interpret_emojis: a.emojis.as_deref().map(|v| flag(v, false)),
             log_level,
             stream_slots,
             storage_idlen: match a.storage_uid_length {

@@ -433,7 +433,7 @@ pub static COMMON_PARAMS: &[Param] = &[
     Param::new("password", "Password; replaces the one in the URL").aliases(&["pass"]).secret(),
     Param::new("port", "Port; replaces the one in the URL").port(),
     Param::new("optional", "Optional").bool(false).ignored(),
-    Param::new("emojis", "Emoji shortcodes").ignored(),
+    Param::new("emojis", "Replace `:shortcode:` emoji").bool(false).note("unless the asset turns them off"),
 ];
 
 fn post_process(r: &mut ParsedUrl) {

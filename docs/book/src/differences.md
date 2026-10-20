@@ -24,9 +24,6 @@ on its page (see the [service list](services/index.md)), taken from the
 - **`?tag=` on a URL.** Apprise ignores it -> mercurio tags the URL for
   `--tag` / `TagFilter`; in a configuration file the values are added to
   the entry's tags. *intentional*
-- **`?emojis=`, `-j`, `interpret_emojis`.** Apprise expands `:shortcode:`
-  emoji -> mercurio sends text as written and ignores the parameter, except
-  `discord://?emojis=no`, which escapes `:name:` as Apprise does. *todo*
 - **`%2F` in a URL path.** Both decode it into a separator, so
   `json://`, `xml://` and `form://` request another path (Apprise issue
   #1799). Keeping it encoded for every service would also change xmpp
@@ -70,8 +67,8 @@ on its page (see the [service list](services/index.md)), taken from the
 - **No services** (nothing given, nothing configured) exits with 2.
   *intentional*
 - **Not implemented:** `-P/--plugin-path` (register custom services from
-  Rust), `-T/--theme`, `-j/--interpret-emojis`, `-D/--debug` (use `-vvv`).
-  *todo* for `-T`; *intentional* for the rest.
+  Rust), `-T/--theme`, `-D/--debug` (use `-vvv`). *todo* for `-T`;
+  *intentional* for the rest.
 - **`-d`** does not print storage URL ids; use `mercurio storage`.
   *intentional*
 - **`check`, `serve`, `services`** are mercurio subcommands. *intentional*
@@ -109,8 +106,7 @@ on its page (see the [service list](services/index.md)), taken from the
   `Allow` header omits `OPTIONS`. *intentional*
 - **Metrics.** apprise-api exports the full `django_prometheus` set ->
   mercurio exports a subset plus one latency histogram. *todo*
-- **Other settings.** Plugin paths and `INTERPRET_EMOJIS` are ignored.
-  *todo*; plugin paths *intentional*
+- **Other settings.** Plugin paths are ignored. *intentional*
 - **Logins and times.** apprise-api accepts argon2 and bcrypt password
   hashes and reports times in the `TZ` zone -> mercurio stores PBKDF2-SHA256
   only and reports UTC. *todo* (hashes), *intentional* (UTC)
