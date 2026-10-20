@@ -164,8 +164,16 @@ on its page (see the [service list](services/index.md)), taken from the
   remove both). *intentional*
 - **Modes.** `auto`, `flush` and `memory` (`-SM`, `APPRISE_STORAGE_MODE`,
   `Asset::storage_mode`) as in Apprise; `flush` writes before each I/O step
-  of a send rather than on every change. Entries carry no checksum and
-  there is no size cap. *todo* (checksum, size cap)
+  of a send rather than on every change. *intentional*
+- **Entry checksum.** Each `cache.json` entry carries a 6-character
+  SHA-256 checksum (`"!"`), and entries that fail it are dropped on load,
+  as in Apprise. The hashed text differs (Apprise hashes its Python
+  `repr`), so the checksums are not interchangeable; the files are not
+  shared anyway. Caches written by earlier mercurio versions have no
+  checksum and are dropped once. *intentional*
+- **Size cap.** Apprise refuses `write()` calls that would push a
+  namespace past 1 MiB; mercurio has no `write()` API for named files, and
+  Apprise's cache itself is uncapped, so there is no cap. *intentional*
 - **`mercurio storage list`** shows every configured URL, including
   services that never store anything (`unused`); Apprise omits them.
   *intentional*
