@@ -3,22 +3,23 @@
 //! Header values are read as UTF-8 (clients send UTF-8 titles in `X-Apprise-Title`). Values that are not valid UTF-8 are read as Latin-1.
 
 use std::net::SocketAddr;
-use std::sync::{Arc, LazyLock, Mutex, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError};
 
-use axum::body::Bytes;
+use axum::RequestExt;
+use http_body_util::{BodyExt, LengthLimitError};
 use mercurio::__private::unquote_plus;
 use serde_json::{Value, json};
-use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
-/// Largest request body read.
-pub const MAX_BODY: usize = 64 * 1024 * 1024;
-/// Bytes of request bodies held at once: a request charges its `Content-Length` (or [`UNSIZED_BODY`]) before its body is read, and a request that does not fit gets `503` instead of more memory.
-const BODY_BUDGET: usize = 256 * 1024 * 1024;
-/// What a body without a `Content-Length` (chunked) is charged.
-const UNSIZED_BODY: usize = 1024 * 1024;
-/// The budget's unit, so that [`BODY_BUDGET`] fits the semaphore's `u32` permits.
-const BUDGET_UNIT: usize = 1024;
-static BODIES: LazyLock<Arc<Semaphore>> = LazyLock::new(|| Arc::new(Semaphore::new(BODY_BUDGET / BUDGET_UNIT)));
+/// Largest request body read: one attachment of `attach_size` bytes plus the other fields, and never less than [`MIN_BODY`].
+pub fn body_limit(attach_size: u64) -> usize {
+    usize::try_from(attach_size).unwrap_or(usize::MAX).saturating_add(FIELDS_ALLOWANCE).max(MIN_BODY)
+}
+/// Room a request body keeps for its fields beside an upload.
+const FIELDS_ALLOWANCE: usize = 1024 * 1024;
+/// The body limit when attachments are off or small.
+const MIN_BODY: usize = 8 * 1024 * 1024;
+/// The most a body buffer is sized by `Content-Length` before any byte arrives.
+const PREALLOC_MAX: usize = 256 * 1024 * 1024;
 /// How long a client may take to send a request head (and how long an idle connection stays open), and each piece of its body.
 pub const IO_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
@@ -62,10 +63,8 @@ pub struct Req {
     pub method: String,
     pub query: Vec<(String, String)>,
     pub headers: Vec<(String, String)>,
-    /// Shared with [`Req::body`] handles; [`Req::release_body`] drops the request's own.
-    body: Mutex<Bytes>,
-    /// Keeps this request's share of [`BODY_BUDGET`] until the request is done.
-    _budget: Option<OwnedSemaphorePermit>,
+    /// Read into one buffer, so a body that is only text can become its `String` without a copy ([`Req::take_body`]).
+    body: Mutex<Vec<u8>>,
     pub remote: String,
     /// Who this request has proven to be.
     pub role: Slot<super::auth::Role>,
@@ -79,7 +78,7 @@ pub struct Req {
 impl<S: Send + Sync> axum::extract::FromRequest<S> for Req {
     type Rejection = Reply;
 
-    async fn from_request(request: axum::extract::Request, state: &S) -> Result<Req, Reply> {
+    async fn from_request(request: axum::extract::Request, _: &S) -> Result<Req, Reply> {
         let remote = request.extensions().get::<axum::extract::ConnectInfo<SocketAddr>>().map(|c| c.0.ip().to_string());
         let role = request.extensions().get::<super::auth::Role>().copied().unwrap_or_default();
         let event = request.extensions().get::<Arc<Mutex<RequestEvent>>>().cloned().unwrap_or_default();
@@ -87,23 +86,41 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for Req {
         let query = form_pairs(request.uri().query().unwrap_or(""));
         let headers =
             request.headers().iter().map(|(k, v)| (k.as_str().to_string(), decode_header(v.as_bytes()))).collect();
-        let length = request.headers().get("content-length").and_then(|v| v.to_str().ok()).and_then(|v| v.parse().ok());
-        let units =
-            u32::try_from(length.unwrap_or(UNSIZED_BODY).min(MAX_BODY).div_ceil(BUDGET_UNIT)).unwrap_or(u32::MAX);
-        let budget = (units > 0)
-            .then(|| Arc::clone(&BODIES).try_acquire_many_owned(units))
-            .transpose()
-            .map_err(|_| Reply::text(503, "busy").header("Retry-After", "1").header("Connection", "close"))?;
-        let body = Bytes::from_request(request, state).await.map_err(|rejection| {
-            let status = rejection.status().as_u16();
-            Reply::text(status, &rejection.body_text()).header("Connection", "close")
-        })?;
+        let length: usize = request
+            .headers()
+            .get("content-length")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0);
+        // Frames go straight into one buffer sized by `Content-Length`; collecting them first would hold the body twice.
+        let mut stream = request.with_limited_body().into_body();
+        let mut body = Vec::with_capacity(length.min(PREALLOC_MAX));
+        while let Some(frame) = stream.frame().await {
+            match frame {
+                Ok(frame) => {
+                    if let Ok(data) = frame.into_data() {
+                        body.extend_from_slice(&data);
+                    }
+                }
+                Err(e) => {
+                    let mut source: Option<&(dyn std::error::Error + 'static)> = Some(&e);
+                    let mut too_large = false;
+                    while let Some(err) = source {
+                        too_large |= err.is::<LengthLimitError>();
+                        source = err.source();
+                    }
+                    let (status, why) =
+                        if too_large { (413, "length limit exceeded") } else { (400, "failed to read the body") };
+                    return Err(Reply::text(status, &format!("Failed to buffer the request body: {why}"))
+                        .header("Connection", "close"));
+                }
+            }
+        }
         Ok(Req {
             method,
             query,
             headers,
             body: Mutex::new(body),
-            _budget: budget,
             remote: remote.unwrap_or_default(),
             role: Slot(Mutex::new(role)),
             disabled_key: Slot::default(),
@@ -146,14 +163,19 @@ impl Req {
         self.query.iter().find(|(k, _)| k == name).map(|(_, v)| v.as_str())
     }
 
-    /// The request body: another handle on the same bytes, not a copy.
-    pub fn body(&self) -> Bytes {
-        self.body.lock().unwrap_or_else(PoisonError::into_inner).clone()
+    /// Read the request body in place.
+    pub fn with_body<T>(&self, f: impl FnOnce(&[u8]) -> T) -> T {
+        f(&self.body.lock().unwrap_or_else(PoisonError::into_inner))
     }
 
-    /// Drop the request's own handle on the body once it is parsed, so the bytes are freed while the notification is sent.
+    /// Move the body out, leaving the request without one: its buffer becomes whatever the caller makes of it.
+    pub fn take_body(&self) -> Vec<u8> {
+        std::mem::take(&mut *self.body.lock().unwrap_or_else(PoisonError::into_inner))
+    }
+
+    /// Free the body once it is parsed, so its bytes are gone while the notification is sent.
     pub fn release_body(&self) {
-        *self.body.lock().unwrap_or_else(PoisonError::into_inner) = Bytes::new();
+        drop(self.take_body());
     }
 
     /// The media type of the body, lower-cased, without parameters.

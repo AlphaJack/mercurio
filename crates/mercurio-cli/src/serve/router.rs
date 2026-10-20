@@ -87,20 +87,46 @@ pub(super) fn app(s: Settings) -> tower_http::normalize_path::NormalizePath<axum
         verifier: auth::Verifier::default(),
         streams,
     });
+    let limit = http::body_limit(server.s.attach_size);
+    let bodies = Arc::new(tokio::sync::Semaphore::new(BODY_BUDGET.max(limit) / BUDGET_UNIT));
     let layers = tower::ServiceBuilder::new()
         .layer(tower_http::catch_panic::CatchPanicLayer::new())
         .layer(axum::error_handling::HandleErrorLayer::new(busy))
         .load_shed()
         .layer(tower::limit::GlobalConcurrencyLimitLayer::new(MAX_CONNECTIONS))
         .layer(axum::middleware::from_fn_with_state(server.clone(), observe))
+        .layer(axum::middleware::from_fn_with_state((bodies, limit), body_budget))
         .layer(tower_http::timeout::RequestBodyTimeoutLayer::new(http::IO_TIMEOUT))
-        .layer(axum::extract::DefaultBodyLimit::max(http::MAX_BODY));
+        .layer(axum::extract::DefaultBodyLimit::max(limit));
     let app = router(&server).layer(layers).with_state(server);
     // `/notify/` is `/notify`.
     tower_http::normalize_path::NormalizePath::trim_trailing_slash(app)
 }
+/// Bytes of request bodies read at once; a request that does not fit gets `503` instead of more memory.
+const BODY_BUDGET: usize = 256 * 1024 * 1024;
+/// What a body without a `Content-Length` (chunked) is charged.
+const UNSIZED_BODY: usize = 1024 * 1024;
+/// The budget's unit, so that it fits the semaphore's `u32` permits.
+const BUDGET_UNIT: usize = 1024;
+
+/// Charges the request's `Content-Length` (or [`UNSIZED_BODY`]) to the budget before its body is read, and keeps the charge until the answer is built.
+async fn body_budget(
+    State((bodies, limit)): State<(Arc<tokio::sync::Semaphore>, usize)>,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let length = request.headers().get("content-length").and_then(|v| v.to_str().ok()).and_then(|v| v.parse().ok());
+    let units = u32::try_from(length.unwrap_or(UNSIZED_BODY).min(limit).div_ceil(BUDGET_UNIT)).unwrap_or(u32::MAX);
+    let Ok(_charge) = bodies.try_acquire_many_owned(units) else { return busy_reply().into_response() };
+    next.run(request).await
+}
+
 /// A request beyond [`MAX_CONNECTIONS`] in progress.
 async fn busy(_: tower::BoxError) -> Reply {
+    busy_reply()
+}
+
+fn busy_reply() -> Reply {
     Reply::text(503, "busy").header("Retry-After", "1").header("Connection", "close")
 }
 /// Who may reach a route before its handler checks the key, when Basic Auth is required.
