@@ -74,8 +74,7 @@ on its page (see the [service list](services/index.md)), taken from the
 - **No services** (nothing given, nothing configured) exits with 2.
   *intentional*
 - **Not implemented:** `-P/--plugin-path` (register custom services from
-  Rust), `-T/--theme`, `-D/--debug` (use `-vvv`). *todo* for `-T`;
-  *intentional* for the rest.
+  Rust), `-D/--debug` (use `-vvv`). *intentional*
 - **`-d`** does not print storage URL ids; use `mercurio storage`.
   *intentional*
 - **`check`, `serve`, `services`** are mercurio subcommands. *intentional*
