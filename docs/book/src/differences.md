@@ -143,11 +143,6 @@ on its page (see the [service list](services/index.md)), taken from the
   for (`interpret_escapes`, `async_mode`, `encoding`, `image_path_*`, ...)
   are accepted without effect; the defaults name mercurio
   (`app_id: Mercurio`). *intentional*
-- **Tag priorities.** Recent Apprise dispatches matched services in
-  priority groups (lowest first, stopping once a group succeeds) and
-  accepts a retry suffix in filters (`-g ops:3`) -> mercurio notifies all
-  matched services together and ignores a filter's retry suffix (use
-  `?retry=`). *todo*
 
 ## Storage
 

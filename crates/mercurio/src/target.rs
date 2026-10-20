@@ -301,9 +301,21 @@ impl Target {
 
     /// [`Target::deliver`] on an [`AsyncTransport`].
     pub async fn deliver_async(&self, msg: &Message, transport: &dyn AsyncTransport, asset: &Asset) -> Vec<Attempt> {
+        self.deliver_with_retry(msg, transport, asset, None).await
+    }
+
+    /// [`Target::deliver_async`] with `retry` (a tag filter's `tag:N`) instead of the URL's `?retry=`, clamped the same way.
+    pub(crate) async fn deliver_with_retry(
+        &self,
+        msg: &Message,
+        transport: &dyn AsyncTransport,
+        asset: &Asset,
+        retry: Option<u32>,
+    ) -> Vec<Attempt> {
+        let retry = retry.map_or(self.retry, |r| r.min(MAX_RETRY));
         let started = Instant::now();
         let store = self.store(asset);
-        let memo = if self.retry > 0 { Memo::enabled() } else { Memo::disabled() };
+        let memo = if retry > 0 { Memo::enabled() } else { Memo::disabled() };
         let ctx = Context::new(asset, store, &memo);
         let stores = self.stores(&ctx);
         for s in &stores {
@@ -321,7 +333,7 @@ impl Target {
         loop {
             let started = Instant::now();
             let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(stores.clone());
-            if self.retry > 0 {
+            if retry > 0 {
                 ex = ex.with_tracker(&mut tracker);
             }
             // Pieces of a split message go out in order; stop if one fails. Each piece is planned when the previous one is done, so it sees what that piece stored.
@@ -342,13 +354,13 @@ impl Target {
             let delivery = ex.finish(ok).await;
             let done = delivery.is_success();
             attempts.push(Attempt::new(delivery, started));
-            if done || attempts.len() > self.retry as usize {
+            if done || attempts.len() > retry as usize {
                 break;
             }
             let Some(wait) = self.retry_wait(&attempts[attempts.len() - 1].delivery) else {
                 break;
             };
-            log::warn!("{}: attempt {}/{} failed; trying again", self.def.name, attempts.len(), self.retry + 1);
+            log::warn!("{}: attempt {}/{} failed; trying again", self.def.name, attempts.len(), retry + 1);
             transport.sleep(wait).await;
         }
         attempts

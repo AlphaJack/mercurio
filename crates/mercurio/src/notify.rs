@@ -20,7 +20,7 @@ use crate::report::{Attempt, Report, ReportEntry};
 use crate::service::ServiceDef;
 use crate::tag::TagFilter;
 use crate::target::{Target, parse};
-use crate::transport::Transport;
+use crate::transport::{Blocking, Transport};
 
 /// Most sends in progress at once across every [`Mercurio`] and [`crate::AsyncMercurio`] in the process. Targets of a service with a [`ServiceDef::throttle`] go one at a time, with the throttle between them.
 const MAX_PARALLEL: usize = 128;
@@ -124,7 +124,19 @@ impl Core {
             delivery: attempts.last().map(|a| a.delivery.clone()).unwrap_or_default(),
             attempts,
             url_id: t.url_id(&self.asset_for(t)),
+            escalated: false,
         }
+    }
+
+    /// The entries of the rounds sent, in selection order, with the failures a later priority group made up for marked [`ReportEntry::escalated`].
+    pub(crate) fn in_order(esc: &Escalation, mut sent: Vec<(usize, ReportEntry)>) -> Vec<ReportEntry> {
+        sent.sort_by_key(|(i, _)| *i);
+        sent.into_iter()
+            .map(|(i, mut e)| {
+                e.escalated = !e.delivery.is_success() && esc.escalated(i);
+                e
+            })
+            .collect()
     }
 
     /// The report of a selection: `entries` for its targets, then a failed entry per unresolved template entry.
@@ -137,9 +149,68 @@ impl Core {
                 delivery: Delivery { outcomes: vec![Outcome { target: None, result: Err(e) }] },
                 attempts: Vec::new(),
                 url_id: None,
+                escalated: false,
             });
         }
         report
+    }
+}
+
+/// Apprise's priority escalation over a selection: each tag chain sends its most urgent priority group first and moves on to the next group only when one of its services failed. Chains run their groups together, one round at a time. A filter naming an exact priority (`2:tag`) sends everything in one round.
+pub(crate) struct Escalation {
+    /// Per chain, its groups of selection indices from most to least urgent.
+    chains: Vec<Vec<Vec<usize>>>,
+    /// Per chain, the group it sends next.
+    next: Vec<usize>,
+    /// Per chain, the group that delivered.
+    done: Vec<Option<usize>>,
+}
+
+impl Escalation {
+    pub(crate) fn new(filter: &TagFilter, targets: &[&Target]) -> Self {
+        let mut chains: Vec<(String, BTreeMap<u64, Vec<usize>>)> = Vec::new();
+        for (i, t) in targets.iter().enumerate() {
+            let (key, priority) =
+                if filter.has_explicit_priority() { (String::new(), 0) } else { filter.chain_of(t.tag_set()) };
+            let at = chains.iter().position(|(k, _)| *k == key).unwrap_or_else(|| {
+                chains.push((key, BTreeMap::new()));
+                chains.len() - 1
+            });
+            chains[at].1.entry(priority).or_default().push(i);
+        }
+        let chains: Vec<Vec<Vec<usize>>> = chains.into_iter().map(|(_, g)| g.into_values().collect()).collect();
+        Escalation { next: vec![0; chains.len()], done: vec![None; chains.len()], chains }
+    }
+
+    /// The chains still sending: not delivered and with a group left.
+    fn pending(&self) -> impl Iterator<Item = usize> + '_ {
+        (0..self.chains.len()).filter(|&c| self.done[c].is_none() && self.next[c] < self.chains[c].len())
+    }
+
+    /// The selection indices to send in the next round, in order; `None` when every chain is finished.
+    pub(crate) fn round(&self) -> Option<Vec<usize>> {
+        let mut batch: Vec<usize> = self.pending().flat_map(|c| self.chains[c][self.next[c]].iter().copied()).collect();
+        batch.sort_unstable();
+        (!batch.is_empty()).then_some(batch)
+    }
+
+    /// Record the round: a chain whose group all delivered is done, any other moves on to its next group.
+    pub(crate) fn settle(&mut self, delivered: impl Fn(usize) -> bool) {
+        for c in self.pending().collect::<Vec<_>>() {
+            if self.chains[c][self.next[c]].iter().all(|&i| delivered(i)) {
+                self.done[c] = Some(self.next[c]);
+            } else {
+                self.next[c] += 1;
+            }
+        }
+    }
+
+    /// Whether a later group of `i`'s chain delivered (so `i`'s failure does not count).
+    pub(crate) fn escalated(&self, i: usize) -> bool {
+        self.chains
+            .iter()
+            .zip(&self.done)
+            .any(|(groups, done)| done.is_some_and(|d| groups[..d].iter().any(|g| g.contains(&i))))
     }
 }
 
@@ -368,7 +439,17 @@ impl Mercurio {
         on_entry: &(dyn Fn(&ReportEntry) + Sync),
     ) -> Report {
         let sel = self.core.select(filter, vars);
-        let entries = self.send_all(msg, sel.iter().collect(), on_entry);
+        let targets: Vec<&Target> = sel.iter().collect();
+        let mut esc = Escalation::new(filter, &targets);
+        let mut sent = Vec::new();
+        while let Some(round) = esc.round() {
+            let entries = self.send_all(msg, round.iter().map(|&i| targets[i]).collect(), filter, on_entry);
+            let delivered: BTreeMap<usize, bool> =
+                round.iter().copied().zip(entries.iter().map(|e| e.delivery.is_success())).collect();
+            esc.settle(|i| delivered.get(&i).copied().unwrap_or(false));
+            sent.extend(round.into_iter().zip(entries));
+        }
+        let entries = Core::in_order(&esc, sent);
         // Template targets only live for this call.
         for t in &sel.resolved {
             self.close_target(t);
@@ -399,10 +480,14 @@ impl Mercurio {
         &self,
         msg: &Message,
         targets: Vec<&Target>,
+        filter: &TagFilter,
         on_entry: &(dyn Fn(&ReportEntry) + Sync),
     ) -> Vec<ReportEntry> {
         let send = |t: &Target| {
-            let entry = self.core.entry(t, t.deliver(msg, self.transport.as_ref(), &self.core.asset_for(t)));
+            let retry = filter.retry_for(t.tag_set()).map(|r| u32::try_from(r).unwrap_or(u32::MAX));
+            let transport = Blocking(self.transport.as_ref());
+            let attempts = pollster::block_on(t.deliver_with_retry(msg, &transport, &self.core.asset_for(t), retry));
+            let entry = self.core.entry(t, attempts);
             on_entry(&entry);
             entry
         };
@@ -460,7 +545,6 @@ mod tests {
     use crate::error::ErrorClass;
     use crate::report::Status;
     use crate::service::{Context, Notify};
-    use crate::transport::Blocking;
 
     #[test]
     fn async_entry_points_are_send() {
@@ -488,6 +572,69 @@ mod tests {
             drop(held);
             assert!(rx.recv_timeout(Duration::from_secs(5)).unwrap().is_success());
         });
+    }
+
+    /// Apprise's escalation: the most urgent group first, the next only after a failure, every chain on its own.
+    #[test]
+    fn priority_groups_escalate_only_after_a_failure() {
+        use crate::testing::FakeTransport;
+        let notifier = |fake: &Arc<FakeTransport>| {
+            let mut m = Mercurio::with_transport(fake.clone()).sequential();
+            m.add("json://localhost/a1?tag=1:ops").unwrap();
+            m.add("json://localhost/a2?tag=2:ops").unwrap();
+            m.add("json://localhost/b1?tag=1:db").unwrap();
+            m.add("json://localhost/b2?tag=2:db").unwrap();
+            m
+        };
+        let paths = |fake: &FakeTransport| fake.requests().iter().map(|r| r.url.clone()).collect::<Vec<_>>();
+
+        // Both chains deliver at priority 1: priority 2 never runs.
+        let fake = Arc::new(FakeTransport::new());
+        fake.default_response(crate::Response::new(200, b"{}".to_vec()));
+        let r = notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("ops, db"));
+        assert!(r.is_success());
+        assert_eq!(paths(&fake), ["http://localhost/a1", "http://localhost/b1"]);
+        assert_eq!(r.entries.len(), 2);
+
+        // ops@1 fails: ops escalates to priority 2 in the next round, db is done.
+        let fake = Arc::new(FakeTransport::new());
+        fake.default_response(crate::Response::new(200, b"{}".to_vec()));
+        fake.on_url("/a1", crate::Response::new(500, b"{}".to_vec()));
+        let r = notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("ops, db"));
+        assert_eq!(paths(&fake), ["http://localhost/a1", "http://localhost/b1", "http://localhost/a2"]);
+        assert!(r.is_success(), "a later group made up for a1");
+        assert_eq!(r.status(), Status::Success);
+        let escalated: Vec<_> = r.entries.iter().map(|e| e.escalated).collect();
+        assert_eq!(escalated, [true, false, false]);
+        assert_eq!(r.failures().count(), 1, "the failure is still reported");
+
+        // Every group of a chain fails: the call fails.
+        let fake = Arc::new(FakeTransport::new());
+        fake.default_response(crate::Response::new(500, b"{}".to_vec()));
+        let r = notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("ops"));
+        assert_eq!(r.entries.len(), 2);
+        assert!(r.entries.iter().all(|e| !e.escalated));
+        assert_eq!(r.status(), Status::Failure);
+
+        // An exact priority sends one flat round.
+        let fake = Arc::new(FakeTransport::new());
+        fake.default_response(crate::Response::new(200, b"{}".to_vec()));
+        notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("2:ops"));
+        assert_eq!(paths(&fake), ["http://localhost/a2"]);
+    }
+
+    #[test]
+    fn retry_suffix_overrides_the_url_retry() {
+        use crate::testing::FakeTransport;
+        let fake = Arc::new(FakeTransport::new());
+        fake.default_response(crate::Response::new(500, b"{}".to_vec()));
+        let mut m = Mercurio::with_transport(fake.clone());
+        m.add("json://localhost/x?tag=ops&wait=0").unwrap();
+        m.notify_tagged(&Message::new("b"), &TagFilter::parse("ops:2"));
+        assert_eq!(fake.requests().len(), 3, "one attempt plus two retries");
+        let before = fake.requests().len();
+        m.notify_tagged(&Message::new("b"), &TagFilter::parse("ops"));
+        assert_eq!(fake.requests().len() - before, 1, "no suffix: the URL's retry (none)");
     }
 
     #[test]

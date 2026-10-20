@@ -89,6 +89,8 @@ pub struct ReportEntry {
     pub attempts: Vec<Attempt>,
     /// The URL id naming this target's persistent store.
     pub url_id: Option<String>,
+    /// This entry failed, but a later priority group of its tag chain delivered, so the call still succeeds (Apprise's escalation; see [`crate::TagFilter`]).
+    pub escalated: bool,
 }
 
 impl ReportEntry {
@@ -109,7 +111,7 @@ impl ReportEntry {
 impl Report {
     /// `true` when every URL delivered (and there was at least one).
     pub fn is_success(&self) -> bool {
-        !self.entries.is_empty() && self.entries.iter().all(|e| e.delivery.is_success())
+        !self.entries.is_empty() && self.entries.iter().all(|e| e.delivery.is_success() || e.escalated)
     }
 
     /// Aggregate status: `Partial` when not everything worked but some attempt delivered something.
