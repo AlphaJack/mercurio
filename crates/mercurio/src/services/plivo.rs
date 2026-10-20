@@ -1,6 +1,6 @@
 //! Plivo SMS (`plivo://`): SMS through the Plivo API.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise posts to a literal `{auth_id}` URL -> mercurio fills it in. *intentional*
 

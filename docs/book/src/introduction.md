@@ -87,4 +87,4 @@ See [HTTP server](server.md).
   ([api/mercurio](api/mercurio/index.html) in the published book).
 - **Services**: one page per service: URL formats, every query parameter
   with its default, examples and known differences.
-- **Reference**: [Differences](differences.md) from Apprise.
+- **Reference**: [Differences with Apprise](differences.md).

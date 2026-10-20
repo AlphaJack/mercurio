@@ -33,4 +33,4 @@
 
 # Reference
 
-- [Differences](differences.md)
+- [Differences with Apprise](differences.md)

@@ -2,7 +2,7 @@
 //!
 //! Writes the BSD-style datagram libc `syslog` would (`<PRI>Mmm dd hh:mm:ss ident[pid]: msg`) to the local syslog socket (`/var/run/syslog` on macOS, `/dev/log` elsewhere).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - The timestamp is UTC (libc uses local time). *todo*
 //! - `logperror` copies the line to stderr like `LOG_PERROR`. *intentional*

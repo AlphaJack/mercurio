@@ -10,7 +10,7 @@
 //!
 //! Each subscriber is a subscriber id, an e-mail (`{"subscriberId": email, "email": email}`) or `+<phone>` (`{"subscriberId": phone, "phone": phone}`). One `POST /v1/events/trigger` is sent per 100 subscribers with `Authorization: ApiKey {api_key}` and `{"name": workflow_id, "to": [...], "payload": {"title", "body", "type"}}`. Success is any 2xx whose body (or its `data` object) does not say `"acknowledged": false`.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Not in Apprise; written from the vendor documentation (hand-written fixtures). *intentional*
 

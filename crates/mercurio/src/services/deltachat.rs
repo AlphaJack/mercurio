@@ -1,6 +1,6 @@
 //! Delta Chat (`deltachat://`, `deltachats://`): messages to Delta Chat users as e-mail, delivered with a `Chat-Version: 1.0` header, plain-text bodies and a `Chat: <excerpt>` subject built from the body (the title is merged into the body).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - PGP modes are rejected at send time, as for `email`. *todo*
 

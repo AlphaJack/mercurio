@@ -1,6 +1,6 @@
 //! QQ Push via Qmsg (`qq://`): `POST https://qmsg.zendee.cn/v3/send/{key}` with a `msg` form field; the reply's `success` decides the outcome.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise posts to the legacy `/send/{key}` endpoint (which Qmsg is retiring) and trusts any 200 -> mercurio posts to `/v3/send/{key}` and fails when the reply says `"success": false`. *intentional*
 

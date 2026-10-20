@@ -4,7 +4,7 @@
 //!
 //! The private key (`?keyfile=`, PEM) and the subscriptions (`?subfile=`, JSON) are read from local files. Without `?keyfile=`, a disk-backed persistent store holds them: `private_key.pem` (generated on first use, with `public_key.pem`) and `subscriptions.json` in the URL's store directory. Expired (404/410) endpoints are kept in the store (`retired`, 30 days) and skipped.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Remote (`http://`) key and subscription files are not supported. *todo*
 //! - Both files are re-read on every send. *intentional*

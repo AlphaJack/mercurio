@@ -2,7 +2,7 @@
 //!
 //! `POST https://integrations.zoom.us/chat/webhooks/incomingwebhook/{id}` with the verification token in `Authorization`: either `?format=full` with a JSON message card or `?format=message` with the text as the body.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise posts to `inbots.zoom.us/incoming/hook/{id}` -> mercurio posts to the current `integrations.zoom.us/chat/webhooks/incomingwebhook/{id}` (`?format=full`; `?format=message` for `mode=simple`); native URLs on either host are accepted. *intentional*
 

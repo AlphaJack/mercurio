@@ -11,7 +11,7 @@
 //!
 //! Each recipient is an e-mail (`{"email": ..}`), `+<phone>` (`{"phone_number": ..}`) or a user id (`{"user_id": ..}`). One `POST /send` carries all recipients (`message.to` is an object for one, an array for several), with `Authorization: Bearer {auth_token}` and `{"message": {"to", "content": {"title", "body"}, "data": {"type", ...}}}`. Any 2xx (Courier answers 202) is success.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Not in Apprise; written from the vendor documentation (hand-written fixtures). *intentional*
 

@@ -2,7 +2,7 @@
 //!
 //! The OAuth access token is kept for the lifetime of the parsed URL (a non-persistent store entry) and replaced whenever a failed submit logs in again.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - The token is dropped after `expires_in` (Apprise computes the expiry but never checks it). *intentional*
 //! - The `X-RateLimit-*` back-off is not ported. *todo*

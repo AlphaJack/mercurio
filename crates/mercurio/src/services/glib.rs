@@ -2,7 +2,7 @@
 //!
 //! Mercurio runs `gdbus call --session ... Notify` (the Gio command-line client) with these arguments: app name, replaces-id `0`, the icon (the bundled SVG or `image_path_mask`; empty with `?image=no`), title, body, no actions, `{urgency: byte, x: int32, y: int32}` hints and a 13 s timeout.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise uses a `Gio.DBusProxy` -> mercurio runs `gdbus call`. *todo*
 

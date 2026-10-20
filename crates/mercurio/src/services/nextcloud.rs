@@ -4,7 +4,7 @@
 //!
 //! Group lookups are cached for a day in the persistent store.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - URL order is kept (users first, then group members); Apprise iterates unordered sets. *intentional*
 

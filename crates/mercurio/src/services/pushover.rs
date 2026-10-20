@@ -1,6 +1,6 @@
 //! Pushover (`pover://`): push notifications through the Pushover API, with optional end-to-end encryption (`?key=<64 hex>`).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - HTML that Apprise's parser rejects (a malformed `<![` declaration) is sent unreduced. *intentional*
 //! - E2EE gzip members use stored deflate blocks with a zero mtime; they decompress identically. *intentional*

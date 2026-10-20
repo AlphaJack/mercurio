@@ -2,7 +2,7 @@
 //!
 //! Payload: `<PRI>- {pid} {message}` (or `<PRI>- {message}` without `logpid`).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise computes PRI as `level + facility * 8` with already shifted facility constants (`user.info` becomes `<70>`) -> mercurio sends the RFC 5424 value (`<14>`). *intentional*
 

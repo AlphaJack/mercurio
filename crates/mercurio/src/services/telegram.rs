@@ -2,7 +2,7 @@
 //!
 //! Without a chat id the bot owner is detected with `getUpdates` once and kept in the persistent store (`bot_owner`).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - `?image=yes` posts the notify-type image by URL instead of uploading Apprise's bundled PNG. *intentional*
 //! - Rich Message templates must be local files (`/path` or `file://`). *todo*

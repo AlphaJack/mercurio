@@ -2,7 +2,7 @@
 //!
 //! Mercurio has no D-Bus dependency: it runs `gdbus call --session --dest org.freedesktop.Notifications ... Notify` (shipped with GLib on every desktop Linux) with these arguments: app name, replaces-id `0`, the icon (the bundled SVG or `image_path_mask`; empty with `?image=no`), title, body, no actions, `{urgency, x, y}` hints and a 13 s timeout.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise talks D-Bus directly -> mercurio runs `gdbus call`; a native D-Bus client is possible. *todo*
 //! - `kde://` / `qt://` select a Qt/GLib main loop in Apprise -> all schemes behave alike. *intentional*

@@ -1,6 +1,6 @@
 //! PushWard (`pushward://`): push notifications through PushWard.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise accepts `volume=nan` -> mercurio does not. *intentional*
 

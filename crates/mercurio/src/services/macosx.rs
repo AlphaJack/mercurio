@@ -4,7 +4,7 @@
 //!
 //! There is no `osascript` fallback.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - When no known path holds `terminal-notifier`, mercurio still runs it through `PATH` (Apprise gives up). *intentional*
 //! - On other platforms delivery fails with `Unsupported` (Apprise does not load the plugin there). *intentional*

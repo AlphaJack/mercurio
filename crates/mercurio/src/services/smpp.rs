@@ -4,7 +4,7 @@
 //!
 //! Divergences: an explicit `:port` is honoured (otherwise 2775 / 3550); `smpps://` uses TLS; `submit_sm_resp` statuses are checked.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - An explicit `:port` is honoured (Apprise always uses 2775 / 3550). *intentional*
 //! - `smpps://` uses TLS (Apprise opens a plain socket). *intentional*

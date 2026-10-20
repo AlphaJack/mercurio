@@ -1,6 +1,6 @@
 //! Mastodon (`mastodon://`, `toot://`, `mastodons://`, `toots://`): posts statuses to a Mastodon instance.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - The `X-RateLimit-*` back-off is not tracked; the `?cache=` whoami cache lasts one send. *todo*
 //! - In direct mode prepended targets keep their configured (sorted) order; Apprise iterates an unordered set. *intentional*

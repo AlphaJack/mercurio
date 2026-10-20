@@ -4,7 +4,7 @@
 //!
 //! The `requestId`s of created alerts are kept in the persistent store (60 days) so later `close`/`acknowledge`/`note`/`delete` actions act on them.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - `opsgenie://` URLs are sent by the `jira` service to Jira Service Management Operations (Apprise posts them to `api(.eu).opsgenie.com`, which shuts down on 2027-04-05); the key must come from a JSM Operations API integration. `?region=eu` no longer changes the host. *intentional*
 

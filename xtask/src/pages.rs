@@ -72,7 +72,7 @@ pub fn generate(root: &Path, services: Value) -> Result<(), String> {
     if warnings.is_empty() {
         Ok(())
     } else {
-        Err("services with differences but no `# Differences` module docs".to_owned())
+        Err("services with differences but no `# Differences with Apprise` module docs".to_owned())
     }
 }
 
@@ -518,7 +518,7 @@ fn examples_section(fixtures: &[Fixture]) -> String {
 }
 
 fn split_differences(doc: &str) -> (&str, &str) {
-    match doc.split_once("\n# Differences\n") {
+    match doc.split_once("\n# Differences with Apprise\n") {
         Some((notes, diff)) => (notes.trim_end(), diff.trim()),
         None => (doc, ""),
     }
@@ -528,7 +528,7 @@ fn check_differences(sid: &str, fixtures: &[Fixture], notes: &str, diff: &str, w
     if !diff.is_empty() {
         return;
     }
-    let missing = "but its module docs have no `# Differences` section";
+    let missing = "but its module docs have no `# Differences with Apprise` section";
     let diverges = |v: &Value| is_set(v.get("divergence"));
     if fixtures.iter().any(|(_, f, _)| diverges(f) || params(f, "cases").iter().any(diverges)) {
         warnings.push(format!("{sid}: fixture `divergence` note, {missing}"));
@@ -571,7 +571,7 @@ fn page(
         parts.extend([demote(notes), String::new()]);
     }
     if !diff.is_empty() {
-        parts.extend(["## Differences".to_owned(), String::new(), demote(diff), String::new()]);
+        parts.extend(["## Differences with Apprise".to_owned(), String::new(), demote(diff), String::new()]);
     }
     Ok(parts.join("\n"))
 }
@@ -600,8 +600,8 @@ fn index_page(services: &[Value], features: &BTreeMap<String, String>) -> String
         INDEX_HEADER.to_owned(),
         String::new(),
         format!(
-            "{} services. Each page lists the URL formats, every query parameter with its default, known differences and \
-             examples.",
+            "{} services. Each page lists the URL formats, every query parameter with its default, known differences with Apprise \
+             and examples.",
             services.len()
         ),
         String::new(),

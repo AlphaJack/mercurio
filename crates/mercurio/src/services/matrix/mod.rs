@@ -10,7 +10,7 @@
 //! Divergences (listed under Differences):
 //! - Non-string ids in server answers (room ids, tokens) are treated as missing instead of raising.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Non-string ids in server answers (room ids, tokens) are treated as missing instead of raising. *intentional*
 //! - **Raw-token transaction ids.** Apprise reuses one UUID for every event of a send, so homeservers drop the later ones as duplicates -> mercurio uses a fresh UUID per event. *intentional*

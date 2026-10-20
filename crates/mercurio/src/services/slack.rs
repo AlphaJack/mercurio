@@ -2,7 +2,7 @@
 //!
 //! E-mail lookups are cached for the lifetime of the parsed URL. On `?retry=`, channels that accepted the message are skipped and their remembered channel ids still receive the attachments that have not been delivered yet.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - `?template=` only reads local files. *todo*
 
