@@ -1,4 +1,4 @@
-//! Helpers shared by the crypto services: local key files; PEM and DER decoding; JSON merging.
+//! Helpers shared by the crypto services: key files (local or `http(s)://`); PEM and DER decoding; JSON merging.
 
 use base64::Engine;
 
@@ -11,9 +11,23 @@ pub fn local_file_ops(spec: &str) -> Vec<FileOp> {
     local_path(spec).map(|p| FileOp::local_file(p).into()).unwrap_or_default()
 }
 
-/// A file referenced as a plain local path or a `file://` URL, read by [`local_file_ops`]. Remote (`http://`, ...) sources are not supported. Files larger than `max_size` bytes (when non-zero) are refused, like `AttachBase.max_file_size`.
+/// The download behind [`read_local_file`] for an `http(s)://` reference, for [`crate::Notify::fetches`]; none for a local one.
+pub fn remote_fetches(ctx: &Context<'_>, spec: &str, max_size: u64) -> Vec<crate::http::Request> {
+    let spec = spec.trim();
+    match crate::url::scheme_of(spec).as_deref() {
+        Some("http" | "https") => {
+            vec![crate::http::Request::get(spec).header("User-Agent", ctx.app_id()).max_body(max_size)]
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// A file referenced as a plain local path, a `file://` URL (read by [`local_file_ops`]) or an `http(s)://` URL (downloaded by [`remote_fetches`]). Files larger than `max_size` bytes (when non-zero) are refused, like `AttachBase.max_file_size`.
 pub fn read_local_file<'a>(ctx: &Context<'a>, spec: &str, max_size: u64) -> Option<&'a [u8]> {
-    ctx.local_file(local_path(spec)?, max_size).ok()
+    match local_path(spec) {
+        Some(path) => ctx.local_file(path, max_size).ok(),
+        None => ctx.fetched(spec.trim()).ok(),
+    }
 }
 
 /// The local filesystem path a keyfile/subfile reference points at; `None` for remote URLs.

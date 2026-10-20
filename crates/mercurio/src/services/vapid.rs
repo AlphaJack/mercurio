@@ -2,11 +2,10 @@
 //!
 //! Messages are encrypted per subscription with RFC 8291 (`aes128gcm`: ephemeral ECDH P-256, HKDF-SHA256, AES-128-GCM) and authorised with an RFC 8292 VAPID ES256 JWT addressed to each endpoint's origin.
 //!
-//! The private key (`?keyfile=`, PEM) and the subscriptions (`?subfile=`, JSON) are read from local files. Without `?keyfile=`, a disk-backed persistent store holds them: `private_key.pem` (generated on first use, with `public_key.pem`) and `subscriptions.json` in the URL's store directory. Expired (404/410) endpoints are kept in the store (`retired`, 30 days) and skipped.
+//! The private key (`?keyfile=`, PEM) and the subscriptions (`?subfile=`, JSON) are read from local files or downloaded from `http(s)://` URLs. Without `?keyfile=`, a disk-backed persistent store holds them: `private_key.pem` (generated on first use, with `public_key.pem`) and `subscriptions.json` in the URL's store directory. Expired (404/410) endpoints are kept in the store (`retired`, 30 days) and skipped.
 //!
 //! # Differences with Apprise
 //!
-//! - Remote (`http://`) key and subscription files are not supported. *todo*
 //! - Both files are re-read on every send. *intentional*
 //! - Expired endpoints are never pruned from the subscription file (Apprise rewrites a writable one) and no starter file is written. *intentional*
 //! - Compressed `p256dh` points are rejected. *todo*
@@ -20,7 +19,7 @@ use ring::signature::{ECDSA_P256_SHA256_FIXED_SIGNING, EcdsaKeyPair, KeyPair};
 use ring::{aead, hkdf};
 use serde_json::{Value, json};
 
-use super::_keys::{local_file_ops, p256_keys_from_der, pem_decode, read_local_file};
+use super::_keys::{local_file_ops, p256_keys_from_der, pem_decode, read_local_file, remote_fetches};
 use crate::crypto::{b64_url_decode, b64_url_nopad};
 use crate::env::Env;
 use crate::error::Error;
@@ -502,6 +501,11 @@ impl Notify for Vapid {
         keys.iter().chain(&subs).flat_map(|f| local_file_ops(f)).collect()
     }
 
+    fn fetches(&self, ctx: &Context<'_>) -> Vec<crate::http::Request> {
+        let key = self.keyfile.iter().flat_map(|k| remote_fetches(ctx, k, MAX_KEYFILE_SIZE));
+        key.chain(self.subfile.iter().flat_map(|s| remote_fetches(ctx, s, MAX_SUBFILE_SIZE))).collect()
+    }
+
     fn url_identifier(&self) -> UrlIdentifier {
         UrlIdentifier::parts(["vapid", self.mode.as_str(), self.subscriber.as_str()])
     }
@@ -633,4 +637,30 @@ mod tests {
         assert_eq!(b64_url_decode("<place>"), None);
         assert_eq!(b64_url_decode("-_-_"), Some(vec![0xfb, 0xff, 0xbf]));
     }
+
+    #[test]
+    #[expect(clippy::disallowed_methods, reason = "reads the test fixtures")]
+    fn key_and_subscriptions_from_urls() {
+        let key = std::fs::read(data("vapid_private_key.pem")).unwrap();
+        let subs = std::fs::read(data("vapid_subscriptions.json")).unwrap();
+        let url = "vapid://user@example.com/user1?keyfile=https://keys.example/k.pem&subfile=https://keys.example/s.json";
+        let fake = crate::testing::FakeTransport::new();
+        fake.on_url("keys.example/k.pem", crate::Response::new(200, key));
+        fake.on_url("keys.example/s.json", crate::Response::new(200, subs));
+        fake.default_response(crate::Response::new(201, Vec::new()));
+        let d = crate::parse(url).unwrap().send(&crate::Message::new("b"), &fake, &crate::Asset::default());
+        assert!(d.is_success(), "{d:?}");
+        let reqs = fake.requests();
+        let downloads: Vec<_> = reqs.iter().filter(|r| r.url.contains("keys.example")).collect();
+        assert_eq!(downloads.len(), 2);
+        assert_eq!(downloads[0].max_body, MAX_KEYFILE_SIZE);
+        assert_eq!(downloads[1].max_body, MAX_SUBFILE_SIZE);
+        assert!(reqs.iter().any(|r| r.header_value("authorization").is_some_and(|a| a.starts_with("vapid "))), "a push was sent");
+
+        // A key that cannot be downloaded fails the send.
+        let fake = crate::testing::FakeTransport::new();
+        fake.on_url("keys.example", crate::Response::new(404, Vec::new()));
+        assert!(!crate::parse(url).unwrap().send(&crate::Message::new("b"), &fake, &crate::Asset::default()).is_success());
+    }
+
 }
