@@ -3,7 +3,6 @@
 use quick_xml::events::{BytesRef, BytesStart, Event as XmlEvent};
 
 use crate::error::{Error, Result};
-use crate::transport::AsyncConn;
 
 /// Escape character data.
 pub fn text(s: &str) -> String {
@@ -77,17 +76,17 @@ const MAX_STANZA: u64 = 1 << 20;
 /// Nesting limit for one stanza.
 const MAX_DEPTH: usize = 64;
 
-/// Streaming reader over the server half of an XMPP stream. Received bytes are buffered and parsed one complete event at a time; more are read only when the event is incomplete. It owns the connection; write through [`Reader::conn`].
-pub struct Reader<'c> {
-    conn: &'c mut dyn AsyncConn,
+/// Sans-IO parser of the server half of an XMPP stream: [`Parser::push`] received bytes, then take complete events one at a time with [`Parser::next_event`].
+#[derive(Default)]
+pub struct Parser {
     pending: Vec<u8>,
     /// The stream header's name, once read.
     open: Option<String>,
 }
 
-impl std::fmt::Debug for Reader<'_> {
+impl std::fmt::Debug for Parser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Reader").field("open", &self.open.is_some()).finish_non_exhaustive()
+        f.debug_struct("Parser").field("open", &self.open.is_some()).finish_non_exhaustive()
     }
 }
 
@@ -202,14 +201,33 @@ fn parse(input: &[u8], stream: Option<&str>) -> Result<Parsed> {
     }
 }
 
-impl<'c> Reader<'c> {
-    pub fn new(conn: &'c mut dyn AsyncConn) -> Self {
-        Self { conn, pending: Vec::new(), open: None }
+impl Parser {
+    /// Append bytes from the server.
+    pub fn push(&mut self, data: &[u8]) {
+        self.pending.extend_from_slice(data);
     }
 
-    /// The connection, for writing.
-    pub fn conn(&mut self) -> &mut dyn AsyncConn {
-        &mut *self.conn
+    /// The next complete event; `Ok(None)` until more bytes arrive.
+    pub fn next_event(&mut self) -> Result<Option<Event>> {
+        match parse(&self.pending, self.open.as_deref())? {
+            Parsed::Event(ev, used) => {
+                if let Event::Open(el) = &ev {
+                    self.open = Some(el.name.clone());
+                }
+                self.pending.drain(..used);
+                Ok(Some(ev))
+            }
+            Parsed::More(_) => Ok(None),
+        }
+    }
+
+    /// What the stream ending now means: a syntax error if it ends inside markup, else a closed connection.
+    pub fn eof_error(&self) -> Error {
+        match parse(&self.pending, self.open.as_deref()) {
+            Ok(Parsed::More(Some(e))) => xml_error(e),
+            Ok(Parsed::More(None) | Parsed::Event(..)) => closed(),
+            Err(e) => e,
+        }
     }
 
     /// Whether bytes were received but not read yet.
@@ -217,32 +235,10 @@ impl<'c> Reader<'c> {
         !self.pending.is_empty()
     }
 
-    /// Start over on the same connection and expect a new stream header (after STARTTLS or SASL success). Unread bytes are dropped.
+    /// Start over and expect a new stream header (after STARTTLS or SASL success). Unread bytes are dropped.
     pub fn reset(&mut self) {
         self.pending.clear();
         self.open = None;
-    }
-
-    /// Read until one complete event is available. EOF is an error.
-    pub async fn next(&mut self) -> Result<Event> {
-        loop {
-            let eof = match parse(&self.pending, self.open.as_deref())? {
-                Parsed::Event(ev, used) => {
-                    if let Event::Open(el) = &ev {
-                        self.open = Some(el.name.clone());
-                    }
-                    self.pending.drain(..used);
-                    return Ok(ev);
-                }
-                Parsed::More(eof) => eof,
-            };
-            let mut chunk = [0u8; crate::net::READ_CHUNK];
-            let n = self.conn.read(&mut chunk).await.map_err(Error::transport)?;
-            if n == 0 {
-                return Err(eof.map_or_else(closed, xml_error));
-            }
-            self.pending.extend_from_slice(&chunk[..n]);
-        }
     }
 }
 
@@ -250,44 +246,43 @@ impl<'c> Reader<'c> {
 mod tests {
     use super::*;
 
-    /// Hands out at most `chunk` bytes per `read` call.
+    /// A parser fed at most `chunk` bytes at a time from `data`, as a socket would.
     struct Feed {
+        p: Parser,
         data: Vec<u8>,
         chunk: usize,
     }
 
-    impl AsyncConn for Feed {
-        fn read<'a>(&'a mut self, buf: &'a mut [u8]) -> crate::BoxFuture<'a, std::io::Result<usize>> {
-            let n = self.chunk.min(buf.len()).min(self.data.len());
-            buf[..n].copy_from_slice(&self.data[..n]);
-            self.data.drain(..n);
-            Box::pin(std::future::ready(Ok(n)))
+    impl Feed {
+        fn has_unread(&self) -> bool {
+            self.p.has_unread()
         }
-        fn write_all<'a>(&'a mut self, _: &'a [u8]) -> crate::BoxFuture<'a, std::io::Result<()>> {
-            Box::pin(std::future::ready(Ok(())))
-        }
-        fn flush(&mut self) -> crate::BoxFuture<'_, std::io::Result<()>> {
-            Box::pin(std::future::ready(Ok(())))
-        }
-        fn start_tls(&mut self) -> crate::BoxFuture<'_, Result<()>> {
-            Box::pin(std::future::ready(Ok(())))
-        }
-        fn is_tls(&self) -> bool {
-            false
+        fn reset(&mut self) {
+            self.p.reset();
         }
     }
 
     fn feed(data: &[u8], chunk: usize) -> Feed {
-        Feed { data: data.to_vec(), chunk }
+        Feed { p: Parser::default(), data: data.to_vec(), chunk }
     }
 
-    fn next(r: &mut Reader<'_>) -> Result<Event> {
-        pollster::block_on(r.next())
+    /// The next event, pushing more bytes as needed; the end of `data` is the end of the stream.
+    fn next(r: &mut Feed) -> Result<Event> {
+        loop {
+            if let Some(ev) = r.p.next_event()? {
+                return Ok(ev);
+            }
+            if r.data.is_empty() {
+                return Err(r.p.eof_error());
+            }
+            let n = r.chunk.min(r.data.len());
+            let chunk: Vec<u8> = r.data.drain(..n).collect();
+            r.p.push(&chunk);
+        }
     }
 
     fn events(input: &str) -> Vec<Event> {
-        let mut conn = feed(input.as_bytes(), 64);
-        let mut r = Reader::new(&mut conn);
+        let mut r = feed(input.as_bytes(), 64);
         let mut out = Vec::new();
         while let Ok(ev) = next(&mut r) {
             out.push(ev);
@@ -319,22 +314,19 @@ mod tests {
     #[test]
     fn waits_for_partial_input() {
         let input = b"<stream:stream a='1'><iq type='result' id='x'><bind><jid>a@b</jid></bind></iq>";
-        let mut conn = feed(input, 1);
-        let mut r = Reader::new(&mut conn);
+        let mut r = feed(input, 1);
         assert!(matches!(next(&mut r).unwrap(), Event::Open(_)));
         let Event::Stanza(iq) = next(&mut r).unwrap() else { panic!() };
         assert_eq!(iq.child("bind").unwrap().child("jid").unwrap().text, "a@b");
         // A stanza cut short by the connection closing is a transport error.
-        let mut conn = feed(b"<s><iq><bind>", 1);
-        let mut r = Reader::new(&mut conn);
+        let mut r = feed(b"<s><iq><bind>", 1);
         next(&mut r).unwrap();
         assert!(matches!(next(&mut r), Err(Error::Transport(_))));
     }
 
     #[test]
     fn rejects_mismatched_tags() {
-        let mut conn = feed(b"<s><a><b></a>", 64);
-        let mut r = Reader::new(&mut conn);
+        let mut r = feed(b"<s><a><b></a>", 64);
         next(&mut r).unwrap();
         assert!(matches!(next(&mut r), Err(Error::Service(_))));
     }
@@ -342,16 +334,14 @@ mod tests {
     #[test]
     fn limits_depth() {
         let deep = format!("<s>{}", "<a>".repeat(MAX_DEPTH + 1));
-        let mut conn = feed(deep.as_bytes(), 64);
-        let mut r = Reader::new(&mut conn);
+        let mut r = feed(deep.as_bytes(), 64);
         next(&mut r).unwrap();
         assert!(matches!(next(&mut r), Err(Error::Service(m)) if m.contains("deeply")));
     }
 
     #[test]
     fn reset_reports_unread_bytes() {
-        let mut conn = feed(b"<s><proceed/><injected/>", 64);
-        let mut r = Reader::new(&mut conn);
+        let mut r = feed(b"<s><proceed/><injected/>", 64);
         next(&mut r).unwrap();
         next(&mut r).unwrap();
         assert!(r.has_unread());
@@ -390,8 +380,7 @@ mod tests {
                     _ => {}
                 }
             }
-            let mut conn = feed(&data, 7);
-            let mut r = Reader::new(&mut conn);
+            let mut r = feed(&data, 7);
             for _ in 0..16 {
                 if next(&mut r).is_err() {
                     break;

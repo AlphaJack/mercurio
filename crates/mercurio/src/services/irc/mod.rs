@@ -12,17 +12,16 @@
 
 mod protocol;
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use self::protocol::{IrcMessage, join_error, normalise_channel, parse_line, register_error};
-use std::sync::Arc;
-
 use crate::env::Env;
 use crate::error::Error;
-use crate::net::LineConn;
+use crate::machine::{Input, LineBuf, Output, Protocol};
 use crate::parse::{parse_list, parse_list_unquoted};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::transport::{AsyncConn, Endpoint};
+use crate::transport::Endpoint;
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
@@ -206,28 +205,60 @@ struct Session {
     quit: String,
 }
 
-struct Client<'a> {
-    lc: LineConn<'a>,
-    prefix: String,
-    collisions: u32,
-    env: Arc<dyn Env>,
+/// Where a session is; every state but [`State::Quitting`] and [`State::Done`] reads.
+#[derive(Debug)]
+enum State {
+    /// Waiting for the `001` welcome.
+    Register,
+    /// Waiting for the `PONG` of the ZNC liveness `PING`.
+    ZncCheck,
+    /// Waiting for the server to confirm the JOIN of `joins[idx]`.
+    Join { idx: usize },
+    /// `QUIT` is queued; the session ends once it is sent.
+    Quitting,
+    Done,
 }
 
-impl Client<'_> {
-    async fn send(&mut self, line: &str) -> Result<()> {
-        self.lc.write_line(line).await
+/// An IRC session as a sans-IO state machine.
+struct Client {
+    s: Session,
+    state: State,
+    rx: LineBuf,
+    out: Vec<u8>,
+    collisions: u32,
+    env: Arc<dyn Env>,
+    result: Option<Result<()>>,
+}
+
+impl Client {
+    fn new(s: Session, env: Arc<dyn Env>) -> Self {
+        let mut c =
+            Client { s, state: State::Register, rx: LineBuf::default(), out: Vec::new(), collisions: 0, env, result: None };
+        if let Some(p) = c.s.pass.clone() {
+            c.send(&format!("PASS {p}"));
+        }
+        let nick = c.s.nickname.clone();
+        c.send(&format!("NICK {nick}"));
+        let user = format!("USER {nick} 0 * :{}", c.s.fullname);
+        c.send(&user);
+        c
     }
 
-    /// Next line; `None` when the server went quiet or closed.
-    async fn read(&mut self) -> Option<IrcMessage> {
-        self.lc.read_line().await.ok().map(|l| parse_line(&l))
+    fn send(&mut self, line: &str) {
+        self.out.extend_from_slice(line.as_bytes());
+        self.out.extend_from_slice(b"\r\n");
     }
 
-    /// PING and nickname-collision handling shared by every wait loop. Returns `Ok(true)` when the message was consumed.
-    async fn common(&mut self, msg: &IrcMessage) -> Result<bool> {
+    fn fail(&mut self, err: Error) {
+        self.result.get_or_insert(Err(err));
+        self.state = State::Done;
+    }
+
+    /// PING and nickname-collision handling shared by every wait. Returns `Ok(true)` when the message was consumed.
+    fn common(&mut self, msg: &IrcMessage) -> Result<bool> {
         if msg.is("PING") {
             let payload = msg.ping_payload().to_string();
-            self.send(&format!("PONG :{payload}")).await?;
+            self.send(&format!("PONG :{payload}"));
             return Ok(true);
         }
         if matches!(msg.numeric(), Some(432 | 433)) {
@@ -235,101 +266,155 @@ impl Client<'_> {
                 return Err(Error::Service("IRC nickname is already in use".into()));
             }
             self.collisions += 1;
-            let nick = nick_generation(&self.prefix, NICK_MAX_LENGTH, self.collisions, self.env.as_ref());
-            self.send(&format!("NICK {nick}")).await?;
+            let nick = nick_generation(&self.s.prefix, NICK_MAX_LENGTH, self.collisions, self.env.as_ref());
+            self.send(&format!("NICK {nick}"));
             return Ok(true);
         }
         Ok(false)
     }
 
-    async fn register(&mut self, s: &Session) -> Result<()> {
-        if let Some(p) = &s.pass {
-            self.send(&format!("PASS {p}")).await?;
-        }
-        self.send(&format!("NICK {}", s.nickname)).await?;
-        self.send(&format!("USER {} 0 * :{}", s.nickname, s.fullname)).await?;
-        loop {
-            let Some(msg) = self.read().await else {
-                return Err(Error::transport("IRC registration timeout"));
-            };
-            if self.common(&msg).await? {
-                continue;
-            }
-            if let Some(n) = msg.numeric() {
-                if let Some(reason) = register_error(n) {
-                    return Err(Error::Service(format!("{reason}: {}", msg.error_text())));
-                }
-                if n == 1 {
-                    return Ok(());
+    fn on_line(&mut self, msg: &IrcMessage) {
+        match self.state {
+            State::Register => match self.common(msg) {
+                Err(e) => self.fail(e),
+                Ok(true) => {}
+                Ok(false) => match msg.numeric() {
+                    Some(n) if register_error(n).is_some() => {
+                        let reason = register_error(n).unwrap_or_default();
+                        self.fail(Error::Service(format!("{reason}: {}", msg.error_text())));
+                    }
+                    Some(1) => self.registered(),
+                    _ => {}
+                },
+            },
+            State::ZncCheck => {
+                if msg.is("PONG") {
+                    self.next_target(0);
                 }
             }
+            State::Join { idx } => match self.common(msg) {
+                Err(e) => self.fail(e),
+                Ok(true) => {}
+                Ok(false) => {
+                    let n = msg.numeric();
+                    if let Some(reason) = n.and_then(join_error) {
+                        return self.fail(Error::Service(format!("{reason}: {}", msg.error_text())));
+                    }
+                    let chan = self.s.joins[idx].0.as_str();
+                    let confirmed = match n {
+                        Some(443 | 366) => msg.params.get(1).map(String::as_str) == Some(chan),
+                        _ if msg.is("JOIN") => {
+                            msg.trailing.as_deref().or(msg.params.first().map(String::as_str)) == Some(chan)
+                        }
+                        _ => false,
+                    };
+                    if confirmed {
+                        self.joined(idx);
+                    }
+                }
+            },
+            State::Quitting | State::Done => {}
         }
     }
 
-    async fn check_connection(&mut self) -> Result<()> {
-        self.send("PING :mercurio").await?;
-        while let Some(msg) = self.read().await {
-            if msg.is("PONG") {
-                return Ok(());
+    /// The server went quiet or closed the stream while the session waited.
+    fn on_quiet(&mut self) {
+        match self.state {
+            State::Register => self.fail(Error::transport("IRC registration timeout")),
+            State::ZncCheck => self.fail(Error::Service("ZNC connection check failed".into())),
+            State::Join { idx } => {
+                log::debug!("IRC join confirmation not observed for {}", self.s.joins[idx].0);
+                self.joined(idx);
             }
+            State::Quitting | State::Done => {}
         }
-        Err(Error::Service("ZNC connection check failed".into()))
     }
 
-    async fn join(&mut self, chan: &str, key: Option<&str>) -> Result<()> {
-        match key {
-            Some(k) => self.send(&format!("JOIN {chan} {k}")).await?,
-            None => self.send(&format!("JOIN {chan}")).await?,
+    fn registered(&mut self) {
+        if let Some(pw) = self.s.identify.clone() {
+            self.send(&format!("PRIVMSG NickServ :IDENTIFY {pw}"));
         }
-        while let Some(msg) = self.read().await {
-            if self.common(&msg).await? {
-                continue;
-            }
-            let n = msg.numeric();
-            if let Some(reason) = n.and_then(join_error) {
-                return Err(Error::Service(format!("{reason}: {}", msg.error_text())));
-            }
-            let confirmed = match n {
-                Some(443 | 366) => msg.params.get(1).map(String::as_str) == Some(chan),
-                _ if msg.is("JOIN") => msg.trailing.as_deref().or(msg.params.first().map(String::as_str)) == Some(chan),
-                _ => false,
-            };
-            if confirmed {
-                return Ok(());
-            }
+        if self.s.znc {
+            self.send("PING :mercurio");
+            self.state = State::ZncCheck;
+        } else {
+            self.next_target(0);
         }
-        log::debug!("IRC join confirmation not observed for {chan}");
-        Ok(())
     }
 
-    async fn privmsg(&mut self, target: &str, lines: &[String]) -> Result<()> {
-        for line in lines {
-            self.send(&format!("PRIVMSG {target} :{line}")).await?;
+    fn privmsg(&mut self, target: &str) {
+        for i in 0..self.s.lines.len() {
+            let line = format!("PRIVMSG {target} :{}", self.s.lines[i]);
+            self.send(&line);
         }
-        Ok(())
+    }
+
+    /// `joins[idx]` is joined (or its confirmation never came): message it, then go on.
+    fn joined(&mut self, idx: usize) {
+        let chan = self.s.joins[idx].0.clone();
+        self.privmsg(&chan);
+        self.next_target(idx + 1);
+    }
+
+    /// Message the channels from `joins[idx]` on (stopping at the next one to JOIN), then the users, then QUIT.
+    fn next_target(&mut self, idx: usize) {
+        for i in idx..self.s.joins.len() {
+            let (chan, key, join) = self.s.joins[i].clone();
+            if join {
+                match key {
+                    Some(k) => self.send(&format!("JOIN {chan} {k}")),
+                    None => self.send(&format!("JOIN {chan}")),
+                }
+                self.state = State::Join { idx: i };
+                return;
+            }
+            self.privmsg(&chan);
+        }
+        for user in self.s.users.clone() {
+            self.privmsg(user.trim_start_matches('@'));
+        }
+        let quit = format!("QUIT :{}", self.s.quit);
+        self.send(&quit);
+        self.state = State::Quitting;
+    }
+
+    fn reading(&self) -> bool {
+        matches!(self.state, State::Register | State::ZncCheck | State::Join { .. })
     }
 }
 
-async fn run(s: Session, conn: &mut dyn AsyncConn, env: Arc<dyn Env>) -> Result<()> {
-    let mut c = Client { lc: LineConn::new(conn), prefix: s.prefix.clone(), collisions: 0, env };
-    c.register(&s).await?;
-    if let Some(pw) = &s.identify {
-        c.send(&format!("PRIVMSG NickServ :IDENTIFY {pw}")).await?;
-    }
-    if s.znc {
-        c.check_connection().await?;
-    }
-    for (chan, key, join) in &s.joins {
-        if *join {
-            c.join(chan, key.as_deref()).await?;
+impl Protocol for Client {
+    fn next(&mut self) -> Output {
+        if !self.out.is_empty() {
+            return Output::Write(std::mem::take(&mut self.out));
         }
-        c.privmsg(chan, &s.lines).await?;
+        match self.state {
+            State::Quitting | State::Done => {
+                self.state = State::Done;
+                Output::Done(self.result.take().unwrap_or(Ok(())))
+            }
+            State::Register | State::ZncCheck | State::Join { .. } => Output::Read,
+        }
     }
-    for user in &s.users {
-        c.privmsg(user.trim_start_matches('@'), &s.lines).await?;
+
+    fn input(&mut self, input: Input<'_>) {
+        match input {
+            Input::Data([]) | Input::ReadError(_) => self.on_quiet(),
+            Input::Data(data) => {
+                self.rx.push(data);
+                while self.reading() {
+                    let Some(line) = self.rx.next_line() else { break };
+                    self.on_line(&parse_line(&line));
+                }
+            }
+            Input::WriteError(e) => self.fail(Error::unconfirmed(e)),
+            Input::Tls(r) => {
+                if let Err(e) = r {
+                    self.fail(e);
+                }
+            }
+        }
     }
-    c.send(&format!("QUIT :{}", s.quit)).await?;
-    Ok(())
 }
 
 impl Notify for Irc {
@@ -378,7 +463,7 @@ impl Notify for Irc {
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.secure);
         ep.read_timeout = REGISTER_TIMEOUT;
-        Plan::socket(ep, move |conn, transport| Box::pin(run(session, conn, transport.env())))
+        Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(Client::new(session, transport.env()), conn, transport)))
     }
 
 }
@@ -386,6 +471,40 @@ impl Notify for Irc {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The PING buffered behind the welcome is answered while waiting for the JOIN, as before: registration ends at `001`.
+    #[test]
+    fn session_is_driven_by_bytes_alone() {
+        let s = Session {
+            pass: None,
+            nickname: "me".into(),
+            fullname: "Me".into(),
+            prefix: "m".into(),
+            identify: None,
+            znc: false,
+            joins: vec![("#c".into(), None, true)],
+            users: vec!["@bob".into()],
+            lines: vec!["hi".into()],
+            quit: "bye".into(),
+        };
+        let mut c = Client::new(s, Arc::new(crate::testing::FixedEnv::new(0)));
+        let mut sent = String::new();
+        let mut replies = [":s 001 me :Welcome\r\nPING :x\r\n", ":me JOIN :#c\r\n"].into_iter();
+        let res = loop {
+            match c.next() {
+                Output::Write(data) => sent.push_str(&String::from_utf8(data).unwrap()),
+                Output::Read => c.input(Input::Data(replies.next().unwrap_or("").as_bytes())),
+                Output::StartTls => c.input(Input::Tls(Ok(()))),
+                Output::Sleep(_) => {}
+                Output::Done(r) => break r,
+            }
+        };
+        res.unwrap();
+        assert_eq!(
+            sent,
+            "NICK me\r\nUSER me 0 * :Me\r\nJOIN #c\r\nPONG :x\r\nPRIVMSG #c :hi\r\nPRIVMSG bob :hi\r\nQUIT :bye\r\n"
+        );
+    }
 
     #[test]
     fn generated_nicks() {

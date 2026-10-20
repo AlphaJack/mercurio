@@ -1,9 +1,13 @@
 //! A minimal one-shot XMPP client session (RFC 6120/6121, XEP-0045): stream negotiation, STARTTLS, SASL, resource binding, session, presence, optional roster fetch, MUC join, messages, stream close.
 
+use std::collections::VecDeque;
+use std::sync::Arc;
+
 use super::sasl::{Mech, Scram, plain};
-use super::xml::{self, Element, Event, Reader};
+use super::xml::{self, Element, Event, Parser};
+use crate::env::Env;
 use crate::error::{Error, Result};
-use crate::transport::AsyncConn;
+use crate::machine::{Input, Output, Protocol};
 
 const NS_TLS: &str = "urn:ietf:params:xml:ns:xmpp-tls";
 const NS_SASL: &str = "urn:ietf:params:xml:ns:xmpp-sasl";
@@ -54,74 +58,6 @@ fn split_jid(jid: &str) -> Jid<'_> {
     Jid { local, domain, resource }
 }
 
-struct Stream<'a> {
-    /// Owns the connection; writes go through it.
-    reader: Reader<'a>,
-    ids: u32,
-}
-
-impl Stream<'_> {
-    async fn send(&mut self, data: &str) -> Result<()> {
-        crate::services::_sockets::send(self.reader.conn(), data.as_bytes()).await
-    }
-
-    async fn next(&mut self) -> Result<Event> {
-        self.reader.next().await
-    }
-
-    fn is_tls(&mut self) -> bool {
-        self.reader.conn().is_tls()
-    }
-
-    /// Next top-level stanza; stream errors and stream end fail.
-    async fn stanza(&mut self) -> Result<Element> {
-        match self.next().await? {
-            Event::Stanza(el) if el.local() == "error" && el.name.contains(':') => {
-                let cond = el.children.first().map(|c| c.local().to_string()).unwrap_or_default();
-                Err(Error::service(format!("XMPP stream error: {cond}")))
-            }
-            Event::Stanza(el) => Ok(el),
-            Event::Open(_) => Err(Error::service("XMPP: unexpected stream header")),
-            Event::Close => Err(Error::service("XMPP: server closed the stream")),
-        }
-    }
-
-    /// Open (or restart) the stream and return the server's features.
-    async fn open(&mut self, domain: &str) -> Result<Element> {
-        self.send(&format!(
-            "<?xml version='1.0'?><stream:stream to='{}' xmlns='jabber:client' \
-             xmlns:stream='http://etherx.jabber.org/streams' xml:lang='en' version='1.0'>",
-            xml::attr(domain)
-        )).await?;
-        let Event::Open(_) = self.next().await? else {
-            return Err(Error::service("XMPP: server did not open a stream"));
-        };
-        loop {
-            let el = self.stanza().await?;
-            if el.local() == "features" {
-                return Ok(el);
-            }
-        }
-    }
-
-    fn next_id(&mut self, prefix: &str) -> String {
-        self.ids += 1;
-        format!("{prefix}{}", self.ids)
-    }
-
-    /// Send an IQ and wait for its answer, skipping unrelated stanzas.
-    async fn iq(&mut self, kind: &str, payload: &str) -> Result<Element> {
-        let id = self.next_id("mercurio");
-        self.send(&format!("<iq type='{kind}' id='{id}'>{payload}</iq>")).await?;
-        loop {
-            let el = self.stanza().await?;
-            if el.local() == "iq" && el.attr("id") == Some(id.as_str()) {
-                return Ok(el);
-            }
-        }
-    }
-}
-
 fn iq_error(what: &str, el: &Element) -> Error {
     let cond = el
         .child("error")
@@ -131,160 +67,416 @@ fn iq_error(what: &str, el: &Element) -> Error {
     Error::service(format!("XMPP {what} failed: {cond}"))
 }
 
-/// SASL negotiation; `Ok` once the server reports success.
-async fn authenticate(
-    s: &mut Stream<'_>,
-    features: &Element,
-    user: &str,
-    password: &str,
-    env: &dyn crate::Env,
-) -> Result<()> {
-    let offered: Vec<String> = features
-        .child("mechanisms")
-        .map(|m| m.children_named("mechanism").map(|c| c.text.trim().to_string()).collect())
-        .unwrap_or_default();
-    let encrypted = s.is_tls();
-    let mech = Mech::choose(offered.iter().map(String::as_str), encrypted).ok_or_else(|| {
-        Error::service(if offered.iter().any(|m| m.eq_ignore_ascii_case("PLAIN")) && !encrypted {
-            "XMPP: the server only offers PLAIN authentication over an unencrypted stream; use TLS".to_string()
+/// A top-level event as a stanza; stream errors, a new header and the stream end fail.
+fn stanza(ev: Event) -> Result<Element> {
+    match ev {
+        Event::Stanza(el) if el.local() == "error" && el.name.contains(':') => {
+            let cond = el.children.first().map(|c| c.local().to_string()).unwrap_or_default();
+            Err(Error::service(format!("XMPP stream error: {cond}")))
+        }
+        Event::Stanza(el) => Ok(el),
+        Event::Open(_) => Err(Error::service("XMPP: unexpected stream header")),
+        Event::Close => Err(Error::service("XMPP: server closed the stream")),
+    }
+}
+
+fn sasl_failed(el: &Element) -> Error {
+    let cond = el.children.iter().find(|c| c.local() != "text").map(|c| c.local().to_string());
+    Error::service(format!("XMPP authentication failed: {}", cond.unwrap_or_else(|| "unknown".into())))
+}
+
+fn sasl_unexpected() -> Error {
+    Error::service("XMPP: unexpected SASL answer")
+}
+
+fn sasl_data(el: &Element) -> Result<String> {
+    let raw = crate::crypto::b64_decode(el.text.trim()).ok_or_else(|| Error::service("XMPP: bad SASL data"))?;
+    Ok(String::from_utf8_lossy(&raw).into_owned())
+}
+
+/// Which stream (re)start a header and features belong to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Phase {
+    Initial,
+    AfterTls,
+    AfterAuth,
+}
+
+/// Where SASL is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Sasl {
+    /// `<auth mechanism='PLAIN'>` sent.
+    Plain,
+    /// SCRAM client-first sent; a challenge is due.
+    First,
+    /// SCRAM client-final sent; success (or a challenge carrying `v=`) is due.
+    Final,
+    /// The `v=` challenge is answered; success is due.
+    Verified,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum IqStep {
+    Bind,
+    Session,
+    Roster,
+}
+
+/// What the session waits for.
+#[derive(Debug)]
+enum Wait {
+    /// The server's stream header.
+    Header(Phase),
+    /// Stanzas until `<stream:features>`.
+    Features(Phase),
+    Proceed,
+    Sasl(Sasl),
+    /// The answer to the IQ `id`.
+    Iq { id: String, step: IqStep },
+    /// The room's presence for our occupant JID, before messaging `targets[target]`.
+    Muc { occupant: String, target: usize },
+    /// The transport's TLS upgrade.
+    TlsHandshake,
+    /// `</stream:stream>` is sent: the server's close (or any failure) ends the session.
+    Close,
+    Done,
+}
+
+/// An XMPP session as a sans-IO state machine.
+pub struct Client {
+    cfg: Session,
+    wait: Wait,
+    parser: Parser,
+    /// One write per stanza, as servers (and the fixture server) see them.
+    out: VecDeque<Vec<u8>>,
+    tls: bool,
+    ids: u32,
+    scram: Option<Scram>,
+    /// The features after authentication (bind, session).
+    features: Option<Element>,
+    env: Arc<dyn Env>,
+    result: Option<Result<()>>,
+}
+
+impl Client {
+    /// A session for `cfg`; `tls` is whether the stream starts encrypted.
+    pub fn new(cfg: Session, tls: bool, env: Arc<dyn Env>) -> Self {
+        let mut c = Client {
+            cfg,
+            wait: Wait::Done,
+            parser: Parser::default(),
+            out: VecDeque::new(),
+            tls,
+            ids: 0,
+            scram: None,
+            features: None,
+            env,
+            result: None,
+        };
+        c.open(Phase::Initial);
+        c
+    }
+
+    fn send(&mut self, data: &str) {
+        self.out.push_back(data.as_bytes().to_vec());
+    }
+
+    fn fail(&mut self, err: Error) {
+        self.result.get_or_insert(Err(err));
+        self.wait = Wait::Done;
+    }
+
+    fn finish(&mut self) {
+        self.result.get_or_insert(Ok(()));
+        self.wait = Wait::Done;
+    }
+
+    /// Open (or restart) the stream.
+    fn open(&mut self, phase: Phase) {
+        let domain = split_jid(&self.cfg.jid).domain.to_string();
+        self.send(&format!(
+            "<?xml version='1.0'?><stream:stream to='{}' xmlns='jabber:client' \
+             xmlns:stream='http://etherx.jabber.org/streams' xml:lang='en' version='1.0'>",
+            xml::attr(&domain)
+        ));
+        self.wait = Wait::Header(phase);
+    }
+
+    fn iq(&mut self, kind: &str, payload: &str, step: IqStep) {
+        self.ids += 1;
+        let id = format!("mercurio{}", self.ids);
+        self.send(&format!("<iq type='{kind}' id='{id}'>{payload}</iq>"));
+        self.wait = Wait::Iq { id, step };
+    }
+
+    fn on_event(&mut self, ev: Event) {
+        match std::mem::replace(&mut self.wait, Wait::Done) {
+            Wait::Header(phase) => match ev {
+                Event::Open(_) => self.wait = Wait::Features(phase),
+                Event::Stanza(_) | Event::Close => self.fail(Error::service("XMPP: server did not open a stream")),
+            },
+            Wait::Close => {
+                if ev == Event::Close {
+                    self.finish();
+                } else {
+                    self.wait = Wait::Close;
+                }
+            }
+            wait @ (Wait::Features(_)
+            | Wait::Proceed
+            | Wait::Sasl(_)
+            | Wait::Iq { .. }
+            | Wait::Muc { .. }
+            | Wait::TlsHandshake
+            | Wait::Done) => match stanza(ev) {
+                Ok(el) => self.on_stanza(wait, &el),
+                Err(e) => self.fail(e),
+            },
+        }
+    }
+
+    fn on_stanza(&mut self, wait: Wait, el: &Element) {
+        match wait {
+            Wait::Features(phase) if el.local() == "features" => self.on_features(phase, el),
+            Wait::Proceed if el.local() != "proceed" => self.fail(Error::service("XMPP: the server refused STARTTLS")),
+            // Anything the server sent after `<proceed/>` arrived in plain text and must not be read as part of the encrypted stream.
+            Wait::Proceed if self.parser.has_unread() => {
+                self.fail(Error::service("XMPP: unexpected data after STARTTLS proceed"));
+            }
+            Wait::Proceed => {
+                self.parser.reset();
+                self.wait = Wait::TlsHandshake;
+            }
+            Wait::Sasl(step) => self.on_sasl(step, el),
+            Wait::Iq { id, step } if el.local() == "iq" && el.attr("id") == Some(id.as_str()) => self.on_iq(step, el),
+            Wait::Muc { occupant, target }
+                if el.local() == "presence" && el.attr("from").is_some_and(|f| f.eq_ignore_ascii_case(&occupant)) =>
+            {
+                self.message(target);
+                self.next_target(target + 1);
+            }
+            // Unrelated stanzas are skipped.
+            wait @ (Wait::Features(_) | Wait::Iq { .. } | Wait::Muc { .. }) => self.wait = wait,
+            Wait::Header(_) | Wait::TlsHandshake | Wait::Close | Wait::Done => {}
+        }
+    }
+
+    fn on_features(&mut self, phase: Phase, features: &Element) {
+        match phase {
+            Phase::Initial if self.cfg.mode == Mode::StartTls && !self.tls => {
+                if features.child("starttls").is_none() {
+                    return self.fail(Error::service("XMPP: the server does not offer STARTTLS"));
+                }
+                self.send(&format!("<starttls xmlns='{NS_TLS}'/>"));
+                self.wait = Wait::Proceed;
+            }
+            Phase::Initial | Phase::AfterTls => self.authenticate(features),
+            Phase::AfterAuth => {
+                self.features = Some(features.clone());
+                self.bind();
+            }
+        }
+    }
+
+    fn authenticate(&mut self, features: &Element) {
+        let offered: Vec<String> = features
+            .child("mechanisms")
+            .map(|m| m.children_named("mechanism").map(|c| c.text.trim().to_string()).collect())
+            .unwrap_or_default();
+        let Some(mech) = Mech::choose(offered.iter().map(String::as_str), self.tls) else {
+            return self.fail(Error::service(if offered.iter().any(|m| m.eq_ignore_ascii_case("PLAIN")) && !self.tls {
+                "XMPP: the server only offers PLAIN authentication over an unencrypted stream; use TLS".to_string()
+            } else {
+                "XMPP: no supported SASL mechanism offered".to_string()
+            }));
+        };
+        let user = split_jid(&self.cfg.jid).local.to_string();
+        if mech == Mech::Plain {
+            let auth = format!("<auth xmlns='{NS_SASL}' mechanism='PLAIN'>{}</auth>", plain(&user, &self.cfg.password));
+            self.send(&auth);
+            self.wait = Wait::Sasl(Sasl::Plain);
+            return;
+        }
+        let scram = Scram::new(mech, &user, self.env.as_ref());
+        let auth = format!(
+            "<auth xmlns='{NS_SASL}' mechanism='{}'>{}</auth>",
+            mech.name(),
+            crate::crypto::b64(scram.client_first().as_bytes())
+        );
+        self.send(&auth);
+        self.scram = Some(scram);
+        self.wait = Wait::Sasl(Sasl::First);
+    }
+
+    fn on_sasl(&mut self, step: Sasl, el: &Element) {
+        let res = match (step, el.local()) {
+            (_, "failure") => Err(sasl_failed(el)),
+            (Sasl::Plain | Sasl::Verified, "success") => Ok(true),
+            (Sasl::First, "challenge") => self.scram_final(el).map(|()| false),
+            (Sasl::Final, "challenge") => {
+                // Some servers send `v=` in a challenge and an empty success.
+                self.scram_verify(el).map(|()| {
+                    self.send(&format!("<response xmlns='{NS_SASL}'/>"));
+                    self.wait = Wait::Sasl(Sasl::Verified);
+                    false
+                })
+            }
+            (Sasl::Final, "success") => self.scram_verify(el).map(|()| true),
+            _ => Err(sasl_unexpected()),
+        };
+        match res {
+            Ok(true) => {
+                self.parser.reset();
+                self.open(Phase::AfterAuth);
+            }
+            Ok(false) => {}
+            Err(e) => self.fail(e),
+        }
+    }
+
+    fn scram_final(&mut self, el: &Element) -> Result<()> {
+        let server_first = sasl_data(el)?;
+        let scram = self.scram.as_mut().ok_or_else(sasl_unexpected)?;
+        let fin = scram.client_final(&server_first, &self.cfg.password)?;
+        self.send(&format!("<response xmlns='{NS_SASL}'>{}</response>", crate::crypto::b64(fin.as_bytes())));
+        self.wait = Wait::Sasl(Sasl::Final);
+        Ok(())
+    }
+
+    fn scram_verify(&self, el: &Element) -> Result<()> {
+        self.scram.as_ref().ok_or_else(sasl_unexpected)?.verify(&sasl_data(el)?)
+    }
+
+    fn bind(&mut self) {
+        if self.features.as_ref().is_some_and(|f| f.child("bind").is_some()) {
+            let resource = split_jid(&self.cfg.jid)
+                .resource
+                .map(|r| format!("<resource>{}</resource>", xml::text(r)))
+                .unwrap_or_default();
+            return self.iq("set", &format!("<bind xmlns='{NS_BIND}'>{resource}</bind>"), IqStep::Bind);
+        }
+        self.session();
+    }
+
+    fn session(&mut self) {
+        let wanted = self.features.as_ref().and_then(|f| f.child("session")).is_some_and(|s| s.child("optional").is_none());
+        if wanted {
+            return self.iq("set", &format!("<session xmlns='{NS_SESSION}'/>"), IqStep::Session);
+        }
+        self.presence();
+    }
+
+    fn presence(&mut self) {
+        self.send("<presence/>");
+        if self.cfg.roster {
+            // Roster errors are ignored.
+            return self.iq("get", &format!("<query xmlns='{NS_ROSTER}'/>"), IqStep::Roster);
+        }
+        self.next_target(0);
+    }
+
+    fn on_iq(&mut self, step: IqStep, el: &Element) {
+        let ok = el.attr("type") == Some("result");
+        match step {
+            IqStep::Bind if !ok => self.fail(iq_error("resource binding", el)),
+            IqStep::Bind => self.session(),
+            IqStep::Session if !ok => self.fail(iq_error("session", el)),
+            IqStep::Session => self.presence(),
+            IqStep::Roster => self.next_target(0),
+        }
+    }
+
+    /// `(type, jid)` of target `i`; the account itself when there are none.
+    fn target(&self, i: usize) -> Option<(String, String)> {
+        if self.cfg.targets.is_empty() {
+            return (i == 0).then(|| ("chat".to_string(), self.cfg.jid.clone()));
+        }
+        self.cfg.targets.get(i).cloned()
+    }
+
+    /// Message targets from `i` on, stopping to join a room; close the stream after the last.
+    fn next_target(&mut self, mut i: usize) {
+        while let Some((kind, to)) = self.target(i) {
+            if kind == "groupchat" {
+                // XEP-0045 join: presence to `room/nick`, then wait for the room's answer about our occupant JID.
+                let occupant = format!("{to}/{}", self.cfg.nick);
+                self.send(&format!("<presence to='{}'><x xmlns='{NS_MUC}'/></presence>", xml::attr(&occupant)));
+                self.wait = Wait::Muc { occupant, target: i };
+                return;
+            }
+            self.message(i);
+            i += 1;
+        }
+        self.send("</stream:stream>");
+        self.wait = Wait::Close;
+    }
+
+    fn message(&mut self, i: usize) {
+        let Some((kind, to)) = self.target(i) else { return };
+        let subject = if self.cfg.subject.is_empty() {
+            String::new()
         } else {
-            "XMPP: no supported SASL mechanism offered".to_string()
-        })
-    })?;
-    let failed = |el: &Element| {
-        let cond = el.children.iter().find(|c| c.local() != "text").map(|c| c.local().to_string());
-        Error::service(format!("XMPP authentication failed: {}", cond.unwrap_or_else(|| "unknown".into())))
-    };
-    if mech == Mech::Plain {
-        s.send(&format!("<auth xmlns='{NS_SASL}' mechanism='PLAIN'>{}</auth>", plain(user, password))).await?;
-        let el = s.stanza().await?;
-        return match el.local() {
-            "success" => Ok(()),
-            "failure" => Err(failed(&el)),
-            _ => Err(Error::service("XMPP: unexpected SASL answer")),
+            format!("<subject>{}</subject>", xml::text(&self.cfg.subject))
         };
-    }
-    let mut scram = Scram::new(mech, user, env);
-    s.send(&format!(
-        "<auth xmlns='{NS_SASL}' mechanism='{}'>{}</auth>",
-        mech.name(),
-        crate::crypto::b64(scram.client_first().as_bytes())
-    )).await?;
-    let decode = |el: &Element| -> Result<String> {
-        let raw = crate::crypto::b64_decode(el.text.trim()).ok_or_else(|| Error::service("XMPP: bad SASL data"))?;
-        Ok(String::from_utf8_lossy(&raw).into_owned())
-    };
-    let el = s.stanza().await?;
-    match el.local() {
-        "challenge" => {}
-        "failure" => return Err(failed(&el)),
-        _ => return Err(Error::service("XMPP: unexpected SASL answer")),
-    }
-    let fin = scram.client_final(&decode(&el)?, password)?;
-    s.send(&format!("<response xmlns='{NS_SASL}'>{}</response>", crate::crypto::b64(fin.as_bytes()))).await?;
-    let mut el = s.stanza().await?;
-    if el.local() == "challenge" {
-        // Some servers send `v=` in a challenge and an empty success.
-        scram.verify(&decode(&el)?)?;
-        s.send(&format!("<response xmlns='{NS_SASL}'/>")).await?;
-        el = s.stanza().await?;
-        return match el.local() {
-            "success" => Ok(()),
-            "failure" => Err(failed(&el)),
-            _ => Err(Error::service("XMPP: unexpected SASL answer")),
-        };
-    }
-    match el.local() {
-        "success" => scram.verify(&decode(&el)?),
-        "failure" => Err(failed(&el)),
-        _ => Err(Error::service("XMPP: unexpected SASL answer")),
-    }
-}
-
-/// Run the whole session on `conn`.
-pub async fn run(conn: &mut dyn AsyncConn, cfg: &Session, env: &dyn crate::Env) -> Result<()> {
-    let jid = split_jid(&cfg.jid);
-    let mut s = Stream { reader: Reader::new(conn), ids: 0 };
-
-    let mut features = s.open(jid.domain).await?;
-    if cfg.mode == Mode::StartTls && !s.is_tls() {
-        if features.child("starttls").is_none() {
-            return Err(Error::service("XMPP: the server does not offer STARTTLS"));
-        }
-        s.send(&format!("<starttls xmlns='{NS_TLS}'/>")).await?;
-        let el = s.stanza().await?;
-        if el.local() != "proceed" {
-            return Err(Error::service("XMPP: the server refused STARTTLS"));
-        }
-        // Anything the server sent after `<proceed/>` arrived in plain text and must not be read as part of the encrypted stream.
-        if s.reader.has_unread() {
-            return Err(Error::service("XMPP: unexpected data after STARTTLS proceed"));
-        }
-        s.reader.reset();
-        s.reader.conn().start_tls().await?;
-        features = s.open(jid.domain).await?;
-    }
-
-    authenticate(&mut s, &features, jid.local, &cfg.password, env).await?;
-    s.reader.reset();
-    let features = s.open(jid.domain).await?;
-
-    if features.child("bind").is_some() {
-        let resource = jid.resource.map(|r| format!("<resource>{}</resource>", xml::text(r))).unwrap_or_default();
-        let res = s.iq("set", &format!("<bind xmlns='{NS_BIND}'>{resource}</bind>")).await?;
-        if res.attr("type") != Some("result") {
-            return Err(iq_error("resource binding", &res));
-        }
-    }
-    if let Some(sess) = features.child("session")
-        && sess.child("optional").is_none()
-    {
-        let res = s.iq("set", &format!("<session xmlns='{NS_SESSION}'/>")).await?;
-        if res.attr("type") != Some("result") {
-            return Err(iq_error("session", &res));
-        }
-    }
-
-    s.send("<presence/>").await?;
-
-    if cfg.roster {
-        // Roster errors are ignored.
-        s.iq("get", &format!("<query xmlns='{NS_ROSTER}'/>")).await?;
-    }
-
-    let default = [("chat".to_string(), cfg.jid.clone())];
-    let targets = if cfg.targets.is_empty() { &default[..] } else { &cfg.targets[..] };
-    for (kind, to) in targets {
-        if kind == "groupchat" {
-            join_muc(&mut s, to, &cfg.nick).await?;
-        }
-        let subject =
-            if cfg.subject.is_empty() { String::new() } else { format!("<subject>{}</subject>", xml::text(&cfg.subject)) };
-        s.send(&format!(
+        let message = format!(
             "<message to='{}' type='{kind}'>{subject}<body>{}</body></message>",
-            xml::attr(to),
-            xml::text(&cfg.body)
-        )).await?;
+            xml::attr(&to),
+            xml::text(&self.cfg.body)
+        );
+        self.send(&message);
     }
 
-    s.send("</stream:stream>").await?;
-    // Wait for the server to close its side; errors no longer matter.
-    while let Ok(ev) = s.next().await {
-        if ev == Event::Close {
-            break;
-        }
+    fn reading(&self) -> bool {
+        !matches!(self.wait, Wait::TlsHandshake | Wait::Done)
     }
-    Ok(())
 }
 
-/// XEP-0045 join: presence to `room/nick`, then wait for the room's answer about our occupant JID.
-async fn join_muc(s: &mut Stream<'_>, room: &str, nick: &str) -> Result<()> {
-    let occupant = format!("{room}/{nick}");
-    s.send(&format!("<presence to='{}'><x xmlns='{NS_MUC}'/></presence>", xml::attr(&occupant))).await?;
-    loop {
-        let el = s.stanza().await?;
-        if el.local() == "presence" && el.attr("from").is_some_and(|f| f.eq_ignore_ascii_case(&occupant)) {
-            return Ok(());
+impl Protocol for Client {
+    fn next(&mut self) -> Output {
+        if let Some(data) = self.out.pop_front() {
+            return Output::Write(data);
+        }
+        match self.wait {
+            Wait::TlsHandshake => Output::StartTls,
+            Wait::Done => Output::Done(self.result.take().unwrap_or(Ok(()))),
+            Wait::Header(_)
+            | Wait::Features(_)
+            | Wait::Proceed
+            | Wait::Sasl(_)
+            | Wait::Iq { .. }
+            | Wait::Muc { .. }
+            | Wait::Close => Output::Read,
+        }
+    }
+
+    fn input(&mut self, input: Input<'_>) {
+        let closing = matches!(self.wait, Wait::Close);
+        match input {
+            // Once the stream is closed on our side, errors no longer matter.
+            Input::Data([]) | Input::ReadError(_) if closing => self.finish(),
+            Input::Data([]) => self.fail(self.parser.eof_error()),
+            Input::Data(data) => {
+                self.parser.push(data);
+                while self.reading() {
+                    match self.parser.next_event() {
+                        Ok(Some(ev)) => self.on_event(ev),
+                        Ok(None) => break,
+                        Err(_) if matches!(self.wait, Wait::Close) => self.finish(),
+                        Err(e) => self.fail(e),
+                    }
+                }
+            }
+            Input::ReadError(e) => self.fail(Error::transport(e)),
+            Input::WriteError(e) => {
+                // Nothing goes out after a failed write.
+                self.out.clear();
+                self.fail(Error::transport(e));
+            }
+            Input::Tls(Ok(())) => {
+                self.tls = true;
+                self.open(Phase::AfterTls);
+            }
+            Input::Tls(Err(e)) => self.fail(e),
         }
     }
 }
@@ -293,6 +485,7 @@ async fn join_muc(s: &mut Stream<'_>, room: &str, nick: &str) -> Result<()> {
 mod tests {
     use super::*;
     use crate::testing::ScriptedConn;
+    use crate::transport::AsyncConn;
 
     fn session() -> Session {
         Session {
@@ -326,7 +519,10 @@ mod tests {
             }
         });
         let mut conn: Box<dyn crate::transport::Conn> = Box::new(conn);
-        let err = pollster::block_on(run(&mut conn, &session(), crate::testing::test_env())).unwrap_err();
+        let err = pollster::block_on(crate::machine::drive(Client::new(session(), false, Arc::new(crate::testing::FixedEnv::new(0))),
+            &mut conn,
+            &crate::Blocking(crate::testing::FakeTransport::new()),
+        )).unwrap_err();
         assert!(err.to_string().contains("after STARTTLS"), "{err}");
         assert!(!AsyncConn::is_tls(&conn));
     }
