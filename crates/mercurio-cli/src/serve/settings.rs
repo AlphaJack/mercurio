@@ -161,6 +161,7 @@ pub(crate) struct Settings {
     pub(super) log_level: u8,
     pub(super) stream_slots: usize,
     pub(super) storage_idlen: usize,
+    pub(super) storage_mode: mercurio::StorageMode,
     pub(super) services: filters::ServiceFilter,
     pub(super) attach_urls: filters::UrlFilter,
     pub(super) webhook: Option<String>,
@@ -201,17 +202,20 @@ impl Settings {
         let auth = AuthSettings { required, admin, realm: a.basic_auth_realm.clone() };
         let services = filters::ServiceFilter::new(a.allow_services.as_deref(), Some(&a.deny_services));
         let attach_urls = filters::UrlFilter::new(&a.attach_allow_url, &a.attach_reject_url);
-        let storage = match a.storage_mode.trim().to_lowercase().as_bytes().first() {
-            Some(b'm') => None,
-            Some(b'a' | b'f') => Some(
-                a.storage_dir
-                    .as_deref()
-                    .filter(|d| !d.trim().is_empty())
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| config_dir.join("store")),
-            ),
+        // apprise-api reads the first letter only.
+        let storage_mode = match a.storage_mode.trim().to_lowercase().as_bytes().first() {
+            Some(b'm') => mercurio::StorageMode::Memory,
+            Some(b'f') => mercurio::StorageMode::Flush,
+            Some(b'a') => mercurio::StorageMode::Auto,
             _ => return Err("APPRISE_STORAGE_MODE must be one of: auto, flush, memory".into()),
         };
+        let storage = (storage_mode != mercurio::StorageMode::Memory).then(|| {
+            a.storage_dir
+                .as_deref()
+                .filter(|d| !d.trim().is_empty())
+                .map(PathBuf::from)
+                .unwrap_or_else(|| config_dir.join("store"))
+        });
         let log_level = notify::level_value(&a.log_level).unwrap_or(20);
         let stream_slots = (int("APPRISE_STREAM_WORKER_COUNT", &a.stream_worker_count, 1, i64::MAX)?
             + int("APPRISE_STREAM_QUEUE_SIZE", &a.stream_queue_size, 0, i64::MAX)?) as usize;
@@ -225,6 +229,7 @@ impl Settings {
                 n @ 2..=64 => n,
                 _ => return Err("APPRISE_STORAGE_UID_LENGTH must be between 2 and 64".into()),
             },
+            storage_mode,
             services,
             attach_urls,
             webhook: a.webhook_url.clone().filter(|u| !u.trim().is_empty()),

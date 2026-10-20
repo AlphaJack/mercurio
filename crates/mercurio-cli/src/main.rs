@@ -35,8 +35,8 @@ use std::sync::Arc;
 use mercurio::__private::{default_paths, expand_path};
 use mercurio::ConfigOptions;
 use mercurio::{
-    Asset, AsyncMercurio, AsyncTransport, Attachment, Message, NotifyFormat, NotifyType, TagFilter, TemplateVars,
-    TokioTransport,
+    Asset, AsyncMercurio, AsyncTransport, Attachment, Message, NotifyFormat, NotifyType, StorageMode, TagFilter,
+    TemplateVars, TokioTransport,
 };
 
 /// stdout went away: exit 0 when the reader closed the pipe (as `head` does), 1 otherwise.
@@ -144,6 +144,9 @@ struct Opts {
     /// Characters of the URL ids naming persistent storage, at least 2 (`-SUL`)
     #[arg(long, global = true, value_name = "N", env = "APPRISE_STORAGE_UID_LENGTH", default_value_t = mercurio::DEFAULT_STORAGE_IDLEN)]
     storage_uid_length: usize,
+    /// When persistent storage is written: `auto` (after each send), `flush` (also before each step) or `memory` (never) (`-SM`)
+    #[arg(long, global = true, value_name = "MODE", default_value = "auto")]
+    storage_mode: String,
     /// Same as `mercurio services`
     #[arg(short = 'l', long, global = true)]
     details: bool,
@@ -250,6 +253,7 @@ fn parse_args() -> (Command, Opts) {
         "-tv" => "--template-var".into(),
         "-SPD" => "--storage-prune-days".into(),
         "-SUL" => "--storage-uid-length".into(),
+        "-SM" => "--storage-mode".into(),
         _ => s,
     });
     let matches = Cli::command().after_help(after_help()).get_matches_from(raw);
@@ -498,7 +502,12 @@ fn print_dry_run(m: &AsyncMercurio, filter: &TagFilter, vars: &TemplateVars) {
 /// The asset carrying the storage options, plus the prune age in days.
 fn storage_asset(o: &Opts) -> (Asset, i64) {
     let path = if o.storage_path.trim().is_empty() { DEFAULT_STORAGE_PATH } else { &o.storage_path };
-    let asset = Asset { storage_idlen: o.storage_uid_length, ..Asset::default() };
+    let asset = Asset {
+        storage_idlen: o.storage_uid_length,
+        // `run` has checked the mode.
+        storage_mode: StorageMode::parse(&o.storage_mode).unwrap_or_default(),
+        ..Asset::default()
+    };
     (asset.with_storage(expand_path(path.trim())), o.storage_prune_days)
 }
 
@@ -630,6 +639,10 @@ fn run() -> u8 {
     let (command, o) = parse_args();
     if o.storage_uid_length < 2 {
         errln!("error: the --storage-uid-length (-SUL) value can not be lower than two (2).");
+        return exit::USAGE;
+    }
+    if StorageMode::parse(&o.storage_mode).is_none() {
+        errln!("error: the --storage-mode (-SM) value of {} is not supported.", o.storage_mode.trim());
         return exit::USAGE;
     }
     let style = match &command {

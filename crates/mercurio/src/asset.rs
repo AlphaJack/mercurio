@@ -73,6 +73,42 @@ pub struct Asset {
     pub storage_idlen: usize,
     /// Bytes hashed in front of a URL's identifying parts for its URL id: Apprise's `storage_salt`, default none.
     pub storage_salt: Vec<u8>,
+    /// When stores are written to [`Asset::storage_path`] (Apprise's `storage_mode`).
+    pub storage_mode: StorageMode,
+}
+
+/// When a persistent store reaches the disk (Apprise's `PersistentStoreMode`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
+pub enum StorageMode {
+    /// Write once a send is over (Apprise's default).
+    #[default]
+    Auto,
+    /// Write before every I/O step of a send and after it, so a send cut short keeps what it saved.
+    Flush,
+    /// Never read or write the disk, even with a storage path.
+    Memory,
+}
+
+impl StorageMode {
+    /// `auto`, `flush` or `memory` (case-insensitive).
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "auto" => Some(Self::Auto),
+            "flush" => Some(Self::Flush),
+            "memory" => Some(Self::Memory),
+            _ => None,
+        }
+    }
+
+    /// The lowercase name.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Flush => "flush",
+            Self::Memory => "memory",
+        }
+    }
 }
 
 /// [`Asset::storage_idlen`] by default.
@@ -117,6 +153,7 @@ impl Default for Asset {
             storage_path: None,
             storage_idlen: DEFAULT_STORAGE_IDLEN,
             storage_salt: Vec::new(),
+            storage_mode: StorageMode::Auto,
         }
     }
 }

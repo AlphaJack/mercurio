@@ -70,9 +70,8 @@ on its page (see the [service list](services/index.md)), taken from the
 - **No services** (nothing given, nothing configured) exits with 2.
   *intentional*
 - **Not implemented:** `-P/--plugin-path` (register custom services from
-  Rust), `-T/--theme`, `-j/--interpret-emojis`, `-SM/--storage-mode`,
-  `-D/--debug` (use `-vvv`). *todo* for `-T`, `-SM`; *intentional* for the
-  rest.
+  Rust), `-T/--theme`, `-j/--interpret-emojis`, `-D/--debug` (use `-vvv`).
+  *todo* for `-T`; *intentional* for the rest.
 - **`-d`** does not print storage URL ids; use `mercurio storage`.
   *intentional*
 - **`check`, `serve`, `services`** are mercurio subcommands. *intentional*
@@ -148,9 +147,10 @@ on its page (see the [service list](services/index.md)), taken from the
 - **File format.** Apprise writes gzip `cache.psdata` -> mercurio writes
   plain JSON `cache.json`; neither reads the other's file (prune and clear
   remove both). *intentional*
-- **Modes.** Apprise has `auto`, `flush` and `memory` -> mercurio writes
-  saved entries on every change; entries carry no checksum and there is no
-  size cap. *todo* (`-SM`)
+- **Modes.** `auto`, `flush` and `memory` (`-SM`, `APPRISE_STORAGE_MODE`,
+  `Asset::storage_mode`) as in Apprise; `flush` writes before each I/O step
+  of a send rather than on every change. Entries carry no checksum and
+  there is no size cap. *todo* (checksum, size cap)
 - **`mercurio storage list`** shows every configured URL, including
   services that never store anything (`unused`); Apprise omits them.
   *intentional*

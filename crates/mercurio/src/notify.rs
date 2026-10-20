@@ -545,6 +545,7 @@ mod tests {
     use crate::error::ErrorClass;
     use crate::report::Status;
     use crate::service::{Context, Notify};
+    use crate::transport::FileOp;
 
     #[test]
     fn async_entry_points_are_send() {
@@ -635,6 +636,52 @@ mod tests {
         let before = fake.requests().len();
         m.notify_tagged(&Message::new("b"), &TagFilter::parse("ops"));
         assert_eq!(fake.requests().len() - before, 1, "no suffix: the URL's retry (none)");
+    }
+
+    #[test]
+    fn storage_mode_decides_when_stores_reach_the_disk() {
+        use crate::StorageMode;
+        use crate::testing::FakeTransport;
+
+        /// Saves an entry, sends, saves another, sends again.
+        #[derive(Debug)]
+        struct Saver;
+        impl Notify for Saver {
+            fn plan(&self, _: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
+                let store = ctx.store();
+                store.set("a", serde_json::json!(1), None);
+                let second = ctx.post("http://localhost/second");
+                Plan::http(ctx.post("http://localhost/first"), move |_| {
+                    store.set("b", serde_json::json!(2), None);
+                    Plan::send(second)
+                })
+            }
+        }
+        static SAVER: ServiceDef = ServiceDef {
+            id: "saver_test",
+            name: "Saver",
+            schemes: &["savertest"],
+            parse: |_| Ok(Box::new(Saver)),
+            ..ServiceDef::DEFAULTS
+        };
+        Mercurio::register(&SAVER).unwrap();
+
+        // Flush writes before the second request and is then clean; auto writes once at the end; memory never.
+        for (mode, writes) in [(StorageMode::Flush, 2), (StorageMode::Auto, 1), (StorageMode::Memory, 0)] {
+            let fake = Arc::new(FakeTransport::new());
+            fake.default_response(crate::Response::new(200, b"{}".to_vec()));
+            let asset = Asset { storage_mode: mode, ..Asset::default() }.with_storage("/data");
+            let mut m = Mercurio::with_transport(fake.clone()).asset(asset);
+            m.add("savertest://host/x").unwrap();
+            assert!(m.notify(&Message::new("b")).is_success());
+            let written = fake
+                .file_ops()
+                .iter()
+                .filter(|op| matches!(op, FileOp::WriteAtomic { path, .. } if path.ends_with("cache.json")))
+                .count();
+            assert_eq!(written, writes, "{mode:?}");
+            assert_eq!(fake.requests().len(), 2);
+        }
     }
 
     #[test]
