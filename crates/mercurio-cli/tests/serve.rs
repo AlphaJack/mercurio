@@ -209,6 +209,36 @@ fn stateful_keys_and_tags() {
     assert_eq!(http(&s.addr, "POST", "/add/bad%20key", "application/x-www-form-urlencoded", "urls=json://x").0, 404);
 }
 
+#[test]
+fn alertmanager_and_grafana_webhooks() {
+    let s = start(&tmpdir("alerts"));
+    let (up, rx) = upstream(2, 200);
+    let config = format!("config=ops%3Djson%3A%2F%2F{up}%2Fops&format=text");
+    assert_eq!(http(&s.addr, "POST", "/add/alerts", "application/x-www-form-urlencoded", &config).0, 200);
+    let alertmanager = json_body(serde_json::json!({
+        "version": "4",
+        "status": "firing",
+        "groupLabels": {"alertname": "DiskFull"},
+        "commonLabels": {"alertname": "DiskFull", "severity": "warning"},
+        "alerts": [{"status": "firing", "labels": {"alertname": "DiskFull"}, "annotations": {"summary": "/ at 95%"}}],
+    }));
+    assert_eq!(http(&s.addr, "POST", "/notify/alerts?tag=ops", "application/json", &alertmanager).0, 200);
+    let v = rx.recv().unwrap();
+    assert_eq!(v["title"], "[FIRING:1] DiskFull (warning)");
+    assert_eq!((v["message"].as_str(), v["type"].as_str()), (Some("[FIRING] DiskFull: / at 95%"), Some("warning")));
+    let grafana = json_body(serde_json::json!({
+        "urls": format!("json://{up}"),
+        "status": "resolved",
+        "title": "[RESOLVED] DiskFull",
+        "message": "Disk usage is back to normal",
+        "alerts": [],
+    }));
+    assert_eq!(http(&s.addr, "POST", "/notify", "application/json", &grafana).0, 200);
+    let v = rx.recv().unwrap();
+    assert_eq!((v["title"].as_str(), v["type"].as_str()), (Some("[RESOLVED] DiskFull"), Some("success")));
+    assert_eq!(v["message"], "Disk usage is back to normal");
+}
+
 fn json_body(v: serde_json::Value) -> String {
     serde_json::to_string(&v).unwrap()
 }

@@ -80,6 +80,11 @@ on its page (see the [service list](services/index.md)), taken from the
 
 ## Server
 
+- **Alertmanager and Grafana webhooks.** apprise-api needs a field mapping
+  and still cannot build a body from a list of alerts, while mercurio reads
+  their webhook payloads directly on `/notify` (see
+  [Alertmanager and Grafana webhooks](server.md#alertmanager-and-grafana-webhooks)).
+  *intentional*
 - **Web UI.** apprise-api serves a web UI (`/`, login/logout, `/qr`,
   `/cfg/@`, themes, `APPRISE_API_ONLY`), while mercurio has none: those paths
   are `404` and the setting is ignored. *intentional*
@@ -220,6 +225,5 @@ on its page (see the [service list](services/index.md)), taken from the
 
 ## Later
 
-- Alertmanager / Grafana webhook receiver mode (fan-out to URLs).
 - Upload the notify-type image instead of sending its URL (`image=yes`,
   Telegram).

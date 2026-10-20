@@ -127,6 +127,29 @@ curl -X POST -H 'Content-Type: application/json' \
     'http://127.0.0.1:8000/notify/demo?:subject=title&:event.state=body'
 ```
 
+### Alertmanager and Grafana webhooks
+
+A JSON payload with an `alerts` list and a `status`, and no `body`, is read
+as an Alertmanager or Grafana webhook, so either can post straight to
+`/notify/{key}` (or to `/notify` with `urls`):
+
+| Field | From |
+|---|---|
+| `title` | Grafana's `title`; otherwise Alertmanager's default subject, e.g. `[FIRING:2] HighCPU (prod critical)` |
+| `body` | Grafana's `message`; otherwise one line per alert, `[FIRING] name: summary`, with the description below it |
+| `type` | `success` once resolved; while firing, the highest `severity` label: `critical`, `error` or `page` give `failure`, `info` gives `info`, anything else `warning` |
+
+A `type` (or title, body) in the payload, the query or an `X-Apprise-*`
+header still wins, and `?tag=` picks the stored entries as usual:
+
+```yaml
+# alertmanager.yml
+receivers:
+  - name: mercurio
+    webhook_configs:
+      - url: http://127.0.0.1:8000/notify/ops?tag=oncall
+```
+
 ### Tags
 
 | `tag` | Notifies |
