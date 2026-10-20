@@ -219,9 +219,21 @@ fn after_help() -> String {
     out
 }
 
+/// What to run, from the command word (no word: send a notification).
+#[derive(Default)]
+enum Command {
+    #[default]
+    Notify,
+    Services,
+    Check,
+    Serve(Box<serve::ServeArgs>),
+    Healthcheck,
+    Storage,
+}
+
 #[derive(Default)]
 struct Args {
-    command: Option<String>,
+    command: Command,
     urls: Vec<String>,
     body: Option<String>,
     title: Option<String>,
@@ -240,7 +252,6 @@ struct Args {
     bind: Option<String>,
     storage_path: Option<String>,
     storage_prune_days: Option<i64>,
-    serve: Option<serve::ServeArgs>,
 }
 
 fn parse_args() -> Args {
@@ -256,7 +267,7 @@ fn parse_args() -> Args {
     let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
     let o = cli.opts;
     let mut a = Args {
-        command: None,
+        command: Command::Notify,
         urls: cli.urls,
         body: o.body,
         title: o.title,
@@ -275,27 +286,24 @@ fn parse_args() -> Args {
         bind: Some(o.bind),
         storage_path: Some(o.storage_path),
         storage_prune_days: Some(o.storage_prune_days),
-        serve: None,
     };
     match cli.command {
-        Some(Cmd::Services) => a.command = Some("services".into()),
+        Some(Cmd::Services) => a.command = Command::Services,
         Some(Cmd::Check { urls }) => {
-            a.command = Some("check".into());
+            a.command = Command::Check;
             a.urls.extend(urls);
         }
-        Some(Cmd::Serve { healthcheck, settings }) => {
-            a.command = Some(if healthcheck { "healthcheck" } else { "serve" }.into());
-            a.serve = Some(*settings);
-        }
+        Some(Cmd::Serve { healthcheck: true, .. }) => a.command = Command::Healthcheck,
+        Some(Cmd::Serve { healthcheck: false, settings }) => a.command = Command::Serve(settings),
         Some(Cmd::Storage { args }) => {
-            a.command = Some("storage".into());
+            a.command = Command::Storage;
             a.urls.extend(args);
         }
         Some(Cmd::Send { urls }) => a.urls.extend(urls),
         None => {}
     }
     if o.details {
-        a.command = Some("services".into());
+        a.command = Command::Services;
     }
     a
 }
@@ -651,18 +659,17 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
 
 fn run() -> Result<u8, u8> {
     let args = parse_args();
-    if args.command.as_deref() == Some("serve") {
+    if matches!(args.command, Command::Serve(_)) {
         serve::init_logging(args.verbose);
     } else {
         logger::init(args.verbose);
     }
-    match args.command.as_deref() {
-        Some("services") => {
+    match &args.command {
+        Command::Services => {
             return Ok(if cmd_services(args.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE });
         }
-        Some("serve") => {
+        Command::Serve(settings) => {
             let bind = args.bind.clone().unwrap_or_else(|| "127.0.0.1:8000".into());
-            let Some(settings) = &args.serve else { return Err(exit::USAGE) };
             let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(|e| {
                 errln!("error: {e}");
                 exit::FAILURE
@@ -672,14 +679,14 @@ fn run() -> Result<u8, u8> {
                 exit::FAILURE
             });
         }
-        Some("healthcheck") => {
+        Command::Healthcheck => {
             let bind = args.bind.clone().unwrap_or_else(|| "127.0.0.1:8000".into());
             return serve::healthcheck(&bind).map(|()| exit::OK).map_err(|e| {
                 errln!("unhealthy: {e}");
                 exit::FAILURE
             });
         }
-        _ => {}
+        Command::Notify | Command::Check | Command::Storage => {}
     }
     let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| {
         errln!("error: {e}");
@@ -690,9 +697,9 @@ fn run() -> Result<u8, u8> {
 
 async fn run_async(args: Args) -> Result<u8, u8> {
     let transport: Arc<dyn AsyncTransport> = Arc::new(TokioTransport::new());
-    match args.command.as_deref() {
-        Some("storage") => return cmd_storage(&args, transport).await,
-        Some("check") => {
+    match args.command {
+        Command::Storage => return cmd_storage(&args, transport).await,
+        Command::Check => {
             let (mercurio, bad, _) = build(&args, transport).await?;
             for t in mercurio.targets() {
                 outln!("ok   {}", t.label());
@@ -702,7 +709,7 @@ async fn run_async(args: Args) -> Result<u8, u8> {
             }
             return Ok(if bad == 0 { exit::OK } else { exit::FAILURE });
         }
-        _ => {}
+        Command::Notify | Command::Services | Command::Serve(_) | Command::Healthcheck => {}
     }
 
     let vars = template_vars(&args)?;
