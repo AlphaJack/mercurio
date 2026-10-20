@@ -400,3 +400,7 @@ harness = false
 [[bench]]
 name = "irc"
 harness = false
+
+[[bench]]
+name = "mqtt"
+harness = false
