@@ -327,7 +327,8 @@ async fn observe(
     let view = response.extensions().get::<View>().map_or("<unnamed view>", |v| v.0);
     let status = response.status().as_u16();
     let elapsed = started.elapsed();
-    server.metrics.record(&method, view, status, elapsed);
+    let bytes_out = axum::body::HttpBody::size_hint(response.body()).exact();
+    server.metrics.record(&method, view, status, elapsed, bytes_in.unwrap_or(0), bytes_out);
     // As apprise-api's nginx: a passing health check or metrics scrape is not logged (the container checks `/status` every 30 s).
     let routine = status < 400 && route.as_deref().is_some_and(|r| r.starts_with("/status") || r == "/metrics");
     if !routine {
