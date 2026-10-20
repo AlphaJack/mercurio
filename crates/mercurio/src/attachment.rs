@@ -39,7 +39,7 @@ use crate::error::{Error, Result};
 use crate::http::Request;
 use crate::message::Attachment;
 use crate::service::Secret;
-use crate::transport::Transport;
+use crate::transport::{AsyncTransport, Blocking, FileOp, FileOutput, Transport};
 
 /// Largest attachment by default (1000 MiB); the [`Asset::attachment_max_size`] default.
 pub const DEFAULT_MAX_SIZE: u64 = 1_048_576_000;
@@ -175,7 +175,6 @@ impl AttachSource {
     /// Parse an attachment URL or plain path.
     pub fn parse(spec: &str) -> Result<Self> {
         let Some(scheme) = crate::url::scheme_of(spec) else {
-            // No scheme: a local path, taken literally.
             return Ok(Self::file(spec));
         };
         match scheme.as_str() {
@@ -304,7 +303,6 @@ impl AttachSource {
         let query = u
             .query
             .iter()
-            // Header entries (`+`/`-`) stay out of the URL query.
             .filter(|(k, _)| !["cache", "mime", "name", "verify"].contains(k) && !k.starts_with(['+', '-', ':']))
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect();
@@ -327,17 +325,24 @@ impl AttachSource {
 
     /// Load the content (or reuse a cached copy), enforcing `max_size` bytes (0 = unlimited).
     pub fn load(&self, transport: &dyn Transport, asset: &Asset) -> Result<Attachment> {
+        pollster::block_on(self.load_async(&Blocking(transport), asset))
+    }
+
+    /// [`AttachSource::load`] on an [`AsyncTransport`].
+    pub async fn load_async(&self, transport: &dyn AsyncTransport, asset: &Asset) -> Result<Attachment> {
         let cache = self.cache.unwrap_or(Cache::Seconds(DEFAULT_CACHE_SECS));
-        let mut slot = self.loaded.lock().unwrap_or_else(|p| p.into_inner());
-        if let Some((at, a)) = slot.as_ref()
-            && cache.fresh(*at)
         {
-            return Ok(a.clone());
+            let mut slot = self.loaded.lock().unwrap_or_else(|p| p.into_inner());
+            if let Some((at, a)) = slot.as_ref()
+                && cache.fresh(*at)
+            {
+                return Ok(a.clone());
+            }
+            *slot = None;
         }
-        *slot = None;
-        let a = self.fetch(transport, asset)?;
+        let a = self.fetch(transport, asset).await?;
         if cache != Cache::Off {
-            *slot = Some((Instant::now(), a.clone()));
+            *self.loaded.lock().unwrap_or_else(|p| p.into_inner()) = Some((Instant::now(), a.clone()));
         }
         Ok(a)
     }
@@ -346,19 +351,22 @@ impl AttachSource {
         Error::Message(format!("attachment {} exceeds the maximum size ({}KB)", self.label(), max / 1024))
     }
 
-    fn fetch(&self, transport: &dyn Transport, asset: &Asset) -> Result<Attachment> {
+    async fn fetch(&self, transport: &dyn AsyncTransport, asset: &Asset) -> Result<Attachment> {
         let max = asset.attachment_max_size;
         let (data, detected_name, detected_mime) = match &self.kind {
             Kind::File(path) => {
-                let meta = std::fs::metadata(path)
-                    .ok()
-                    .filter(|m| m.is_file())
-                    .ok_or_else(|| Error::Message(format!("attachment {} is not a readable file", self.label())))?;
-                if max > 0 && meta.len() > max {
+                let meta = match transport.file(&FileOp::Stat { path: path.clone() }).await {
+                    Ok(FileOutput::Meta(Some(m))) if m.is_file => m,
+                    _ => return Err(Error::Message(format!("attachment {} is not a readable file", self.label()))),
+                };
+                if max > 0 && meta.len > max {
                     return Err(self.too_large(max));
                 }
-                let data =
-                    std::fs::read(path).map_err(|e| Error::Message(format!("attachment {}: {e}", self.label())))?;
+                let data = match transport.file(&FileOp::Read { path: path.clone(), max: 0 }).await {
+                    Ok(FileOutput::Bytes(b)) => b,
+                    Ok(_) => return Err(Error::Message(format!("attachment {} is not a readable file", self.label()))),
+                    Err(e) => return Err(Error::Message(format!("attachment {}: {e}", self.label()))),
+                };
                 let name = path.file_name().map(|n| n.to_string_lossy().to_string());
                 (data, name, None)
             }
@@ -371,7 +379,7 @@ impl AttachSource {
                 }
                 (data.clone(), None, None)
             }
-            Kind::Http(h) => self.download(h, transport, asset, max)?,
+            Kind::Http(h) => self.download(h, transport, asset, max).await?,
         };
         let name = self.name.clone().or(detected_name.filter(|n| !n.is_empty())).unwrap_or_else(|| {
             let mime = self.resolve_mime(detected_mime.as_deref(), None);
@@ -392,10 +400,10 @@ impl AttachSource {
         name.and_then(guess_mime).unwrap_or(UNKNOWN_MIME).to_string()
     }
 
-    fn download(
+    async fn download(
         &self,
         h: &HttpSource,
-        transport: &dyn Transport,
+        transport: &dyn AsyncTransport,
         asset: &Asset,
         max: u64,
     ) -> Result<(Vec<u8>, Option<String>, Option<String>)> {
@@ -414,7 +422,7 @@ impl AttachSource {
             let (connect, read) = (req.connect_timeout, req.read_timeout);
             req = req.timeouts(h.connect_timeout.unwrap_or(connect), h.read_timeout.unwrap_or(read));
         }
-        let res = transport.http(&req).map_err(|e| {
+        let res = transport.http(&req).await.map_err(|e| {
             if let Error::Transport(m) = e { Error::Transport(format!("attachment {}: {m}", self.label())) } else { e }
         })?;
         if res.status >= 400 {
@@ -564,7 +572,16 @@ impl AttachmentSet {
 
     /// Load every attachment; the first failure aborts.
     pub fn load(&self, transport: &dyn Transport, asset: &Asset) -> Result<Vec<Attachment>> {
-        self.items.iter().map(|s| s.load(transport, asset)).collect()
+        pollster::block_on(self.load_async(&Blocking(transport), asset))
+    }
+
+    /// [`AttachmentSet::load`] on an [`AsyncTransport`].
+    pub async fn load_async(&self, transport: &dyn AsyncTransport, asset: &Asset) -> Result<Vec<Attachment>> {
+        let mut out = Vec::with_capacity(self.items.len());
+        for s in &self.items {
+            out.push(s.load_async(transport, asset).await?);
+        }
+        Ok(out)
     }
 }
 
@@ -692,6 +709,7 @@ mime_table![
 ];
 
 #[cfg(test)]
+#[expect(clippy::disallowed_methods, reason = "tests set up real files")]
 mod tests {
     use super::*;
     use crate::http::Response;
@@ -818,7 +836,6 @@ mod tests {
             .load(&FakeTransport::new(), &Asset::default())
             .unwrap();
         assert_eq!((a.name.as_str(), a.mime.as_str()), ("x.bin", "application/octet-stream"));
-        // A memory:// URL carries no content.
         assert!(AttachSource::parse("memory://x.txt").unwrap().load(&FakeTransport::new(), &Asset::default()).is_err());
     }
 

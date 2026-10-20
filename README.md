@@ -25,8 +25,25 @@ echo "disk 91% full" | mercurio -n warning tgram://123456789:ABCdefGHI/CHAT_ID
 As a library:
 
 ```rust
-// cargo add mercurio
+// cargo add mercurio tokio --features tokio/macros,tokio/rt-multi-thread
 
+use mercurio::{AsyncMercurio, Message};
+
+#[tokio::main]
+async fn main() -> Result<(), mercurio::Error> {
+    let mut m = AsyncMercurio::new();
+    m.add("ntfy://my-topic")?;
+    m.add("slack://xoxb-token/#alerts")?;
+
+    let msg = Message::new("Finished in 42s").title("Backup");
+    let report = m.notify(&msg).await;
+    println!("success: {}", report.is_success());
+    m.close().await;
+    Ok(())
+}
+
+// blocking variant, no runtime:
+// cargo add mercurio --no-default-features --features all-services,transport-blocking
 
 use mercurio::{Mercurio, Message};
 
@@ -38,26 +55,6 @@ fn main() -> Result<(), mercurio::Error> {
     let msg = Message::new("Finished in 42s").title("Backup");
     // `notify` blocks until every service has answered
     let report = m.notify(&msg);
-    println!("success: {}", report.is_success());
-    Ok(())
-}
-
-// async variant:
-
-
-use std::sync::Arc;
-use mercurio::{Mercurio, Message};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut m = Mercurio::new();
-    m.add("ntfy://my-topic")?;
-    m.add("slack://xoxb-token/#alerts")?;
-    let m = Arc::new(m);
-
-    let msg = Message::new("Finished in 42s").title("Backup");
-    // run `notify` on the runtime's blocking pool
-    let report = tokio::task::spawn_blocking(move || m.notify(&msg)).await?;
     println!("success: {}", report.is_success());
     Ok(())
 }

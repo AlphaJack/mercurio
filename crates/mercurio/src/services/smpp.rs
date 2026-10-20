@@ -17,7 +17,8 @@ use crate::crypto;
 use crate::error::{Error, Result};
 use crate::parse::{is_phone_no, parse_phone_no, parse_phone_no_unquoted};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::transport::{Conn, Endpoint};
+use super::_sockets::send;
+use crate::transport::{AsyncConn, Endpoint};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared};
 
@@ -36,7 +37,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("from_phone", "From Phone No").required().pattern(r"^[0-9\s)(+-]+$"),
         Param::new("host", "Host").required(),
         Param::new("password", "Password").required().secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
         Param::new("user", "Username").required(),
@@ -135,7 +136,7 @@ impl Notify for Smpp {
             esm,
         };
         let ep = Endpoint::new(self.host.clone(), self.port, self.tls);
-        Plan::socket(ep, move |conn| session(conn, &job))
+        Plan::socket(ep, move |conn, _| Box::pin(async move { session(conn, &job).await }))
     }
 
 }
@@ -283,30 +284,25 @@ struct Pdu {
     seq: u32,
 }
 
-fn read_pdu(conn: &mut dyn Conn) -> Result<Pdu> {
+async fn read_pdu(conn: &mut dyn AsyncConn) -> Result<Pdu> {
     let mut head = [0u8; 16];
-    conn.read_exact(&mut head).map_err(Error::transport)?;
+    conn.read_exact(&mut head).await.map_err(Error::transport)?;
     let word = |i: usize| u32::from_be_bytes([head[i], head[i + 1], head[i + 2], head[i + 3]]);
     let len = word(0) as usize;
     if !(16..=65_536).contains(&len) {
         return Err(Error::transport(format!("invalid SMPP PDU length {len}")));
     }
     let mut body = vec![0u8; len - 16];
-    conn.read_exact(&mut body).map_err(Error::transport)?;
+    conn.read_exact(&mut body).await.map_err(Error::transport)?;
     Ok(Pdu { command: word(4), status: word(8), seq: word(12) })
 }
 
-fn send(conn: &mut dyn Conn, data: &[u8]) -> Result<()> {
-    conn.write_all(data).map_err(Error::transport)?;
-    conn.flush().map_err(Error::transport)
-}
-
 /// Wait for the response to `seq`, answering `enquire_link` meanwhile.
-fn response(conn: &mut dyn Conn, seq: u32) -> Result<Pdu> {
+async fn response(conn: &mut dyn AsyncConn, seq: u32) -> Result<Pdu> {
     for _ in 0..64 {
-        let p = read_pdu(conn)?;
+        let p = read_pdu(conn).await?;
         if p.command == ENQUIRE_LINK {
-            send(conn, &pdu(ENQUIRE_LINK | RESP, p.seq, &[]))?;
+            send(conn, &pdu(ENQUIRE_LINK | RESP, p.seq, &[])).await?;
             continue;
         }
         if p.seq == seq && p.command & RESP != 0 {
@@ -316,7 +312,7 @@ fn response(conn: &mut dyn Conn, seq: u32) -> Result<Pdu> {
     Err(Error::transport("no SMPP response"))
 }
 
-fn session(conn: &mut dyn Conn, job: &Job) -> Result<()> {
+async fn session(conn: &mut dyn AsyncConn, job: &Job) -> Result<()> {
     // The sequence counter starts at 1 and pre-increments (first PDU: 2).
     let mut seq = 1u32;
     let mut next = move || {
@@ -324,8 +320,8 @@ fn session(conn: &mut dyn Conn, job: &Job) -> Result<()> {
         seq
     };
     let s = next();
-    send(conn, &bind_transmitter(s, &job.system_id, job.password.expose()))?;
-    let r = response(conn, s)?;
+    send(conn, &bind_transmitter(s, &job.system_id, job.password.expose())).await?;
+    let r = response(conn, s).await?;
     if r.status != 0 || r.command == GENERIC_NACK {
         return Err(Error::Service(format!("SMPP bind_transmitter failed: {}", status_text(r.status))));
     }
@@ -333,8 +329,8 @@ fn session(conn: &mut dyn Conn, job: &Job) -> Result<()> {
     for target in &job.targets {
         for part in &job.parts {
             let s = next();
-            send(conn, &submit_sm(s, &job.source, target, job.coding, job.esm, part))?;
-            let r = response(conn, s)?;
+            send(conn, &submit_sm(s, &job.source, target, job.coding, job.esm, part)).await?;
+            let r = response(conn, s).await?;
             if r.status != 0 || r.command == GENERIC_NACK {
                 failed.push(format!("{target}: {}", status_text(r.status)));
                 break;
@@ -342,8 +338,8 @@ fn session(conn: &mut dyn Conn, job: &Job) -> Result<()> {
         }
     }
     let s = next();
-    if send(conn, &pdu(UNBIND, s, &[])).is_ok() {
-        response(conn, s).ok();
+    if send(conn, &pdu(UNBIND, s, &[])).await.is_ok() {
+        response(conn, s).await.ok();
     }
     if failed.is_empty() {
         Ok(())

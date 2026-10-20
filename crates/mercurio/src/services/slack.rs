@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use super::_chat::{TemplateSrc, apply_template_json, read_template, template_source};
+use super::_chat::{TemplateSrc, apply_template_json, read_template, template_files, template_source};
 use crate::asset::ImageSize;
 use crate::http::{Method, Multipart, Request, Response};
 use crate::parse::{is_email, parse_list, validate_regex};
@@ -21,7 +21,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::store::Memo;
 use crate::url::{ParsedUrl, unquote};
 use crate::util::{html_escape_noquote, json_text, json_has_value};
-use crate::{Error, NotifyFormat, Plan, Prepared, Result};
+use crate::{Error, FileOp, NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
     id: "slack",
@@ -395,7 +395,7 @@ impl Slack {
     }
 
     fn gen_template(&self, src: &TemplateSrc, msg: &Prepared<'_>, ctx: &Context<'_>) -> Option<Value> {
-        let text = read_template(src, MAX_TEMPLATE_SIZE)?;
+        let text = read_template(ctx, src, MAX_TEMPLATE_SIZE)?;
         let image = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy72) } else { None };
         let mut tokens = self.tokens.clone();
         let color = ctx.asset.color(msg.kind).to_string();
@@ -662,6 +662,10 @@ impl Notify for Slack {
             NotifyFormat::Markdown => Some(commonmark_to_slack(body)),
             NotifyFormat::Html => None,
         }
+    }
+
+    fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
+        template_files(self.template.as_ref())
     }
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {

@@ -11,7 +11,7 @@ use ring::rand::SystemRandom;
 use ring::signature::{RSA_PKCS1_SHA256, RsaKeyPair};
 use serde_json::{Map, Value, json};
 
-use super::_keys::{json_full_update, pem_decode, read_local_file};
+use super::_keys::{json_full_update, local_file_ops, pem_decode, read_local_file};
 use crate::asset::ImageSize;
 use crate::crypto::{b64_url_nopad, unix_time};
 use crate::error::Error;
@@ -19,7 +19,7 @@ use crate::http::Request;
 use crate::parse::{parse_bool, parse_list, parse_list_unquoted, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
-use crate::{Plan, Prepared, Result};
+use crate::{FileOp, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
     id: "fcm",
@@ -188,9 +188,9 @@ fn load_rsa_key(pem: &str) -> Option<RsaKeyPair> {
 }
 
 /// Load and check a service account key file.
-fn load_keyfile(path: &str) -> std::result::Result<ServiceAccount, &'static str> {
-    let data = read_local_file(path, MAX_KEYFILE_SIZE).ok_or("FCM keyfile could not be accessed")?;
-    let content: Value = serde_json::from_slice(&data).map_err(|_| "FCM keyfile is not valid JSON")?;
+fn load_keyfile(ctx: &Context<'_>, path: &str) -> std::result::Result<ServiceAccount, &'static str> {
+    let data = read_local_file(ctx, path, MAX_KEYFILE_SIZE).ok_or("FCM keyfile could not be accessed")?;
+    let content: Value = serde_json::from_slice(data).map_err(|_| "FCM keyfile is not valid JSON")?;
     let obj = content.as_object().ok_or("FCM keyfile is incorrectly structured")?;
     if !["client_email", "private_key_id", "private_key", "type", "project_id"].iter().all(|k| obj.get(*k).is_some_and(crate::util::json_has_value)) {
         return Err("FCM keyfile is missing required information");
@@ -288,12 +288,16 @@ impl Fcm {
 }
 
 impl Notify for Fcm {
+    fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
+        local_file_ops(&self.keyfile)
+    }
+
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         if self.targets.is_empty() {
             return Plan::Fail(SERVICE.err("there are no FCM devices or topics to notify"));
         }
         let project = &self.project;
-        let sa = match load_keyfile(&self.keyfile) {
+        let sa = match load_keyfile(ctx, &self.keyfile) {
             Ok(sa) => sa,
             Err(e) => return Plan::Fail(Error::Service(e.into())),
         };
@@ -342,8 +346,10 @@ impl Notify for Fcm {
 }
 
 #[cfg(test)]
+#[expect(clippy::disallowed_methods, reason = "tests set up real files")]
 mod tests {
     use super::*;
+    use crate::testing::file_context;
     use ring::signature::{RSA_PKCS1_2048_8192_SHA256, UnparsedPublicKey};
 
     fn data(name: &str) -> String {
@@ -353,7 +359,8 @@ mod tests {
     #[test]
     fn jwt_verifies_with_public_key() {
         for file in ["fcm_service_account.json", "fcm_service_account_pkcs1.json"] {
-            let sa = load_keyfile(&data(file)).unwrap();
+            let ops = local_file_ops(&data(file));
+            let sa = file_context(ops, &crate::BlockingTransport::new(), |ctx| load_keyfile(ctx, &data(file))).unwrap();
             let jwt = jwt_assertion(&sa, 1_700_000_000).unwrap();
             let parts: Vec<&str> = jwt.split('.').collect();
             assert_eq!(parts.len(), 3);

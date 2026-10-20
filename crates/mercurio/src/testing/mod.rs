@@ -16,20 +16,44 @@
 #[cfg(any(test, feature = "testing"))]
 pub mod fixtures;
 
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::io::{self, Read, Write};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::error::{Error, Result};
 use crate::http::{Request, Response};
-use crate::transport::{Command, CommandOutput, Conn, Datagram, Endpoint, Transport};
+use crate::transport::{
+    Command, CommandOutput, Conn, Datagram, Endpoint, FileMeta, FileOp, FileOutput, Transport, std_file,
+};
+
+/// Call `f` with a context holding the results of `ops` run on `transport`, as [`crate::Notify::files`] would see them.
+#[cfg(test)]
+pub(crate) fn file_context<R>(
+    ops: Vec<FileOp>,
+    transport: &dyn Transport,
+    f: impl FnOnce(&crate::Context<'_>) -> R,
+) -> R {
+    let (asset, store, memo) =
+        (crate::Asset::default(), crate::PersistentStore::memory().shared(), crate::Memo::disabled());
+    let files = pollster::block_on(crate::plan::read_files(ops, &crate::Blocking(transport)));
+    f(&crate::Context::new(&asset, &store, &memo).with_files(&files))
+}
+
+/// Run a plan of file steps on a blocking transport.
+#[cfg(test)]
+pub(crate) fn run_files(plan: crate::Plan, transport: &dyn Transport) {
+    pollster::block_on(crate::plan::run_files(plan, &crate::Blocking(transport)));
+}
 
 type Rule = (Box<dyn Fn(&Request) -> bool + Send + Sync>, Result<Response>);
 
 /// Records every request and answers from a script.
 ///
 /// Matching order: the first rule whose predicate accepts the request (rules are reusable), then the next queued response, then the default (`200` with body `{}`).
+///
+/// File operations never change the disk (unless [`FakeTransport::on_disk`]): writes, appends and removals land in an in-memory file system ([`FakeTransport::files`]); reads see it first and fall back to the disk.
 ///
 /// ```
 /// use std::sync::Arc;
@@ -65,6 +89,10 @@ struct State {
     commands: Vec<Command>,
     command_outputs: VecDeque<Result<CommandOutput>>,
     sleeps: Vec<Duration>,
+    /// `None`: removed.
+    files: BTreeMap<PathBuf, Option<Vec<u8>>>,
+    disk: bool,
+    file_ops: Vec<FileOp>,
 }
 
 impl Default for FakeTransport {
@@ -88,6 +116,9 @@ impl FakeTransport {
                 commands: Vec::new(),
                 command_outputs: VecDeque::new(),
                 sleeps: Vec::new(),
+                files: BTreeMap::new(),
+                file_ops: Vec::new(),
+                disk: false,
             }),
         }
     }
@@ -176,6 +207,28 @@ impl FakeTransport {
     pub fn sleeps(&self) -> Vec<Duration> {
         self.lock().sleeps.clone()
     }
+
+    /// Run file operations on the real file system (still recorded) instead of the in-memory one.
+    pub fn on_disk(self) -> Self {
+        self.lock().disk = true;
+        self
+    }
+
+    /// Put a file in the in-memory file system.
+    pub fn file(&self, path: impl Into<PathBuf>, bytes: impl Into<Vec<u8>>) -> &Self {
+        self.lock().files.insert(path.into(), Some(bytes.into()));
+        self
+    }
+
+    /// The in-memory file system: scripted files and everything written.
+    pub fn files(&self) -> BTreeMap<PathBuf, Vec<u8>> {
+        self.lock().files.iter().filter_map(|(p, b)| Some((p.clone(), b.clone()?))).collect()
+    }
+
+    /// Every file operation, in order.
+    pub fn file_ops(&self) -> Vec<FileOp> {
+        self.lock().file_ops.clone()
+    }
 }
 
 impl Transport for FakeTransport {
@@ -214,6 +267,47 @@ impl Transport for FakeTransport {
         let mut s = self.lock();
         s.commands.push(cmd.clone());
         s.command_outputs.pop_front().unwrap_or(Ok(CommandOutput { status: 0, stdout: Vec::new(), stderr: Vec::new() }))
+    }
+
+    fn file(&self, op: &FileOp) -> Result<FileOutput> {
+        let mut s = self.lock();
+        s.file_ops.push(op.clone());
+        let path = op.path().to_path_buf();
+        let known = s.files.get(&path).cloned();
+        match (op, known) {
+            _ if s.disk => {
+                drop(s);
+                std_file(op)
+            }
+            (FileOp::Stat { .. } | FileOp::Read { .. }, None) => {
+                drop(s);
+                std_file(op)
+            }
+            (FileOp::Stat { .. }, Some(f)) => {
+                Ok(FileOutput::Meta(f.map(|b| FileMeta { is_file: true, len: b.len() as u64, executable: false })))
+            }
+            (FileOp::Read { max, .. }, Some(Some(b))) if *max == 0 || b.len() as u64 <= *max => {
+                Ok(FileOutput::Bytes(b))
+            }
+            (FileOp::Read { max, .. }, Some(_)) => {
+                Err(Error::Message(format!("{}: not a file of at most {max} bytes", path.display())))
+            }
+            (FileOp::Append { data, .. }, known) => {
+                let mut b = known.flatten().unwrap_or_default();
+                b.extend_from_slice(data);
+                s.files.insert(path, Some(b));
+                Ok(FileOutput::Done)
+            }
+            (FileOp::WriteAtomic { data, .. }, _) => {
+                s.files.insert(path, Some(data.clone()));
+                Ok(FileOutput::Done)
+            }
+            (FileOp::Remove { .. }, _) => {
+                s.files.insert(path, None);
+                Ok(FileOutput::Done)
+            }
+            (FileOp::CreateDir { .. } | FileOp::Touch { .. }, _) => Ok(FileOutput::Done),
+        }
     }
 
     fn sleep(&self, d: Duration) {

@@ -72,7 +72,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_room_alias", "Target Room Alias").prefix("#"),
         Param::new("target_room_id", "Target Room ID").prefix("!"),
         Param::new("target_user", "Target User").prefix("@"),
@@ -489,6 +489,10 @@ impl Matrix {
 }
 
 impl Notify for Matrix {
+    fn stores(&self, ctx: &Context<'_>) -> Vec<StoreRef> {
+        self.cfg.keystore.iter().map(|_| self.store(ctx)).collect()
+    }
+
     /// CommonMark is rendered as HTML (no extensions); Slack webhooks get HTML as plain text instead.
     fn convert(&self, body: &str, format: NotifyFormat) -> Option<String> {
         match (self.cfg.mode == Mode::Slack, format) {

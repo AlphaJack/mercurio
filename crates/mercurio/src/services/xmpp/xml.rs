@@ -1,10 +1,9 @@
-//! XML for the XMPP client: escaping for the stanzas we write and a streaming reader (quick-xml over the socket). The reader yields the stream header, each complete top-level stanza and the stream end.
-
-use std::io::{BufReader, Read};
+//! XML for the XMPP client: escaping for the stanzas we write and a streaming reader (quick-xml over the bytes received so far). The reader yields the stream header, each complete top-level stanza and the stream end.
 
 use quick_xml::events::{BytesRef, BytesStart, Event as XmlEvent};
 
 use crate::error::{Error, Result};
+use crate::transport::AsyncConn;
 
 /// Escape character data.
 pub fn text(s: &str) -> String {
@@ -78,23 +77,18 @@ const MAX_STANZA: u64 = 1 << 20;
 /// Nesting limit for one stanza.
 const MAX_DEPTH: usize = 64;
 
-type XmlReader<R> = quick_xml::Reader<BufReader<R>>;
-
-/// Streaming reader over the server half of an XMPP stream. It owns the connection; write through [`Reader::get_mut`].
-pub struct Reader<R: Read> {
-    xml: Option<XmlReader<R>>,
-    buf: Vec<u8>,
-    open: bool,
+/// Streaming reader over the server half of an XMPP stream. Received bytes are buffered and parsed one complete event at a time; more are read only when the event is incomplete. It owns the connection; write through [`Reader::conn`].
+pub struct Reader<'c> {
+    conn: &'c mut dyn AsyncConn,
+    pending: Vec<u8>,
+    /// The stream header's name, once read.
+    open: Option<String>,
 }
 
-impl<R: Read> std::fmt::Debug for Reader<R> {
+impl std::fmt::Debug for Reader<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Reader").field("open", &self.open).finish_non_exhaustive()
+        f.debug_struct("Reader").field("open", &self.open.is_some()).finish_non_exhaustive()
     }
-}
-
-fn xml_reader<R: Read>(conn: R) -> XmlReader<R> {
-    quick_xml::Reader::from_reader(BufReader::new(conn))
 }
 
 fn closed() -> Error {
@@ -130,90 +124,124 @@ fn reference(r: &BytesRef<'_>) -> Result<String> {
         .map_err(|e| Error::service(format!("XMPP: malformed XML: {e}")))
 }
 
-impl<R: Read> Reader<R> {
-    pub fn new(conn: R) -> Self {
-        Self { xml: Some(xml_reader(conn)), buf: Vec::new(), open: false }
+/// What [`parse`] found at the start of the buffered bytes.
+enum Parsed {
+    /// A complete event and the bytes it used.
+    Event(Event, usize),
+    /// The input ends inside an event; the syntax error it would be if no more bytes came.
+    More(Option<quick_xml::Error>),
+}
+
+/// The next complete event in `input`; `stream` names the open stream header, if any. End tags are matched here: each parse starts mid-stream, where quick-xml would see the stream's end tag as unmatched.
+fn parse(input: &[u8], stream: Option<&str>) -> Result<Parsed> {
+    let mut xml = quick_xml::Reader::from_reader(input);
+    xml.config_mut().check_end_names = false;
+    xml.config_mut().allow_unmatched_ends = true;
+    let mut stack: Vec<Element> = Vec::new();
+    let mut start = 0;
+    loop {
+        let ev = match xml.read_event() {
+            Ok(ev) => ev,
+            Err(e @ quick_xml::Error::Syntax(_)) => return Ok(Parsed::More(Some(e))),
+            Err(e) => return Err(xml_error(e)),
+        };
+        let used = xml.buffer_position() as usize;
+        if stack.is_empty() {
+            start = used;
+        } else if used.saturating_sub(start) as u64 > MAX_STANZA {
+            return Err(Error::service("XMPP stanza too large"));
+        }
+        let done = |ev| Ok(Parsed::Event(ev, used));
+        match ev {
+            XmlEvent::Eof => return Ok(Parsed::More(None)),
+            XmlEvent::Start(s) if stream.is_none() => return done(Event::Open(element(&s)?)),
+            XmlEvent::Start(s) => {
+                if stack.len() >= MAX_DEPTH {
+                    return Err(Error::service("XMPP: stanza nested too deeply"));
+                }
+                stack.push(element(&s)?);
+            }
+            XmlEvent::Empty(s) if stream.is_some() => {
+                let el = element(&s)?;
+                match stack.last_mut() {
+                    Some(parent) => parent.children.push(el),
+                    None => return done(Event::Stanza(el)),
+                }
+            }
+            XmlEvent::End(e) => {
+                let found = e.name().as_ref().to_string();
+                let expected = stack.last().map(|el| el.name.as_str()).or(stream);
+                if let Some(expected) = expected.filter(|x| *x != found) {
+                    let ill = quick_xml::errors::IllFormedError::MismatchedEndTag { expected: expected.into(), found };
+                    return Err(xml_error(ill.into()));
+                }
+                let Some(el) = stack.pop() else { return done(Event::Close) };
+                match stack.last_mut() {
+                    Some(parent) => parent.children.push(el),
+                    None => return done(Event::Stanza(el)),
+                }
+            }
+            XmlEvent::Text(t) => match stack.last_mut() {
+                Some(el) => el.text.push_str(&t.xml10_content()),
+                None if t.xml10_content().trim().is_empty() => {}
+                None => return Err(Error::service("XMPP: unexpected text at stream level")),
+            },
+            XmlEvent::GeneralRef(r) => match stack.last_mut() {
+                Some(el) => el.text.push_str(&reference(&r)?),
+                None => return Err(Error::service("XMPP: unexpected text at stream level")),
+            },
+            XmlEvent::CData(c) => match stack.last_mut() {
+                Some(el) => el.text.push_str(&c.into_inner()),
+                None => return Err(Error::service("XMPP: unexpected text at stream level")),
+            },
+            XmlEvent::Empty(_) | XmlEvent::DocType(_) => {
+                return Err(Error::service("XMPP: unexpected markup"));
+            }
+            XmlEvent::Comment(_) | XmlEvent::Decl(_) | XmlEvent::PI(_) => {}
+        }
+    }
+}
+
+impl<'c> Reader<'c> {
+    pub fn new(conn: &'c mut dyn AsyncConn) -> Self {
+        Self { conn, pending: Vec::new(), open: None }
     }
 
     /// The connection, for writing.
-    pub fn get_mut(&mut self) -> Result<&mut R> {
-        self.xml.as_mut().map(|x| x.get_mut().get_mut()).ok_or_else(closed)
-    }
-
-    pub fn get_ref(&self) -> Result<&R> {
-        self.xml.as_ref().map(|x| x.get_ref().get_ref()).ok_or_else(closed)
+    pub fn conn(&mut self) -> &mut dyn AsyncConn {
+        &mut *self.conn
     }
 
     /// Whether bytes were received but not read yet.
     pub fn has_unread(&self) -> bool {
-        self.xml.as_ref().is_some_and(|x| !x.get_ref().buffer().is_empty())
+        !self.pending.is_empty()
     }
 
     /// Start over on the same connection and expect a new stream header (after STARTTLS or SASL success). Unread bytes are dropped.
     pub fn reset(&mut self) {
-        self.xml = self.xml.take().map(|x| xml_reader(x.into_inner().into_inner()));
-        self.buf.clear();
-        self.open = false;
+        self.pending.clear();
+        self.open = None;
     }
 
     /// Read until one complete event is available. EOF is an error.
-    pub fn next(&mut self) -> Result<Event> {
-        let Self { xml, buf, open } = self;
-        let xml = xml.as_mut().ok_or_else(closed)?;
-        let mut stack: Vec<Element> = Vec::new();
-        let mut start = xml.buffer_position();
+    pub async fn next(&mut self) -> Result<Event> {
         loop {
-            buf.clear();
-            let ev = xml.read_event_into(buf).map_err(xml_error)?;
-            if stack.is_empty() {
-                start = xml.buffer_position();
-            } else if xml.buffer_position().saturating_sub(start) > MAX_STANZA {
-                return Err(Error::service("XMPP stanza too large"));
+            let eof = match parse(&self.pending, self.open.as_deref())? {
+                Parsed::Event(ev, used) => {
+                    if let Event::Open(el) = &ev {
+                        self.open = Some(el.name.clone());
+                    }
+                    self.pending.drain(..used);
+                    return Ok(ev);
+                }
+                Parsed::More(eof) => eof,
+            };
+            let mut chunk = [0u8; crate::net::READ_CHUNK];
+            let n = self.conn.read(&mut chunk).await.map_err(Error::transport)?;
+            if n == 0 {
+                return Err(eof.map_or_else(closed, xml_error));
             }
-            match ev {
-                XmlEvent::Eof => return Err(closed()),
-                XmlEvent::Start(s) if !*open => {
-                    *open = true;
-                    return Ok(Event::Open(element(&s)?));
-                }
-                XmlEvent::Start(s) => {
-                    if stack.len() >= MAX_DEPTH {
-                        return Err(Error::service("XMPP: stanza nested too deeply"));
-                    }
-                    stack.push(element(&s)?);
-                }
-                XmlEvent::Empty(s) if *open => {
-                    let el = element(&s)?;
-                    match stack.last_mut() {
-                        Some(parent) => parent.children.push(el),
-                        None => return Ok(Event::Stanza(el)),
-                    }
-                }
-                XmlEvent::End(_) => {
-                    let Some(el) = stack.pop() else { return Ok(Event::Close) };
-                    match stack.last_mut() {
-                        Some(parent) => parent.children.push(el),
-                        None => return Ok(Event::Stanza(el)),
-                    }
-                }
-                XmlEvent::Text(t) => match stack.last_mut() {
-                    Some(el) => el.text.push_str(&t.xml10_content()),
-                    None if t.xml10_content().trim().is_empty() => {}
-                    None => return Err(Error::service("XMPP: unexpected text at stream level")),
-                },
-                XmlEvent::GeneralRef(r) => match stack.last_mut() {
-                    Some(el) => el.text.push_str(&reference(&r)?),
-                    None => return Err(Error::service("XMPP: unexpected text at stream level")),
-                },
-                XmlEvent::CData(c) => match stack.last_mut() {
-                    Some(el) => el.text.push_str(&c.into_inner()),
-                    None => return Err(Error::service("XMPP: unexpected text at stream level")),
-                },
-                XmlEvent::Empty(_) | XmlEvent::DocType(_) => {
-                    return Err(Error::service("XMPP: unexpected markup"));
-                }
-                XmlEvent::Comment(_) | XmlEvent::Decl(_) | XmlEvent::PI(_) => {}
-            }
+            self.pending.extend_from_slice(&chunk[..n]);
         }
     }
 }
@@ -222,29 +250,49 @@ impl<R: Read> Reader<R> {
 mod tests {
     use super::*;
 
+    /// Hands out at most `chunk` bytes per `read` call.
+    struct Feed {
+        data: Vec<u8>,
+        chunk: usize,
+    }
+
+    impl AsyncConn for Feed {
+        fn read<'a>(&'a mut self, buf: &'a mut [u8]) -> crate::BoxFuture<'a, std::io::Result<usize>> {
+            let n = self.chunk.min(buf.len()).min(self.data.len());
+            buf[..n].copy_from_slice(&self.data[..n]);
+            self.data.drain(..n);
+            Box::pin(std::future::ready(Ok(n)))
+        }
+        fn write_all<'a>(&'a mut self, _: &'a [u8]) -> crate::BoxFuture<'a, std::io::Result<()>> {
+            Box::pin(std::future::ready(Ok(())))
+        }
+        fn flush(&mut self) -> crate::BoxFuture<'_, std::io::Result<()>> {
+            Box::pin(std::future::ready(Ok(())))
+        }
+        fn start_tls(&mut self) -> crate::BoxFuture<'_, Result<()>> {
+            Box::pin(std::future::ready(Ok(())))
+        }
+        fn is_tls(&self) -> bool {
+            false
+        }
+    }
+
+    fn feed(data: &[u8], chunk: usize) -> Feed {
+        Feed { data: data.to_vec(), chunk }
+    }
+
+    fn next(r: &mut Reader<'_>) -> Result<Event> {
+        pollster::block_on(r.next())
+    }
+
     fn events(input: &str) -> Vec<Event> {
-        let mut r = Reader::new(input.as_bytes());
+        let mut conn = feed(input.as_bytes(), 64);
+        let mut r = Reader::new(&mut conn);
         let mut out = Vec::new();
-        while let Ok(ev) = r.next() {
+        while let Ok(ev) = next(&mut r) {
             out.push(ev);
         }
         out
-    }
-
-    /// Hands out one byte per `read` call.
-    struct Trickle<'a>(&'a [u8]);
-
-    impl Read for Trickle<'_> {
-        fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
-            match (self.0.split_first(), out.first_mut()) {
-                (Some((b, rest)), Some(slot)) => {
-                    *slot = *b;
-                    self.0 = rest;
-                    Ok(1)
-                }
-                _ => Ok(0),
-            }
-        }
     }
 
     #[test]
@@ -271,41 +319,46 @@ mod tests {
     #[test]
     fn waits_for_partial_input() {
         let input = b"<stream:stream a='1'><iq type='result' id='x'><bind><jid>a@b</jid></bind></iq>";
-        let mut r = Reader::new(Trickle(input));
-        assert!(matches!(r.next().unwrap(), Event::Open(_)));
-        let Event::Stanza(iq) = r.next().unwrap() else { panic!() };
+        let mut conn = feed(input, 1);
+        let mut r = Reader::new(&mut conn);
+        assert!(matches!(next(&mut r).unwrap(), Event::Open(_)));
+        let Event::Stanza(iq) = next(&mut r).unwrap() else { panic!() };
         assert_eq!(iq.child("bind").unwrap().child("jid").unwrap().text, "a@b");
         // A stanza cut short by the connection closing is a transport error.
-        let mut r = Reader::new(Trickle(b"<s><iq><bind>"));
-        r.next().unwrap();
-        assert!(matches!(r.next(), Err(Error::Transport(_))));
+        let mut conn = feed(b"<s><iq><bind>", 1);
+        let mut r = Reader::new(&mut conn);
+        next(&mut r).unwrap();
+        assert!(matches!(next(&mut r), Err(Error::Transport(_))));
     }
 
     #[test]
     fn rejects_mismatched_tags() {
-        let mut r = Reader::new(&b"<s><a><b></a>"[..]);
-        r.next().unwrap();
-        assert!(matches!(r.next(), Err(Error::Service(_))));
+        let mut conn = feed(b"<s><a><b></a>", 64);
+        let mut r = Reader::new(&mut conn);
+        next(&mut r).unwrap();
+        assert!(matches!(next(&mut r), Err(Error::Service(_))));
     }
 
     #[test]
     fn limits_depth() {
         let deep = format!("<s>{}", "<a>".repeat(MAX_DEPTH + 1));
-        let mut r = Reader::new(deep.as_bytes());
-        r.next().unwrap();
-        assert!(matches!(r.next(), Err(Error::Service(m)) if m.contains("deeply")));
+        let mut conn = feed(deep.as_bytes(), 64);
+        let mut r = Reader::new(&mut conn);
+        next(&mut r).unwrap();
+        assert!(matches!(next(&mut r), Err(Error::Service(m)) if m.contains("deeply")));
     }
 
     #[test]
     fn reset_reports_unread_bytes() {
-        let mut r = Reader::new(&b"<s><proceed/><injected/>"[..]);
-        r.next().unwrap();
-        r.next().unwrap();
+        let mut conn = feed(b"<s><proceed/><injected/>", 64);
+        let mut r = Reader::new(&mut conn);
+        next(&mut r).unwrap();
+        next(&mut r).unwrap();
         assert!(r.has_unread());
         r.reset();
         assert!(!r.has_unread());
         // The rest is read again as a new stream.
-        assert!(matches!(r.next(), Err(Error::Transport(_)) | Ok(Event::Open(_))));
+        assert!(matches!(next(&mut r), Err(Error::Transport(_)) | Ok(Event::Open(_))));
     }
 
     #[test]
@@ -337,9 +390,10 @@ mod tests {
                     _ => {}
                 }
             }
-            let mut r = Reader::new(&data[..]);
+            let mut conn = feed(&data, 7);
+            let mut r = Reader::new(&mut conn);
             for _ in 0..16 {
-                if r.next().is_err() {
+                if next(&mut r).is_err() {
                     break;
                 }
             }

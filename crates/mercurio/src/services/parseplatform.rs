@@ -21,7 +21,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("app_id", "App ID").required().secret(),
         Param::new("host", "Hostname").required(),
         Param::new("master_key", "Master Key").required().secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
     ],
     params: &[
         Param::sets("app_id", &["app_id"]),

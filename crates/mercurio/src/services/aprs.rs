@@ -6,14 +6,15 @@
 //!
 //! - The login names the software `mercurio <version>` (Apprise: `apprise <version>`). *intentional*
 //! - When the first read holds only the server banner, mercurio reads once more for the `# logresp` line (Apprise fails). *intentional*
-//! - The 0.8 s (+ `delay`) pacing applies between the message packets of one notification, not between login and the first packet. *intentional*
+//! - The 0.8 s (+ `delay`) wait applies between the message packets of one notification, not between login and the first packet. *intentional*
 
 use std::time::Duration;
 
 use crate::error::Error;
 use crate::parse::{is_call_sign, parse_call_sign, parse_list};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::transport::{Conn, Endpoint};
+use super::_sockets::send;
+use crate::transport::Endpoint;
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
@@ -23,8 +24,8 @@ pub static SERVICE: ServiceDef = ServiceDef {
     schemes: &["aprs"],
     service_url: "https://www.aprs2.net/",
     parse,
-    limits: Limits { title_maxlen: 0, body_maxlen: 67, body_max_line_count: 0 },
-    throttle: Duration::from_millis(800),
+    limits: Limits { title_maxlen: 0, body_maxlen: MAX_TEXT, body_max_line_count: 0 },
+    throttle: PACKET_GAP,
     templates: &[
         "{schema}://{user}:{password}@{targets}",
     ],
@@ -44,7 +45,10 @@ pub static SERVICE: ServiceDef = ServiceDef {
 
 const PORT: u16 = 10152;
 const DEVICE_ID: &str = "APPRIS";
-const RATE: f64 = 0.8;
+/// Characters of message text in one packet.
+const MAX_TEXT: usize = 67;
+/// The gap between two packets of one connection (APRS-IS rate limit).
+const PACKET_GAP: Duration = Duration::from_millis(800);
 
 const LOCALES: &[(&str, &str)] = &[
     ("NOAM", "noam.aprs2.net"),
@@ -115,7 +119,7 @@ pub fn clean_payload(body: &str) -> String {
     }
     let s = s.trim_matches(['\r', '\n']);
     let s = crate::regex!(r"[ \t]*[\r\n]+[ \t]*").replace_all(s, " ");
-    let s: String = s.chars().take(67).collect();
+    let s: String = s.chars().take(MAX_TEXT).collect();
     format!("{}\r\n", s.trim_end_matches(['\r', '\n']))
 }
 
@@ -143,11 +147,6 @@ fn latin1(data: &[u8]) -> String {
     data.iter().map(|b| *b as char).collect()
 }
 
-fn send(conn: &mut dyn Conn, data: &str) -> Result<()> {
-    conn.write_all(data.as_bytes()).map_err(Error::transport)?;
-    conn.flush().map_err(Error::transport)
-}
-
 impl Notify for Aprs {
     fn plan(&self, msg: &Prepared<'_>, _ctx: &Context<'_>) -> Plan {
         if self.targets.is_empty() {
@@ -163,15 +162,16 @@ impl Notify for Aprs {
         let payload = clean_payload(msg.body);
         let packets: Vec<String> =
             self.targets.iter().map(|t| format!("{user}>{DEVICE_ID}::{t:<9}:{payload}")).collect();
-        let pause = Duration::try_from_secs_f64(RATE + self.delay).unwrap_or(Duration::from_millis(800));
+        let pause = Duration::try_from_secs_f64(PACKET_GAP.as_secs_f64() + self.delay).unwrap_or(PACKET_GAP);
         let ep = Endpoint::new(self.server, PORT, false);
-        Plan::socket(ep, move |conn| {
-            send(conn, &login)?;
+        Plan::socket(ep, move |conn, transport| {
+            Box::pin(async move {
+            send(conn, login.as_bytes()).await?;
             let limit = login.len() + 100;
             let mut rx = Vec::new();
             for _ in 0..2 {
                 let mut buf = vec![0u8; limit];
-                let n = conn.read(&mut buf).map_err(Error::transport)?;
+                let n = conn.read(&mut buf).await.map_err(Error::transport)?;
                 if n == 0 {
                     break;
                 }
@@ -183,12 +183,12 @@ impl Notify for Aprs {
             check_login(&latin1(&rx), &user)?;
             for (i, p) in packets.iter().enumerate() {
                 if i > 0 {
-                    #[expect(clippy::disallowed_methods, reason = "a socket session has no Transport to sleep on")]
-                    std::thread::sleep(pause);
+                    transport.sleep(pause).await;
                 }
-                send(conn, p)?;
+                send(conn, p.as_bytes()).await?;
             }
             Ok(())
+            })
         })
     }
 

@@ -154,7 +154,6 @@ impl Asset {
     }
 
     fn substitute(&self, mask: &str, kind: NotifyType, size: ImageSize, ext: Option<&str>) -> String {
-        // Placeholders match case-insensitively.
         let re = crate::regex!(r"(?i)\{(THEME|TYPE|XY|EXTENSION)\}");
         re.replace_all(mask, |c: &regex::Captures| match c[1].to_ascii_uppercase().as_str() {
             "THEME" => self.theme.clone(),

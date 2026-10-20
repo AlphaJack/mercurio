@@ -1,4 +1,5 @@
 //! Unit tests for the Matrix service: properties the fixtures do not assert (redirect policy, probe credentials, oversized answers, one UUID per raw-token send; the request sequences themselves are fixture cases `login_success`, `discovery_*`, `raw_token_*`), the `?keystore=` directory store and (feature `service-matrix-e2ee`) reference vectors plus a simulated homeserver whose second device decrypts what mercurio sends and completes a SAS verification.
+#![expect(clippy::disallowed_methods, reason = "tests set up real files")]
 
 use serde_json::{Value, json};
 
@@ -163,10 +164,22 @@ fn rate_limit_sleeps_as_requested() {
 }
 
 #[test]
+fn keystore_is_loaded_and_saved_through_the_transport() {
+    let url = "matrix://me:secret@localhost/!room:localhost?keystore=/ks";
+    let fake = FakeTransport::new();
+    fake.respond_with(json_resp(json!({"access_token": "tok", "user_id": "@me:localhost", "device_id": "DEV"})));
+    assert!(send(url, &fake).is_success());
+    assert!(fake.files().keys().any(|p| p.starts_with("/ks") && p.ends_with(crate::store::CACHE_FILE)));
+    let before = fake.requests().len();
+    assert!(send(url, &fake).is_success());
+    assert!(fake.requests()[before..].iter().all(|r| !r.url.ends_with("/login")), "{:?}", paths(&fake));
+}
+
+#[test]
 fn keystore_file_keeps_the_session() {
     let path = temp_path("keystore");
     let url = format!("matrix://me:secret@localhost/!room:localhost?keystore={}", path.display());
-    let fake = FakeTransport::new();
+    let fake = FakeTransport::new().on_disk();
     fake.respond_with(json_resp(json!({"access_token": "tok", "user_id": "@me:localhost", "device_id": "DEV"})));
     assert!(send(&url, &fake).is_success());
     let first = paths(&fake);
@@ -174,7 +187,7 @@ fn keystore_file_keeps_the_session() {
     assert!(!first.iter().any(|p| p.ends_with("/logout")), "persistent stores keep the session");
     assert!(first[2].ends_with("/send/m.room.message/0"));
 
-    let fake = FakeTransport::new();
+    let fake = FakeTransport::new().on_disk();
     assert!(send(&url, &fake).is_success());
     let second = paths(&fake);
     // Token, room cache and transaction counter come from the file.
@@ -200,7 +213,6 @@ fn memory_session_outlives_sends_until_close() {
     assert!(p.last().unwrap().ends_with("/send/m.room.message/1"), "{p:?}");
     assert!(t.close(&fake, &asset).is_some());
     assert!(paths(&fake).last().unwrap().ends_with("/logout"));
-    // The session is gone: closing again does nothing.
     assert!(t.close(&fake, &asset).is_none());
 }
 
@@ -720,7 +732,7 @@ mod e2ee {
 
     /// Login, then every request gets `200 {}` unless a rule says otherwise.
     fn e2ee_fake() -> FakeTransport {
-        let fake = FakeTransport::new();
+        let fake = FakeTransport::new().on_disk();
         fake.on_url("/login", json_resp(json!({"access_token": "tok", "user_id": ME, "device_id": "MERCURIO"})));
         fake.on_url("/join/", json_resp(json!({"room_id": "!room:hs.test"})));
         fake

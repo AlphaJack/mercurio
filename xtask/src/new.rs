@@ -50,7 +50,6 @@ fn add_feature(manifest: &Path, id: &str) -> Result<(), String> {
     let start = lines.iter().position(|l| l.starts_with("all-services = [")).ok_or("Cargo.toml: no `all-services`")?;
     let end = start + lines[start..].iter().position(|l| l == "]").ok_or("Cargo.toml: unterminated `all-services`")?;
     insert_sorted(&mut lines, start + 1..end, format!("  \"{feature}\","));
-    // The per-service declarations follow the `all-services` list.
     let len = lines.len();
     insert_sorted(&mut lines, end + 1..len, format!("{feature} = []"));
     std::fs::write(manifest, lines.join("\n") + "\n").map_err(|e| format!("{}: {e}", manifest.display()))?;

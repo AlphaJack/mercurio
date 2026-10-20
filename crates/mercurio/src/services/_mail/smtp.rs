@@ -6,7 +6,7 @@ use crate::crypto;
 use crate::error::{Error, Result};
 use crate::net::LineConn;
 use crate::service::Secret;
-use crate::transport::Conn;
+use crate::transport::AsyncConn;
 
 /// Transport security of the session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,10 +50,10 @@ impl Reply {
     }
 }
 
-fn read_reply(c: &mut LineConn<'_>) -> Result<Reply> {
+async fn read_reply(c: &mut LineConn<'_>) -> Result<Reply> {
     let mut lines = Vec::new();
     loop {
-        let line = c.read_line()?;
+        let line = c.read_line().await?;
         let code = line.get(..3).and_then(|s| s.parse::<u16>().ok());
         let Some(code) = code else {
             return Err(Error::transport(format!("malformed SMTP reply: {:.80}", line)));
@@ -69,9 +69,9 @@ fn read_reply(c: &mut LineConn<'_>) -> Result<Reply> {
     }
 }
 
-fn command(c: &mut LineConn<'_>, line: &str) -> Result<Reply> {
-    c.write_line(line)?;
-    read_reply(c)
+async fn command(c: &mut LineConn<'_>, line: &str) -> Result<Reply> {
+    c.write_line(line).await?;
+    read_reply(c).await
 }
 
 fn smtp_error(what: &str, r: &Reply) -> Error {
@@ -91,8 +91,8 @@ impl Extensions {
     }
 }
 
-fn hello(c: &mut LineConn<'_>, name: &str) -> Result<Extensions> {
-    let r = command(c, &format!("EHLO {name}"))?;
+async fn hello(c: &mut LineConn<'_>, name: &str) -> Result<Extensions> {
+    let r = command(c, &format!("EHLO {name}")).await?;
     if r.code == 250 {
         let mut ext = Extensions::default();
         for line in r.lines.iter().skip(1) {
@@ -105,7 +105,7 @@ fn hello(c: &mut LineConn<'_>, name: &str) -> Result<Extensions> {
         }
         return Ok(ext);
     }
-    let r = command(c, &format!("HELO {name}"))?;
+    let r = command(c, &format!("HELO {name}")).await?;
     if r.code != 250 {
         return Err(smtp_error("HELO", &r));
     }
@@ -135,8 +135,8 @@ fn cram_md5_response(challenge: &str, user: &str, password: &str) -> Result<Stri
     Ok(crypto::b64(format!("{user} {digest}").as_bytes()))
 }
 
-/// smtplib's `login()`: CRAM-MD5, PLAIN, then LOGIN, as far as the server offers them.
-fn login(c: &mut LineConn<'_>, ext: &Extensions, user: &str, password: &str) -> Result<()> {
+/// smtplib's `login().await`: CRAM-MD5, PLAIN, then LOGIN, as far as the server offers them.
+async fn login(c: &mut LineConn<'_>, ext: &Extensions, user: &str, password: &str) -> Result<()> {
     let Some(mechs) = ext.params("AUTH") else {
         return Err(Error::Service("SMTP AUTH extension not supported by server".into()));
     };
@@ -148,13 +148,13 @@ fn login(c: &mut LineConn<'_>, ext: &Extensions, user: &str, password: &str) -> 
         }
         let r = match mech {
             "CRAM-MD5" => {
-                let r = command(c, "AUTH CRAM-MD5")?;
-                if r.code == 334 { command(c, &cram_md5_response(&r.text(), user, password)?)? } else { r }
+                let r = command(c, "AUTH CRAM-MD5").await?;
+                if r.code == 334 { command(c, &cram_md5_response(&r.text(), user, password)?).await? } else { r }
             }
-            "PLAIN" => command(c, &format!("AUTH PLAIN {}", crypto::b64(format!("\0{user}\0{password}").as_bytes())))?,
+            "PLAIN" => command(c, &format!("AUTH PLAIN {}", crypto::b64(format!("\0{user}\0{password}").as_bytes()))).await?,
             _ => {
-                let r = command(c, &format!("AUTH LOGIN {}", crypto::b64(user.as_bytes())))?;
-                if r.code == 334 { command(c, &crypto::b64(password.as_bytes()))? } else { r }
+                let r = command(c, &format!("AUTH LOGIN {}", crypto::b64(user.as_bytes()))).await?;
+                if r.code == 334 { command(c, &crypto::b64(password.as_bytes())).await? } else { r }
             }
         };
         if r.code == 235 || r.code == 503 {
@@ -168,34 +168,34 @@ fn login(c: &mut LineConn<'_>, ext: &Extensions, user: &str, password: &str) -> 
 }
 
 /// Submit one message; `Ok(Err(..))` is a per-message failure (session still usable).
-fn send_one(c: &mut LineConn<'_>, ext: &Extensions, msg: &Envelope) -> Result<std::result::Result<(), Error>> {
+async fn send_one(c: &mut LineConn<'_>, ext: &Extensions, msg: &Envelope) -> Result<std::result::Result<(), Error>> {
     let mut mail = format!("MAIL FROM:<{}>", msg.from);
     if ext.has("SIZE") {
         mail.push_str(&format!(" SIZE={}", msg.data.len()));
     }
-    let r = command(c, &mail)?;
+    let r = command(c, &mail).await?;
     if r.code != 250 {
-        command(c, "RSET").ok();
+        command(c, "RSET").await.ok();
         return Ok(Err(smtp_error("MAIL FROM", &r)));
     }
     let mut refused = Vec::new();
     for rcpt in &msg.recipients {
-        let r = command(c, &format!("RCPT TO:<{rcpt}>"))?;
+        let r = command(c, &format!("RCPT TO:<{rcpt}>")).await?;
         if r.code != 250 && r.code != 251 {
             refused.push((rcpt.clone(), r.code));
         }
     }
     if refused.len() == msg.recipients.len() {
-        command(c, "RSET").ok();
+        command(c, "RSET").await.ok();
         return Ok(Err(Error::Service(format!("SMTP server refused all {} recipient(s)", refused.len()))));
     }
-    let r = command(c, "DATA")?;
+    let r = command(c, "DATA").await?;
     if r.code != 354 {
-        command(c, "RSET").ok();
+        command(c, "RSET").await.ok();
         return Ok(Err(smtp_error("DATA", &r)));
     }
-    c.write_all(&super::mime::dot_stuff(&msg.data))?;
-    let r = command(c, ".")?;
+    c.write_all(&super::mime::dot_stuff(&msg.data)).await?;
+    let r = command(c, ".").await?;
     if r.code != 250 {
         return Ok(Err(smtp_error("message submission", &r)));
     }
@@ -206,37 +206,37 @@ fn send_one(c: &mut LineConn<'_>, ext: &Extensions, msg: &Envelope) -> Result<st
     Ok(Ok(()))
 }
 
-fn run(c: &mut LineConn<'_>, job: &Job, quit_sent: &mut bool) -> Result<()> {
-    let greeting = read_reply(c)?;
+async fn run(c: &mut LineConn<'_>, job: &Job, quit_sent: &mut bool) -> Result<()> {
+    let greeting = read_reply(c).await?;
     if greeting.code != 220 {
         return Err(smtp_error("greeting", &greeting));
     }
-    let mut ext = hello(c, &job.helo)?;
+    let mut ext = hello(c, &job.helo).await?;
     if job.security == Security::StartTls {
         if !ext.has("STARTTLS") {
             return Err(Error::Service("STARTTLS extension not supported by server".into()));
         }
-        let r = command(c, "STARTTLS")?;
+        let r = command(c, "STARTTLS").await?;
         if r.code != 220 {
             return Err(smtp_error("STARTTLS", &r));
         }
-        c.start_tls()?;
-        ext = hello(c, &job.helo)?;
+        c.start_tls().await?;
+        ext = hello(c, &job.helo).await?;
     }
     if let (Some(user), Some(pw)) = (&job.user, &job.password)
         && !user.is_empty()
         && !pw.is_empty()
     {
-        login(c, &ext, user, pw.expose())?;
+        login(c, &ext, user, pw.expose()).await?;
     }
     let mut failures = Vec::new();
     for msg in &job.messages {
-        if let Err(e) = send_one(c, &ext, msg)? {
+        if let Err(e) = send_one(c, &ext, msg).await? {
             failures.push(e);
         }
     }
     *quit_sent = true;
-    command(c, "QUIT").ok();
+    command(c, "QUIT").await.ok();
     match failures.len() {
         0 => Ok(()),
         1 => Err(failures.remove(0)),
@@ -245,13 +245,13 @@ fn run(c: &mut LineConn<'_>, job: &Job, quit_sent: &mut bool) -> Result<()> {
 }
 
 /// Run a whole SMTP session on `conn`.
-pub fn session(conn: &mut dyn Conn, job: &Job) -> Result<()> {
+pub async fn session(conn: &mut dyn AsyncConn, job: &Job) -> Result<()> {
     let mut c = LineConn::new(conn);
     let mut quit_sent = false;
-    let res = run(&mut c, job, &mut quit_sent);
+    let res = run(&mut c, job, &mut quit_sent).await;
     if res.is_err() && !quit_sent {
         // Best effort, like smtplib's quit() after a failed STARTTLS/login.
-        c.write_line("QUIT").ok();
+        c.write_line("QUIT").await.ok();
     }
     res
 }

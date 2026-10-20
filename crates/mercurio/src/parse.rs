@@ -21,6 +21,11 @@ macro_rules! regex {
 }
 
 /// Parse a yes/no word by its first two letters (`yes`, `on`, `true`, `enable`, `1`, ... and their negatives); anything else is `default`.
+/// `s` as a port: digits only, 1 to 65535.
+pub fn port(s: &str) -> Option<u16> {
+    s.bytes().all(|b| b.is_ascii_digit()).then(|| s.parse().ok()).flatten().filter(|p| *p > 0)
+}
+
 pub fn parse_bool(arg: &str, default: bool) -> bool {
     let lower = arg.to_lowercase();
     let head: String = lower.chars().take(2).collect();
@@ -235,7 +240,6 @@ pub fn is_email(address: &str) -> Option<EmailAddr> {
     let re = regex!(
         r#"(?i)^(?:(?:[\s"']{0,32})?(?P<name>[^:<'"]{0,128})?[:<\s'"]{1,32})?(?P<full_email>(?:(?P<label>[^+\s]{1,128})\+)?(?P<email>(?P<userid>[a-z0-9_!#$%&*/=?%`{|}~^-]+(?:\.[a-z0-9_!#$%&'*/=?%`{|}~^-]+)*)@(?P<domain>(?:(?:[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9_-]*[a-z0-9]))|[a-z0-9][a-z0-9_-]{5,})))\s*>?"#
     );
-    // The pattern needs a literal `@`.
     if !address.contains('@') {
         return None;
     }
@@ -445,6 +449,8 @@ pub fn is_hostname(hostname: &str, ipv4: bool, ipv6: bool, underscore: bool) -> 
 // `Arc`: a cloned `Regex` starts with an empty match cache, which costs more than the match. Keyed by pattern, then flags, so a lookup needs no allocation.
 type RegexCache = BTreeMap<String, BTreeMap<String, Arc<Regex>>>;
 static VALIDATE_CACHE: LazyLock<Mutex<RegexCache>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
+/// Compiled patterns kept at most. mercurio's services use about a hundred; a caller passing patterns built at run time empties the cache when it fills.
+const MAX_CACHED_REGEXES: usize = 256;
 
 /// `value` (trimmed when `strip`) when it matches `pattern`.
 ///
@@ -489,6 +495,9 @@ fn compiled(pattern: &str, flags: &str) -> Option<Arc<Regex>> {
             return None;
         }
     };
+    if cache.values().map(BTreeMap::len).sum::<usize>() >= MAX_CACHED_REGEXES {
+        cache.clear();
+    }
     cache.entry(pattern.to_string()).or_default().insert(flags.to_string(), re.clone());
     Some(re)
 }
@@ -496,6 +505,15 @@ fn compiled(pattern: &str, flags: &str) -> Option<Arc<Regex>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn regex_cache_is_bounded() {
+        for i in 0..MAX_CACHED_REGEXES * 2 {
+            assert!(validate_regex(&format!("x{i}"), &format!("x{i}"), "", false).is_some());
+        }
+        let cached: usize = VALIDATE_CACHE.lock().unwrap().values().map(BTreeMap::len).sum();
+        assert!(cached <= MAX_CACHED_REGEXES, "{cached}");
+    }
 
     /// `\s`, `\d`, `\w` and `(?i)` must stay Unicode-aware: an ASCII-only engine (such as `regex_lite`) silently changes matching on non-ASCII input.
     #[test]

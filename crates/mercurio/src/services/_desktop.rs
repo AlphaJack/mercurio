@@ -39,7 +39,6 @@ pub fn urgency(u: &ParsedUrl) -> u8 {
 pub fn xy(u: &ParsedUrl, service: &'static crate::ServiceDef) -> Result<Option<(i64, i64)>> {
     let x = service.text(u, "x");
     let y = service.text(u, "y");
-    // Either coordinate given as a non-empty string turns the hints on.
     if x.as_deref().is_none_or(str::is_empty) && y.as_deref().is_none_or(str::is_empty) {
         return Ok(None);
     }

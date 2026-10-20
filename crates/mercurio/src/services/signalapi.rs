@@ -35,7 +35,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_channel", "Target Group ID").pattern("^[a-z0-9_=-]+$").prefix("@"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("targets", "Targets").list("/").group(&["target_channel", "target_phone"]),

@@ -62,6 +62,7 @@ fn parse_native(url: &str) -> Option<String> {
 }
 
 #[cfg(test)]
+#[expect(clippy::disallowed_methods, reason = "tests set up real files")]
 mod tests {
     /// A fixture written at test time (it needs the template's absolute path).
     const FIXTURE: &str = r#"{"service": "discord", "cases": [{"name": "template", "url": "discord://iiiiiiii/tttttttt?template=__TPL__&:who=W%22x&ping=@joe", "body": "line1\nline2 \"q\"", "type": "warning", "attachments": [{"name": "a.txt", "mime": "text/plain", "text": "hi"}]}]}"#;

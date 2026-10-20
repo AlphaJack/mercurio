@@ -18,7 +18,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-ureq = { version = "3.4", default-features = false, features = ["rustls"] }
+ureq = { version = "3.4", optional = true, default-features = false, features = ["rustls"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 webpki-roots = "1"
 ring = "0.17"
@@ -26,6 +26,12 @@ serde_json = "1"
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-perl"] }
 base64 = "0.23"
 log = "0.4"
+pollster = "1"
+futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
+async-lock = "3"
+tokio = { version = "1.54", optional = true, default-features = false, features = ["net", "time", "fs", "process", "io-util"] }
+tokio-rustls = { version = "0.26", optional = true, default-features = false, features = ["ring", "tls12"] }
+reqwest = { version = "0.13", optional = true, default-features = false, features = ["rustls-no-provider"] }
 saphyr-parser = "0.2"
 html-escape = "0.3.0"
 quick-xml = "0.42"
@@ -43,12 +49,13 @@ zeroize = { version = "1.8", optional = true }
 
 [dev-dependencies]
 # The integration tests use the fixture runner (`testing` feature).
-mercurio = { path = ".", default-features = false, features = ["testing"] }
+mercurio = { path = ".", default-features = false, features = ["testing", "transport-blocking"] }
 insta = { version = "1.49.0", features = ["yaml"] }
+tokio = { version = "1.54", features = ["rt", "macros", "net", "io-util", "time"] }
 
 [features]
-# Every service.
-default = ["all-services"]
+# Every service and the async API on tokio.
+default = ["all-services", "transport-tokio"]
 # Every `service-*` feature.
 all-services = [
   "service-africastalking",
@@ -212,6 +219,11 @@ all-services = [
   "service-zoom",
   "service-zulip",
 ]
+
+# Tokio transport: `TokioTransport` and `AsyncMercurio::new` (tokio + reqwest).
+transport-tokio = ["dep:tokio", "dep:tokio-rustls", "dep:reqwest"]
+# Blocking transport: `BlockingTransport` and `Mercurio::new` (ureq).
+transport-blocking = ["dep:ureq"]
 
 # Compile the fixture runner (`testing::fixtures`); `testing::FakeTransport` is always available.
 testing = []

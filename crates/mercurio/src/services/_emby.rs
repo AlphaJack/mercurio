@@ -33,7 +33,6 @@ pub(crate) fn parse_with(u: &ParsedUrl, def: &'static ServiceDef) -> Result<Box<
     let user = u.user().filter(|s| !s.is_empty()).ok_or_else(|| def.err("no username was specified"))?;
     let port = u.port.filter(|p| *p != 0).unwrap_or(DEFAULT_PORT);
     let base = format!("{}://{}:{}", u.http_scheme(), u.host(), port);
-    // `(secure_protocol, user, password, host, port or 443/80)`.
     let id = vec![
         format!("{}s", def.schemes[0]),
         user.clone(),
@@ -92,7 +91,6 @@ impl Emby {
             ("Version", env!("CARGO_PKG_VERSION")),
         ];
         if authenticated {
-            // The user *name* goes here once logged in.
             args.push(("UserId", &self.user));
         }
         args.iter().map(|(k, v)| format!("{k}=\"{v}\"")).collect::<Vec<_>>().join(", ")
@@ -159,7 +157,6 @@ fn parse_sessions(r: &Response) -> std::result::Result<Vec<String>, Error> {
     let Some(v) = r.json() else { return Ok(Vec::new()) };
     let entries: Vec<&Map<String, Value>> = match &v {
         Value::Array(a) => a.iter().map(|e| e.as_object().ok_or_else(bad)).collect::<std::result::Result<_, _>>()?,
-        // Only an empty object or string counts as no sessions.
         Value::Object(m) if m.is_empty() => Vec::new(),
         Value::String(s) if s.is_empty() => Vec::new(),
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Object(_) => return Err(bad()),
@@ -235,7 +232,6 @@ impl Notify for Emby {
     fn close(&self, ctx: &Context<'_>) -> Option<Plan> {
         let session = Session::load(ctx.store.as_ref())?;
         ctx.store.clear(&[SESSION_KEY]);
-        // Logging out never changes the outcome.
         Some(Plan::http(self.logout(ctx.app_id(), &session), |_| Plan::Done))
     }
 

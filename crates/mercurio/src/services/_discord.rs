@@ -14,7 +14,7 @@ use crate::parse::{parse_list, validate_nonblank};
 use crate::service::{Context, Notify, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
-use crate::{Plan, Prepared, Result};
+use crate::{FileOp, Plan, Prepared, Result};
 
 /// One `USER_ROLE_DETECTION_RE` match: `(is_role, id, value)`.
 pub type Mention = (bool, String, String);
@@ -378,11 +378,11 @@ impl Discord {
             }
         };
         let fail = |why: &str| Error::Service(format!("{} template {why}", self.name));
-        let meta = std::fs::metadata(path).map_err(|_| fail("could not be accessed"))?;
-        if !meta.is_file() || meta.len() == 0 || meta.len() > DISCORD_MAX_TEMPLATE_SIZE {
+        let raw = ctx.local_file(path, DISCORD_MAX_TEMPLATE_SIZE).map_err(fail)?;
+        if raw.is_empty() {
             return Err(fail("could not be accessed"));
         }
-        let raw = std::fs::read_to_string(path).map_err(|_| fail("could not be read"))?;
+        let raw = std::str::from_utf8(raw).map_err(|_| fail("could not be read"))?;
 
         let image_url = ctx.asset.image_url(msg.kind, ImageSize::Xy256).unwrap_or_default();
         let mut tokens: Vec<(String, String)> = self.tokens.clone();
@@ -404,7 +404,7 @@ impl Discord {
         set("app_image_url", image_url);
         set("app_url", ctx.app_url().to_string());
 
-        let content = apply_template(&raw, &tokens).map_err(|e| fail(&e))?;
+        let content = apply_template(raw, &tokens).map_err(|e| fail(&e))?;
         let value: Value = serde_json::from_str(&content).map_err(|_| fail("contains invalid JSON"))?;
         let Value::Object(obj) = value else { return Err(fail("must be a JSON object")) };
         let has_content = obj.get("content").and_then(Value::as_str).is_some_and(|s| !s.is_empty());
@@ -422,6 +422,13 @@ impl Discord {
 impl Notify for Discord {
     fn convert(&self, body: &str, _format: NotifyFormat) -> Option<String> {
         self.escape_emojis.then(|| escape_emojis(body))
+    }
+
+    fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
+        match &self.template {
+            Some(Template::File(path)) => FileOp::local_file(path).into(),
+            _ => Vec::new(),
+        }
     }
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {

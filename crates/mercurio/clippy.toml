@@ -1,0 +1,27 @@
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+too-many-lines-threshold = 80
+disallowed-methods = [
+  { path = "std::thread::sleep", reason = "use Transport::sleep so tests stay fast" },
+  { path = "std::fs::read", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::read_to_string", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::write", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::metadata", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::symlink_metadata", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::create_dir_all", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::remove_file", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::rename", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::read_dir", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::File::open", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::File::create", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::OpenOptions::open", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::fs::DirBuilder::create", reason = "services return Plan::file steps or declare Notify::files; only transports touch the file system" },
+  { path = "std::net::TcpStream::connect", reason = "only transports open sockets" },
+  { path = "std::net::TcpStream::connect_timeout", reason = "only transports open sockets" },
+  { path = "std::net::UdpSocket::bind", reason = "only transports open sockets" },
+  { path = "std::process::Command::new", reason = "only transports run programs" },
+]
+disallowed-types = [
+  { path = "std::collections::HashMap", reason = "nondeterministic order breaks byte-exact fixtures; use BTreeMap or Vec" },
+]

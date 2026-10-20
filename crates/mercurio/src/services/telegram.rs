@@ -24,7 +24,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIden
 use crate::url::{ParsedUrl, parse_url_unverified, unquote};
 use super::_chat::apply_template_json;
 use crate::util::{json_text, json_has_value, parse_int};
-use crate::{NotifyFormat, Plan, Prepared, Result};
+use crate::{FileOp, NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
     id: "telegram",
@@ -292,6 +292,8 @@ struct Job {
     app_desc: String,
     app_url: String,
     first_piece: bool,
+    /// The Rich Message template, or why it could not be loaded.
+    template: std::result::Result<String, &'static str>,
 }
 
 fn status_ok(res: &Result<Response>) -> bool {
@@ -544,13 +546,8 @@ impl Job {
 
     /// `_gen_rich_payload`: load, fill and validate the template.
     fn rich_payload(&self) -> Result<Value> {
-        let path = self.cfg.template.as_deref().unwrap_or("");
         let fail = |why: &str| Error::Service(format!("Telegram Rich Message template {why}"));
-        let meta = std::fs::metadata(path).map_err(|_| fail("could not be accessed"))?;
-        if !meta.is_file() || meta.len() > TEMPLATE_MAX_BYTES {
-            return Err(fail("could not be accessed"));
-        }
-        let text = std::fs::read_to_string(path).map_err(|_| fail("could not be read"))?;
+        let text = self.template.as_deref().map_err(|why| fail(why))?;
 
         let mut tokens: Vec<(String, String)> = self.cfg.tokens.clone();
         let image = if self.cfg.include_image { self.image_url.clone().unwrap_or_default() } else { String::new() };
@@ -571,7 +568,7 @@ impl Job {
             }
         }
         tokens.retain(|(k, _)| k != "app_mode");
-        let content = apply_template_json(&text, &tokens).ok_or_else(|| fail("references an unknown token"))?;
+        let content = apply_template_json(text, &tokens).ok_or_else(|| fail("references an unknown token"))?;
         let content: Value = serde_json::from_str(&content).map_err(|_| fail("contains invalid JSON"))?;
         let Some(obj) = content.as_object() else {
             return Err(fail("must be a JSON object"));
@@ -735,6 +732,10 @@ impl Notify for Telegram {
         }
     }
 
+    fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
+        self.template.iter().flat_map(FileOp::local_file).collect()
+    }
+
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         // Rich Message templates take the caller's title and body, once.
         let (title, body) = match &self.template {
@@ -772,10 +773,15 @@ impl Notify for Telegram {
             app_desc: ctx.app_desc().to_string(),
             app_url: ctx.app_url().to_string(),
             first_piece: msg.index == 0,
+            template: match &self.template {
+                Some(path) => ctx
+                    .local_file(path, TEMPLATE_MAX_BYTES)
+                    .and_then(|b| String::from_utf8(b.to_vec()).map_err(|_| "could not be read")),
+                None => Err("could not be accessed"),
+            },
         });
         if self.targets.is_empty() && self.detect_owner {
             let topic = job.cfg.topic;
-            // The detected owner is kept in the store (`bot_owner`).
             if let Some(id) = ctx.store.get("bot_owner").filter(json_has_value) {
                 return job.run(vec![Chat { id: ChatId::Str(json_text(&id)), topic }]);
             }
@@ -799,6 +805,7 @@ impl Notify for Telegram {
 }
 
 #[cfg(test)]
+#[expect(clippy::disallowed_methods, reason = "tests set up real files")]
 mod tests {
     use super::*;
     use crate::testing::FakeTransport;

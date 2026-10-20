@@ -295,7 +295,7 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
         out.host = is_hostname(&out.host, true, true, true)?;
         if let Some(p) = port_numeric
             && opts.strict_port
-            && !(1..=65535).contains(&p)
+            && !u16::try_from(p).is_ok_and(|p| p > 0)
         {
             return None;
         }
@@ -431,7 +431,7 @@ pub static COMMON_PARAMS: &[Param] = &[
     Param::new("tz", "Time zone name").note("passed to the services that use one, not validated"),
     Param::new("user", "User name; replaces the one in the URL"),
     Param::new("password", "Password; replaces the one in the URL").aliases(&["pass"]).secret(),
-    Param::new("port", "Port; replaces the one in the URL").int().range(1, 65535),
+    Param::new("port", "Port; replaces the one in the URL").port(),
     Param::new("optional", "Optional").bool(false).ignored(),
     Param::new("emojis", "Emoji shortcodes").ignored(),
 ];
@@ -467,7 +467,6 @@ fn post_process(r: &mut ParsedUrl) {
         r.cto = v.trim().parse().ok();
     }
     if let Some(v) = r.query.get("port") {
-        // A non-numeric value means no port.
         r.port = v.trim().parse::<u16>().ok();
     }
     if let Some(v) = r.query.get("format") {

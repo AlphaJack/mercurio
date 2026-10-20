@@ -34,7 +34,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("fullpath", "Path"),
         Param::new("host", "Hostname").required(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_channel", "Target Channel").prefix("#"),
         Param::new("target_channel_id", "Target Channel ID"),
         Param::new("targets", "Targets").list("/").group(&["target_channel", "target_channel_id"]),

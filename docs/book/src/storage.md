@@ -39,8 +39,9 @@ Each URL gets a namespace directory named after its URL id:
 ```
 
 `cache.json` maps each key to `{"v": value, "x": expiry}` (the expiry
-in Unix seconds or `null`). The file is read on first use and rewritten
-on every change; there are no storage modes. Directories are created
+in Unix seconds or `null`). The file is read before a URL's first
+notification and rewritten during and after each notification that changed
+it; there are no storage modes. Directories are created
 on the first write with mode `0700`, files with `0600`. Files are written
 to `tmp/` and renamed into place. A file that is not valid JSON is removed
 with a warning. When no saved entry is left, `cache.json` is deleted.

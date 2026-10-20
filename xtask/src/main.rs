@@ -114,11 +114,21 @@ fn docs() -> Result<(), String> {
         "-q",
         "-p",
         "mercurio",
+        "--features",
+        "transport-blocking",
         "--no-deps",
     ]))?;
 
     eprintln!("==> doc-tests (crate docs and the book's Rust examples)");
-    run(Command::new(&cargo).current_dir(&root).args(["test", "-q", "--doc", "-p", "mercurio"]))?;
+    run(Command::new(&cargo).current_dir(&root).args([
+        "test",
+        "-q",
+        "--doc",
+        "-p",
+        "mercurio",
+        "--features",
+        "transport-blocking",
+    ]))?;
 
     eprintln!("==> mdbook");
     let repository = mercurio::REPOSITORY_URL;

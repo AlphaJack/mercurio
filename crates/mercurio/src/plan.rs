@@ -1,20 +1,27 @@
 //! Sans-IO delivery plans.
 //!
-//! A service never performs I/O. It returns a [`Plan`]: a tree of HTTP requests (with continuations that look at each response), raw socket sessions, datagrams and process invocations. [`execute`] walks the tree against any [`Transport`]. Tests swap in [`crate::testing::FakeTransport`] and inspect every request without touching the network.
+//! A service never performs I/O. It returns a [`Plan`]: a tree of HTTP requests (with continuations that look at each response), raw socket sessions, datagrams, process invocations and file operations. [`execute`] walks the tree against any [`Transport`]. Tests swap in [`crate::testing::FakeTransport`] and inspect every request without touching the network.
 
 use std::fmt;
 use std::time::{Duration, Instant};
 
 use crate::error::{Error, Result};
 use crate::http::{DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, Request, Response};
-use crate::transport::{Command, CommandOutput, Conn, Datagram, Endpoint, Transport};
+use crate::store::StoreRef;
+use crate::transport::{
+    AsyncConn, AsyncTransport, Blocking, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp, FileOutput,
+    Transport,
+};
 
 /// Continuation receiving the outcome of an HTTP request.
 pub type Then = Box<dyn FnOnce(Result<Response>) -> Plan + Send>;
 /// Continuation receiving the outcome of a process run.
 pub type ThenCommand = Box<dyn FnOnce(Result<CommandOutput>) -> Plan + Send>;
-/// A blocking conversation over a connected stream (SMTP, IRC, MQTT, ...).
-pub type Session = Box<dyn FnOnce(&mut dyn Conn) -> Result<()> + Send>;
+/// Continuation receiving the outcome of a file operation.
+pub type ThenFile = Box<dyn FnOnce(Result<FileOutput>) -> Plan + Send>;
+/// A conversation over a connected stream (SMTP, IRC, MQTT, ...). The transport is there for its timer ([`AsyncTransport::sleep`]).
+pub type Session =
+    Box<dyn for<'c> FnOnce(&'c mut dyn AsyncConn, &'c dyn AsyncTransport) -> BoxFuture<'c, Result<()>> + Send>;
 
 /// What a service wants done.
 ///
@@ -55,6 +62,8 @@ pub enum Plan {
     Datagram(Datagram),
     /// Run a local program.
     Command(Command, ThenCommand),
+    /// Run a file system operation, then continue with the closure.
+    File(FileOp, ThenFile),
     /// Build the plan lazily when execution reaches it.
     Defer(Box<dyn FnOnce() -> Plan + Send>),
     /// Wait before continuing (e.g. server-advised back-off).
@@ -73,6 +82,7 @@ impl fmt::Debug for Plan {
             Plan::Socket(e, _) => write!(f, "Socket({}:{})", e.host, e.port),
             Plan::Datagram(_) => f.write_str("Datagram"),
             Plan::Command(c, _) => write!(f, "Command({})", c.program),
+            Plan::File(op, _) => write!(f, "File({op:?})"),
             Plan::Defer(_) => f.write_str("Defer"),
             Plan::Sleep(d) => write!(f, "Sleep({d:?})"),
         }
@@ -137,14 +147,22 @@ impl Plan {
         Plan::Defer(Box::new(f))
     }
 
-    /// Open a stream to `ep` and run `session` on it (SMTP, IRC, MQTT, ...).
-    pub fn socket(ep: Endpoint, session: impl FnOnce(&mut dyn Conn) -> Result<()> + Send + 'static) -> Plan {
+    /// Open a stream to `ep` and run `session` on it (SMTP, IRC, MQTT, ...): `move |conn, _| Box::pin(async move { run(conn, &job).await })`.
+    pub fn socket<F>(ep: Endpoint, session: F) -> Plan
+    where
+        F: for<'c> FnOnce(&'c mut dyn AsyncConn, &'c dyn AsyncTransport) -> BoxFuture<'c, Result<()>> + Send + 'static,
+    {
         Plan::Socket(ep, Box::new(session))
     }
 
     /// Run a local program, then continue with `then`.
     pub fn command(cmd: Command, then: impl FnOnce(Result<CommandOutput>) -> Plan + Send + 'static) -> Plan {
         Plan::Command(cmd, Box::new(then))
+    }
+
+    /// Run a file system operation, then continue with `then`.
+    pub fn file(op: FileOp, then: impl FnOnce(Result<FileOutput>) -> Plan + Send + 'static) -> Plan {
+        Plan::File(op, Box::new(then))
     }
 
     /// Run all plans independently (failures do not stop the rest).
@@ -176,7 +194,10 @@ impl Plan {
             Plan::Fail(e) => Plan::Fail(e.context(context)),
             Plan::Http(req, then) => Plan::http(req, move |res| then(res).fail_context(context)),
             Plan::Command(cmd, then) => Plan::command(cmd, move |res| then(res).fail_context(context)),
-            Plan::Socket(ep, session) => Plan::socket(ep, move |c| session(c).map_err(|e| e.context(context))),
+            Plan::File(op, then) => Plan::file(op, move |res| then(res).fail_context(context)),
+            Plan::Socket(ep, session) => Plan::socket(ep, move |c, t| {
+                Box::pin(async move { session(c, t).await.map_err(|e| e.context(context)) })
+            }),
             Plan::Defer(f) => Plan::defer(move || f().context(context)),
             Plan::All(v) => Plan::All(v.into_iter().map(|p| p.context(context.clone())).collect()),
             Plan::Chain(v) => Plan::Chain(v.into_iter().map(|p| p.context(context.clone())).collect()),
@@ -288,7 +309,9 @@ impl DeliveryTracker {
 }
 
 struct Runner<'a> {
-    transport: &'a dyn Transport,
+    transport: &'a dyn AsyncTransport,
+    /// Flushed before every I/O step.
+    stores: Vec<StoreRef>,
     opts: ExecOptions,
     last_io: Option<Instant>,
     out: Vec<Outcome>,
@@ -296,11 +319,16 @@ struct Runner<'a> {
     piece: usize,
 }
 
-/// Execute a plan to completion.
+/// Execute a plan to completion on a blocking transport.
 pub fn execute(plan: Plan, transport: &dyn Transport, opts: ExecOptions) -> Delivery {
+    pollster::block_on(execute_async(plan, &Blocking(transport), opts))
+}
+
+/// Execute a plan to completion.
+pub async fn execute_async(plan: Plan, transport: &dyn AsyncTransport, opts: ExecOptions) -> Delivery {
     let mut ex = Executor::new(transport, opts);
-    let ok = ex.run(plan);
-    ex.finish(ok)
+    let ok = ex.run(plan).await;
+    ex.finish(ok).await
 }
 
 /// Runs several plans (the pieces of one message) on one transport, keeping the throttle between them and, optionally, a [`DeliveryTracker`] that skips targets an earlier attempt delivered.
@@ -316,8 +344,24 @@ impl fmt::Debug for Executor<'_> {
 
 impl<'a> Executor<'a> {
     /// An executor without a delivery tracker.
-    pub fn new(transport: &'a dyn Transport, opts: ExecOptions) -> Self {
-        Self { runner: Runner { transport, opts, last_io: None, out: Vec::new(), tracker: None, piece: 0 } }
+    pub fn new(transport: &'a dyn AsyncTransport, opts: ExecOptions) -> Self {
+        Self {
+            runner: Runner {
+                transport,
+                stores: Vec::new(),
+                opts,
+                last_io: None,
+                out: Vec::new(),
+                tracker: None,
+                piece: 0,
+            },
+        }
+    }
+
+    /// Flush `stores` before every I/O step, so values saved by one step's continuation are on disk before the next.
+    pub fn with_stores(mut self, stores: Vec<StoreRef>) -> Self {
+        self.runner.stores = stores;
+        self
     }
 
     /// Skip and record targets through `tracker`.
@@ -337,16 +381,17 @@ impl<'a> Executor<'a> {
     }
 
     /// Run one plan; returns whether it succeeded. A successful plan marks the current piece delivered.
-    pub fn run(&mut self, plan: Plan) -> bool {
-        let ok = self.runner.run(plan, None);
+    pub async fn run(&mut self, plan: Plan) -> bool {
+        let ok = self.runner.run(plan, None).await;
         if ok && let Some(t) = self.runner.tracker.as_deref_mut() {
             t.mark_delivered(self.runner.piece, None);
         }
         ok
     }
 
-    /// Outcomes so far (a generic one when no target reported any).
-    pub fn finish(self, ok: bool) -> Delivery {
+    /// Outcomes so far (a generic one when no target reported any). Flushes the stores.
+    pub async fn finish(self, ok: bool) -> Delivery {
+        self.runner.flush().await;
         let mut out = self.runner.out;
         if out.is_empty() {
             out.push(Outcome {
@@ -358,12 +403,35 @@ impl<'a> Executor<'a> {
     }
 }
 
+/// Run `ops` on `transport`, keeping each result next to its operation (the results of [`crate::Notify::files`]).
+pub(crate) async fn read_files(ops: Vec<FileOp>, transport: &dyn AsyncTransport) -> Vec<(FileOp, Result<FileOutput>)> {
+    let mut out = Vec::with_capacity(ops.len());
+    for op in ops {
+        let res = transport.file(&op).await;
+        out.push((op, res));
+    }
+    out
+}
+
+/// Run a plan of file steps (loading or flushing a store); it records no outcome.
+pub(crate) async fn run_files(plan: Plan, transport: &dyn AsyncTransport) {
+    if !matches!(plan, Plan::Done) {
+        Box::pin(Executor::new(transport, ExecOptions::default()).runner.run(plan, None)).await;
+    }
+}
+
 impl Runner<'_> {
-    fn throttle(&mut self) {
+    async fn flush(&self) {
+        for s in &self.stores {
+            run_files(s.clone().flush(), self.transport).await;
+        }
+    }
+
+    async fn throttle(&mut self) {
         if let Some(last) = self.last_io {
             let elapsed = last.elapsed();
             if elapsed < self.opts.throttle {
-                self.transport.sleep(self.opts.throttle - elapsed);
+                self.transport.sleep(self.opts.throttle - elapsed).await;
             }
         }
         self.last_io = Some(Instant::now());
@@ -391,30 +459,41 @@ impl Runner<'_> {
         false
     }
 
-    fn run(&mut self, plan: Plan, target: Option<&str>) -> bool {
+    /// Run a nested plan: `Done` and `Fail` inline, anything else in a boxed future (the executor recurses).
+    #[expect(clippy::wildcard_enum_match_arm, reason = "every other plan runs in full")]
+    async fn next(&mut self, plan: Plan, target: Option<&str>) -> bool {
+        match plan {
+            Plan::Done => true,
+            Plan::Fail(e) => self.fail(target, e),
+            p => Box::pin(self.run(p, target)).await,
+        }
+    }
+
+    async fn run(&mut self, plan: Plan, target: Option<&str>) -> bool {
         match plan {
             Plan::Done => true,
             Plan::Fail(e) => self.fail(target, e),
             Plan::Http(req, then) => {
                 let req = self.apply(req);
-                self.throttle();
+                self.flush().await;
+                self.throttle().await;
                 log::debug!("{} {}", req.method, redact_url(&req.url));
-                let res = self.transport.http(&req);
+                let res = self.transport.http(&req).await;
                 if let Ok(r) = &res {
                     log::debug!("-> HTTP {}", r.status);
                 }
-                self.run(then(res), target)
+                self.next(then(res), target).await
             }
             Plan::All(plans) => {
                 let mut ok = true;
                 for p in plans {
-                    ok &= self.run(p, target);
+                    ok &= self.next(p, target).await;
                 }
                 ok
             }
             Plan::Chain(plans) => {
                 for p in plans {
-                    if !self.run(p, target) {
+                    if !self.next(p, target).await {
                         return false;
                     }
                 }
@@ -427,7 +506,7 @@ impl Runner<'_> {
                     self.out.push(Outcome { target: Some(label), result: Ok(()) });
                     return true;
                 }
-                let ok = self.run(*inner, Some(&label));
+                let ok = self.next(*inner, Some(&label)).await;
                 if ok {
                     if let Some(t) = self.tracker.as_deref_mut() {
                         t.mark_delivered(piece, Some(&label));
@@ -444,27 +523,38 @@ impl Runner<'_> {
                 if let Some(rt) = self.opts.read_timeout {
                     ep.read_timeout = rt;
                 }
-                self.throttle();
-                let res = self.transport.connect(&ep).and_then(|mut conn| session(conn.as_mut()));
+                self.flush().await;
+                self.throttle().await;
+                let res = match self.transport.connect(&ep).await {
+                    Ok(mut conn) => session(conn.as_mut(), self.transport).await,
+                    Err(e) => Err(e),
+                };
                 match res {
                     Ok(()) => true,
                     Err(e) => self.fail(target, e),
                 }
             }
             Plan::Datagram(dg) => {
-                self.throttle();
-                match self.transport.datagram(&dg) {
+                self.flush().await;
+                self.throttle().await;
+                match self.transport.datagram(&dg).await {
                     Ok(()) => true,
                     Err(e) => self.fail(target, e),
                 }
             }
             Plan::Command(cmd, then) => {
-                let res = self.transport.command(&cmd);
-                self.run(then(res), target)
+                self.flush().await;
+                let res = self.transport.command(&cmd).await;
+                self.next(then(res), target).await
             }
-            Plan::Defer(f) => self.run(f(), target),
+            Plan::File(op, then) => {
+                self.flush().await;
+                let res = self.transport.file(&op).await;
+                self.next(then(res), target).await
+            }
+            Plan::Defer(f) => self.next(f(), target).await,
             Plan::Sleep(d) => {
-                self.transport.sleep(d);
+                self.transport.sleep(d).await;
                 true
             }
         }

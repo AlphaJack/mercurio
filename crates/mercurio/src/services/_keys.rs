@@ -2,16 +2,18 @@
 
 use base64::Engine;
 
+use crate::service::Context;
+use crate::transport::FileOp;
 use crate::url::unquote;
 
-/// Read a file referenced as a plain local path or a `file://` URL. Remote (`http://`, ...) sources are not supported. Files larger than `max_size` bytes (when non-zero) are refused, like `AttachBase.max_file_size`.
-pub fn read_local_file(spec: &str, max_size: u64) -> Option<Vec<u8>> {
-    let path = local_path(spec)?;
-    let meta = std::fs::metadata(&path).ok()?;
-    if !meta.is_file() || (max_size > 0 && meta.len() > max_size) {
-        return None;
-    }
-    std::fs::read(&path).ok()
+/// The file steps behind [`read_local_file`], for [`crate::Notify::files`].
+pub fn local_file_ops(spec: &str) -> Vec<FileOp> {
+    local_path(spec).map(|p| FileOp::local_file(p).into()).unwrap_or_default()
+}
+
+/// A file referenced as a plain local path or a `file://` URL, read by [`local_file_ops`]. Remote (`http://`, ...) sources are not supported. Files larger than `max_size` bytes (when non-zero) are refused, like `AttachBase.max_file_size`.
+pub fn read_local_file<'a>(ctx: &Context<'a>, spec: &str, max_size: u64) -> Option<&'a [u8]> {
+    ctx.local_file(local_path(spec)?, max_size).ok()
 }
 
 /// The local filesystem path a keyfile/subfile reference points at; `None` for remote URLs.

@@ -7,7 +7,7 @@ use super::pending::build;
 use super::text::{get_schema, parse_text};
 use super::yaml_doc::parse_yaml;
 use crate::error::Result;
-use crate::transport::Transport;
+use crate::transport::{AsyncTransport, BoxFuture, FileOp, FileOutput};
 use crate::url::{ParseOptions, parse_url_with, quote, unquote};
 
 #[derive(Debug, Clone)]
@@ -113,33 +113,33 @@ pub(super) fn path_decode(path: &str) -> PathBuf {
 }
 
 pub(super) struct Loader<'a> {
-    pub(super) transport: &'a dyn Transport,
+    pub(super) transport: &'a dyn AsyncTransport,
     pub(super) opts: &'a ConfigOptions,
 }
 
 impl Loader<'_> {
     /// `read()`: the content and the format to parse it with.
-    fn read(&self, src: &Source, warnings: &mut Vec<String>) -> Option<(String, ConfigFormat)> {
+    async fn read(&self, src: &Source, warnings: &mut Vec<String>) -> Option<(String, ConfigFormat)> {
         match &src.kind {
             SourceKind::Memory(text) => Some((text.clone(), src.format.unwrap_or(ConfigFormat::Text))),
             SourceKind::File(path) => {
-                let meta = match std::fs::metadata(path) {
-                    Ok(m) => m,
-                    Err(_) => {
+                let meta = match self.transport.file(&FileOp::Stat { path: path.clone() }).await {
+                    Ok(FileOutput::Meta(Some(m))) => m,
+                    _ => {
                         warnings.push(format!("File is not accessible: {}", path.display()));
                         return None;
                     }
                 };
-                if meta.len() as usize > MAX_BUFFER_SIZE {
+                if meta.len as usize > MAX_BUFFER_SIZE {
                     warnings.push(format!(
                         "File size exceeds maximum allowable buffer length ({}KB).",
                         MAX_BUFFER_SIZE / 1024
                     ));
                     return None;
                 }
-                let bytes = match std::fs::read(path) {
-                    Ok(b) => b,
-                    Err(_) => {
+                let bytes = match self.transport.file(&FileOp::Read { path: path.clone(), max: 0 }).await {
+                    Ok(FileOutput::Bytes(b)) => b,
+                    _ => {
                         warnings.push(format!("File can not be opened for read: {}", path.display()));
                         return None;
                     }
@@ -161,7 +161,7 @@ impl Loader<'_> {
                     req = req.basic_auth(user.as_deref().unwrap_or(""), password.as_deref());
                 }
                 req = req.verify(*verify);
-                let res = match self.transport.http(&req) {
+                let res = match self.transport.http(&req).await {
                     Ok(r) => r,
                     Err(e) => {
                         warnings.push(format!("A Connection error occurred retrieving HTTP configuration: {e}"));
@@ -195,62 +195,63 @@ impl Loader<'_> {
     }
 
     /// `ConfigBase.services()`: parse `src`, then follow its includes.
-    pub(super) fn services(&self, src: &Source, recursion: u32, cfg: &mut Config) {
-        let Some((content, format)) = self.read(src, &mut cfg.warnings) else { return };
-        let before = cfg.services.len();
-        let parsed = match format {
-            ConfigFormat::Text => parse_text(&content),
-            ConfigFormat::Yaml => parse_yaml(&content, self.opts),
-        };
-        let includes = parsed.includes.clone();
-        build(parsed, cfg);
-        for inc in includes {
-            if recursion == 0 {
-                log::debug!("Recursion limit reached; ignoring Include URL: {}", crate::plan::redact_url(&inc));
-                continue;
-            }
-            let (url, schema) = match get_schema(&inc) {
-                None => {
-                    let mut path = PathBuf::from(&inc);
-                    if !path.is_absolute() {
-                        path = src.config_path().join(path);
-                    }
-                    (format!("file://{}", quote(&path.to_string_lossy(), "/")), "file".to_string())
-                }
-                Some(s) => {
-                    if !matches!(s.as_str(), "file" | "http" | "https" | "memory") {
-                        cfg.warnings.push(format!("Unsupported include schema {s}."));
-                        continue;
-                    }
-                    (inc.clone(), s)
-                }
+    pub(super) fn services<'s>(&'s self, src: &'s Source, recursion: u32, cfg: &'s mut Config) -> BoxFuture<'s, ()> {
+        Box::pin(async move {
+            let Some((content, format)) = self.read(src, &mut cfg.warnings).await else { return };
+            let before = cfg.services.len();
+            let parsed = match format {
+                ConfigFormat::Text => parse_text(&content),
+                ConfigFormat::Yaml => parse_yaml(&content, self.opts),
             };
-            let child = match Source::parse(&url, None) {
-                Ok(c) => c,
-                Err(_) => {
-                    cfg.warnings.push(format!("Unparseable include URL {}", crate::plan::redact_url(&url)));
+            let includes = parsed.includes.clone();
+            build(parsed, cfg);
+            for inc in includes {
+                if recursion == 0 {
+                    log::debug!("Recursion limit reached; ignoring Include URL: {}", crate::plan::redact_url(&inc));
                     continue;
                 }
-            };
-            if schema == "file" && !src.schemas().contains(&"file") && !self.opts.insecure_includes {
-                cfg.warnings.push(format!(
-                    "Including {schema}:// based configuration is prohibited. Ignoring URL {}",
-                    crate::plan::redact_url(&url)
-                ));
-                continue;
+                let (url, schema) = match get_schema(&inc) {
+                    None => {
+                        let mut path = PathBuf::from(&inc);
+                        if !path.is_absolute() {
+                            path = src.config_path().join(path);
+                        }
+                        (format!("file://{}", quote(&path.to_string_lossy(), "/")), "file".to_string())
+                    }
+                    Some(s) => {
+                        if !matches!(s.as_str(), "file" | "http" | "https" | "memory") {
+                            cfg.warnings.push(format!("Unsupported include schema {s}."));
+                            continue;
+                        }
+                        (inc.clone(), s)
+                    }
+                };
+                let child = match Source::parse(&url, None) {
+                    Ok(c) => c,
+                    Err(_) => {
+                        cfg.warnings.push(format!("Unparseable include URL {}", crate::plan::redact_url(&url)));
+                        continue;
+                    }
+                };
+                if schema == "file" && !src.schemas().contains(&"file") && !self.opts.insecure_includes {
+                    cfg.warnings.push(format!(
+                        "Including {schema}:// based configuration is prohibited. Ignoring URL {}",
+                        crate::plan::redact_url(&url)
+                    ));
+                    continue;
+                }
+                self.services(&child, recursion - 1, cfg).await;
             }
-            self.services(&child, recursion - 1, cfg);
-        }
-        if cfg.services.len() == before {
-            log::warn!("Failed to load configuration from {}", src.describe());
-        }
+            if cfg.services.len() == before {
+                log::warn!("Failed to load configuration from {}", src.describe());
+            }
+        })
     }
 }
 
 /// Windows-style variable expansion: `%name%`, `$name` and `${name}` are replaced by `var(name)`; unknown names, unclosed forms and text inside `'...'` stay as written; `%%` and `$$` become `%` and `$`.
 fn expand_vars(path: &str, var: impl Fn(&str) -> Option<String>) -> String {
     let is_name = |c: &u8| c.is_ascii_alphanumeric() || *c == b'_' || *c == b'-';
-    // The value of `name`, else the form as written.
     let put = |out: &mut String, name: &str, form: String| match var(name).filter(|_| !name.is_empty()) {
         Some(v) => out.push_str(&v),
         None => out.push_str(&form),

@@ -311,7 +311,6 @@ fn storage_list_prune_and_clear() {
     let (_, text) = run(bin().args(["storage", "clear", "-d", "-S", &s, "dead"]));
     assert!(text.contains("would remove"), "{text}");
     assert!(store.join("deadbeef").exists());
-    // Clear by uid prefix removes only that namespace.
     let (code, _) = run(bin().args(["storage", "clear", "-S", &s, "dead"]));
     assert_eq!(code, Some(0));
     assert!(!store.join("deadbeef").exists());

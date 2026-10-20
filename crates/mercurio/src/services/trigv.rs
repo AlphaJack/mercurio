@@ -25,7 +25,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("api_key", "API Key").required().secret().pattern("^trgv_[a-zA-Z0-9]{8}_[a-zA-Z0-9]{32}$"),
         Param::new("host", "API Hostname"),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_channel", "Target Channel"),
         Param::new("targets", "Targets").list("/").group(&["target_channel"]),
     ],

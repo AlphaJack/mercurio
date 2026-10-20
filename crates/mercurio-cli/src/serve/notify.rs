@@ -1,12 +1,12 @@
 //! Sending a notification and rendering its result: the logs of the call as text, HTML or `{"error", "details"}`.
 
-use std::io::Read;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, mpsc};
 use std::time::{Duration, SystemTime};
 
-use mercurio::{Asset, Mercurio, Message, Report, TagFilter, TemplateVars, Transport};
+use mercurio::{Asset, AsyncMercurio, AsyncTransport, BoxFuture, Message, Report, TagFilter, TemplateVars};
 use serde_json::{Value, json};
+use tokio::sync::mpsc;
 
 use super::http::{Body, Reply, Req};
 
@@ -88,20 +88,20 @@ fn html_escape(s: &str) -> String {
 
 /// What to send.
 pub struct Job {
-    pub notifier: Mercurio,
+    pub notifier: AsyncMercurio,
     pub message: Message,
     pub filter: TagFilter,
     pub vars: TemplateVars,
     /// `Some(key)` for a stored configuration.
     pub key: Option<String>,
     /// The notifier's transport and asset (for live streams).
-    pub transport: Arc<dyn Transport>,
+    pub transport: Arc<dyn AsyncTransport>,
     pub asset: Asset,
 }
 
 impl Job {
-    pub fn run(&self) -> Report {
-        self.notifier.notify_with(&self.message, &self.filter, &self.vars)
+    pub async fn run(&self) -> Report {
+        self.notifier.notify_with(&self.message, &self.filter, &self.vars).await
     }
 
     /// The 424 message for this kind of call.
@@ -114,8 +114,8 @@ impl Job {
     }
 }
 
-pub fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<LogEntry>) {
-    let report = job.run();
+pub async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<LogEntry>) {
+    let report = job.run().await;
     let all = report_logs(&report);
     let logs = filter_level(all.clone(), level);
     let reply = if report.is_success() {
@@ -163,32 +163,6 @@ fn log_event(l: &LogEntry) -> Vec<u8> {
     sse("log", &json!({"level": l.level, "asctime": l.asctime(), "message": l.message, "service": l.service}))
 }
 
-/// Reads queued events, sending a heartbeat comment while idle.
-pub struct EventReader {
-    rx: mpsc::Receiver<Vec<u8>>,
-    buf: Vec<u8>,
-    pos: usize,
-    heartbeat: Duration,
-    _slot: Option<StreamSlot>,
-}
-
-impl Read for EventReader {
-    fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
-        if self.pos >= self.buf.len() {
-            self.buf = match self.rx.recv_timeout(self.heartbeat) {
-                Ok(chunk) => chunk,
-                Err(mpsc::RecvTimeoutError::Timeout) => b": heartbeat\n\n".to_vec(),
-                Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(0),
-            };
-            self.pos = 0;
-        }
-        let n = out.len().min(self.buf.len() - self.pos);
-        out[..n].copy_from_slice(&self.buf[self.pos..self.pos + n]);
-        self.pos += n;
-        Ok(n)
-    }
-}
-
 /// Live streams currently admitted (`APPRISE_STREAM_WORKER_COUNT` + `APPRISE_STREAM_QUEUE_SIZE`).
 pub struct StreamSlots {
     active: AtomicUsize,
@@ -219,47 +193,41 @@ impl Drop for StreamSlot {
     }
 }
 
-/// Called once a streamed job has finished.
-pub type OnDone = Box<dyn FnOnce(&Report, &[LogEntry]) + Send>;
+/// Called once a streamed job has finished, with its report and logs.
+pub type OnDone = Box<dyn FnOnce(Report, Vec<LogEntry>) -> BoxFuture<'static, ()> + Send>;
 
-/// Runs the job in the background, sending a `log` event as each service finishes and a final `result` event; `done` gets the report and logs.
+/// Runs the job in a task, sending a `log` event as each service finishes and a final `result` event; `done` gets the report and logs. While idle the stream sends a heartbeat comment.
 pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: OnDone) -> Reply {
-    let (tx, rx) = mpsc::channel::<Vec<u8>>();
-    if tx.send(b": connected\n\n".to_vec()).is_err() {
-        log::debug!("stream closed before it started");
-    }
-    std::thread::spawn(move || {
+    let (tx, rx) = mpsc::unbounded_channel::<Vec<u8>>();
+    let send = move |tx: &mpsc::UnboundedSender<Vec<u8>>, event: Vec<u8>| {
+        if tx.send(event).is_err() {
+            log::debug!("stream client went away");
+        }
+    };
+    send(&tx, b": connected\n\n".to_vec());
+    tokio::spawn(async move {
         let sel = job.notifier.select(&job.filter, &job.vars);
-        let asset = &job.asset;
-        let transport = job.transport.as_ref();
-        let entries: Vec<mercurio::ReportEntry> = std::thread::scope(|scope| {
-            let handles: Vec<_> = sel
-                .iter()
-                .map(|t| {
-                    let tx = tx.clone();
-                    let msg = &job.message;
-                    scope.spawn(move || {
-                        let attempts = t.deliver(msg, transport, asset);
-                        let entry = mercurio::ReportEntry {
-                            label: t.label(),
-                            service: t.service().id,
-                            delivery: attempts.last().map(|a| a.delivery.clone()).unwrap_or_default(),
-                            attempts,
-                            url_id: t.url_id(asset),
-                        };
-                        for l in filter_level(entry_logs(&entry), level) {
-                            if tx.send(log_event(&l)).is_err() {
-                                log::debug!("stream client went away");
-                            }
-                        }
-                        entry
-                    })
-                })
-                .collect();
-            handles.into_iter().filter_map(|h| h.join().ok()).collect()
-        });
+        let (asset, transport, msg) = (&job.asset, job.transport.as_ref(), &job.message);
+        let entries = futures_util::future::join_all(sel.iter().map(|t| {
+            let tx = tx.clone();
+            async move {
+                let attempts = t.deliver_async(msg, transport, asset).await;
+                let entry = mercurio::ReportEntry {
+                    label: t.label(),
+                    service: t.service().id,
+                    delivery: attempts.last().map(|a| a.delivery.clone()).unwrap_or_default(),
+                    attempts,
+                    url_id: t.url_id(asset),
+                };
+                for l in filter_level(entry_logs(&entry), level) {
+                    send(&tx, log_event(&l));
+                }
+                entry
+            }
+        }))
+        .await;
         for t in &sel.resolved {
-            t.close(transport, asset);
+            t.close_async(transport, asset).await;
         }
         let mut report = Report { entries };
         for (p, e) in &sel.unresolved {
@@ -276,23 +244,26 @@ pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: 
         let ready = report.entries.len() - sel.unresolved.len();
         let unresolved_logs: Vec<LogEntry> = report.entries.iter().skip(ready).flat_map(entry_logs).collect();
         for l in filter_level(unresolved_logs, level) {
-            if tx.send(log_event(&l)).is_err() {
-                log::debug!("stream client went away");
-            }
+            send(&tx, log_event(&l));
         }
         let status = report.status().as_str().to_ascii_uppercase();
-        if tx.send(sse("result", &json!({"status": status}))).is_err() {
-            log::debug!("stream client went away before the result");
-        }
+        send(&tx, sse("result", &json!({"status": status})));
         drop(tx);
         let logs = report_logs(&report);
-        done(&report, &logs);
+        done(report, logs).await;
     });
-    let reader = EventReader { rx, buf: Vec::new(), pos: 0, heartbeat, _slot: Some(slot) };
+    let events = futures_util::stream::unfold((rx, slot), move |(mut rx, slot)| async move {
+        let chunk = match tokio::time::timeout(heartbeat, rx.recv()).await {
+            Ok(Some(chunk)) => chunk,
+            Ok(None) => return None,
+            Err(_) => b": heartbeat\n\n".to_vec(),
+        };
+        Some((Ok::<_, std::convert::Infallible>(chunk), (rx, slot)))
+    });
     Reply {
         status: 200,
         ctype: "text/event-stream".into(),
-        body: Body::Stream(Box::new(reader)),
+        body: Body::Stream(axum::body::Body::from_stream(events)),
         headers: vec![("Cache-Control".into(), "no-cache".into()), ("X-Accel-Buffering".into(), "no".into())],
     }
 }

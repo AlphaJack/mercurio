@@ -33,7 +33,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("host", "Hostname"),
         Param::new("password", "Password").secret(),
         Param::new("path", "Path").default("/"),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("token", "Token").required().secret().pattern(r"^\?*(?P<token>[^/]+)\s*$"),
         Param::new("user", "Username"),
     ],
@@ -67,7 +67,6 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let fullpath = if entries.is_empty() { "/".to_string() } else { format!("/{}/", entries.join("/")) };
     let host = u.host();
     if host.is_empty() {
-        // Official mode when no host is known.
         return Ok(Box::new(Notica { token: Secret::new(token), mode: Mode::Official }));
     }
     let mut base = format!("{}://{}", u.http_scheme(), host);

@@ -280,6 +280,7 @@ fn raw_message(headers: &[(String, String)], html: bool, body: &str, attachments
 }
 
 #[cfg(test)]
+#[expect(clippy::disallowed_methods, reason = "tests set up real files")]
 mod tests {
     use super::*;
 

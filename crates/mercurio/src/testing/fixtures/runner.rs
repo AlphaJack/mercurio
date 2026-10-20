@@ -7,7 +7,9 @@ use serde_json::{Map, Value, json};
 use crate::asset::Asset;
 use crate::http::{Request, Response};
 use crate::message::{Attachment, Message, NotifyFormat, NotifyType};
+use crate::notify::Attempt;
 use crate::testing::FakeTransport;
+use crate::transport::Blocking;
 use crate::url::unquote_plus;
 
 use crate::http::parse_multipart;
@@ -33,8 +35,23 @@ pub fn snapshot(dir: &str, name: &str, value: &Value) {
     settings.bind(|| insta::assert_yaml_snapshot!(name, value));
 }
 
+/// Which API runs the cases: the blocking [`crate::Target`] calls, or [`crate::AsyncMercurio`] on the same fake. The parity suite checks both record the same.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Front {
+    /// [`crate::Target::deliver`] and [`crate::Target::close`].
+    Blocking,
+    /// [`crate::AsyncMercurio::notify`] and [`crate::AsyncMercurio::close`] over [`Blocking`].
+    Async,
+}
+
 /// What mercurio did for every case of the fixture at `path`, by case name.
 pub fn record_fixture(path: &str) -> Value {
+    record_fixture_with(path, Front::Blocking)
+}
+
+/// [`record_fixture`] through `front`.
+#[expect(clippy::disallowed_methods, reason = "the fixture runner reads its fixture file")]
+pub fn record_fixture_with(path: &str, front: Front) -> Value {
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let mut doc: Value = serde_json::from_str(&text).unwrap_or_else(|e| panic!("{path}: invalid JSON: {e}"));
     if doc.get("service").is_none() {
@@ -47,7 +64,7 @@ pub fn record_fixture(path: &str) -> Value {
     let mut out = Map::new();
     for case in cases {
         let name = case["name"].as_str().unwrap_or_else(|| panic!("{path}: a case has no name"));
-        let prev = out.insert(name.to_string(), record_case(&doc, &with_defaults(&doc, case)));
+        let prev = out.insert(name.to_string(), record_case_with(&doc, &with_defaults(&doc, case), front));
         assert!(prev.is_none(), "{path}: duplicate case {name}");
     }
     let mut out = Value::Object(out);
@@ -81,6 +98,43 @@ fn ignores(case: &Value) -> Vec<String> {
 
 /// What mercurio did for one case (after [`with_defaults`]).
 pub fn record_case(doc: &Value, case: &Value) -> Value {
+    record_case_with(doc, case, Front::Blocking)
+}
+
+/// Send each of `msgs` to `target` through `front`: per send, every attempt and the number of requests made so far. `close` runs the target's clean-up at the end.
+pub(super) fn run_sends(
+    front: Front,
+    target: crate::Target,
+    msgs: &[Message],
+    fake: &Arc<FakeTransport>,
+    asset: &Asset,
+    close: bool,
+) -> Vec<(Vec<Attempt>, usize)> {
+    match front {
+        Front::Blocking => {
+            let out = msgs.iter().map(|m| (target.deliver(m, fake.as_ref(), asset), fake.requests().len())).collect();
+            if close {
+                target.close(fake.as_ref(), asset);
+            }
+            out
+        }
+        Front::Async => pollster::block_on(async {
+            let mut m = crate::AsyncMercurio::with_transport(Arc::new(Blocking(fake.clone()))).asset(asset.clone());
+            m.push(target);
+            let mut out = Vec::new();
+            for msg in msgs {
+                let mut report = m.notify(msg).await;
+                out.push((report.entries.remove(0).attempts, fake.requests().len()));
+            }
+            if close {
+                m.close().await;
+            }
+            out
+        }),
+    }
+}
+
+fn record_case_with(doc: &Value, case: &Value, front: Front) -> Value {
     let url = case["url"].as_str().expect("case has no url").replace("{FIXTURES}", &fixtures_dir());
     let target = match crate::parse(&url) {
         Ok(t) => t,
@@ -88,15 +142,15 @@ pub fn record_case(doc: &Value, case: &Value) -> Value {
     };
     let ignore = ignores(case);
     if let Some(c) = super::events::comparator(doc["service"].as_str().unwrap_or("")) {
-        return super::events::record(c, doc, case, &target, &ignore);
+        return super::events::record(c, doc, case, target, &ignore, front);
     }
     let fake = case_transport(case);
     let asset = fixture_asset(doc);
     if case.get("sends").is_some() || case.get("messages").is_some() {
-        return record_sends(case, &target, &fake, &asset, &ignore);
+        return record_sends(case, target, &fake, &asset, &ignore, front);
     }
-    let delivery = target.send(&case_message(case), fake.as_ref(), &asset);
-    target.close(fake.as_ref(), &asset);
+    let (mut attempts, _) = run_sends(front, target, &[case_message(case)], &fake, &asset, true).remove(0);
+    let delivery = attempts.pop().map(|a| a.delivery).unwrap_or_default();
     let mut out = outcome(delivery.is_success(), delivery.errors().map(ToString::to_string).collect());
     out["requests"] = requests(&fake.requests(), &ignore);
     out
@@ -112,35 +166,51 @@ pub fn outcome(ok: bool, errors: Vec<String>) -> Value {
 }
 
 /// One target (and so one store) notified once per entry of `messages` or `sends` times.
-fn record_sends(case: &Value, target: &crate::Target, fake: &FakeTransport, asset: &Asset, ignore: &[String]) -> Value {
+fn record_sends(
+    case: &Value,
+    target: crate::Target,
+    fake: &Arc<FakeTransport>,
+    asset: &Asset,
+    ignore: &[String],
+    front: Front,
+) -> Value {
     let base = case_message(case);
     let messages: Vec<Value> = match case.get("messages").and_then(Value::as_array) {
         Some(m) => m.clone(),
         None => vec![json!({}); case.get("sends").and_then(Value::as_u64).unwrap_or(1) as usize],
     };
-    let mut sends = Vec::new();
-    for m in &messages {
-        let mut msg = base.clone();
-        if let Some(t) = m.get("title").and_then(Value::as_str) {
-            msg.title = t.to_string();
-        }
-        if let Some(b) = m.get("body").and_then(Value::as_str) {
-            msg.body = b.to_string();
-        }
-        if let Some(t) = m.get("type").and_then(Value::as_str) {
-            msg.kind = NotifyType::parse(t).unwrap_or_default();
-        }
-        let before = fake.requests().len();
-        let attempts = target.deliver(&msg, fake, asset);
-        let last = attempts.last().map(|a| &a.delivery);
-        let errors = last.map(|d| d.errors().map(ToString::to_string).collect()).unwrap_or_default();
-        let mut send = outcome(last.is_some_and(|d| d.is_success()), errors);
-        send.as_object_mut().unwrap().remove("valid");
-        send["attempts"] = json!(attempts.len());
-        send["requests"] = requests(&fake.requests()[before..], ignore);
-        sends.push(send);
-    }
-    json!({"valid": true, "url_id": target.url_id(asset), "sends": sends})
+    let msgs: Vec<Message> = messages
+        .iter()
+        .map(|m| {
+            let mut msg = base.clone();
+            if let Some(t) = m.get("title").and_then(Value::as_str) {
+                msg.title = t.to_string();
+            }
+            if let Some(b) = m.get("body").and_then(Value::as_str) {
+                msg.body = b.to_string();
+            }
+            if let Some(t) = m.get("type").and_then(Value::as_str) {
+                msg.kind = NotifyType::parse(t).unwrap_or_default();
+            }
+            msg
+        })
+        .collect();
+    let url_id = target.url_id(asset);
+    let mut before = fake.requests().len();
+    let sends: Vec<Value> = run_sends(front, target, &msgs, fake, asset, false)
+        .into_iter()
+        .map(|(attempts, after)| {
+            let last = attempts.last().map(|a| &a.delivery);
+            let errors = last.map(|d| d.errors().map(ToString::to_string).collect()).unwrap_or_default();
+            let mut send = outcome(last.is_some_and(|d| d.is_success()), errors);
+            send.as_object_mut().unwrap().remove("valid");
+            send["attempts"] = json!(attempts.len());
+            send["requests"] = requests(&fake.requests()[before..after], ignore);
+            before = after;
+            send
+        })
+        .collect();
+    json!({"valid": true, "url_id": url_id, "sends": sends})
 }
 
 /// Requests as plain data, with `ignore` masks applied.

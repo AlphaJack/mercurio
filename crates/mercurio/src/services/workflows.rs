@@ -4,13 +4,13 @@
 
 use serde_json::{Map, Value, json};
 
-use super::_chat::{TemplateSrc, apply_template_json, read_template, template_source};
+use super::_chat::{TemplateSrc, apply_template_json, read_template, template_files, template_source};
 use crate::asset::ImageSize;
 use crate::http::Request;
 use crate::parse::validate_regex;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
-use crate::{Error, NotifyFormat, Plan, Prepared, Result};
+use crate::{Error, FileOp, NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
     id: "workflows",
@@ -27,7 +27,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     ],
     tokens: &[
         Param::new("host", "Hostname").required(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("signature", "Signature").required().secret().pattern("^[a-z0-9_-]+$"),
         Param::new("workflow", "Workflow ID").required().secret().pattern("^[A-Z0-9_-]+$"),
     ],
@@ -192,7 +192,7 @@ impl Workflows {
         image: Option<String>,
     ) -> std::result::Result<Value, Error> {
         let fail = |why: &str| Error::Message(format!("Workflow template {why}"));
-        let text = read_template(src, MAX_TEMPLATE_SIZE).ok_or_else(|| fail("could not be accessed"))?;
+        let text = read_template(ctx, src, MAX_TEMPLATE_SIZE).ok_or_else(|| fail("could not be accessed"))?;
         let mut tokens = self.tokens.clone();
         let color = ctx.asset.color(msg.kind).to_string();
         for (k, v) in [
@@ -225,6 +225,10 @@ impl Workflows {
 }
 
 impl Notify for Workflows {
+    fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
+        template_files(self.template.as_ref())
+    }
+
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let image = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy32) } else { None };
         let payload = match &self.template {
@@ -261,6 +265,7 @@ impl Notify for Workflows {
 }
 
 #[cfg(test)]
+#[expect(clippy::disallowed_methods, reason = "tests set up real files")]
 mod tests {
     use crate::testing::FakeTransport;
     use crate::{Asset, Message};

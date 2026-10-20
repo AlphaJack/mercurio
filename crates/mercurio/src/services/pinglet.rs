@@ -29,7 +29,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("host", "Hostname").required(),
         Param::new("namespace", "Namespace").required(),
         Param::new("path", "Path").default("/"),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("token", "API Key").required().secret(),
         Param::new("topic", "Topic").required(),
     ],

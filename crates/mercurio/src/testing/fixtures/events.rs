@@ -100,10 +100,20 @@ fn normalise_strings(v: &mut Value, rules: &[(Regex, String)]) {
 }
 
 /// Run one valid case through `c` and record what mercurio did.
-pub(super) fn record(c: &Comparator, doc: &Value, case: &Value, target: &crate::Target, ignore: &[String]) -> Value {
+pub(super) fn record(
+    c: &Comparator,
+    doc: &Value,
+    case: &Value,
+    target: crate::Target,
+    ignore: &[String],
+    front: super::Front,
+) -> Value {
     let mut s = Session::default();
     (c.setup)(&mut s, case);
-    let delivery = target.send(&super::case_message(case), s.fake.as_ref(), &super::fixture_asset(doc));
+    let msgs = [super::case_message(case)];
+    let (mut attempts, _) =
+        super::runner::run_sends(front, target, &msgs, &s.fake, &super::fixture_asset(doc), false).remove(0);
+    let delivery = attempts.pop().map(|a| a.delivery).unwrap_or_default();
     let ok = delivery.is_success();
     let mut out = super::outcome(ok, delivery.errors().map(ToString::to_string).collect());
     let http = s.fake.requests();

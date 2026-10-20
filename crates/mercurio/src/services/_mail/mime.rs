@@ -2,6 +2,9 @@
 
 use crate::crypto;
 
+/// Longest line in an encoded body or header (RFC 2045), the `=` of a quoted-printable soft break included.
+const MAX_LINE: usize = 76;
+
 const CRLF: &str = "\r\n";
 
 /// Longest raw UTF-8 run per encoded word: `=?utf-8?b?` + 60 base64 chars + `?=` is 72 chars.
@@ -37,14 +40,14 @@ pub fn header_value(s: &str) -> String {
 
 /// Fold long ASCII header values at spaces (RFC 5322 2.2.3).
 fn fold_ascii(s: &str) -> String {
-    if s.len() <= 76 {
+    if s.len() <= MAX_LINE {
         return s.to_string();
     }
     let mut out = String::with_capacity(s.len() + 8);
     let mut line_len = 0;
     for (i, word) in s.split(' ').enumerate() {
         if i > 0 {
-            if line_len + 1 + word.len() > 76 && line_len > 0 {
+            if line_len + 1 + word.len() > MAX_LINE && line_len > 0 {
                 out.push_str("\r\n ");
                 line_len = 1;
             } else {
@@ -87,8 +90,7 @@ pub fn qp_encode(text: &str) -> String {
             let last = j + 1 == bytes.len();
             let literal = matches!(b, 33..=60 | 62..=126) || ((b == b' ' || b == b'\t') && !last);
             let token = if literal { (b as char).to_string() } else { format!("={b:02X}") };
-            // Leave room for the soft break '=' (max 76 chars per line).
-            let limit = if last { 76 } else { 75 };
+            let limit = if last { MAX_LINE } else { MAX_LINE - 1 };
             if len + token.len() > limit {
                 out.push_str("=\r\n");
                 len = 0;
@@ -104,7 +106,7 @@ pub fn qp_encode(text: &str) -> String {
 pub fn b64_lines(data: &[u8]) -> String {
     let enc = crypto::b64(data);
     let mut out = String::with_capacity(enc.len() + enc.len() / 38 + 2);
-    for (i, chunk) in enc.as_bytes().chunks(76).enumerate() {
+    for (i, chunk) in enc.as_bytes().chunks(MAX_LINE).enumerate() {
         if i > 0 {
             out.push_str(CRLF);
         }

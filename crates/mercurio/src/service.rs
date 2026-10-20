@@ -1,6 +1,7 @@
 //! The contract every service implements.
 
 use std::fmt;
+use std::path::Path;
 use std::time::Duration;
 
 use crate::asset::Asset;
@@ -9,6 +10,7 @@ use crate::http::{Method, Request};
 use crate::message::{NotifyFormat, Prepared};
 use crate::plan::Plan;
 use crate::store::{Memo, StoreRef};
+use crate::transport::{FileMeta, FileOp, FileOutput};
 use crate::url::ParsedUrl;
 
 /// Message size limits.
@@ -256,6 +258,10 @@ impl Param {
     pub const fn int(self) -> Self {
         self.kind(Kind::Int)
     }
+    /// A TCP or UDP port: an integer from 1 to 65535.
+    pub const fn port(self) -> Self {
+        self.int().range(1, u16::MAX as i64)
+    }
     /// [`Kind::Float`].
     pub const fn float(self) -> Self {
         self.kind(Kind::Float)
@@ -404,12 +410,46 @@ pub struct Context<'a> {
     pub store: &'a StoreRef,
     /// Scratch space shared by the retry attempts of this notification.
     pub memo: &'a Memo,
+    /// The results of [`Notify::files`].
+    files: &'a [(FileOp, Result<FileOutput>)],
 }
 
 impl<'a> Context<'a> {
     /// A context over `asset`, `store` and `memo`.
     pub fn new(asset: &'a Asset, store: &'a StoreRef, memo: &'a Memo) -> Self {
-        Self { asset, store, memo }
+        Self { asset, store, memo, files: &[] }
+    }
+
+    /// This context with the results of [`Notify::files`].
+    pub fn with_files(self, files: &'a [(FileOp, Result<FileOutput>)]) -> Self {
+        Self { files, ..self }
+    }
+
+    /// What the [`FileOp::Stat`] of `path` requested by [`Notify::files`] found; `None` when the file is missing or could not be accessed.
+    pub fn stat(&self, path: impl AsRef<Path>) -> Option<FileMeta> {
+        self.files.iter().find_map(|(op, res)| match (op, res) {
+            (FileOp::Stat { path: p }, Ok(FileOutput::Meta(meta))) if p == path.as_ref() => *meta,
+            _ => None,
+        })
+    }
+
+    /// The bytes the [`FileOp::Read`] of `path` (with `max`) requested by [`Notify::files`] returned; `None` when it failed.
+    pub fn read(&self, path: impl AsRef<Path>, max: u64) -> Option<&'a [u8]> {
+        self.files.iter().find_map(|(op, res)| match (op, res) {
+            (FileOp::Read { path: p, max: m }, Ok(FileOutput::Bytes(b))) if p == path.as_ref() && *m == max => {
+                Some(b.as_slice())
+            }
+            _ => None,
+        })
+    }
+
+    /// A regular file of at most `max` bytes (`0`: any size), read by the [`FileOp::local_file`] steps of [`Notify::files`]. `Err("could not be accessed")` when it is missing, not a file or too large, `Err("could not be read")` when reading it failed.
+    pub fn local_file(&self, path: impl AsRef<Path>, max: u64) -> std::result::Result<&'a [u8], &'static str> {
+        let path = path.as_ref();
+        match self.stat(path) {
+            Some(m) if m.is_file && (max == 0 || m.len <= max) => self.read(path, 0).ok_or("could not be read"),
+            _ => Err("could not be accessed"),
+        }
     }
 
     /// A clone of the store handle, for `'static` continuations.
@@ -469,6 +509,16 @@ pub trait Notify: Send + Sync + fmt::Debug {
     /// What identifies this URL for its persistent store namespace. The default hashes scheme, credentials, host, port and path.
     fn url_identifier(&self) -> UrlIdentifier {
         UrlIdentifier::Default
+    }
+
+    /// Files [`Notify::plan`] reads ([`FileOp::Stat`], [`FileOp::Read`]). They run on the transport right before each `plan` call; `plan` finds the results with [`Context::stat`] and [`Context::read`]. Services never touch the file system themselves: writes are [`Plan::file`] steps.
+    fn files(&self, _ctx: &Context<'_>) -> Vec<FileOp> {
+        Vec::new()
+    }
+
+    /// Stores this service opens besides the target's own (e.g. a key store under a configured directory). They are loaded before a send and flushed with the target's.
+    fn stores(&self, _ctx: &Context<'_>) -> Vec<StoreRef> {
+        Vec::new()
     }
 
     /// Clean-up when the target goes away: log out or revoke a session kept in `ctx.store`. Called by [`crate::Target::close`] (and when a [`crate::Mercurio`] is dropped) for targets that sent something; failures are ignored.
