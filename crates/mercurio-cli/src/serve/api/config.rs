@@ -354,6 +354,6 @@ fn url_query(url: &str) -> Vec<(String, String)> {
 /// `YYYY-MM-DDTHH:MM:SS` (UTC).
 fn iso_seconds(t: SystemTime) -> String {
     let secs = t.duration_since(SystemTime::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    let (y, mo, d, h, mi, s) = mercurio::crypto::utc_parts(secs);
+    let (y, mo, d, h, mi, s) = mercurio::time::utc_parts(secs);
     format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}")
 }

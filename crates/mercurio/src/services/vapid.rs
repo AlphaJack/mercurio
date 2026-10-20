@@ -21,7 +21,8 @@ use ring::{aead, hkdf};
 use serde_json::{Value, json};
 
 use super::_keys::{local_file_ops, p256_keys_from_der, pem_decode, read_local_file};
-use crate::crypto::{b64_url_decode, b64_url_nopad, random_bytes, unix_time};
+use crate::crypto::{b64_url_decode, b64_url_nopad, random_bytes};
+use crate::time::unix_time;
 use crate::error::Error;
 use crate::parse::{is_email, is_hostname, parse_list, parse_list_unquoted};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef, UrlIdentifier};

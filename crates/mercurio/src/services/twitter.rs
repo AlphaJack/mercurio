@@ -227,7 +227,7 @@ struct Media {
 
 impl Twitter {
     fn sign(&self, req: Request) -> Request {
-        let ts = crate::crypto::unix_time();
+        let ts = crate::time::unix_time();
         let auth = OAuth1 {
             consumer_key: self.ckey.expose(),
             consumer_secret: self.csecret.expose(),
@@ -240,7 +240,7 @@ impl Twitter {
 
     fn rate_wait(&self) -> Option<Duration> {
         let (remaining, reset) = *self.ratelimit.lock().unwrap_or_else(|e| e.into_inner());
-        let now = crate::crypto::unix_time_ms() as f64 / 1000.0;
+        let now = crate::time::unix_time_ms() as f64 / 1000.0;
         (remaining == 0 && now < reset).then(|| Duration::from_secs_f64(reset - now + 0.5))
     }
 

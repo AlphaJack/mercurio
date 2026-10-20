@@ -469,7 +469,7 @@ impl Slack {
             }
             attachment["footer"] = json!(ctx.app_id());
             if self.include_timestamp {
-                attachment["ts"] = json!(crate::crypto::unix_time_ms() as f64 / 1000.0);
+                attachment["ts"] = json!(crate::time::unix_time_ms() as f64 / 1000.0);
             }
         }
         payload["attachments"] = json!([attachment]);

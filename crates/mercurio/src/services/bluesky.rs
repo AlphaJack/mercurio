@@ -8,7 +8,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
-use crate::crypto::{iso8601_utc, unix_time};
+use crate::time::{iso8601_utc, unix_time};
 use crate::error::Error;
 use crate::http::Request;
 use crate::message::Attachment;

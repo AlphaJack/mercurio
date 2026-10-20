@@ -5,7 +5,8 @@
 use blake2::{Blake2b512, Digest};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 
-use crate::crypto::{b64, hex, random_bytes, unix_time};
+use crate::crypto::{b64, hex, random_bytes};
+use crate::time::unix_time;
 use crate::error::Error;
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};

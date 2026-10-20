@@ -249,6 +249,8 @@ mod tag;
     expect(clippy::expect_used, clippy::panic, reason = "fixtures fail loudly by design")
 )]
 pub mod testing;
+#[doc(hidden)]
+pub mod time;
 mod transport;
 #[doc(hidden)]
 pub mod url;

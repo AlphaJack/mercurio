@@ -29,7 +29,7 @@ impl LogEntry {
     /// `YYYY-MM-DD HH:MM:SS,mmm` (UTC).
     pub fn asctime(&self) -> String {
         let d = self.time.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
-        let (y, mo, da, h, mi, s) = mercurio::crypto::utc_parts(d.as_secs());
+        let (y, mo, da, h, mi, s) = mercurio::time::utc_parts(d.as_secs());
         format!("{y:04}-{mo:02}-{da:02} {h:02}:{mi:02}:{s:02},{:03}", d.subsec_millis())
     }
 

@@ -582,7 +582,7 @@ mod e2ee {
                         0 => vec![ev(
                             "m.key.verification.request",
                             json!({"from_device": "ELEMENT", "transaction_id": "sas-1", "methods": ["m.sas.v1"],
-                                   "timestamp": crate::crypto::unix_time_ms() as i64}),
+                                   "timestamp": crate::time::unix_time_ms() as i64}),
                         )],
                         2 => vec![ev("m.key.verification.start", start_content())],
                         4 => vec![ev(
