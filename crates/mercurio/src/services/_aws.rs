@@ -3,7 +3,8 @@
 use std::collections::BTreeMap;
 
 use crate::Result;
-use crate::crypto::{hex, hmac_sha256, sha256, utc_parts};
+use crate::crypto::{hex, hmac_sha256, sha256};
+use crate::time::utc_parts;
 use crate::error::Error;
 use crate::http::Response;
 

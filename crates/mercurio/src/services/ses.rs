@@ -197,7 +197,7 @@ impl Ses {
             session_token: self.session_token.as_ref().map(Secret::expose),
         };
         let mut req = Request::post(format!("https://{host}")).header("User-Agent", ua);
-        for (k, v) in signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, crate::crypto::unix_time()) {
+        for (k, v) in signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, crate::time::unix_time()) {
             req = req.header(k, v);
         }
         req.body(body, None)
@@ -215,7 +215,7 @@ impl Notify for Arc<Ses> {
             _ => ctx.app_desc().to_string(),
         };
         let reply_addr = self.reply_to.as_ref().map_or(self.from_addr.clone(), |r| r.1.clone());
-        let date = crate::crypto::rfc2822_utc(crate::crypto::unix_time());
+        let date = crate::time::rfc2822_utc(crate::time::unix_time());
         let ua = ctx.app_id().to_string();
 
         let mut plans = Vec::new();

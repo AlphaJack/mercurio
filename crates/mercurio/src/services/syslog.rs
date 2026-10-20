@@ -66,7 +66,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 /// `Mmm dd hh:mm:ss` (RFC 3164 timestamp, day space-padded).
 pub fn rfc3164_timestamp(secs: u64) -> String {
     const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    let (_, mo, d, h, mi, s) = crate::crypto::utc_parts(secs);
+    let (_, mo, d, h, mi, s) = crate::time::utc_parts(secs);
     format!("{} {d:>2} {h:02}:{mi:02}:{s:02}", MONTHS[(mo as usize).saturating_sub(1) % 12])
 }
 
@@ -85,7 +85,7 @@ impl Notify for Syslog {
         let log_pid = self.log_pid;
         let log_perror = self.log_perror;
         Plan::defer(move || {
-            let line = format_line(pri, crate::crypto::unix_time(), &ident, log_pid.then_some(pid), &body);
+            let line = format_line(pri, crate::time::unix_time(), &ident, log_pid.then_some(pid), &body);
             if log_perror {
                 let tag = if log_pid { format!("{ident}[{pid}]") } else { ident.clone() };
                 eprintln!("{tag}: {body}");

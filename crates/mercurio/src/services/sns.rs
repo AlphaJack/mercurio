@@ -162,7 +162,7 @@ impl Sns {
             host: &host,
             session_token: self.session_token.as_ref().map(Secret::expose),
         };
-        let headers = signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, crate::crypto::unix_time());
+        let headers = signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, crate::time::unix_time());
         let mut req = Request::post(format!("https://{host}/")).header("User-Agent", user_agent);
         for (k, v) in headers {
             req = req.header(k, v);

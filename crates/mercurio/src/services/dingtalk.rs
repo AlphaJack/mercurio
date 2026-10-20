@@ -2,7 +2,8 @@
 
 use serde_json::json;
 
-use crate::crypto::{b64, hmac_sha256, unix_time_ms};
+use crate::crypto::{b64, hmac_sha256};
+use crate::time::unix_time_ms;
 use crate::parse::{parse_list, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
