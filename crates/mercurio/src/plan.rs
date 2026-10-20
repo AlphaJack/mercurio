@@ -271,6 +271,8 @@ pub struct ExecOptions {
     pub read_timeout: Option<Duration>,
     /// Minimum gap between consecutive requests.
     pub throttle: Duration,
+    /// Write the stores before every I/O step, not only when the send is over ([`crate::StorageMode::Flush`]).
+    pub flush_each_step: bool,
 }
 
 impl Default for ExecOptions {
@@ -281,6 +283,7 @@ impl Default for ExecOptions {
             connect_timeout: None,
             read_timeout: None,
             throttle: Duration::ZERO,
+            flush_each_step: false,
         }
     }
 }
@@ -310,7 +313,7 @@ impl DeliveryTracker {
 
 struct Runner<'a> {
     transport: &'a dyn AsyncTransport,
-    /// Flushed before every I/O step.
+    /// Flushed when the send is over, and before every I/O step with [`ExecOptions::flush_each_step`].
     stores: Vec<StoreRef>,
     opts: ExecOptions,
     last_io: Option<Instant>,
@@ -426,6 +429,13 @@ impl Runner<'_> {
         }
     }
 
+    /// Before an I/O step: flush only in [`crate::StorageMode::Flush`].
+    async fn flush_step(&self) {
+        if self.opts.flush_each_step {
+            self.flush().await;
+        }
+    }
+
     async fn throttle(&mut self) {
         if let Some(last) = self.last_io {
             let elapsed = last.elapsed();
@@ -474,7 +484,7 @@ impl Runner<'_> {
             Plan::Fail(e) => self.fail(target, e),
             Plan::Http(req, then) => {
                 let req = self.apply(req);
-                self.flush().await;
+                self.flush_step().await;
                 self.throttle().await;
                 log::debug!("{} {}", req.method, redact_url(&req.url));
                 let res = self.transport.http(&req).await;
@@ -522,7 +532,7 @@ impl Runner<'_> {
                 if let Some(rt) = self.opts.read_timeout {
                     ep.read_timeout = rt;
                 }
-                self.flush().await;
+                self.flush_step().await;
                 self.throttle().await;
                 let res = match self.transport.connect(&ep).await {
                     Ok(mut conn) => session(conn.as_mut(), self.transport).await,
@@ -534,7 +544,7 @@ impl Runner<'_> {
                 }
             }
             Plan::Datagram(dg) => {
-                self.flush().await;
+                self.flush_step().await;
                 self.throttle().await;
                 match self.transport.datagram(&dg).await {
                     Ok(()) => true,
@@ -542,12 +552,12 @@ impl Runner<'_> {
                 }
             }
             Plan::Command(cmd, then) => {
-                self.flush().await;
+                self.flush_step().await;
                 let res = self.transport.command(&cmd).await;
                 self.next(then(res), target).await
             }
             Plan::File(op, then) => {
-                self.flush().await;
+                self.flush_step().await;
                 let res = self.transport.file(&op).await;
                 self.next(then(res), target).await
             }

@@ -5,7 +5,7 @@ use std::fmt;
 use std::sync::{Arc, LazyLock, OnceLock};
 use std::time::{Duration, Instant};
 
-use crate::asset::Asset;
+use crate::asset::{Asset, StorageMode};
 use crate::config::{AssetValue, Config};
 use crate::error::{Error, ErrorClass, Result};
 use crate::message::{Message, NotifyFormat, OverflowMode, Prepared};
@@ -139,6 +139,7 @@ impl Target {
                 connect_timeout: parsed.cto.filter(|v| *v > 0.0).map(Duration::from_secs_f64),
                 read_timeout: parsed.rto.filter(|v| *v > 0.0).map(Duration::from_secs_f64),
                 throttle: def.throttle,
+                flush_each_step: false,
             },
             redirect_set: parsed.query.get("redirect").is_some(),
             retry: parsed.retry.unwrap_or(0).min(MAX_RETRY),
@@ -210,6 +211,7 @@ impl Target {
     /// The URL's settings, with the asset's redirect default unless the URL sets `?redirect=`.
     fn exec_for(&self, asset: &Asset) -> ExecOptions {
         let mut exec = self.exec;
+        exec.flush_each_step = asset.storage_mode == StorageMode::Flush;
         if !self.redirect_set {
             exec.follow_redirects = asset.http_redirects;
         }
@@ -278,7 +280,8 @@ impl Target {
     pub fn store(&self, asset: &Asset) -> &StoreRef {
         self.storage.store.get_or_init(|| {
             let id = self.url_id(asset);
-            let path = asset.storage_path.as_deref().filter(|_| id.is_some() && self.storage.persistent);
+            let on_disk = id.is_some() && self.storage.persistent && asset.storage_mode != StorageMode::Memory;
+            let path = asset.storage_path.as_deref().filter(|_| on_disk);
             PersistentStore::new(path, id.as_deref().unwrap_or("default")).shared()
         })
     }

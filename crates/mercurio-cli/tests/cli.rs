@@ -142,6 +142,15 @@ fn exit_codes() {
         Some(3)
     );
     assert_eq!(bin().args(["check", "unknown://x"]).output().unwrap().status.code(), Some(1));
+    // -SM takes auto, flush or memory, as Apprise.
+    assert_eq!(
+        bin().args(["-d", "-b", "x", "-SM", "flush", "json://localhost"]).output().unwrap().status.code(),
+        Some(0)
+    );
+    assert_eq!(
+        bin().args(["-d", "-b", "x", "-SM", "often", "json://localhost"]).output().unwrap().status.code(),
+        Some(2)
+    );
 }
 
 #[test]

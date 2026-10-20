@@ -229,6 +229,7 @@ impl Server {
         let asset = mercurio::Asset {
             http_redirects: self.s.http_redirects,
             storage_idlen: self.s.storage_idlen,
+            storage_mode: self.s.storage_mode,
             ..mercurio::Asset::default()
         };
         match (&self.s.storage, persistent) {
