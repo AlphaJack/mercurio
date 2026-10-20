@@ -88,7 +88,8 @@ pub fn prepare<'m>(
         title = convert::emoji::apply(&title);
         body = convert::emoji::apply(&body).into();
     }
-    if let Some(input) = input_format {
+    // Same format in and out converts to an identical copy: keep the borrowed body.
+    if let Some(input) = input_format.filter(|&input| input != format) {
         body = convert::convert_between(input, format, &body).into();
         if !title.is_empty() && def.limits.title_maxlen == 0 {
             title = convert::convert_between(input, format, &title);

@@ -44,7 +44,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 impl Notify for File {
     fn plan(&self, msg: &Prepared<'_>, _: &Context<'_>) -> Plan {
-        let mut payload = super::_json::encode(super::_json::object(msg), &self.payload);
+        let mut payload = super::_json::encode(super::_json::object(msg), &self.payload, msg.body);
         payload.push(b'\n');
         Plan::file(FileOp::Append { path: self.path.clone().into(), data: payload }, |res| match res {
             Ok(_) => Plan::Done,
