@@ -10,7 +10,8 @@ use super::http::{Reply, Req, form_pairs};
 pub struct Upload {
     pub name: String,
     pub mime: Option<String>,
-    pub data: Vec<u8>,
+    /// A slice of the request body, not a copy of it.
+    pub data: axum::body::Bytes,
 }
 
 #[derive(Default)]
@@ -57,17 +58,17 @@ pub fn form_fields(req: &Req) -> FormFields {
     let mut uploads = Vec::new();
     if req.content_type() == "multipart/form-data" {
         let ct = req.header("content-type").unwrap_or("");
-        req.with_body(|body| {
-            for part in mercurio::multipart_parts(ct, body) {
-                let name = part.name.unwrap_or_default();
-                if let Some(filename) = part.filename {
-                    let mime = part.content_type.map(|m| m.to_ascii_lowercase());
-                    uploads.push(Upload { name: filename.trim().to_string(), mime, data: part.data.to_vec() });
-                } else if let Ok(v) = std::str::from_utf8(part.data) {
-                    pairs.push((name, v.to_string()));
-                }
+        // The body is moved into shared bytes, and an upload is a slice of them: no copy of the file.
+        let body = axum::body::Bytes::from(req.take_body());
+        for part in mercurio::multipart_parts(ct, &body) {
+            let name = part.name.unwrap_or_default();
+            if let Some(filename) = part.filename {
+                let mime = part.content_type.map(|m| m.to_ascii_lowercase());
+                uploads.push(Upload { name: filename.trim().to_string(), mime, data: body.slice_ref(part.data) });
+            } else if let Ok(v) = std::str::from_utf8(part.data) {
+                pairs.push((name, v.to_string()));
             }
-        });
+        }
     } else {
         pairs =
             req.with_body(|body| if body.is_empty() { Vec::new() } else { form_pairs(&String::from_utf8_lossy(body)) });

@@ -642,7 +642,7 @@ impl Notify for SimplePush {
             .map(|(i, a)| {
                 let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
                 let mime = if a.mime.is_empty() { "application/octet-stream".to_string() } else { a.mime.clone() };
-                (name, mime, a.data.clone())
+                (name, mime, a.data.to_vec())
             })
             .collect();
         let m = Arc::new(Msg {

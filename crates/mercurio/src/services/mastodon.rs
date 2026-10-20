@@ -410,7 +410,7 @@ impl Notify for Mastodon {
                 let m = a.mime.to_ascii_lowercase();
                 m.starts_with("image/") || m.starts_with("video/") || m.starts_with("audio/")
             })
-            .map(|a| Upload { name: a.name.clone(), mime: a.mime.clone(), data: a.data.clone() })
+            .map(|a| Upload { name: a.name.clone(), mime: a.mime.clone(), data: a.data.to_vec() })
             .collect();
         let job = Job { cfg: self.0.clone(), ua: ctx.app_id().to_string(), env: ctx.env().clone(), body, format: msg.format, uploads };
 

@@ -241,7 +241,7 @@ impl Session {
         if !is_image && self.cfg.version == Version::V2 {
             return self.upload_one(idx + 1, payloads, k);
         }
-        let f = Fetch::upload(&att.name, &att.mime, Arc::new(att.data.clone()));
+        let f = Fetch::upload(&att.name, &att.mime, Arc::new(att.data.to_vec()));
         self.fetch(f, move |s, r| {
             let Some(resp) = r.object() else { return k(s, false) };
             let uri = resp.get("content_uri").cloned().unwrap_or(Value::Null);

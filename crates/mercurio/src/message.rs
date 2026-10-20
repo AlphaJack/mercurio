@@ -1,5 +1,7 @@
 use std::fmt;
 
+use bytes::Bytes;
+
 /// Severity of a notification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -128,13 +130,13 @@ pub struct Attachment {
     pub name: String,
     /// MIME type, e.g. `image/png`.
     pub mime: String,
-    /// File content.
-    pub data: Vec<u8>,
+    /// File content. Shared, so every service that sends the message reads the same buffer.
+    pub data: Bytes,
 }
 
 impl Attachment {
     /// An attachment from bytes already in memory.
-    pub fn new(name: impl Into<String>, mime: impl Into<String>, data: impl Into<Vec<u8>>) -> Self {
+    pub fn new(name: impl Into<String>, mime: impl Into<String>, data: impl Into<Bytes>) -> Self {
         Self { name: name.into(), mime: mime.into(), data: data.into() }
     }
 
@@ -145,7 +147,7 @@ impl Attachment {
         let data = std::fs::read(path)?;
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "attachment".into());
         let mime = guess_mime(&name).to_string();
-        Ok(Self { name, mime, data })
+        Ok(Self { name, mime, data: data.into() })
     }
 
     /// `true` when the MIME type is `image/*`.

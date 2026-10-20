@@ -164,7 +164,7 @@ impl Notify for PushBullet {
                 file_name: if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() },
                 mime: a.mime.clone(),
                 name: a.name.clone(),
-                data: a.data.clone(),
+                data: a.data.to_vec(),
             })
             .collect();
         let title = msg.title.to_string();

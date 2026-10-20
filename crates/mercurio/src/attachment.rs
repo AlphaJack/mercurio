@@ -491,7 +491,7 @@ fn query_pairs(q: &str) -> crate::url::Pairs {
 /// fake.respond_with(Response::new(200, "a,b\n1,2\n").with_header("Content-Type", "text/csv"));
 /// let files = set.load(&fake, &Asset::default())?;
 /// assert_eq!(files[0].name, "report.csv");
-/// assert_eq!(files[1].data, b"hello");
+/// assert_eq!(files[1].data, &b"hello"[..]);
 /// # Ok::<(), mercurio::Error>(())
 /// ```
 #[derive(Debug, Clone)]
@@ -735,7 +735,7 @@ mod tests {
         let p = temp_file("notes.txt", b"hello");
         let fake = FakeTransport::new();
         let a = AttachSource::parse(p.to_str().unwrap()).unwrap().load(&fake, &Asset::default()).unwrap();
-        assert_eq!((a.name.as_str(), a.mime.as_str(), a.data.as_slice()), ("notes.txt", "text/plain", &b"hello"[..]));
+        assert_eq!((a.name.as_str(), a.mime.as_str(), &a.data[..]), ("notes.txt", "text/plain", &b"hello"[..]));
         let url = format!("file://{}?name=renamed.csv", crate::url::quote(p.to_str().unwrap(), "/"));
         let a = AttachSource::parse(&url).unwrap().load(&fake, &Asset::default()).unwrap();
         assert_eq!((a.name.as_str(), a.mime.as_str()), ("renamed.csv", "text/csv"));
