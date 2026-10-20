@@ -2,21 +2,17 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 use std::time::Instant;
 
-use async_lock::Semaphore;
 use futures_util::future::join_all;
 
 use crate::config::template::TemplateVars;
 use crate::config::{Config, ConfigFormat, ConfigOptions, PendingTarget};
 use crate::error::{Error, Result};
-use crate::notify::{Core, Mercurio, Report, ReportEntry, Selection, Target, lanes, max_parallel, throttle_wait};
+use crate::notify::{Core, Mercurio, Report, ReportEntry, SEND_PERMITS, Selection, Target, lanes, throttle_wait};
 use crate::transport::{AsyncTransport, Blocking};
 use crate::{Asset, Message, TagFilter};
-
-/// The process-wide budget of sends in flight for every [`AsyncMercurio`]. It is separate from [`Mercurio`]'s, so a process using both can have up to twice as many.
-static SEND_PERMITS: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(max_parallel()));
 
 /// A set of notification targets sending through an [`AsyncTransport`].
 ///

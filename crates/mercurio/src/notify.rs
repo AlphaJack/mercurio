@@ -3,8 +3,10 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
-use std::sync::{Arc, Condvar, LazyLock, Mutex, OnceLock, PoisonError};
+use std::sync::{Arc, LazyLock, OnceLock};
 use std::time::{Duration, Instant};
+
+use async_lock::Semaphore;
 
 use crate::asset::Asset;
 #[cfg(feature = "transport-blocking")]
@@ -566,46 +568,18 @@ impl Report {
     }
 }
 
-/// Most sends in progress at once across every [`Mercurio`] in the process. Targets of a service with a [`ServiceDef::throttle`] go one at a time, with the throttle between them.
+/// Most sends in progress at once across every [`Mercurio`] and [`crate::AsyncMercurio`] in the process. Targets of a service with a [`ServiceDef::throttle`] go one at a time, with the throttle between them.
 const MAX_PARALLEL: usize = 128;
 
-/// The process-wide budget of [`MAX_PARALLEL`] sends, shared so that concurrent `notify` calls (the HTTP server's requests) cannot multiply it.
-static SEND_SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: LazyLock::new(max_parallel) };
+/// The process-wide budget of [`MAX_PARALLEL`] sends, shared by both facades so that concurrent `notify` calls (the HTTP server's requests, or a blocking and an async notifier) cannot multiply it.
+pub(crate) static SEND_PERMITS: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(max_parallel()));
 
 /// [`MAX_PARALLEL`], or `MERCURIO_BENCH_MAX_PARALLEL` (`0` = unlimited) for the benchmark harness only.
-pub(crate) fn max_parallel() -> usize {
+fn max_parallel() -> usize {
     match std::env::var("MERCURIO_BENCH_MAX_PARALLEL").ok().and_then(|v| v.parse().ok()) {
         Some(0) => usize::MAX,
         Some(n) => n,
         None => MAX_PARALLEL,
-    }
-}
-
-/// A counting semaphore.
-struct Slots {
-    used: Mutex<usize>,
-    freed: Condvar,
-    max: LazyLock<usize>,
-}
-
-impl Slots {
-    /// Block until a slot is free and take it; the guard gives it back.
-    fn acquire(&'static self) -> SlotGuard {
-        let mut used = self.used.lock().unwrap_or_else(PoisonError::into_inner);
-        while *used >= *self.max {
-            used = self.freed.wait(used).unwrap_or_else(PoisonError::into_inner);
-        }
-        *used += 1;
-        SlotGuard(self)
-    }
-}
-
-struct SlotGuard(&'static Slots);
-
-impl Drop for SlotGuard {
-    fn drop(&mut self) {
-        *self.0.used.lock().unwrap_or_else(PoisonError::into_inner) -= 1;
-        self.0.freed.notify_one();
     }
 }
 
@@ -961,7 +935,7 @@ impl Mercurio {
             }
         };
         if !self.parallel || targets.len() < 2 {
-            let _slot = SEND_SLOTS.acquire();
+            let _permit = SEND_PERMITS.acquire_blocking();
             let mut last: BTreeMap<&str, Instant> = BTreeMap::new();
             return targets
                 .into_iter()
@@ -989,9 +963,9 @@ impl Mercurio {
             let handles: Vec<_> = lanes
                 .iter()
                 .map(|lane| {
-                    let slot = SEND_SLOTS.acquire();
+                    let permit = SEND_PERMITS.acquire_blocking();
                     s.spawn(move || {
-                        let _slot = slot;
+                        let _permit = permit;
                         run_lane(lane)
                     })
                 })
@@ -1020,20 +994,19 @@ mod tests {
     }
 
     #[test]
-    fn send_slots_block_beyond_the_budget() {
-        static SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: LazyLock::new(|| 2) };
-        let (first, second) = (SLOTS.acquire(), SLOTS.acquire());
+    fn blocking_sends_wait_for_the_shared_budget() {
+        let fake = Arc::new(crate::testing::FakeTransport::new());
+        fake.respond(200, "{}");
+        let mut m = Mercurio::with_transport(fake.clone());
+        m.add("json://localhost/budget").unwrap();
+        let held: Vec<_> = (0..max_parallel()).map(|_| SEND_PERMITS.acquire_blocking()).collect();
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
-            s.spawn(move || {
-                let _third = SLOTS.acquire();
-                tx.send(()).unwrap();
-            });
-            assert!(rx.recv_timeout(Duration::from_millis(100)).is_err(), "a third slot was handed out");
-            drop(first);
-            rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            s.spawn(|| tx.send(m.notify(&Message::new("b"))).unwrap());
+            assert!(rx.recv_timeout(Duration::from_millis(100)).is_err(), "sent without a permit");
+            drop(held);
+            assert!(rx.recv_timeout(Duration::from_secs(5)).unwrap().is_success());
         });
-        drop(second);
     }
 
     #[test]
