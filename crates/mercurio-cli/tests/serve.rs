@@ -13,9 +13,22 @@ struct Server {
     addr: String,
 }
 
+/// Stops the server gracefully (`SIGTERM`, as a supervisor would), so it exits normally and coverage tools get its data; killed after 5 s otherwise.
 impl Drop for Server {
+    #[expect(clippy::disallowed_methods, reason = "polling a real child process requires wall-clock waits")]
     fn drop(&mut self) {
+        #[cfg(unix)]
+        if Command::new("kill").args(["-TERM", &self.child.id().to_string()]).status().is_ok_and(|s| s.success()) {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+            while std::time::Instant::now() < deadline {
+                if self.child.try_wait().ok().flatten().is_some() {
+                    return;
+                }
+                thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
         self.child.kill().ok();
+        self.child.wait().ok();
     }
 }
 
