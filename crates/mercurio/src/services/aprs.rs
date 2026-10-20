@@ -13,7 +13,7 @@ use std::time::Duration;
 use crate::error::Error;
 use crate::parse::{is_call_sign, parse_call_sign, parse_list};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use super::_sockets::send;
+use crate::machine::{Input, Output, Protocol};
 use crate::transport::Endpoint;
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
@@ -164,34 +164,123 @@ impl Notify for Aprs {
             self.targets.iter().map(|t| format!("{user}>{DEVICE_ID}::{t:<9}:{payload}")).collect();
         let pause = Duration::try_from_secs_f64(PACKET_GAP.as_secs_f64() + self.delay).unwrap_or(PACKET_GAP);
         let ep = Endpoint::new(self.server, PORT, false);
-        Plan::socket(ep, move |conn, transport| {
-            Box::pin(async move {
-            send(conn, login.as_bytes()).await?;
-            let limit = login.len() + 100;
-            let mut rx = Vec::new();
-            for _ in 0..2 {
-                let mut buf = vec![0u8; limit];
-                let n = conn.read(&mut buf).await.map_err(Error::transport)?;
-                if n == 0 {
-                    break;
-                }
-                rx.extend_from_slice(&buf[..n]);
-                if latin1(&rx).trim_end().lines().count() >= 2 {
-                    break;
-                }
-            }
-            check_login(&latin1(&rx), &user)?;
-            for (i, p) in packets.iter().enumerate() {
-                if i > 0 {
-                    transport.sleep(pause).await;
-                }
-                send(conn, p.as_bytes()).await?;
-            }
-            Ok(())
-            })
-        })
+        let session = Session::new(login, user, packets, pause);
+        Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(session, conn, transport)))
+    }
+}
+
+/// Reads of the login answer before checking it.
+const LOGIN_READS: usize = 2;
+
+/// Where an APRS-IS session is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Reading the answer to the login line.
+    Login,
+    /// Sending `packets[next..]`, pausing between them; `paused` once the pause before `packets[next]` is done.
+    Packets { next: usize, paused: bool },
+    Done,
+}
+
+/// An APRS-IS session as a sans-IO state machine: log in, check the answer, send one packet per call sign.
+struct Session {
+    user: String,
+    packets: Vec<String>,
+    pause: Duration,
+    state: State,
+    out: Vec<u8>,
+    /// The most bytes one read takes (the login line plus 100), as the server's answer is read in at most [`LOGIN_READS`] reads of that size.
+    limit: usize,
+    /// Bytes received but not yet counted as a read.
+    pending: Vec<u8>,
+    rx: Vec<u8>,
+    reads: usize,
+    result: Option<Result<()>>,
+}
+
+impl Session {
+    fn new(login: String, user: String, packets: Vec<String>, pause: Duration) -> Self {
+        let limit = login.len() + 100;
+        Session {
+            user,
+            packets,
+            pause,
+            state: State::Login,
+            out: login.into_bytes(),
+            limit,
+            pending: Vec::new(),
+            rx: Vec::new(),
+            reads: 0,
+            result: None,
+        }
     }
 
+    fn fail(&mut self, err: Error) {
+        self.result.get_or_insert(Err(err));
+        self.state = State::Done;
+    }
+
+    /// Take the received bytes as reads of at most `limit`, until two lines or [`LOGIN_READS`] reads are in; `closed` when the stream ended.
+    fn on_login_data(&mut self, closed: bool) {
+        while self.reads < LOGIN_READS && !self.pending.is_empty() {
+            let n = self.pending.len().min(self.limit);
+            self.rx.extend(self.pending.drain(..n));
+            self.reads += 1;
+            if latin1(&self.rx).trim_end().lines().count() >= 2 {
+                return self.logged_in();
+            }
+        }
+        if closed || self.reads >= LOGIN_READS {
+            self.logged_in();
+        }
+    }
+
+    fn logged_in(&mut self) {
+        match check_login(&latin1(&self.rx), &self.user) {
+            Ok(()) => self.state = State::Packets { next: 0, paused: true },
+            Err(e) => self.fail(e),
+        }
+    }
+}
+
+impl Protocol for Session {
+    fn next(&mut self) -> Output {
+        if !self.out.is_empty() {
+            return Output::Write(std::mem::take(&mut self.out));
+        }
+        match self.state {
+            State::Login => Output::Read,
+            State::Packets { next, .. } if next >= self.packets.len() => {
+                self.state = State::Done;
+                Output::Done(Ok(()))
+            }
+            State::Packets { next, paused: false } => {
+                self.state = State::Packets { next, paused: true };
+                Output::Sleep(self.pause)
+            }
+            State::Packets { next, paused: true } => {
+                self.state = State::Packets { next: next + 1, paused: false };
+                Output::Write(self.packets[next].as_bytes().to_vec())
+            }
+            State::Done => Output::Done(self.result.take().unwrap_or(Ok(()))),
+        }
+    }
+
+    fn input(&mut self, input: Input<'_>) {
+        match input {
+            Input::Data(data) if self.state == State::Login => {
+                self.pending.extend_from_slice(data);
+                self.on_login_data(data.is_empty());
+            }
+            Input::Data(_) => {}
+            Input::ReadError(e) | Input::WriteError(e) => self.fail(Error::transport(e)),
+            Input::Tls(r) => {
+                if let Err(e) = r {
+                    self.fail(e);
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
