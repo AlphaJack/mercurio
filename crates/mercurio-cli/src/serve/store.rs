@@ -80,21 +80,25 @@ pub const ACCESS_PUBLIC: &str = "public";
 pub const ACCESS_DISABLED: &str = "disabled";
 pub const ACCESS_CHOICES: [&str; 4] = [ACCESS_USER, ACCESS_LOCKED, ACCESS_PUBLIC, ACCESS_DISABLED];
 
-/// What identifies one version of a file: an atomic replace changes the inode, an edit in place the time or the size.
+/// What identifies one version of a file: an atomic replace changes the inode, an edit in place the size or the change time (`ctime`, which a write always moves and `touch -d` or `cp -p` cannot set back, unlike the modification time).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Stamp {
     modified: Option<SystemTime>,
     len: u64,
     inode: u64,
+    changed: (i64, i64),
 }
 
 impl Stamp {
     fn of(m: &Metadata) -> Self {
         #[cfg(unix)]
-        let inode = std::os::unix::fs::MetadataExt::ino(m);
+        let (inode, changed) = {
+            use std::os::unix::fs::MetadataExt;
+            (m.ino(), (m.ctime(), m.ctime_nsec()))
+        };
         #[cfg(not(unix))]
-        let inode = 0;
-        Stamp { modified: m.modified().ok(), len: m.len(), inode }
+        let (inode, changed) = (0, (0, 0));
+        Stamp { modified: m.modified().ok(), len: m.len(), inode, changed }
     }
 }
 
@@ -551,14 +555,12 @@ mod tests {
         std::fs::write(&file, "json://localhost/cc").unwrap();
         assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/cc"))));
 
-        // An unchanged file is served from the cache without reading it.
+        // Edit in place with the same size, then the old modification time put back (`cp -p`, `tar -x`).
+        let mtime = std::fs::metadata(&file).unwrap().modified().unwrap();
+        std::fs::write(&file, "json://localhost/dd").unwrap();
+        std::fs::File::options().write(true).open(&file).unwrap().set_modified(mtime).unwrap();
         #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o000)).unwrap();
-            assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/cc"))));
-            std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o644)).unwrap();
-        }
+        assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/dd"))));
 
         std::fs::remove_file(&file).unwrap();
         assert_eq!(store.get("k").await, Ok(None));
