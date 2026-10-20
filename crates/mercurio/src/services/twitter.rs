@@ -2,9 +2,8 @@
 //!
 //! # Differences with Apprise
 //!
-//! - The `?cache=` user lookup cache lives for one send. *todo*
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
 use serde_json::{Value, json};
@@ -41,6 +40,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     ],
     params: &[
         Param::new("batch", "Batch Mode").bool(true),
+        Param::new("cache", "Cache Results").bool(true),
         Param::new("mode", "Message Mode").choice(&["dm", "tweet"]).default("dm").inferred(),
         Param::sets("to", &["targets"]),
     ],
@@ -72,6 +72,12 @@ struct Twitter {
     batch: bool,
     /// `(x-rate-limit-remaining, x-rate-limit-reset)` of the last response.
     ratelimit: Mutex<(i64, f64)>,
+    /// `?cache=`: reuse earlier lookups instead of asking again.
+    cache: bool,
+    /// The authenticated account, `(username, id)`, once looked up.
+    whoami: Mutex<Option<(String, String)>>,
+    /// Every `(username, id)` looked up so far, for the life of the URL (Apprise's `_user_cache`).
+    users: Mutex<Vec<(String, String)>>,
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -136,6 +142,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         mode,
         batch,
         ratelimit: Mutex::new((1, 0.0)),
+        cache: SERVICE.flag(u, "cache"),
+        whoami: Mutex::new(None),
+        users: Mutex::new(Vec::new()),
     })))
 }
 
@@ -227,6 +236,17 @@ struct Media {
 }
 
 impl Twitter {
+    /// Add `found` to the lookups kept for the life of the URL.
+    fn remember(&self, found: &[(String, String)]) {
+        let mut users = self.users.lock().unwrap_or_else(PoisonError::into_inner);
+        for (name, id) in found {
+            match users.iter_mut().find(|(n, _)| n == name) {
+                Some(slot) => slot.1 = id.clone(),
+                None => users.push((name.clone(), id.clone())),
+            }
+        }
+    }
+
     fn sign(&self, req: Request, env: &dyn Env) -> Request {
         let ts = env.unix_time();
         let auth = OAuth1 {
@@ -391,7 +411,13 @@ impl Twitter {
         });
         let targets = self.targets.clone().unwrap_or_default();
         if targets.is_empty() {
+            if self.cache
+                && let Some(me) = self.whoami.lock().unwrap_or_else(PoisonError::into_inner).clone()
+            {
+                return deliver(vec![me]);
+            }
             let req = Request::get(WHOAMI_URL).header("User-Agent", &ua);
+            let me = self.clone();
             return self.fetch(
                 req,
                 &env,
@@ -403,14 +429,25 @@ impl Twitter {
                             Some((d.get("username").and_then(scalar_text)?, d.get("id").and_then(scalar_text)?))
                         })
                         .into_iter()
-                        .collect();
+                        .collect::<Vec<_>>();
+                    if let Some(entry) = found.first() {
+                        *me.whoami.lock().unwrap_or_else(PoisonError::into_inner) = Some(entry.clone());
+                        me.remember(&found);
+                    }
                     deliver(found)
                 }),
             );
         }
-        let names = parse_list(&targets);
+        let mut names = parse_list(&targets);
+        // Names looked up before are answered from the cache; only the others are asked for.
+        let mut cached = Vec::new();
+        if self.cache {
+            let users = self.users.lock().unwrap_or_else(PoisonError::into_inner);
+            cached = users.iter().filter(|(n, _)| names.contains(n)).cloned().collect();
+            names.retain(|n| !cached.iter().any(|(c, _)| c == n));
+        }
         let batches: Vec<Vec<String>> = names.chunks(100).map(|c| c.to_vec()).collect();
-        self.lookup(batches, Vec::new(), ua, env, deliver)
+        self.lookup(batches, cached, ua, env, deliver)
     }
 
     /// `_user_lookup`: one GET per 100 names; failed batches are skipped.
@@ -423,6 +460,7 @@ impl Twitter {
         deliver: Deliver,
     ) -> Plan {
         if batches.is_empty() {
+            self.remember(&found);
             return deliver(found);
         }
         let batch = batches.remove(0);
@@ -531,4 +569,22 @@ mod tests {
         assert_eq!(normalize_base_uri("http://h:8080"), "http://h:8080/");
         assert!(nonce(5, crate::testing::test_env()).ends_with('5'));
     }
+
+    #[test]
+    fn user_lookups_are_kept_between_sends() {
+        for (query, lookups) in [("", 1), ("&cache=no", 2)] {
+            let t = crate::parse(&format!("twitter://ckey/csecret/akey/asecret/@apprise?mode=dm{query}")).unwrap();
+            let fake = crate::testing::FakeTransport::new();
+            fake.on_url("/users/by", crate::Response::new(200, br#"{"data": [{"username": "apprise", "id": "9"}]}"#.to_vec()));
+            fake.default_response(crate::Response::new(201, b"{}".to_vec()));
+            let asset = crate::Asset::default();
+            for text in ["one", "two"] {
+                assert!(t.send(&crate::Message::new(text), &fake, &asset).is_success(), "{query}");
+            }
+            let n = fake.requests().iter().filter(|r| r.url.contains("/users/by")).count();
+            assert_eq!(n, lookups, "{query}");
+            assert_eq!(fake.requests().iter().filter(|r| r.url.contains("/dm_conversations/with/9/")).count(), 2);
+        }
+    }
+
 }

@@ -3,7 +3,7 @@
 //! # Differences with Apprise
 //!
 //! - The rate-limit reset is read from `X-RateLimit-Reset` (an RFC 3339 time); Apprise reads `X-RateLimit-Limit`, a request count, so its back-off never waits. The budget is kept for the life of the URL, as in Apprise. *intentional*
-//! - The `?cache=` whoami cache lasts one send. *todo*
+//! - The account lookup of direct mode is kept for the life of the URL whatever `?cache=` says, as in Apprise (whose `_whoami()` call ignores it). *intentional*
 //! - In direct mode prepended targets keep their configured (sorted) order; Apprise iterates an unordered set. *intentional*
 
 use std::sync::Arc;
@@ -75,6 +75,8 @@ struct Config {
     ping: Vec<String>,
     /// The request budget, shared by every send of this URL.
     rate: Arc<RateLimit>,
+    /// `@user` of the authenticated account once looked up, kept for the life of the URL (Apprise's `_whoami_cache`).
+    whoami: std::sync::Mutex<Option<String>>,
 }
 
 #[derive(Debug)]
@@ -341,6 +343,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         hashtags,
         ping,
         rate: RateLimit::new(Reset::Rfc3339, std::time::Duration::from_millis(500)),
+        whoami: std::sync::Mutex::new(None),
     }))))
 }
 
@@ -412,6 +415,9 @@ impl Notify for Mastodon {
         let job = Job { cfg: self.0.clone(), ua: ctx.app_id().to_string(), env: ctx.env().clone(), body, format: msg.format, uploads };
 
         if self.0.visibility == "direct" && self.0.targets.is_empty() {
+            if let Some(me) = self.0.whoami.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone() {
+                return job.start(Some(me));
+            }
             let req = self
                 .0
                 .request(Method::Get, "/api/v1/accounts/verify_credentials", &job.ua)
@@ -423,6 +429,7 @@ impl Notify for Mastodon {
                 Ok(v) => match v.get("username").zip(v.get("id")) {
                     Some((Value::String(user), _)) => {
                         let me = format!("@{user}");
+                        *job.cfg.whoami.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(me.clone());
                         job.start(Some(me))
                     }
                     _ => Plan::Fail(Error::service("could not look up the Mastodon account")),
@@ -590,6 +597,24 @@ mod tests {
             .with_header("X-RateLimit-Reset", reset);
         let wait = super::super::_ratelimit::second_send_waits("mastodon://token@hostname", vec![spent], Response::new(200, b"{}".to_vec()));
         assert!(wait > std::time::Duration::from_secs(55) && wait <= std::time::Duration::from_secs(61), "{wait:?}");
+    }
+
+
+    #[test]
+    fn direct_mode_looks_the_account_up_once() {
+        let t = crate::parse("mastodon://token@hostname?visibility=direct").unwrap();
+        let fake = crate::testing::FakeTransport::new();
+        fake.on_url("verify_credentials", Response::new(200, br#"{"username": "me", "id": "1"}"#.to_vec()));
+        fake.default_response(Response::new(200, b"{}".to_vec()));
+        let asset = crate::Asset::default();
+        for text in ["one", "two"] {
+            assert!(t.send(&crate::Message::new(text), &fake, &asset).is_success());
+        }
+        let lookups = fake.requests().iter().filter(|r| r.url.contains("verify_credentials")).count();
+        assert_eq!(lookups, 1);
+        let posts: Vec<_> = fake.requests().into_iter().filter(|r| r.url.ends_with("/statuses")).collect();
+        assert_eq!(posts.len(), 2);
+        assert!(String::from_utf8_lossy(&posts[1].body).contains("@me"), "the cached account is still mentioned");
     }
 
 }
