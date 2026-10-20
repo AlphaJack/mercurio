@@ -61,23 +61,6 @@ pub fn healthcheck(bind: &str) -> Result<(), String> {
         None => Err(format!("{addr}: no HTTP answer")),
     }
 }
-/// Logging for `serve`: one `request` event per request at INFO, everything else (the library's `log` records too) at the `-v` level.
-pub fn init_logging(verbose: u8) {
-    use tracing_subscriber::filter::{LevelFilter, Targets};
-    use tracing_subscriber::prelude::*;
-    let level = match verbose {
-        0 => LevelFilter::ERROR,
-        1 => LevelFilter::WARN,
-        2 => LevelFilter::INFO,
-        3 => LevelFilter::DEBUG,
-        _ => LevelFilter::TRACE,
-    };
-    let filter = Targets::new().with_default(level).with_target("request", LevelFilter::INFO);
-    let output = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
-    if let Err(e) = tracing_subscriber::registry().with(output).with(filter).try_init() {
-        errln!("logging: {e}");
-    }
-}
 pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     let s = Settings::from_args(args)?;
     let listener = tokio::net::TcpListener::bind(bind).await.map_err(|e| format!("bind {bind}: {e}"))?;

@@ -24,7 +24,7 @@ macro_rules! errln {
     }};
 }
 
-mod logger;
+mod logging;
 mod serve;
 mod storage;
 
@@ -659,11 +659,7 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
 
 fn run() -> Result<u8, u8> {
     let args = parse_args();
-    if matches!(args.command, Command::Serve(_)) {
-        serve::init_logging(args.verbose);
-    } else {
-        logger::init(args.verbose);
-    }
+    logging::init(args.verbose, matches!(args.command, Command::Serve(_)));
     match &args.command {
         Command::Services => {
             return Ok(if cmd_services(args.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE });
