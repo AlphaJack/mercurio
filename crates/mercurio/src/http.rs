@@ -346,8 +346,21 @@ impl Response {
 
     /// [`Response::http_error`] with a service-specific reason.
     pub fn http_error_with(&self, reason: impl Into<String>) -> crate::Error {
-        let reason = reason.into();
-        match self.retry_after().filter(|_| matches!(self.status, 429 | 503)) {
+        self.limited_or_http(reason.into(), None)
+    }
+
+    /// [`Response::http_error`], with `hint` (a wait the service put in the body) when there is no `Retry-After` header: a 429 or 503 with either is [`crate::Error::RateLimited`], anything else [`crate::Error::Http`].
+    pub fn rate_limited_or_http(&self, hint: Option<std::time::Duration>) -> crate::Error {
+        self.limited_or_http(self.snippet(), hint)
+    }
+
+    /// [`crate::Error::RateLimited`] whatever the status, for a service's own throttling signal (e.g. AWS `Throttling` in a 400); `Retry-After` is the wait when present.
+    pub fn rate_limited(&self) -> crate::Error {
+        crate::Error::RateLimited { status: self.status, reason: self.snippet(), retry_after: self.retry_after() }
+    }
+
+    fn limited_or_http(&self, reason: String, hint: Option<std::time::Duration>) -> crate::Error {
+        match self.retry_after().or(hint).filter(|_| matches!(self.status, 429 | 503)) {
             Some(d) => crate::Error::RateLimited { status: self.status, reason, retry_after: Some(d) },
             None => crate::Error::Http { status: self.status, reason },
         }

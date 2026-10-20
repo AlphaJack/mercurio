@@ -7,9 +7,9 @@
 //! - `?image=yes` posts the notify-type image by URL instead of uploading Apprise's bundled PNG. *intentional*
 //! - Rich Message templates must be local files (`/path` or `file://`). *todo*
 //! - HTML that Apprise's parser rejects is sent unreduced. *intentional*
-//! - `parameters.retry_after` is not fed into the retry loop. *todo*
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
@@ -302,9 +302,20 @@ fn status_ok(res: &Result<Response>) -> bool {
 
 fn http_err(res: Result<Response>) -> Error {
     match res {
-        Ok(r) => r.http_error(),
+        Ok(r) => http_error(&r),
         Err(e) => e,
     }
+}
+
+/// [`Response::http_error`], with `parameters.retry_after` (seconds) as the wait when there is no `Retry-After` header.
+fn http_error(r: &Response) -> Error {
+    let hint = r.json().and_then(|v| v["parameters"]["retry_after"].as_u64()).filter(|s| *s > 0);
+    r.rate_limited_or_http(hint.map(Duration::from_secs))
+}
+
+/// Send `req`; anything but 200 fails through [`http_error`].
+fn send_ok(req: Request) -> Plan {
+    Plan::http(req, |res| if status_ok(&res) { Plan::Done } else { Plan::Fail(http_err(res)) })
 }
 
 impl Job {
@@ -348,7 +359,7 @@ impl Job {
 
     fn send_media(&self, chat: &Chat, thread: Option<i64>, payload: Fields, att_no: usize, document: bool) -> Plan {
         match self.media_request(chat, thread, payload, att_no, document) {
-            Some(req) => Plan::send_expect(req, &[200]),
+            Some(req) => send_ok(req),
             None => Plan::Fail(Error::Message("Telegram attachment is too large".into())),
         }
         .context("attachment")
@@ -532,7 +543,7 @@ impl Job {
                     .header("User-Agent", &self.app_id)
                     .header("Content-Type", "application/json")
                     .body(payload.to_string().into_bytes(), None);
-                let send = Plan::send_expect(req, &[200]);
+                let send = send_ok(req);
                 steps.push(if has_attach { send.context("send") } else { send });
                 if has_attach && !after {
                     steps.push(self.attachments_plan(&chat, None, None));
@@ -601,7 +612,7 @@ impl Job {
                     .header("User-Agent", &self.app_id)
                     .header("Content-Type", "application/json")
                     .body(payload.to_string().into_bytes(), None);
-                let send = Plan::send_expect(req, &[200]);
+                let send = send_ok(req);
                 let mut steps = vec![];
                 if self.attachments.is_empty() {
                     steps.push(send);
@@ -620,7 +631,7 @@ impl Job {
 fn detect_owner(res: Result<Response>) -> std::result::Result<Value, Error> {
     let r = res?;
     if r.status != 200 {
-        return Err(r.http_error());
+        return Err(http_error(&r));
     }
     let fail = || Error::Service("failed to detect a Telegram user; send your bot a message first".into());
     let v = r.json().ok_or_else(fail)?;
@@ -831,6 +842,27 @@ mod tests {
         assert_eq!(v["rich_message"]["blocks"][0]["text"], json!("T: b\"ody xé"));
         assert_eq!(v["link_preview_options"]["is_disabled"], json!(true));
         std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn retry_waits_for_parameters_retry_after() {
+        let target = crate::parse("tgram://123456789:abcdefg/12345?retry=1").unwrap();
+        let fake = FakeTransport::new();
+        let limited = r#"{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 7","parameters":{"retry_after":7}}"#;
+        fake.respond(429, limited);
+        fake.respond(200, r#"{"ok":true}"#);
+        let attempts = target.deliver(&Message::new("b"), &fake, &Asset::default());
+        assert_eq!(attempts.len(), 2);
+        assert!(attempts[1].delivery.is_success(), "{attempts:?}");
+        assert!(fake.sleeps().contains(&Duration::from_secs(7)), "{:?}", fake.sleeps());
+
+        // Without the hint a 429 stays a plain HTTP error.
+        let plain = FakeTransport::new();
+        plain.respond(429, r#"{"ok":false,"error_code":429}"#);
+        let once = crate::parse("tgram://123456789:abcdefg/12345").unwrap();
+        let d = once.send(&Message::new("b"), &plain, &Asset::default());
+        let err = d.outcomes[0].result.as_ref().unwrap_err();
+        assert!(matches!(err.root(), Error::Http { status: 429, .. }), "{err:?}");
     }
 
     #[test]

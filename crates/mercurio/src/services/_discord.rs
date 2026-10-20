@@ -356,7 +356,7 @@ fn run_steps(ep: Arc<Endpoint>, mut steps: VecDeque<Step>, rl: RateLimit, retrie
         // Without `Retry-After`, Discord's bucket reset is the wait.
         if r.status == 429 && r.retry_after().is_none() && rl.reset > now_secs() {
             let retry_after = Duration::from_secs_f64(rl.reset - now_secs() + CLOCK_SKEW_SECS);
-            return Plan::Fail(Error::RateLimited { status: 429, reason: r.snippet(), retry_after: Some(retry_after) });
+            return Plan::Fail(r.rate_limited_or_http(Some(retry_after)));
         }
         Plan::Fail(r.http_error())
     });

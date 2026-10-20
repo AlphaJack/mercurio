@@ -192,9 +192,10 @@ on its page (see the [service list](services/index.md)), taken from the
 - **Unclassified failures.** `Error::Service` failures (for example a JSON
   body with `"ok": false`) and `register_scheme` closures are not retried.
   *intentional*
-- **Service hints.** Telegram's `parameters.retry_after` and Matrix's
-  `retry_after_ms` are not fed into the retry loop (Apprise reads neither).
-  *todo*
+- **Service hints.** Apprise reads neither Telegram's
+  `parameters.retry_after` nor Matrix's `retry_after_ms` -> mercurio feeds
+  both into the retry loop as the 429's wait (Matrix once its own back-off
+  gives up). *intentional*
 
 ## Services
 
