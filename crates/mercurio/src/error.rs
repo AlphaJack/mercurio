@@ -4,14 +4,17 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 /// Every failure mercurio reports.
 ///
 /// Messages never contain secrets: services build them from redacted values.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
     /// The URL could not be parsed at all.
+    #[error("invalid URL: {0}")]
     InvalidUrl(String),
     /// No compiled-in service handles this scheme.
+    #[error("unsupported URL scheme: {0}://")]
     UnknownScheme(String),
     /// The URL parsed, but the service rejected its configuration.
+    #[error("{service}: {reason}")]
     Config {
         /// Display name of the service, e.g. `"Telegram"`.
         service: &'static str,
@@ -19,12 +22,16 @@ pub enum Error {
         reason: String,
     },
     /// The message itself cannot be delivered (e.g. empty body).
+    #[error("invalid message: {0}")]
     Message(String),
     /// Network, TLS, DNS or timeout failure before the request was sent.
+    #[error("transport error: {0}")]
     Transport(String),
     /// The connection failed after the request (or part of it) was sent, so the service may have acted on it: a read timeout, a reset while waiting for the response, a malformed response.
+    #[error("transport error: {0}")]
     Unconfirmed(String),
     /// The remote answered, but not with success.
+    #[error("{}", http_display(*status, reason))]
     Http {
         /// HTTP status code.
         status: u16,
@@ -32,6 +39,7 @@ pub enum Error {
         reason: String,
     },
     /// The remote asked to slow down (HTTP 429; HTTP 503 with `Retry-After`). Built by [`crate::Response::http_error`] when `Retry-After` is valid; a 429 without it stays [`Error::Http`].
+    #[error("{}", http_display(*status, reason))]
     RateLimited {
         /// HTTP status code (429 or 503).
         status: u16,
@@ -41,10 +49,13 @@ pub enum Error {
         retry_after: Option<Duration>,
     },
     /// The remote answered successfully at HTTP level but reported failure.
+    #[error("service error: {0}")]
     Service(String),
     /// The feature is not available in this build or on this platform.
+    #[error("unsupported: {0}")]
     Unsupported(String),
     /// `source` happened during the named step of a multi-step delivery (e.g. `"login"`). Classification and `Retry-After` come from `source`.
+    #[error("{context}: {source}")]
     Context {
         /// Short lowercase step name, e.g. `"upload"`.
         context: String,
@@ -201,30 +212,12 @@ fn parse_imf_fixdate(s: &str) -> Option<i64> {
     Some(crate::time::unix_secs(year, month, day) + h * 3600 + m * 60 + sec)
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::InvalidUrl(u) => write!(f, "invalid URL: {u}"),
-            Error::UnknownScheme(s) => write!(f, "unsupported URL scheme: {s}://"),
-            Error::Config { service, reason } => write!(f, "{service}: {reason}"),
-            Error::Message(m) => write!(f, "invalid message: {m}"),
-            Error::Transport(m) | Error::Unconfirmed(m) => write!(f, "transport error: {m}"),
-            Error::Http { status, reason } | Error::RateLimited { status, reason, .. } if reason.is_empty() => {
-                write!(f, "HTTP {status} {}", http_reason(*status))
-            }
-            Error::Http { status, reason } | Error::RateLimited { status, reason, .. } => {
-                write!(f, "HTTP {status}: {reason}")
-            }
-            Error::Service(m) => write!(f, "service error: {m}"),
-            Error::Unsupported(m) => write!(f, "unsupported: {m}"),
-            Error::Context { context, source } => write!(f, "{context}: {source}"),
-        }
-    }
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        if let Error::Context { source, .. } = self { Some(source.as_ref()) } else { None }
+/// `HTTP {status}: {reason}`, or the canonical phrase of the status when the reason is empty.
+fn http_display(status: u16, reason: &str) -> String {
+    if reason.is_empty() {
+        format!("HTTP {status} {}", http_reason(status))
+    } else {
+        format!("HTTP {status}: {reason}")
     }
 }
 
