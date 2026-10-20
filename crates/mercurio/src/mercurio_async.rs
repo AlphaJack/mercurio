@@ -14,7 +14,7 @@ use crate::notify::{Core, Mercurio, SEND_PERMITS, Selection, lanes, throttle_wai
 use crate::report::{Report, ReportEntry};
 use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking};
-use crate::{Asset, Message, TagFilter};
+use crate::{Asset, Message, Plan, Prepared, ServiceDef, TagFilter};
 
 /// A set of notification targets sending through an [`AsyncTransport`].
 ///
@@ -67,12 +67,26 @@ impl Drop for AsyncMercurio {
 /// Moves the targets and settings over; the blocking transport keeps doing the I/O (see [`Blocking`]).
 impl From<Mercurio> for AsyncMercurio {
     fn from(m: Mercurio) -> Self {
+        let sequential = m.sequential;
         let (core, transport) = m.into_parts();
-        Self { core, transport: Arc::new(Blocking(transport)), sequential: false, closed: false }
+        Self { core, transport: Arc::new(Blocking(transport)), sequential, closed: false }
     }
 }
 
 impl AsyncMercurio {
+    /// Register a closure as the notifier for `scheme://` URLs, for every notifier in this process. See [`crate::register`].
+    pub fn register_scheme<F>(scheme: &str, handler: F) -> Result<&'static ServiceDef>
+    where
+        F: Fn(&Prepared<'_>, &crate::registry::Hook<'_>) -> Plan + Send + Sync + 'static,
+    {
+        crate::registry::register_scheme(scheme, handler)
+    }
+
+    /// Add a full service definition at runtime ([`crate::register`]).
+    pub fn register(def: &'static ServiceDef) -> Result<()> {
+        crate::registry::register(def)
+    }
+
     /// A notifier on [`crate::TokioTransport`] and the default [`Asset`].
     #[cfg(feature = "transport-tokio")]
     pub fn new() -> Self {
@@ -134,6 +148,12 @@ impl AsyncMercurio {
     /// Add the services of an already loaded [`Config`].
     pub fn add_loaded(&mut self, cfg: Config) -> usize {
         self.core.add_loaded(cfg)
+    }
+
+    /// Keep only targets for which `keep` returns true (e.g. tag filtering).
+    pub fn retain(&mut self, keep: impl FnMut(&Target) -> bool) -> &mut Self {
+        self.core.targets.retain(keep);
+        self
     }
 
     /// Targets ready to notify (pending template entries are separate).
@@ -198,12 +218,12 @@ impl AsyncMercurio {
             let mut done = Vec::with_capacity(lane.len());
             for i in lane {
                 let t = targets[i];
-                if let Some(gap) = throttle_wait(t, last.get(t.service().id).copied()) {
+                if let Some(gap) = throttle_wait(t, last.get(t.def.id).copied()) {
                     transport.sleep(gap).await;
                 }
                 let attempts = t.deliver_async(msg, transport, &self.core.asset_for(t)).await;
                 done.push((i, self.core.entry(t, attempts)));
-                last.insert(t.service().id, Instant::now());
+                last.insert(t.def.id, Instant::now());
             }
             done
         });
@@ -273,5 +293,24 @@ mod tests {
         assert!(report.is_success());
         let urls: Vec<_> = fake.requests().iter().map(|r| r.url.clone()).collect();
         assert_eq!(urls, ["http://localhost/a", "http://localhost/b"]);
+        assert!(!m.sequential);
+        assert!(AsyncMercurio::from(Mercurio::with_transport(fake.clone()).sequential()).sequential);
+    }
+
+    #[test]
+    fn same_api_as_the_blocking_notifier() {
+        AsyncMercurio::register_scheme("asyncparity", |msg, _| {
+            Plan::send(crate::Request::post(format!("http://localhost/{}", msg.body)))
+        })
+        .unwrap();
+        let fake = Arc::new(FakeTransport::new());
+        let mut m = notifier(&fake);
+        m.add("asyncparity://x").unwrap();
+        m.add("json://localhost/dropped").unwrap();
+        m.retain(|t| t.service().id != "json");
+        let report = pollster::block_on(m.notify(&Message::new("kept")));
+        assert!(report.is_success());
+        let urls: Vec<_> = fake.requests().iter().map(|r| r.url.clone()).collect();
+        assert_eq!(urls, ["http://localhost/kept"]);
     }
 }
