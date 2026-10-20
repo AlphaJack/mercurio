@@ -135,17 +135,6 @@ impl<'a> LineConn<'a> {
         self.conn.write_all(b"\r\n").await.map_err(Error::unconfirmed)?;
         self.conn.flush().await.map_err(Error::unconfirmed)
     }
-
-    pub async fn write_all(&mut self, data: &[u8]) -> Result<()> {
-        self.conn.write_all(data).await.map_err(Error::unconfirmed)?;
-        self.conn.flush().await.map_err(Error::unconfirmed)
-    }
-
-    /// Upgrade to TLS; buffered plaintext is discarded (it must be empty per RFC 3207).
-    pub async fn start_tls(&mut self) -> Result<()> {
-        self.buf.clear();
-        self.conn.start_tls().await
-    }
 }
 
 impl std::fmt::Debug for LineConn<'_> {
