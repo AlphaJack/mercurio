@@ -296,12 +296,14 @@ mod tests {
     #[test]
     fn process_metrics_on_linux() {
         let out = Metrics::default().render();
+        let value = |name: &str| out.lines().find_map(|l| l.strip_prefix(&format!("{name} "))?.parse::<f64>().ok());
         for name in
-            ["process_resident_memory_bytes", "process_cpu_seconds_total", "process_open_fds", "process_max_fds"]
+            ["process_resident_memory_bytes", "process_virtual_memory_bytes", "process_open_fds", "process_max_fds"]
         {
-            let value =
-                out.lines().find_map(|l| l.strip_prefix(&format!("{name} "))).and_then(|v| v.parse::<f64>().ok());
-            assert!(value.is_some_and(|v| v > 0.0), "{name}\n{out}");
+            assert!(value(name).is_some_and(|v| v > 0.0), "{name}\n{out}");
         }
+        // A short test may not have used one clock tick of CPU yet.
+        assert!(value("process_cpu_seconds_total").is_some_and(|v| v >= 0.0), "{out}");
+        assert!(value("process_start_time_seconds").is_some_and(|v| v > 1e9), "{out}");
     }
 }
