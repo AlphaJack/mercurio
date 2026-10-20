@@ -22,8 +22,7 @@ mercurio -c ~/alerts.yml -g devops -b "deploy done"
   A dry run (`-d`) does not read it.
 - The title is optional. Services without a title field get it merged into
   the body (see [Messages](messages/index.md)).
-- All matching services are notified in parallel, one thread per URL.
-  `-Da` sends one after another.
+- All matching services are notified concurrently. `-Da` sends one after another.
 - A word `send` before the URLs is accepted and ignored
   (`mercurio send -b hi ntfy://topic`).
 
