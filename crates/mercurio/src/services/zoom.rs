@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise posts to `inbots.zoom.us/incoming/hook/{id}` -> mercurio posts to the current `integrations.zoom.us/chat/webhooks/incomingwebhook/{id}` (`?format=full`; `?format=message` for `mode=simple`); native URLs on either host are accepted. *intentional*
+//! - Apprise posts to `inbots.zoom.us/incoming/hook/{id}`, while mercurio posts to the current `integrations.zoom.us/chat/webhooks/incomingwebhook/{id}` (`?format=full`; `?format=message` for `mode=simple`); native URLs on either host are accepted. *intentional*
 
 use serde_json::json;
 

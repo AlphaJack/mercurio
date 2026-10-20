@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise ignores `+`/`-` options (attribute typo) -> mercurio applies them. *intentional*
+//! - Apprise ignores `+`/`-` options (attribute typo), while mercurio applies them. *intentional*
 
 use serde_json::{Map, Value, json};
 
