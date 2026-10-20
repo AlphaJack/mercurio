@@ -39,7 +39,7 @@ fn start_with(config_dir: &std::path::Path, env: &[(&str, &str)]) -> Server {
     Server { child, addr }
 }
 
-/// Upstream target: records request bodies, answers `status`.
+/// Upstream target: records request bodies (with the `User-Agent` as `_user_agent` in JSON objects), answers `status`.
 fn upstream(n: usize, status: u16) -> (String, mpsc::Receiver<serde_json::Value>) {
     let l = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = l.local_addr().unwrap().to_string();
@@ -48,7 +48,7 @@ fn upstream(n: usize, status: u16) -> (String, mpsc::Receiver<serde_json::Value>
         for s in l.incoming().take(n) {
             let mut s = s.unwrap();
             let mut r = BufReader::new(s.try_clone().unwrap());
-            let mut len = 0;
+            let (mut len, mut agent) = (0, String::new());
             loop {
                 let mut h = String::new();
                 r.read_line(&mut h).unwrap();
@@ -58,10 +58,19 @@ fn upstream(n: usize, status: u16) -> (String, mpsc::Receiver<serde_json::Value>
                 if let Some(v) = h.to_ascii_lowercase().strip_prefix("content-length:") {
                     len = v.trim().parse().unwrap();
                 }
+                if let Some((name, value)) = h.split_once(':')
+                    && name.eq_ignore_ascii_case("user-agent")
+                {
+                    agent = value.trim().to_string();
+                }
             }
             let mut b = vec![0; len];
             r.read_exact(&mut b).unwrap();
-            tx.send(serde_json::from_slice(&b).unwrap_or_default()).ok();
+            let mut v: serde_json::Value = serde_json::from_slice(&b).unwrap_or_default();
+            if let Some(o) = v.as_object_mut() {
+                o.insert("_user_agent".into(), agent.into());
+            }
+            tx.send(v).ok();
             write!(s, "HTTP/1.1 {status} X\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").unwrap();
         }
     });
@@ -523,6 +532,23 @@ fn live_streams_log_levels_and_storage() {
     let (_, status) = http(&s.addr, "GET", "/status", "application/json", "");
     assert!(status.contains(r#""persistent_storage":true"#), "{status}");
     assert!(store.is_dir());
+}
+
+#[test]
+fn live_streams_apply_yaml_asset_overrides() {
+    let s = start(&tmpdir("stream-asset"));
+    let (up, rx) = upstream(2, 200);
+    let yaml = format!("version: 1\nasset:\n  app_id: Stream Bot\nurls:\n  - json://{up}\n");
+    let add = serde_json::json!({"config": yaml, "format": "yaml"}).to_string();
+    assert_eq!(http(&s.addr, "POST", "/add/streamasset", "application/json", &add).0, 200);
+    let ct = ("Content-Type", "application/x-www-form-urlencoded");
+    let (code, _, body) = http_full(&s.addr, "POST", "/notify/streamasset?stream=yes", &[ct], "body=live");
+    assert_eq!(code, 200);
+    assert!(body.contains(r#"{"status":"SUCCESS"}"#), "{body}");
+    assert_eq!(rx.recv().unwrap()["_user_agent"], "Stream Bot");
+    // The same as without streaming.
+    assert_eq!(http_full(&s.addr, "POST", "/notify/streamasset", &[ct], "body=x").0, 200);
+    assert_eq!(rx.recv().unwrap()["_user_agent"], "Stream Bot");
 }
 
 /// Send raw bytes, half-close and return everything the server wrote.

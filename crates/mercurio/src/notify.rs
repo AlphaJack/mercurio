@@ -356,13 +356,27 @@ impl Mercurio {
     /// # Ok::<(), mercurio::Error>(())
     /// ```
     pub fn notify_with(&self, msg: &Message, filter: &TagFilter, vars: &TemplateVars) -> Report {
+        self.notify_with_progress(msg, filter, vars, &|_| {})
+    }
+
+    /// [`Mercurio::notify_with`], calling `on_entry` with each URL's entry as soon as it is final (from the sending thread), so a caller can report progress. Entries of template URLs that could not be resolved come last.
+    pub fn notify_with_progress(
+        &self,
+        msg: &Message,
+        filter: &TagFilter,
+        vars: &TemplateVars,
+        on_entry: &(dyn Fn(&ReportEntry) + Sync),
+    ) -> Report {
         let sel = self.core.select(filter, vars);
-        let entries = self.send_all(msg, sel.iter().collect());
+        let entries = self.send_all(msg, sel.iter().collect(), on_entry);
         // Template targets only live for this call.
         for t in &sel.resolved {
             self.close_target(t);
         }
-        Core::report(entries, sel.unresolved)
+        let sent = entries.len();
+        let report = Core::report(entries, sel.unresolved);
+        report.entries[sent..].iter().for_each(on_entry);
+        report
     }
 
     fn close_target(&self, t: &Target) {
@@ -381,8 +395,17 @@ impl Mercurio {
         }
     }
 
-    fn send_all(&self, msg: &Message, targets: Vec<&Target>) -> Vec<ReportEntry> {
-        let send = |t: &Target| self.core.entry(t, t.deliver(msg, self.transport.as_ref(), &self.core.asset_for(t)));
+    fn send_all(
+        &self,
+        msg: &Message,
+        targets: Vec<&Target>,
+        on_entry: &(dyn Fn(&ReportEntry) + Sync),
+    ) -> Vec<ReportEntry> {
+        let send = |t: &Target| {
+            let entry = self.core.entry(t, t.deliver(msg, self.transport.as_ref(), &self.core.asset_for(t)));
+            on_entry(&entry);
+            entry
+        };
         let wait = |t: &Target, last: Option<Instant>| {
             if let Some(gap) = throttle_wait(t, last) {
                 self.transport.sleep(gap);

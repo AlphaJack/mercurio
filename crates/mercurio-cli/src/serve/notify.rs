@@ -6,7 +6,7 @@ use std::time::{Duration, SystemTime};
 
 use axum::response::IntoResponse;
 use axum::response::sse::{Event, KeepAlive, Sse};
-use mercurio::{Asset, AsyncMercurio, AsyncTransport, BoxFuture, Message, Report, TagFilter, TemplateVars};
+use mercurio::{AsyncMercurio, BoxFuture, Message, Report, TagFilter, TemplateVars};
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
@@ -96,9 +96,6 @@ pub struct Job {
     pub vars: TemplateVars,
     /// `Some(key)` for a stored configuration.
     pub key: Option<String>,
-    /// The notifier's transport and asset (for live streams).
-    pub transport: Arc<dyn AsyncTransport>,
-    pub asset: Asset,
 }
 
 impl Job {
@@ -207,46 +204,12 @@ pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: 
     };
     send(&tx, Event::default().comment("connected"));
     tokio::spawn(async move {
-        let sel = job.notifier.select(&job.filter, &job.vars);
-        let (asset, transport, msg) = (&job.asset, job.transport.as_ref(), &job.message);
-        let entries = futures_util::future::join_all(sel.iter().map(|t| {
-            let tx = tx.clone();
-            async move {
-                let attempts = t.deliver_async(msg, transport, asset).await;
-                let entry = mercurio::ReportEntry {
-                    label: t.label(),
-                    service: t.service().id,
-                    delivery: attempts.last().map(|a| a.delivery.clone()).unwrap_or_default(),
-                    attempts,
-                    url_id: t.url_id(asset),
-                };
-                for l in filter_level(entry_logs(&entry), level) {
-                    send(&tx, log_event(&l));
-                }
-                entry
+        let on_entry = |entry: &mercurio::ReportEntry| {
+            for l in filter_level(entry_logs(entry), level) {
+                send(&tx, log_event(&l));
             }
-        }))
-        .await;
-        for t in &sel.resolved {
-            t.close_async(transport, asset).await;
-        }
-        let mut report = Report { entries };
-        for (p, e) in &sel.unresolved {
-            report.entries.push(mercurio::ReportEntry {
-                label: p.label(),
-                service: p.service().id,
-                delivery: mercurio::Delivery {
-                    outcomes: vec![mercurio::Outcome { target: None, result: Err(e.clone()) }],
-                },
-                attempts: Vec::new(),
-                url_id: None,
-            });
-        }
-        let ready = report.entries.len() - sel.unresolved.len();
-        let unresolved_logs: Vec<LogEntry> = report.entries.iter().skip(ready).flat_map(entry_logs).collect();
-        for l in filter_level(unresolved_logs, level) {
-            send(&tx, log_event(&l));
-        }
+        };
+        let report = job.notifier.notify_with_progress(&job.message, &job.filter, &job.vars, &on_entry).await;
         let status = report.status().as_str().to_ascii_uppercase();
         send(&tx, sse("result", &json!({"status": status})));
         drop(tx);

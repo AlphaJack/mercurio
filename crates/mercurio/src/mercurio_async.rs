@@ -193,12 +193,26 @@ impl AsyncMercurio {
 
     /// Send to the targets matching `filter`, filling templates from `vars` (see [`Mercurio::notify_with`]).
     pub async fn notify_with(&self, msg: &Message, filter: &TagFilter, vars: &TemplateVars) -> Report {
+        self.notify_with_progress(msg, filter, vars, &|_| {}).await
+    }
+
+    /// [`AsyncMercurio::notify_with`], calling `on_entry` with each URL's entry as soon as it is final, so a caller can report progress (e.g. stream it). Entries of template URLs that could not be resolved come last.
+    pub async fn notify_with_progress(
+        &self,
+        msg: &Message,
+        filter: &TagFilter,
+        vars: &TemplateVars,
+        on_entry: &(dyn Fn(&ReportEntry) + Sync),
+    ) -> Report {
         let sel = self.core.select(filter, vars);
-        let entries = self.send_all(msg, sel.iter().collect()).await;
+        let entries = self.send_all(msg, sel.iter().collect(), on_entry).await;
         for t in &sel.resolved {
             t.close_async(self.transport.as_ref(), &self.core.asset_for(t)).await;
         }
-        Core::report(entries, sel.unresolved)
+        let sent = entries.len();
+        let report = Core::report(entries, sel.unresolved);
+        report.entries[sent..].iter().for_each(on_entry);
+        report
     }
 
     /// Run every target's clean-up (log out, revoke tokens). Call it before dropping a notifier whose targets keep sessions.
@@ -209,7 +223,12 @@ impl AsyncMercurio {
         self.closed = true;
     }
 
-    async fn send_all(&self, msg: &Message, targets: Vec<&Target>) -> Vec<ReportEntry> {
+    async fn send_all(
+        &self,
+        msg: &Message,
+        targets: Vec<&Target>,
+        on_entry: &(dyn Fn(&ReportEntry) + Sync),
+    ) -> Vec<ReportEntry> {
         let (transport, targets) = (self.transport.as_ref(), &targets);
         let lanes = if self.sequential { vec![(0..targets.len()).collect()] } else { lanes(targets) };
         let lanes = lanes.into_iter().map(|lane: Vec<usize>| async move {
@@ -222,7 +241,9 @@ impl AsyncMercurio {
                     transport.sleep(gap).await;
                 }
                 let attempts = t.deliver_async(msg, transport, &self.core.asset_for(t)).await;
-                done.push((i, self.core.entry(t, attempts)));
+                let entry = self.core.entry(t, attempts);
+                on_entry(&entry);
+                done.push((i, entry));
                 last.insert(t.def.id, Instant::now());
             }
             done
@@ -295,6 +316,42 @@ mod tests {
         assert_eq!(urls, ["http://localhost/a", "http://localhost/b"]);
         assert!(!m.sequential);
         assert!(AsyncMercurio::from(Mercurio::with_transport(fake.clone()).sequential()).sequential);
+    }
+
+    #[test]
+    fn progress_sees_every_entry_once() {
+        let fake = Arc::new(FakeTransport::new());
+        fake.on_url("/b", crate::Response::new(500, b"{}".to_vec()));
+        let yaml = "version: 1\ntemplate:\n  - missing\nurls:\n  - json://localhost/a\n  - json://localhost/b\n  - json://localhost/${MISSING}\n";
+        let seen = std::sync::Mutex::new(Vec::new());
+        let record = |e: &ReportEntry| seen.lock().unwrap().push((e.label.clone(), e.delivery.is_success()));
+
+        let mut m = notifier(&fake);
+        pollster::block_on(m.add_config_text(yaml, None)).unwrap();
+        let report = pollster::block_on(m.notify_with_progress(
+            &Message::new("b"),
+            &TagFilter::all(),
+            &TemplateVars::new(),
+            &record,
+        ));
+        let mut blocking = Mercurio::with_transport(fake.clone());
+        blocking.add_config_text(yaml, None).unwrap();
+        let report2 =
+            blocking.notify_with_progress(&Message::new("b"), &TagFilter::all(), &TemplateVars::new(), &record);
+
+        let seen = seen.into_inner().unwrap();
+        assert_eq!(seen.len(), 6, "{seen:?}");
+        for (half, report) in [(&seen[..3], &report), (&seen[3..], &report2)] {
+            let labels: Vec<_> = report.entries.iter().map(|e| e.label.clone()).collect();
+            let mut got: Vec<_> = half.iter().map(|(l, _)| l.clone()).collect();
+            // Sent entries arrive as they finish; the unresolved one is last.
+            assert_eq!(got.last(), labels.last());
+            got.sort();
+            let mut want = labels;
+            want.sort();
+            assert_eq!(got, want);
+            assert_eq!(half.iter().filter(|(_, ok)| *ok).count(), 1);
+        }
     }
 
     #[test]
