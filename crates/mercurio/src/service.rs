@@ -8,7 +8,7 @@ use std::time::Duration;
 use crate::asset::Asset;
 use crate::env::Env;
 use crate::error::{Error, Result};
-use crate::http::{Method, Multipart, Request};
+use crate::http::{Method, Multipart, Request, Response};
 use crate::message::{NotifyFormat, Prepared};
 use crate::plan::Plan;
 use crate::store::{Memo, StoreRef};
@@ -415,6 +415,8 @@ pub struct Context<'a> {
     pub memo: &'a Memo,
     /// The results of [`Notify::files`].
     files: &'a [(FileOp, Result<FileOutput>)],
+    /// The responses of [`Notify::fetches`].
+    fetched: &'a [(Request, Result<Response>)],
     /// The clock and random source of this send.
     env: &'a Arc<dyn Env>,
     /// The URL's `?tz=`.
@@ -425,7 +427,7 @@ impl<'a> Context<'a> {
     /// A context over `asset`, `store` and `memo`, on the [`SystemEnv`](crate::SystemEnv).
     #[expect(clippy::disallowed_methods, reason = "the default Env")]
     pub fn new(asset: &'a Asset, store: &'a StoreRef, memo: &'a Memo) -> Self {
-        Self { asset, store, memo, files: &[], env: crate::env::system(), tz: None }
+        Self { asset, store, memo, files: &[], fetched: &[], env: crate::env::system(), tz: None }
     }
 
     /// This context on another clock and random source (the transport's, see [`crate::Transport::env`]).
@@ -456,6 +458,21 @@ impl<'a> Context<'a> {
     /// This context with the results of [`Notify::files`].
     pub fn with_files(self, files: &'a [(FileOp, Result<FileOutput>)]) -> Self {
         Self { files, ..self }
+    }
+
+    /// This context with the responses of [`Notify::fetches`].
+    pub fn with_fetched(self, fetched: &'a [(Request, Result<Response>)]) -> Self {
+        Self { fetched, ..self }
+    }
+
+    /// The body of the successful (2xx) response to the [`Notify::fetches`] request for `url`; `Err` says why there is none.
+    pub fn fetched(&self, url: &str) -> std::result::Result<&'a [u8], &'static str> {
+        match self.fetched.iter().find(|(req, _)| req.url == url).map(|(_, res)| res) {
+            Some(Ok(r)) if r.is_success() => Ok(r.body.as_slice()),
+            Some(Ok(_)) => Err("was refused"),
+            Some(Err(_)) => Err("could not be downloaded"),
+            None => Err("was not fetched"),
+        }
     }
 
     /// What the [`FileOp::Stat`] of `path` requested by [`Notify::files`] found; `None` when the file is missing or could not be accessed.
@@ -546,6 +563,11 @@ pub trait Notify: Send + Sync + fmt::Debug {
 
     /// Files [`Notify::plan`] reads ([`FileOp::Stat`], [`FileOp::Read`]). They run on the transport right before each `plan` call; `plan` finds the results with [`Context::stat`] and [`Context::read`]. Services never touch the file system themselves: writes are [`Plan::file`] steps.
     fn files(&self, _ctx: &Context<'_>) -> Vec<FileOp> {
+        Vec::new()
+    }
+
+    /// HTTP requests [`Notify::plan`] needs answered first (a remote template). Like [`Notify::files`], they run on the transport right before each `plan` call; `plan` finds the responses with [`Context::fetched`].
+    fn fetches(&self, _ctx: &Context<'_>) -> Vec<Request> {
         Vec::new()
     }
 

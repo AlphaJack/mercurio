@@ -402,10 +402,15 @@ impl Target {
         stores
     }
 
-    /// The service's plan for one piece, after running the file reads it asks for.
+    /// The service's plan for one piece, after running the file reads and requests it asks for.
     async fn plan_piece(&self, msg: &Prepared<'_>, ctx: &Context<'_>, transport: &dyn AsyncTransport) -> Plan {
         let files = read_files(self.service.files(ctx), transport).await;
-        self.service.plan(msg, &ctx.with_files(&files))
+        let mut fetched = Vec::new();
+        for req in self.service.fetches(ctx) {
+            let res = transport.http(&req).await;
+            fetched.push((req, res));
+        }
+        self.service.plan(msg, &ctx.with_files(&files).with_fetched(&fetched))
     }
 
     /// The pause before retrying a failed attempt. `None` means stop: either some failure is not retryable ([`ErrorClass::is_retryable`]) or the service asked to wait longer than [`MAX_RETRY_AFTER`].
