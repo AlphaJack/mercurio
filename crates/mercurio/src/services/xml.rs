@@ -1,11 +1,13 @@
 //! XML webhook (`xml://`, `xmls://`): posts the notification as a SOAP/XML document to any HTTP endpoint.
 
+use std::borrow::Cow;
+
 use crate::crypto::b64;
 use crate::http::Method;
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::services::_webhook::{double_unquoted, endpoint, parse_method};
 use crate::url::ParsedUrl;
-use crate::util::escape_html;
+use crate::util::{escape_html, escape_html_into};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
@@ -93,39 +95,44 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 impl Notify for Xml {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let values = [PAYLOAD_VERSION.to_string(), escape_html(msg.title, false, false), escape_html(msg.body, false, false), escape_html(msg.kind.as_str(), false, false)];
-        let mut base: Vec<(String, String)> = Vec::new();
+        // Values stay unescaped and borrowed until they are written: the body is escaped straight into the payload, once.
+        let values = [Cow::Borrowed(PAYLOAD_VERSION), Cow::Borrowed(msg.title), Cow::Borrowed(msg.body), Cow::Borrowed(msg.kind.as_str())];
+        let mut base: Vec<(&str, Cow<'_, str>)> = Vec::new();
         for (name, value) in self.field_names.iter().zip(values) {
             if !name.is_empty() {
                 base.retain(|(k, _)| k != name);
-                base.push((name.clone(), value));
+                base.push((name.as_str(), value));
             }
         }
         for (k, v) in &self.extras {
             base.retain(|(bk, _)| bk != k);
-            base.push((k.clone(), escape_html(v, false, false)));
+            base.push((k.as_str(), Cow::Borrowed(v.as_str())));
         }
-        let core: String = base.iter().map(|(k, v)| format!("<{k}>{v}</{k}>")).collect();
-        let attachments = if msg.attachments.is_empty() {
-            String::new()
-        } else {
-            let entries: String = msg
-                .attachments
-                .iter()
-                .enumerate()
-                .map(|(i, a)| {
-                    let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
-                    format!(
-                        "<Attachment filename=\"{}\" mimetype=\"{}\">{}</Attachment>",
-                        escape_html(&name, false, false),
-                        escape_html(&a.mime, false, false),
-                        b64(&a.data)
-                    )
-                })
-                .collect();
-            format!("<Attachments format=\"base64\">{entries}</Attachments>")
-        };
-        let payload = TEMPLATE.replace("{{ATTACHMENTS}}", &attachments).replace("{{CORE}}", &core);
+        let (head, rest) = TEMPLATE.split_once("{{CORE}}").unwrap_or((TEMPLATE, ""));
+        let (middle, tail) = rest.split_once("{{ATTACHMENTS}}").unwrap_or((rest, ""));
+        let size: usize = base.iter().map(|(k, v)| 2 * k.len() + v.len() + 5).sum();
+        let mut payload = String::with_capacity(TEMPLATE.len() + size + size / 8);
+        payload.push_str(head);
+        for (k, v) in &base {
+            payload.push_str(&format!("<{k}>"));
+            escape_html_into(&mut payload, v, false, false);
+            payload.push_str(&format!("</{k}>"));
+        }
+        payload.push_str(middle);
+        if !msg.attachments.is_empty() {
+            payload.push_str("<Attachments format=\"base64\">");
+            for (i, a) in msg.attachments.iter().enumerate() {
+                let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
+                payload.push_str(&format!(
+                    "<Attachment filename=\"{}\" mimetype=\"{}\">{}</Attachment>",
+                    escape_html(&name, false, false),
+                    escape_html(&a.mime, false, false),
+                    b64(&a.data)
+                ));
+            }
+            payload.push_str("</Attachments>");
+        }
+        payload.push_str(tail);
 
         let mut req = ctx.request(self.method, &self.url)
             .header("Content-Type", "application/xml")

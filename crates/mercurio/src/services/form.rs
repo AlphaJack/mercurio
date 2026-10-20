@@ -1,5 +1,7 @@
 //! Form webhook (`form://`, `forms://`): posts the notification as form fields (or multipart with attachments) to any HTTP endpoint.
 
+use std::borrow::Cow;
+
 use crate::http::Method;
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::services::_webhook::{double_unquoted, endpoint, parse_method};
@@ -104,16 +106,17 @@ fn parse_attach_as(spec: &str) -> Option<(String, bool)> {
 impl Notify for Form {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let values = ["1.0", msg.title, msg.body, msg.kind.as_str()];
-        let mut payload: Vec<(String, String)> = Vec::new();
+        // The values borrow the message: a large body is not copied into the field list.
+        let mut payload: Vec<(Cow<'_, str>, Cow<'_, str>)> = Vec::new();
         for (name, value) in self.field_names.iter().zip(values) {
             if !name.is_empty() {
                 payload.retain(|(k, _)| k != name);
-                payload.push((name.clone(), value.to_string()));
+                payload.push((name.into(), value.into()));
             }
         }
         for (k, v) in &self.extras {
             payload.retain(|(pk, _)| pk != k);
-            payload.push((k.clone(), v.clone()));
+            payload.push((k.into(), v.into()));
         }
 
         let mut req = ctx.request(self.method, &self.url)
@@ -121,7 +124,7 @@ impl Notify for Form {
         if self.method == Method::Get {
             for (k, v) in &self.params {
                 payload.retain(|(pk, _)| pk != k);
-                payload.push((k.clone(), v.clone()));
+                payload.push((k.into(), v.into()));
             }
             req = req.query(&payload);
         } else {
@@ -131,7 +134,7 @@ impl Notify for Form {
             } else {
                 let mut form = ctx.multipart();
                 for (k, v) in &payload {
-                    form = form.text(k, v);
+                    form = form.text(k.as_ref(), v.as_ref());
                 }
                 for (i, a) in msg.attachments.iter().enumerate() {
                     let n = i + 1;
