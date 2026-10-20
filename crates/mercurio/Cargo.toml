@@ -54,7 +54,6 @@ zeroize = { version = "1.8", optional = true }
 mercurio = { path = ".", default-features = false, features = ["testing", "transport-blocking"] }
 insta = { version = "1.49.0", features = ["yaml"] }
 tokio = { version = "1.54", features = ["rt", "macros", "net", "io-util", "time"] }
-criterion = "0.8.2"
 
 [features]
 # Every service and the async API on tokio.
@@ -392,27 +391,3 @@ service-xmpp = []
 service-youlmk = []
 service-zoom = []
 service-zulip = []
-
-[[bench]]
-name = "smtp"
-harness = false
-
-[[bench]]
-name = "irc"
-harness = false
-
-[[bench]]
-name = "mqtt"
-harness = false
-
-[[bench]]
-name = "smpp"
-harness = false
-
-[[bench]]
-name = "xmpp"
-harness = false
-
-[[bench]]
-name = "aprs"
-harness = false
