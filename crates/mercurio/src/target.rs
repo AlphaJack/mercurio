@@ -62,6 +62,8 @@ pub struct Target {
     exec: ExecOptions,
     /// The URL sets `?redirect=`, which wins over [`Asset::http_redirects`].
     redirect_set: bool,
+    /// `?emojis=`, when the URL has it.
+    emojis: Option<bool>,
     retry: u32,
     wait: Duration,
     scheme: String,
@@ -142,6 +144,7 @@ impl Target {
                 flush_each_step: false,
             },
             redirect_set: parsed.query.get("redirect").is_some(),
+            emojis: parsed.query.get("emojis").map(|v| crate::parse::parse_bool(v, false)),
             retry: parsed.retry.unwrap_or(0).min(MAX_RETRY),
             wait: Duration::from_secs_f64(parsed.wait.unwrap_or(DEFAULT_WAIT).clamp(0.0, MAX_WAIT)),
             scheme: parsed.scheme.clone(),
@@ -229,8 +232,20 @@ impl Target {
     }
 
     fn prepare_in(&self, msg: &Message, ctx: &Context<'_>) -> Result<PreparedMessage> {
-        let opts = PipelineOptions { format_override: self.format_override, overflow: self.overflow };
+        let opts = PipelineOptions {
+            format_override: self.format_override,
+            overflow: self.overflow,
+            emojis: self.emojis(ctx.asset),
+        };
         crate::prepare::prepare(self.def, self.service.as_ref(), opts, msg, ctx)
+    }
+
+    /// Apprise's rule: the asset's `interpret_emojis`, unless the URL has `?emojis=`, which can turn them on only when the asset does not say `false`.
+    fn emojis(&self, asset: &Asset) -> bool {
+        match self.emojis {
+            Some(url) => asset.interpret_emojis != Some(false) && url,
+            None => asset.interpret_emojis == Some(true),
+        }
     }
 
     fn piece<'a>(&self, prep: &'a PreparedMessage, msg: &'a Message, index: usize) -> Prepared<'a> {

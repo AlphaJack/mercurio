@@ -75,6 +75,8 @@ pub struct Asset {
     pub storage_salt: Vec<u8>,
     /// When stores are written to [`Asset::storage_path`] (Apprise's `storage_mode`).
     pub storage_mode: StorageMode,
+    /// `:shortcode:` emoji (Apprise's `interpret_emojis`): `None` (default) lets each URL turn them on with `?emojis=yes`; `Some(true)` turns them on unless a URL says `?emojis=no`; `Some(false)` turns them off for every URL.
+    pub interpret_emojis: Option<bool>,
 }
 
 /// When a persistent store reaches the disk (Apprise's `PersistentStoreMode`).
@@ -154,6 +156,7 @@ impl Default for Asset {
             storage_idlen: DEFAULT_STORAGE_IDLEN,
             storage_salt: Vec::new(),
             storage_mode: StorageMode::Auto,
+            interpret_emojis: None,
         }
     }
 }

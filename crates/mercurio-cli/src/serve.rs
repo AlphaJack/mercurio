@@ -230,6 +230,7 @@ impl Server {
             http_redirects: self.s.http_redirects,
             storage_idlen: self.s.storage_idlen,
             storage_mode: self.s.storage_mode,
+            interpret_emojis: self.s.interpret_emojis,
             ..mercurio::Asset::default()
         };
         match (&self.s.storage, persistent) {

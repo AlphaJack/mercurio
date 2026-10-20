@@ -145,7 +145,7 @@ mod tests {
         );
         assert_eq!(details["args"]["retry"]["max"], 10);
         assert_eq!(details["args"]["pass"], json!({"alias_of": "password"}));
-        assert!(details["args"].get("emojis").is_none(), "ignored keys are left out");
+        assert!(details["args"].get("optional").is_none(), "ignored keys are left out");
         assert_eq!(schema(def("gotify"), Some(false))["enabled"], false);
     }
 

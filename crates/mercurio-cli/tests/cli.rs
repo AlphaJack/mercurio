@@ -90,6 +90,27 @@ fn sends_title_and_body() {
 }
 
 #[test]
+fn emoji_shortcodes_follow_j_and_the_url() {
+    // (CLI flag, URL query, expected body), as Apprise: -j turns them on unless the URL says no; a URL alone can turn them on.
+    for (flag, query, expected) in [
+        (None, "", "deploy :rocket:"),
+        (Some("-j"), "", "deploy 🚀"),
+        (Some("-j"), "?emojis=no", "deploy :rocket:"),
+        (None, "?emojis=yes", "deploy 🚀"),
+    ] {
+        let (addr, rx) = server(200);
+        let url = format!("json://{addr}{query}");
+        let mut c = bin();
+        c.args(["-b", "deploy :rocket:", "-t", ":warning:"]).args(flag).arg(&url);
+        assert!(c.status().unwrap().success(), "{flag:?} {query}");
+        let v = json(&rx.recv().unwrap());
+        assert_eq!(v["message"], expected, "{flag:?} {query}");
+        let title = if expected.contains('🚀') { "⚠️" } else { ":warning:" };
+        assert_eq!(v["title"], title, "{flag:?} {query}");
+    }
+}
+
+#[test]
 fn attaches_files_with_url_options() {
     let dir = std::env::temp_dir().join(format!("mercurio-cli-attach-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();

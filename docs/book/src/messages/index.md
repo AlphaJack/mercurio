@@ -29,8 +29,19 @@ icon images, priority or the `type` field of `json://`, `form://` and
 
 `-e` turns `\n`, `\r`, `\t` and `\\` in the CLI's title and body into the
 characters they stand for (`mercurio -e -b 'sda: 91%\nsdb: 40%' ...`); other
-escapes stay as written. The library does not decode escapes. Text is sent
-as written: `:shortcode:` emoji are not expanded.
+escapes stay as written. The library does not decode escapes.
+
+`:shortcode:` emoji (`:rocket:`, `:+1:`: GitHub's gemoji names,
+case-insensitive) become the emoji itself when emoji are on for a URL:
+
+- `-j` / `--interpret-emojis` (CLI), `APPRISE_INTERPRET_EMOJIS=yes`
+  (server) or `Asset::interpret_emojis = Some(true)` (library) turn them on
+  for every URL, unless a URL says `?emojis=no`;
+- without those, a URL can turn them on with `?emojis=yes`;
+- `APPRISE_INTERPRET_EMOJIS=no` or `Some(false)` turns them off everywhere.
+
+Unknown names stay as written. The replacement happens before format
+conversion, in the title and the body.
 
 ## The pipeline
 
