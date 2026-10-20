@@ -290,15 +290,15 @@ fn send(base: Arc<Request>, body: Arc<SendBody>, retries: u32) -> Plan {
 
 enum SendBody {
     Json(Vec<u8>),
-    File { payload_json: String, attachment: Attachment },
+    File { payload_json: String, attachment: Attachment, boundary: String },
 }
 
 impl SendBody {
     fn apply(&self, req: Request) -> Request {
         match self {
             SendBody::Json(b) => req.header("Content-Type", "application/json; charset=utf-8").body(b.clone(), None),
-            SendBody::File { payload_json, attachment } => {
-                req.multipart(Multipart::new().text("payload_json", payload_json.clone()).file(
+            SendBody::File { payload_json, attachment, boundary } => {
+                req.multipart(Multipart::with_boundary(boundary.clone()).text("payload_json", payload_json.clone()).file(
                     "files[0]",
                     attachment.name.clone(),
                     attachment.mime.clone(),
@@ -413,7 +413,11 @@ impl Notify for Fluxer {
                 payload.insert("content".into(), json!(a.name));
                 payload.insert("attachments".into(), json!([{"id": 0, "filename": a.name}]));
                 let body =
-                    SendBody::File { payload_json: Value::Object(payload.clone()).to_string(), attachment: a.clone() };
+                    SendBody::File {
+                    payload_json: Value::Object(payload.clone()).to_string(),
+                    attachment: a.clone(),
+                    boundary: ctx.env().random_hex(16),
+                };
                 plans.push(send(base.clone(), Arc::new(body), 1));
             }
         }

@@ -2,6 +2,7 @@
 
 use serde_json::{Map, Value, json};
 
+use crate::env::Env;
 use crate::asset::ImageSize;
 use crate::error::Error;
 use crate::http::Request;
@@ -263,6 +264,7 @@ struct Common<'a> {
     image_url: Option<&'a str>,
     format: NotifyFormat,
     app_id: &'a str,
+    env: &'a dyn Env,
 }
 
 impl Ntfy {
@@ -349,7 +351,7 @@ impl Ntfy {
                     // Send the message as an attachment instead.
                     let content =
                         format!("{}{}", if title.is_empty() { String::new() } else { format!("{title}\n") }, body);
-                    let name = format!("{}.txt", crate::crypto::uuid4());
+                    let name = format!("{}.txt", common.env.uuid4());
                     let up = Upload { name, data: content.as_bytes() };
                     return self.send_one(topic, "", "", Some(up), common);
                 }
@@ -396,7 +398,8 @@ impl Notify for Ntfy {
         } else {
             None
         };
-        let common = Common { image_url: image_url.as_deref(), format: msg.format, app_id: ctx.app_id() };
+        let common =
+            Common { image_url: image_url.as_deref(), format: msg.format, app_id: ctx.app_id(), env: ctx.env().as_ref() };
 
         let topics = self.topics.iter();
         if !msg.attachments.is_empty() {

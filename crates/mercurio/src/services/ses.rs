@@ -5,6 +5,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use crate::env::Env;
 use crate::error::Error;
 use crate::http::Request;
 use crate::message::Attachment;
@@ -186,7 +187,7 @@ impl Ses {
         format!("email.{}.amazonaws.com", self.region)
     }
 
-    fn post(&self, body: String, ua: &str) -> Request {
+    fn post(&self, body: String, ua: &str, env: &dyn Env) -> Request {
         let host = self.host();
         let signer = AwsSigner {
             access_key_id: &self.access_key_id,
@@ -197,7 +198,7 @@ impl Ses {
             session_token: self.session_token.as_ref().map(Secret::expose),
         };
         let mut req = Request::post(format!("https://{host}")).header("User-Agent", ua);
-        for (k, v) in signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, crate::time::unix_time()) {
+        for (k, v) in signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, env.unix_time()) {
             req = req.header(k, v);
         }
         req.body(body, None)
@@ -215,7 +216,7 @@ impl Notify for Arc<Ses> {
             _ => ctx.app_desc().to_string(),
         };
         let reply_addr = self.reply_to.as_ref().map_or(self.from_addr.clone(), |r| r.1.clone());
-        let date = crate::time::rfc2822_utc(crate::time::unix_time());
+        let date = crate::time::rfc2822_utc(ctx.env().unix_time());
         let ua = ctx.app_id().to_string();
 
         let mut plans = Vec::new();
@@ -237,7 +238,7 @@ impl Notify for Arc<Ses> {
             }
             headers.push(("Date".into(), date.clone()));
             headers.push(("X-Application".into(), header_value(&ua)));
-            let raw = raw_message(&headers, msg.format == NotifyFormat::Html, msg.body, msg.attachments);
+            let raw = raw_message(&headers, msg.format == NotifyFormat::Html, msg.body, msg.attachments, ctx.env().as_ref());
             let mut payload: Vec<(String, String)> = vec![
                 ("Action".into(), "SendRawEmail".into()),
                 ("Version".into(), "2010-12-01".into()),
@@ -248,10 +249,10 @@ impl Notify for Arc<Ses> {
             }
             payload.push(("Source".into(), formataddr(&from_name, &self.from_addr)));
             let body = form_urlencode(payload.iter());
-            let (me, ua) = (self.clone(), ua.clone());
+            let (me, ua, env) = (self.clone(), ua.clone(), ctx.env().clone());
             plans.push(
                 Plan::defer(move || {
-                    Plan::http(me.post(body, &ua), |res| match aws_check(res) {
+                    Plan::http(me.post(body, &ua, env.as_ref()), |res| match aws_check(res) {
                         Ok(_) => Plan::Done,
                         Err(e) => Plan::Fail(e),
                     })
@@ -264,7 +265,13 @@ impl Notify for Arc<Ses> {
 }
 
 /// The `SendRawEmail` message: headers, then the body (a multipart/mixed tree when there are attachments).
-fn raw_message(headers: &[(String, String)], html: bool, body: &str, attachments: &[Attachment]) -> String {
+fn raw_message(
+    headers: &[(String, String)],
+    html: bool,
+    body: &str,
+    attachments: &[Attachment],
+    env: &dyn Env,
+) -> String {
     let text = Part::text(if html { "html" } else { "plain" }, body);
     let tree = if attachments.is_empty() {
         text
@@ -276,7 +283,7 @@ fn raw_message(headers: &[(String, String)], html: bool, body: &str, attachments
         }
         Part::Multi { subtype: "mixed", parts }
     };
-    render(headers, &tree)
+    render(headers, &tree, env)
 }
 
 #[cfg(test)]
@@ -287,12 +294,12 @@ mod tests {
     #[test]
     fn raw_message_layout() {
         let headers = vec![("Subject".to_string(), header_value("Tïtle")), ("To".into(), "a@b.com".into())];
-        let plain = raw_message(&headers, true, "Body", &[]);
+        let plain = raw_message(&headers, true, "Body", &[], crate::testing::test_env());
         assert!(plain.starts_with("Subject: =?utf-8?b?VMOvdGxl?=\r\nTo: a@b.com\r\nMIME-Version: 1.0\r\n"), "{plain}");
         assert!(plain.ends_with("Content-Type: text/html; charset=\"utf-8\"\r\n\
                                  Content-Transfer-Encoding: quoted-printable\r\n\r\nBody"));
         let atts = [Attachment::new("", "image/png", b"\x89PNG".to_vec())];
-        let multi = raw_message(&headers, false, "Body", &atts);
+        let multi = raw_message(&headers, false, "Body", &atts, crate::testing::test_env());
         assert!(multi.contains("Content-Type: multipart/mixed; boundary="), "{multi}");
         assert!(multi.contains("Content-Disposition: attachment; filename=\"file001.dat\"\r\n\r\niVBORw=="), "{multi}");
     }

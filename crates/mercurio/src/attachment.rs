@@ -191,23 +191,25 @@ impl AttachSource {
     }
 
     /// In-memory bytes; name defaults to `<uuid>.dat`, MIME type to `application/octet-stream`.
+    #[expect(clippy::disallowed_methods, reason = "a caller-side constructor, before any send")]
     pub fn memory(data: impl Into<Vec<u8>>, name: Option<&str>, mime: Option<&str>) -> Self {
         let mut s = Self::build(Kind::Memory(data.into()));
         s.name = Some(
             name.filter(|n| !n.is_empty())
                 .map(str::to_string)
-                .unwrap_or_else(|| format!("{}.dat", crate::crypto::uuid4())),
+                .unwrap_or_else(|| format!("{}.dat", crate::env::system().uuid4())),
         );
         s.mime = Some(mime.unwrap_or(UNKNOWN_MIME).to_string());
         s
     }
 
     /// In-memory text; name defaults to `<uuid>.txt`, MIME type to `text/plain`.
+    #[expect(clippy::disallowed_methods, reason = "a caller-side constructor, before any send")]
     pub fn text(text: &str, name: Option<&str>) -> Self {
         let name = name
             .filter(|n| !n.is_empty())
             .map(str::to_string)
-            .unwrap_or_else(|| format!("{}.txt", crate::crypto::uuid4()));
+            .unwrap_or_else(|| format!("{}.txt", crate::env::system().uuid4()));
         Self::memory(text.as_bytes(), Some(&name), Some("text/plain"))
     }
 
@@ -716,7 +718,7 @@ mod tests {
     use crate::testing::FakeTransport;
 
     fn temp_file(name: &str, data: &[u8]) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("mercurio-attach-{}", crate::crypto::random_hex(6)));
+        let dir = std::env::temp_dir().join(format!("mercurio-attach-{}", crate::env::system().random_hex(6)));
         std::fs::create_dir_all(&dir).unwrap();
         let p = dir.join(name);
         std::fs::write(&p, data).unwrap();

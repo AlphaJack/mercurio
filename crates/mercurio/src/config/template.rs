@@ -276,9 +276,10 @@ pub struct Placeholders {
 
 impl Placeholders {
     /// Placeholder map for `schema`, with a nonce that does not occur in `content`.
+    #[expect(clippy::disallowed_methods, reason = "an internal marker that never reaches a request")]
     pub fn new(schema: TemplateSchema, content: &str) -> Result<Self, TemplateError> {
         for _ in 0..8 {
-            let nonce = crate::crypto::random_hex(8);
+            let nonce = crate::env::system().random_hex(8);
             if !content.contains(&format!("a{nonce}")) {
                 return Ok(Placeholders { nonce, names: Vec::new(), schema, pattern: std::sync::OnceLock::new() });
             }

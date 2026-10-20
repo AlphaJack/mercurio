@@ -21,8 +21,8 @@ use ring::{aead, hkdf};
 use serde_json::{Value, json};
 
 use super::_keys::{local_file_ops, p256_keys_from_der, pem_decode, read_local_file};
-use crate::crypto::{b64_url_decode, b64_url_nopad, random_bytes};
-use crate::time::unix_time;
+use crate::crypto::{b64_url_decode, b64_url_nopad};
+use crate::env::Env;
 use crate::error::Error;
 use crate::parse::{is_email, is_hostname, parse_list, parse_list_unquoted};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef, UrlIdentifier};
@@ -189,9 +189,15 @@ struct Subscription {
     auth_secret: Vec<u8>,
 }
 
+/// ring's generator, for the key generation, ECDH and ECDSA calls that take one. ring's `SecureRandom` is sealed, so the transport's [`Env`] can not stand in; the salt and the timestamps still come from it.
+#[expect(clippy::disallowed_methods, reason = "ring's SecureRandom is sealed")]
+fn ring_rng() -> SystemRandom {
+    SystemRandom::new()
+}
+
 /// Check a point is on P-256 by running an ECDH against it.
 fn valid_p256_point(point: &[u8]) -> bool {
-    let rng = SystemRandom::new();
+    let rng = ring_rng();
     let Ok(eph) = EphemeralPrivateKey::generate(&ECDH_P256, &rng) else { return false };
     agree_ephemeral(eph, &UnparsedPublicKey::new(&ECDH_P256, point), |_| ()).is_ok()
 }
@@ -290,13 +296,13 @@ fn encrypt_with(
 }
 
 /// Encrypt one message for a subscription (RFC 8291, `aes128gcm`).
-fn encrypt_webpush(message: &[u8], ua_public: &[u8], auth: &[u8]) -> Option<Vec<u8>> {
-    let rng = SystemRandom::new();
+fn encrypt_webpush(message: &[u8], ua_public: &[u8], auth: &[u8], env: &dyn Env) -> Option<Vec<u8>> {
+    let rng = ring_rng();
     let eph = EphemeralPrivateKey::generate(&ECDH_P256, &rng).ok()?;
     let as_public = eph.compute_public_key().ok()?.as_ref().to_vec();
     let shared = agree_ephemeral(eph, &UnparsedPublicKey::new(&ECDH_P256, ua_public), |s| s.to_vec()).ok()?;
     let mut salt = [0u8; 16];
-    random_bytes(&mut salt);
+    env.fill_random(&mut salt);
     encrypt_with(&shared, ua_public, &as_public, auth, &salt, message)
 }
 
@@ -312,7 +318,7 @@ fn load_signing_key(ctx: &Context<'_>, spec: &str) -> Option<EcdsaKeyPair> {
         &ECDSA_P256_SHA256_FIXED_SIGNING,
         &private,
         &public,
-        &SystemRandom::new(),
+        &ring_rng(),
     )
     .ok()
 }
@@ -333,8 +339,8 @@ fn stored_key(ctx: &Context<'_>, dir: &Path) -> Option<(EcdsaKeyPair, Plan)> {
     if let Some(found) = PRIVATE_KEY_FILES.iter().map(|f| dir.join(f)).find(|p| ctx.stat(p).is_some_and(|m| m.is_file)) {
         return Some((load_signing_key(ctx, found.to_str()?)?, Plan::Done));
     }
-    let pkcs8 = EcdsaKeyPair::generate_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &SystemRandom::new()).ok()?;
-    let key = EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pkcs8.as_ref(), &SystemRandom::new()).ok()?;
+    let pkcs8 = EcdsaKeyPair::generate_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &ring_rng()).ok()?;
+    let key = EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pkcs8.as_ref(), &ring_rng()).ok()?;
     let mut spki = SPKI_P256_PREFIX.to_vec();
     spki.extend_from_slice(key.public_key().as_ref());
     let write = |name: &str, label: &str, der: &[u8]| FileOp::WriteAtomic {
@@ -367,7 +373,7 @@ fn jwt_token(key: &EcdsaKeyPair, audience: &str, subscriber: &str, now: u64) -> 
     let payload =
         json!({"aud": audience, "exp": now + JWT_EXPIRATION_SECS, "sub": format!("mailto:{subscriber}")}).to_string();
     let input = format!("{}.{}", b64_url_nopad(header.as_bytes()), b64_url_nopad(payload.as_bytes()));
-    let sig = key.sign(&SystemRandom::new(), input.as_bytes()).ok()?;
+    let sig = key.sign(&ring_rng(), input.as_bytes()).ok()?;
     Some(format!("{input}.{}", b64_url_nopad(sig.as_ref())))
 }
 
@@ -409,7 +415,7 @@ impl Notify for Vapid {
             .and_then(|v| v.as_array().map(|a| a.iter().filter_map(|e| e.as_str().map(str::to_string)).collect()))
             .unwrap_or_default();
         let tally = Arc::new(Mutex::new(Tally::default()));
-        let now = unix_time();
+        let now = ctx.env().unix_time();
 
         let mut plans = Vec::new();
         for target in &self.targets {
@@ -425,7 +431,7 @@ impl Notify for Vapid {
             }
             let (Some(jwt), Some(body)) = (
                 jwt_token(&key, &entry.origin, &self.subscriber, now),
-                encrypt_webpush(msg.body.as_bytes(), &entry.public_key, &entry.auth_secret),
+                encrypt_webpush(msg.body.as_bytes(), &entry.public_key, &entry.auth_secret, ctx.env().as_ref()),
             ) else {
                 plans.push(Plan::Fail(Error::Service("Vapid encryption failed".into())).target(target.clone()));
                 continue;
@@ -555,12 +561,12 @@ mod tests {
 
     #[test]
     fn round_trip() {
-        let rng = SystemRandom::new();
+        let rng = ring_rng();
         let ua = EphemeralPrivateKey::generate(&ECDH_P256, &rng).unwrap();
         let ua_public = ua.compute_public_key().unwrap().as_ref().to_vec();
         let auth = [9u8; 16];
         let msg = "héllo 🦀 web push".as_bytes();
-        let body = encrypt_webpush(msg, &ua_public, &auth).unwrap();
+        let body = encrypt_webpush(msg, &ua_public, &auth, crate::testing::test_env()).unwrap();
         let as_public = body[21..21 + 65].to_vec();
         let shared = agree_ephemeral(ua, &UnparsedPublicKey::new(&ECDH_P256, &as_public), |s| s.to_vec()).unwrap();
         assert_eq!(decrypt_with(&shared, &ua_public, &auth, &body), msg);

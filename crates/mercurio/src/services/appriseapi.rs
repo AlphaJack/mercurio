@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use crate::util::unquoted_pairs;
 use crate::crypto::b64;
-use crate::http::{DEFAULT_CONNECT_TIMEOUT, Multipart, Request};
+use crate::http::{DEFAULT_CONNECT_TIMEOUT, Request};
 use crate::parse::{parse_list, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
@@ -115,8 +115,14 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         user: u.user().filter(|s| !s.is_empty()),
         password: u.password().filter(|s| !s.is_empty()).map(Secret::new),
         format_override: u.format,
-        uid: crate::crypto::uuid4(),
+        uid: parse_time_uid(),
     }))
+}
+
+/// The `X-Apprise-ID` of a target without `Asset::uid`: one per parsed URL, as Apprise makes one per instance. Parsing has no [`crate::Context`], so it comes from the system generator.
+#[expect(clippy::disallowed_methods, reason = "fixed when the URL is parsed, before any send")]
+fn parse_time_uid() -> String {
+    crate::env::system().uuid4()
 }
 
 /// `http(s)://host[:port][/path]/notify/{token}[/][?params]` -> `apprise(s)://...` (version 1 unless the query names one).
@@ -178,7 +184,7 @@ impl Notify for AppriseApi {
             if msg.attachments.is_empty() {
                 req = req.form(&fields);
             } else {
-                let mut mp = Multipart::new();
+                let mut mp = ctx.multipart();
                 for (k, v) in &fields {
                     mp = mp.text(*k, v.as_str());
                 }

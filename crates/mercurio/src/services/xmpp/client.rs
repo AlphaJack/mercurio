@@ -132,7 +132,13 @@ fn iq_error(what: &str, el: &Element) -> Error {
 }
 
 /// SASL negotiation; `Ok` once the server reports success.
-async fn authenticate(s: &mut Stream<'_>, features: &Element, user: &str, password: &str) -> Result<()> {
+async fn authenticate(
+    s: &mut Stream<'_>,
+    features: &Element,
+    user: &str,
+    password: &str,
+    env: &dyn crate::Env,
+) -> Result<()> {
     let offered: Vec<String> = features
         .child("mechanisms")
         .map(|m| m.children_named("mechanism").map(|c| c.text.trim().to_string()).collect())
@@ -158,7 +164,7 @@ async fn authenticate(s: &mut Stream<'_>, features: &Element, user: &str, passwo
             _ => Err(Error::service("XMPP: unexpected SASL answer")),
         };
     }
-    let mut scram = Scram::new(mech, user);
+    let mut scram = Scram::new(mech, user, env);
     s.send(&format!(
         "<auth xmlns='{NS_SASL}' mechanism='{}'>{}</auth>",
         mech.name(),
@@ -196,7 +202,7 @@ async fn authenticate(s: &mut Stream<'_>, features: &Element, user: &str, passwo
 }
 
 /// Run the whole session on `conn`.
-pub async fn run(conn: &mut dyn AsyncConn, cfg: &Session) -> Result<()> {
+pub async fn run(conn: &mut dyn AsyncConn, cfg: &Session, env: &dyn crate::Env) -> Result<()> {
     let jid = split_jid(&cfg.jid);
     let mut s = Stream { reader: Reader::new(conn), ids: 0 };
 
@@ -219,7 +225,7 @@ pub async fn run(conn: &mut dyn AsyncConn, cfg: &Session) -> Result<()> {
         features = s.open(jid.domain).await?;
     }
 
-    authenticate(&mut s, &features, jid.local, &cfg.password).await?;
+    authenticate(&mut s, &features, jid.local, &cfg.password, env).await?;
     s.reader.reset();
     let features = s.open(jid.domain).await?;
 
@@ -320,7 +326,7 @@ mod tests {
             }
         });
         let mut conn: Box<dyn crate::transport::Conn> = Box::new(conn);
-        let err = pollster::block_on(run(&mut conn, &session())).unwrap_err();
+        let err = pollster::block_on(run(&mut conn, &session(), crate::testing::test_env())).unwrap_err();
         assert!(err.to_string().contains("after STARTTLS"), "{err}");
         assert!(!AsyncConn::is_tls(&conn));
     }

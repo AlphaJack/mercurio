@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use serde_json::{Map, Value, json};
 
 use super::{Config, Mode, Msg, Version};
+use crate::env::Env;
 use crate::error::Error;
 use crate::http::{Method, Request, Response};
 use crate::store::{Memo, StoreRef};
@@ -273,6 +274,8 @@ pub(super) struct Session {
     pub cfg: Arc<Config>,
     pub msg: Arc<Msg>,
     pub store: StoreRef,
+    /// The clock and random source of the send.
+    pub env: Arc<dyn Env>,
     /// Rooms that took the message in an earlier `?retry=` attempt.
     pub memo: Memo,
     pub access_token: Option<String>,
@@ -292,11 +295,12 @@ pub(super) struct Session {
 
 impl Session {
     // A new session, with identity values restored from the store.
-    pub fn new(cfg: Arc<Config>, msg: Arc<Msg>, store: StoreRef) -> Self {
+    pub fn new(cfg: Arc<Config>, msg: Arc<Msg>, store: StoreRef, env: Arc<dyn Env>) -> Self {
         let mut s = Session {
             cfg,
             msg,
             store,
+            env,
             memo: Memo::disabled(),
             access_token: None,
             user_id: None,
@@ -354,7 +358,7 @@ impl Session {
     pub fn bump_txn(&mut self) {
         if !self.token_is_not_password() {
             if let Txn::Uuid(u) = &mut self.txn {
-                *u = crate::crypto::uuid4();
+                *u = self.env.uuid4();
             }
             return;
         }
@@ -743,7 +747,7 @@ impl Session {
     pub fn run(mut self) -> Plan {
         if self.access_token.is_none() && self.password().is_some_and(|p| !p.is_empty()) && self.cfg.user.is_none() {
             self.access_token = self.password().map(str::to_string);
-            self.txn = Txn::Uuid(crate::crypto::uuid4());
+            self.txn = Txn::Uuid(self.env.uuid4());
         }
         if self.access_token.is_none() {
             return self.login(Box::new(|s, ok| {
@@ -1239,9 +1243,9 @@ fn label_of(v: &Value) -> String {
 }
 
 /// Build a session for one send and run it.
-pub(super) fn plan(cfg: Arc<Config>, msg: Msg, store: StoreRef, memo: Memo) -> Plan {
+pub(super) fn plan(cfg: Arc<Config>, msg: Msg, store: StoreRef, memo: Memo, env: Arc<dyn Env>) -> Plan {
     let msg = Arc::new(msg);
-    Plan::defer(move || Session { memo, ..Session::new(cfg, msg, store) }.run())
+    Plan::defer(move || Session { memo, ..Session::new(cfg, msg, store, env) }.run())
 }
 
 fn delivery_key(label: &str) -> String {
@@ -1249,8 +1253,8 @@ fn delivery_key(label: &str) -> String {
 }
 
 /// Clean-up when the target is closed.
-pub(super) fn close(cfg: Arc<Config>, msg: Msg, store: StoreRef) -> Option<Plan> {
-    Session::new(cfg, Arc::new(msg), store).logout()
+pub(super) fn close(cfg: Arc<Config>, msg: Msg, store: StoreRef, env: Arc<dyn Env>) -> Option<Plan> {
+    Session::new(cfg, Arc::new(msg), store, env).logout()
 }
 
 #[cfg(test)]

@@ -5,8 +5,7 @@
 use blake2::{Blake2b512, Digest};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 
-use crate::crypto::{b64, hex, random_bytes};
-use crate::time::unix_time;
+use crate::crypto::{b64, hex};
 use crate::error::Error;
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -172,9 +171,9 @@ impl Notify for Sogs {
         Plan::all(self.rooms.iter().map(|room| {
             let path = format!("/room/{room}/message");
             let mut nonce = [0u8; 16];
-            random_bytes(&mut nonce);
+            ctx.env().fill_random(&mut nonce);
             let mut req = ctx.post(format!("{}{path}", self.base)).header("Content-Type", "application/json");
-            for (k, v) in self.auth_headers("POST", &path, &body, &nonce, unix_time()) {
+            for (k, v) in self.auth_headers("POST", &path, &body, &nonce, ctx.env().unix_time()) {
                 req = req.header(k, v);
             }
             let req = req.body(body.clone(), None);

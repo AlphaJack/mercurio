@@ -14,6 +14,7 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use super::_chat::{TemplateSrc, apply_template_json, read_template, template_files, template_source};
+use crate::env::Env;
 use crate::asset::ImageSize;
 use crate::http::{Method, Multipart, Request, Response};
 use crate::parse::{is_email, parse_list, validate_regex};
@@ -359,13 +360,14 @@ fn check(mode: Mode, res: Result<Response>) -> Sent {
 }
 
 /// Per-send shared state.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Run {
     aborted: AtomicBool,
     /// `(message key, channel id)` of channels that accepted the message (for the attachment phase).
     channel_ids: Mutex<Vec<(String, Value)>>,
     /// Shared by the retry attempts of this notification.
     memo: Memo,
+    env: Arc<dyn Env>,
 }
 
 fn message_key(key: &str) -> String {
@@ -469,7 +471,7 @@ impl Slack {
             }
             attachment["footer"] = json!(ctx.app_id());
             if self.include_timestamp {
-                attachment["ts"] = json!(crate::time::unix_time_ms() as f64 / 1000.0);
+                attachment["ts"] = json!(ctx.env().unix_time_ms() as f64 / 1000.0);
             }
         }
         payload["attachments"] = json!([attachment]);
@@ -608,7 +610,7 @@ impl Slack {
                         };
                         let mut upload = upload_tpl;
                         upload.url = json_text(&upload_url);
-                        let upload = upload.multipart(Multipart::new().file("file", name.clone(), "", data));
+                        let upload = upload.multipart(Multipart::with_env(run.env.as_ref()).file("file", name.clone(), "", data));
                         Plan::http(upload, move |res| {
                             match check(mode, res) {
                                 Sent::Ok(r) if json_has_value(&r) => {}
@@ -700,7 +702,12 @@ impl Notify for Slack {
         }
 
         let track = !msg.attachments.is_empty() && self.mode == Mode::Bot;
-        let run = Arc::new(Run { memo: ctx.memo.clone(), ..Run::default() });
+        let run = Arc::new(Run {
+            aborted: AtomicBool::default(),
+            channel_ids: Mutex::default(),
+            memo: ctx.memo.clone(),
+            env: ctx.env().clone(),
+        });
         let channel_re = crate::regex!(r"(?i)^(?P<channel>[+#@]?[A-Z0-9_-]{1,32})(:(?P<thread_ts>[0-9.]+))?$");
         let mut plans = Vec::new();
         let mut thread_ts: Option<String> = None;

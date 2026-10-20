@@ -11,6 +11,7 @@ use std::sync::Arc;
 use aes::Aes256;
 use aes::cipher::{BlockCipherEncrypt, KeyInit};
 
+use crate::env::Env;
 use crate::convert::html;
 use crate::error::Error;
 use crate::http::{Multipart, Request};
@@ -174,11 +175,11 @@ fn set(p: &mut Payload, key: &'static str, value: impl Into<String>) {
 }
 
 impl Pushover {
-    fn request(&self, payload: &Payload, attach: Option<&Attachment>, ua: &str) -> Request {
+    fn request(&self, payload: &Payload, attach: Option<&Attachment>, ua: &str, env: &dyn Env) -> Request {
         let req = Request::post(NOTIFY_URL).header("User-Agent", ua).basic_auth(self.token.expose(), Some(""));
         match attach {
             Some(a) => {
-                let mut form = Multipart::new();
+                let mut form = Multipart::with_env(env);
                 for (k, v) in payload {
                     form = form.text(*k, v.clone());
                 }
@@ -188,7 +189,7 @@ impl Pushover {
         }
     }
 
-    fn send(&self, payload: &Payload, attach: Option<&Attachment>, ua: &str) -> Plan {
+    fn send(&self, payload: &Payload, attach: Option<&Attachment>, ua: &str, env: &dyn Env) -> Plan {
         if let Some(a) = attach
             && a.mime.to_ascii_lowercase().starts_with("image/")
             && !(1..=ATTACH_MAX_BYTES).contains(&a.data.len())
@@ -197,7 +198,7 @@ impl Pushover {
         }
         // Unsupported attachments are dropped; the message still goes out.
         let attach = attach.filter(|a| a.mime.to_ascii_lowercase().starts_with("image/"));
-        Plan::http(self.request(payload, attach, ua), |res| match res {
+        Plan::http(self.request(payload, attach, ua, env), |res| match res {
             Ok(r) if r.status == 200 => Plan::Done,
             Ok(r) if r.status == 401 => {
                 Plan::Fail(Error::Http { status: 401, reason: "Unauthorized - Invalid Token.".into() })
@@ -279,7 +280,7 @@ impl Notify for Arc<Pushover> {
             };
             for field in ["message", "title", "url", "url_title"] {
                 if let Some(e) = base.iter_mut().find(|(k, _)| *k == field) {
-                    e.1 = encrypt_field(&e.1, &key, &random_iv());
+                    e.1 = encrypt_field(&e.1, &key, &random_iv(ctx.env().as_ref()));
                 }
             }
             base.push(("encrypted", "1".into()));
@@ -300,7 +301,7 @@ impl Notify for Arc<Pushover> {
 
         Plan::all(recipients.into_iter().map(|(label, payload)| {
             if msg.attachments.is_empty() {
-                return self.send(&payload, None, ua).target(label);
+                return self.send(&payload, None, ua, ctx.env().as_ref()).target(label);
             }
             // Every attachment is posted, even after a failure.
             let mut p = payload;
@@ -309,7 +310,7 @@ impl Notify for Arc<Pushover> {
                 if no > 0 || msg.body.is_empty() {
                     set(&mut p, "message", a.name.clone());
                 }
-                plans.push(self.send(&p, Some(a), ua));
+                plans.push(self.send(&p, Some(a), ua, ctx.env().as_ref()));
                 set(&mut p, "title", "");
                 set(&mut p, "sound", "none");
             }
@@ -322,9 +323,9 @@ impl Notify for Arc<Pushover> {
 // E2EE (https://pushover.net/api#e2ee)
 
 
-fn random_iv() -> [u8; 16] {
+fn random_iv(env: &dyn Env) -> [u8; 16] {
     let mut iv = [0u8; 16];
-    crate::crypto::random_bytes(&mut iv);
+    env.fill_random(&mut iv);
     iv
 }
 

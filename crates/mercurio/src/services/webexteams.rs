@@ -2,7 +2,6 @@
 
 use serde_json::json;
 
-use crate::http::Multipart;
 use crate::parse::{parse_list, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, split_path, unquote};
@@ -124,7 +123,7 @@ impl Notify for WebexTeams {
                         Plan::chain(msg.attachments.iter().enumerate().map(|(i, a)| {
                             let no = i + 1;
                             let name = if a.name.is_empty() { format!("file{no:03}.dat") } else { a.name.clone() };
-                            let mut form = Multipart::new().text("roomId", room.as_str());
+                            let mut form = ctx.multipart().text("roomId", room.as_str());
                             if no == 1 {
                                 form = form.text(text_key, msg.body);
                             }

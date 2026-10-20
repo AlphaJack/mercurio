@@ -14,7 +14,6 @@ use serde_json::{Map, Value, json};
 use super::_keys::{json_full_update, local_file_ops, pem_decode, read_local_file};
 use crate::asset::ImageSize;
 use crate::crypto::b64_url_nopad;
-use crate::time::unix_time;
 use crate::error::Error;
 use crate::http::Request;
 use crate::parse::{parse_bool, parse_list, parse_list_unquoted, validate_nonblank};
@@ -226,7 +225,10 @@ fn jwt_assertion(sa: &ServiceAccount, now: u64) -> Option<String> {
     .to_string();
     let signing_input = format!("{}.{}", b64_url_nopad(header.as_bytes()), b64_url_nopad(payload.as_bytes()));
     let mut sig = vec![0u8; sa.key.public().modulus_len()];
-    sa.key.sign(&RSA_PKCS1_SHA256, &SystemRandom::new(), signing_input.as_bytes(), &mut sig).ok()?;
+    // ring's `SecureRandom` is sealed, so the transport's Env can not stand in; RSA PKCS#1 v1.5 signatures do not depend on it (it only blinds the key).
+    #[expect(clippy::disallowed_methods, reason = "ring's SecureRandom is sealed; the signature does not depend on it")]
+    let rng = SystemRandom::new();
+    sa.key.sign(&RSA_PKCS1_SHA256, &rng, signing_input.as_bytes(), &mut sig).ok()?;
     Some(format!("{signing_input}.{}", b64_url_nopad(&sig)))
 }
 
@@ -305,7 +307,7 @@ impl Notify for Fcm {
         if sa.project_id != *project {
             return Plan::Fail(Error::Service("FCM keyfile identifies itself for a different project".into()));
         }
-        let Some(assertion) = jwt_assertion(&sa, unix_time()) else {
+        let Some(assertion) = jwt_assertion(&sa, ctx.env().unix_time()) else {
             return Plan::Fail(Error::Service("FCM JWT assertion could not be signed".into()));
         };
         let token_req = Request::post(&sa.token_uri)

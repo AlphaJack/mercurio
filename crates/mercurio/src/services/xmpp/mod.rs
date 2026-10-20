@@ -155,7 +155,9 @@ impl Notify for Xmpp {
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.mode == Mode::Tls);
         ep.verify_tls = self.verify;
-        Plan::socket(ep, move |conn, _| Box::pin(async move { client::run(conn, &session).await }))
+        Plan::socket(ep, move |conn, transport| {
+            Box::pin(async move { client::run(conn, &session, transport.env().as_ref()).await })
+        })
     }
 
     fn limits(&self, _title: &str, _body: &str, _format: crate::NotifyFormat, _ctx: &Context<'_>) -> Option<Limits> {

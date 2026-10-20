@@ -119,7 +119,7 @@ impl Notify for SerwerSms {
                 (key, value.as_str()),
             ];
             let req = if mms {
-                let mut form = Form::new();
+                let mut form = Form::new(ctx.env().as_ref());
                 for (k, v) in fields {
                     form = form.text(k, v);
                 }

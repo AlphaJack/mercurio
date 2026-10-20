@@ -206,7 +206,9 @@ impl TokioTransport {
             },
             FileOp::Touch { .. } => {
                 let f = fs::File::options().write(true).open(path).await.map_err(err)?;
-                f.into_std().await.set_modified(std::time::SystemTime::now()).map_err(err)?;
+                #[expect(clippy::disallowed_methods, reason = "the transport touches files on the real clock")]
+                let now = std::time::SystemTime::now();
+                f.into_std().await.set_modified(now).map_err(err)?;
                 Ok(FileOutput::Done)
             }
         }
@@ -391,7 +393,9 @@ mod tests {
         let mut line = crate::net::LineConn::new(conn.as_mut());
         assert_eq!(line.read_line().await.unwrap(), "220 hi");
 
-        let dir = std::env::temp_dir().join(format!("mercurio-tokio-{}", crate::crypto::random_hex(6)));
+        #[expect(clippy::disallowed_methods, reason = "temporary directories need names unique across runs")]
+        let unique = crate::env::system().random_hex(6);
+        let dir = std::env::temp_dir().join(format!("mercurio-tokio-{unique}"));
         let path = dir.join("f");
         let write = FileOp::WriteAtomic { path: path.clone(), data: b"abc".to_vec(), private: true };
         assert_eq!(t.file(&write).await.unwrap(), FileOutput::Done);

@@ -5,11 +5,12 @@
 //! The persistent store keeps the DID and PDS endpoint of each handle (`did.<handle>`, `endpoint.<handle>`) and the session (`access_token`, `refresh_token` for an hour less 10 s, `endpoint`), so later sends skip the lookups and the login.
 
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use crate::time::{iso8601_utc, unix_time};
+use crate::env::Env;
+use crate::time::iso8601_utc;
 use crate::error::Error;
 use crate::http::Request;
 use crate::message::Attachment;
@@ -55,7 +56,7 @@ struct BlueSky {
     /// The user as given, for the URL id.
     raw_user: String,
     /// Kept between sends, as Apprise keeps it on the plugin.
-    rate: RateLimit,
+    rate: Arc<Mutex<Limit>>,
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -70,7 +71,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         Some(c) => (c["handle"].trim().to_string(), c["host"].trim().to_string()),
         None => (user, DEFAULT_HOST.to_string()),
     };
-    Ok(Box::new(BlueSky { user, host, password: password.map(Secret::new), raw_user, rate: RateLimit::new() }))
+    Ok(Box::new(BlueSky { user, host, password: password.map(Secret::new), raw_user, rate: Limit::shared() }))
 }
 
 /// Whether a URL is a usable PDS endpoint: HTTPS, a valid host, no credentials, a usable port and no fragment.
@@ -105,30 +106,33 @@ fn is_secure_http_url(url: &str) -> bool {
 }
 
 /// Server-advertised rate limit (`ratelimit-remaining` / `ratelimit-reset`), shared by the sends of one target.
-#[derive(Debug, Clone)]
-struct RateLimit(Arc<Mutex<Limit>>);
-
 #[derive(Debug)]
 struct Limit {
     remaining: i64,
+    /// Unix seconds; only read once `remaining` is 0, which a response always sets together with it.
     reset: f64,
 }
 
-fn now_f64() -> f64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
+impl Limit {
+    fn shared() -> Arc<Mutex<Limit>> {
+        Arc::new(Mutex::new(Limit { remaining: 1, reset: 0.0 }))
+    }
+}
+
+/// One send's handle on the target's [`Limit`], with the clock it is measured on.
+#[derive(Debug, Clone)]
+struct RateLimit {
+    limit: Arc<Mutex<Limit>>,
+    env: Arc<dyn Env>,
 }
 
 impl RateLimit {
-    fn new() -> Self {
-        RateLimit(Arc::new(Mutex::new(Limit { remaining: 1, reset: now_f64() })))
-    }
-
     fn lock(&self) -> std::sync::MutexGuard<'_, Limit> {
-        self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+        self.limit.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     fn wait(&self) -> Option<Duration> {
-        let now = now_f64();
+        let now = self.env.unix_time_f64();
         let l = self.lock();
         (l.remaining == 0 && now < l.reset).then(|| Duration::from_secs_f64(l.reset - now + 0.3))
     }
@@ -214,8 +218,8 @@ fn bearer_value(v: Option<&Value>) -> Option<String> {
     v.filter(|v| json_has_value(v)).map(crate::util::json_text)
 }
 
-fn created_at() -> String {
-    iso8601_utc(unix_time())
+fn created_at(env: &dyn Env) -> String {
+    iso8601_utc(env.unix_time())
 }
 
 /// Upload image attachments one by one; non-images and replies without a blob are skipped, a failed upload stops everything.
@@ -316,7 +320,7 @@ fn records(rl: RateLimit, s: Session, did: String, blobs: Vec<(Value, String)>, 
     let base = json!({
         "collection": "app.bsky.feed.post",
         "repo": did,
-        "record": {"text": body, "createdAt": created_at(), "$type": "app.bsky.feed.post"},
+        "record": {"text": body, "createdAt": created_at(rl.env.as_ref()), "$type": "app.bsky.feed.post"},
     });
     let mut payloads = Vec::new();
     if blobs.is_empty() {
@@ -326,7 +330,7 @@ fn records(rl: RateLimit, s: Session, did: String, blobs: Vec<(Value, String)>, 
         for (i, (blob, alt)) in blobs.into_iter().enumerate() {
             let mut p = base.clone();
             if i > 0 {
-                p["record"]["createdAt"] = json!(created_at());
+                p["record"]["createdAt"] = json!(created_at(rl.env.as_ref()));
                 p["record"]["text"] = json!(format!("{:02}/{total:02}", i + 1));
             }
             p["record"]["embed"] = json!({
@@ -360,10 +364,12 @@ impl Notify for BlueSky {
         let endpoint = store.get_str("endpoint");
         if let (Some(token), Some(endpoint)) = (token, endpoint) {
             let session = Session { ua, endpoint, token: Some(token), handle, store };
-            return upload(self.rate.clone(), session, atts.into_iter(), Vec::new(), body);
+            let rl = RateLimit { limit: self.rate.clone(), env: ctx.env().clone() };
+            return upload(rl, session, atts.into_iter(), Vec::new(), body);
         }
 
-        resolve(self.rate.clone(), ua.clone(), handle.clone(), store.clone(), move |rl, did, endpoint| {
+        let rl = RateLimit { limit: self.rate.clone(), env: ctx.env().clone() };
+        resolve(rl, ua.clone(), handle.clone(), store.clone(), move |rl, did, endpoint| {
             let session = Session { ua, endpoint, token: None, handle, store };
             let req = session
                 .post(format!("{}{XRPC_SESSION}", session.endpoint), "application/json")
@@ -410,7 +416,7 @@ mod tests {
     fn rate_limit_is_kept_between_sends() {
         use crate::http::Response;
         let json = |v: Value| Response::new(200, v.to_string().into_bytes());
-        let reset = (crate::time::unix_time() + 60).to_string();
+        let reset = (super::super::_ratelimit::NOW + 60).to_string();
         let first = vec![
             json(json!({"did": "did:plc:1234"})),
             json(json!({"service": [{"type": "AtprotoPersonalDataServer", "serviceEndpoint": "https://example.pds.io"}]})),

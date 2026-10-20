@@ -9,6 +9,7 @@
 use serde_json::{Value, json};
 
 use super::_telephony::{Form, http_err, param_unquoted, unquote_or_empty, valid_phones};
+use crate::env::Env;
 use crate::crypto::b64;
 use crate::error::Error;
 use crate::http::Request;
@@ -152,7 +153,14 @@ impl RingCentral {
     }
 
     /// Everything after a successful login.
-    fn deliver(&self, access_token: &str, body: &str, attachments: &[Attachment], user_agent: &str) -> Plan {
+    fn deliver(
+        &self,
+        access_token: &str,
+        body: &str,
+        attachments: &[Attachment],
+        user_agent: &str,
+        env: &dyn Env,
+    ) -> Plan {
         let mms = !attachments.is_empty();
         let url = format!("{BASE_URL}/v1.0/account/~/extension/~/{}", if mms { "mms" } else { "sms" });
         let targets = if self.targets.is_empty() { vec![self.source.clone()] } else { self.targets.clone() };
@@ -164,7 +172,7 @@ impl RingCentral {
             });
             let req = Request::post(&url);
             let req = if mms {
-                let mut form = Form::new().part(
+                let mut form = Form::new(env).part(
                     "json",
                     None,
                     Some("application/json"),
@@ -203,13 +211,14 @@ impl Notify for RingCentral {
             ]
         };
         if let Some(token) = ctx.store.get_str("access_token").filter(|t| !t.is_empty()) {
-            return self.deliver(&token, msg.body, msg.attachments, &ua);
+            return self.deliver(&token, msg.body, msg.attachments, &ua, ctx.env().as_ref());
         }
         let store = ctx.store();
         let login = self.oauth_request("token", &ua).form(&payload);
         let me = self.clone();
         let body = msg.body.to_string();
         let attachments = msg.attachments.to_vec();
+        let env = ctx.env().clone();
         Plan::http(login, move |res| {
             let r = match res {
                 Ok(r) => r,
@@ -239,7 +248,7 @@ impl Notify for RingCentral {
                 let ttl = std::time::Duration::from_secs_f64(expires_in.min(1e9));
                 store.remember("access_token", json!(token), Some(ttl));
             }
-            me.deliver(&token, &body, &attachments, &ua)
+            me.deliver(&token, &body, &attachments, &ua, env.as_ref())
         })
         .context("login")
     }

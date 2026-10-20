@@ -68,9 +68,11 @@
 //! # Ok::<(), mercurio::Error>(())
 //! ```
 //!
+//! Services read the clock and randomness (timestamps, signatures, nonces, multipart boundaries) from the transport's [`Env`] too, through [`Context::env`]. [`testing::FixedEnv`] freezes both, so two runs build byte-identical requests: `FakeTransport::new().with_env(FixedEnv::new(1_700_000_000))`.
+//!
 //! ## Custom transport
 //!
-//! Implement [`AsyncTransport`] (for [`AsyncMercurio`]) or [`Transport`] (for [`Mercurio`]) to add logging, tracing, metrics, a proxy or a test double. Only `http`, `file` and `sleep` are required; `connect`, `datagram` and `command` default to [`Error::Unsupported`], so a wrapper forwards them to keep e-mail, chat protocols, syslog and desktop notifications working:
+//! Implement [`AsyncTransport`] (for [`AsyncMercurio`]) or [`Transport`] (for [`Mercurio`]) to add logging, tracing, metrics, a proxy or a test double. Only `http`, `file` and `sleep` are required; `connect`, `datagram` and `command` default to [`Error::Unsupported`] and `env` to [`SystemEnv`], so a wrapper forwards them to keep e-mail, chat protocols, syslog and desktop notifications working:
 //!
 //! ```no_run
 //! use std::sync::Arc;
@@ -225,6 +227,7 @@ mod attachment;
 mod config;
 mod convert;
 mod crypto;
+mod env;
 mod error;
 mod http;
 mod message;
@@ -263,6 +266,7 @@ pub use asset::{
 pub use attachment::{AttachSource, AttachmentSet, Cache, Location};
 pub use config::template::{TemplateError, TemplateVars};
 pub use config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
+pub use env::{Env, SystemEnv};
 pub use error::{Error, ErrorClass, Result, ResultExt};
 #[doc(hidden)]
 pub use http::parse_multipart;
@@ -298,7 +302,19 @@ pub use url::{Pairs, ParsedUrl};
 pub mod __private {
     pub use crate::config::template::{TemplateSchema, valid_name, validate_value};
     pub use crate::config::{default_paths, detect_format, expand_path, spec, yaml};
-    pub use crate::crypto::{b64, b64_decode, hmac_sha256, random_bytes, random_hex};
+    pub use crate::crypto::{b64, b64_decode, hmac_sha256};
+
+    /// Random bytes from the system generator.
+    #[expect(clippy::disallowed_methods, reason = "for the CLI, outside any send")]
+    pub fn random_bytes(buf: &mut [u8]) {
+        crate::env::system().fill_random(buf);
+    }
+
+    /// Random hex from the system generator.
+    #[expect(clippy::disallowed_methods, reason = "for the CLI, outside any send")]
+    pub fn random_hex(n_bytes: usize) -> String {
+        crate::env::system().random_hex(n_bytes)
+    }
     pub use crate::message::guess_mime;
     pub use crate::parse::{parse_bool, parse_urls};
     pub use crate::time::utc_parts;

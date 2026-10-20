@@ -21,6 +21,10 @@ disallowed-methods = [
   { path = "std::net::TcpStream::connect_timeout", reason = "only transports open sockets" },
   { path = "std::net::UdpSocket::bind", reason = "only transports open sockets" },
   { path = "std::process::Command::new", reason = "only transports run programs" },
+  { path = "std::time::SystemTime::now", reason = "services read the time from Context::env (the transport's Env)" },
+  { path = "ring::rand::SystemRandom::new", reason = "services take randomness from Context::env (the transport's Env)" },
+  { path = "mercurio::env::system", reason = "services use Context::env (the transport's Env)" },
+  { path = "mercurio::http::Multipart::new", reason = "services use Context::multipart" },
 ]
 disallowed-types = [
   { path = "std::collections::HashMap", reason = "nondeterministic order breaks byte-exact fixtures; use BTreeMap or Vec" },

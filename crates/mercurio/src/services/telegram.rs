@@ -13,6 +13,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
+use crate::env::Env;
 use crate::asset::ImageSize;
 use crate::convert::html;
 use crate::convert::markup::{Markup, same};
@@ -281,6 +282,7 @@ type Fields = Vec<(String, Value)>;
 struct Job {
     cfg: Telegram,
     app_id: String,
+    env: Arc<dyn Env>,
     text: String,
     parse_mode: &'static str,
     title: String,
@@ -348,7 +350,7 @@ impl Job {
             payload.retain(|(k, _)| k != "message_thread_id");
             payload.push(("message_thread_id".into(), json!(t)));
         }
-        let mut form = Multipart::new();
+        let mut form = Multipart::with_env(self.env.as_ref());
         for (k, v) in &payload {
             form = form.text(k.clone(), json_text(v));
         }
@@ -453,7 +455,7 @@ impl Job {
     }
 
     fn media_group_request(&self, chat: &Chat, no: usize, end: usize, kinds: &[Kind], caption: &Fields) -> Request {
-        let mut form = Multipart::new().text("chat_id", chat.id.text());
+        let mut form = Multipart::with_env(self.env.as_ref()).text("chat_id", chat.id.text());
         form = form.text("disable_notification", self.cfg.silent.to_string());
         if let Some(t) = chat.thread() {
             form = form.text("message_thread_id", t.to_string());
@@ -773,6 +775,7 @@ impl Notify for Telegram {
         let job = Arc::new(Job {
             cfg: self.clone(),
             app_id: ctx.app_id().to_string(),
+            env: ctx.env().clone(),
             text,
             parse_mode,
             title: title.to_string(),
@@ -824,7 +827,9 @@ mod tests {
 
     #[test]
     fn rich_template_from_file() {
-        let dir = std::env::temp_dir().join(format!("mercurio-tgram-{}", crate::crypto::random_hex(6)));
+        #[expect(clippy::disallowed_methods, reason = "temporary directories need names unique across runs")]
+        let unique = crate::env::system().random_hex(6);
+        let dir = std::env::temp_dir().join(format!("mercurio-tgram-{unique}"));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("t.json");
         std::fs::write(&path, r#"{"blocks":[{"type":"text","text":"{{app_title}}: {{ app_body }} {{name}}"}]}"#)

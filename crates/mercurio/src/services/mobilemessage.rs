@@ -3,7 +3,6 @@
 use serde_json::{Value, json};
 
 use super::_telephony::{http_err, json_object, phone_entries, param_unquoted};
-use crate::crypto::uuid4;
 use crate::error::Error;
 use crate::parse::{parse_bool, parse_phone_no_unquoted, validate_nonblank, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -138,7 +137,7 @@ impl Notify for MobileMessage {
             let req = ctx
                 .post(NOTIFY_URL)
                 .header("Accept", "application/json")
-                .header("Idempotency-Key", uuid4())
+                .header("Idempotency-Key", ctx.env().uuid4())
                 .basic_auth(&self.user, Some(self.password.expose()))
                 .json(&payload);
             let targets: Vec<String> = chunk.to_vec();

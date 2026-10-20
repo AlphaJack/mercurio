@@ -82,7 +82,7 @@ fn check(r: &Response) -> Result<()> {
 }
 
 impl Notify for Smsc {
-    fn plan(&self, msg: &Prepared<'_>, _ctx: &Context<'_>) -> Plan {
+    fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         if self.targets.is_empty() {
             return Plan::Fail(SERVICE.err("there are no valid SMSC targets to notify"));
         }
@@ -104,7 +104,7 @@ impl Notify for Smsc {
             req.form(&params)
         } else {
             params.push(("mms", "1".into()));
-            let mut form = Form::new();
+            let mut form = Form::new(ctx.env().as_ref());
             for (k, v) in &params {
                 form = form.text(k, v);
             }

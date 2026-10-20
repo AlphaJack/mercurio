@@ -19,9 +19,11 @@ pub mod fixtures;
 use std::collections::{BTreeMap, VecDeque};
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use crate::env::Env;
 use crate::error::{Error, Result};
 use crate::http::{Request, Response};
 use crate::transport::{
@@ -93,6 +95,7 @@ struct State {
     files: BTreeMap<PathBuf, Option<Vec<u8>>>,
     disk: bool,
     file_ops: Vec<FileOp>,
+    env: Arc<dyn Env>,
 }
 
 impl Default for FakeTransport {
@@ -103,6 +106,7 @@ impl Default for FakeTransport {
 
 impl FakeTransport {
     /// A fake with no scripted responses: every request gets `200` with body `{}`.
+    #[expect(clippy::disallowed_methods, reason = "the default Env")]
     pub fn new() -> Self {
         Self {
             state: Mutex::new(State {
@@ -119,12 +123,20 @@ impl FakeTransport {
                 files: BTreeMap::new(),
                 file_ops: Vec::new(),
                 disk: false,
+                env: crate::env::system().clone(),
             }),
         }
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, State> {
         self.state.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    /// Plan with `env` instead of the system clock and random generator, e.g. a [`FixedEnv`] for byte-exact requests (signatures, nonces, boundaries, `Date:` headers).
+    #[must_use]
+    pub fn with_env(self, env: impl Env + 'static) -> Self {
+        self.lock().env = Arc::new(env);
+        self
     }
 
     /// Queue a response.
@@ -312,6 +324,59 @@ impl Transport for FakeTransport {
 
     fn sleep(&self, d: Duration) {
         self.lock().sleeps.push(d);
+    }
+
+    fn env(&self) -> Arc<dyn Env> {
+        self.lock().env.clone()
+    }
+}
+
+/// One [`FixedEnv`] shared by the unit tests, so keys made in one test differ from each other.
+#[cfg(test)]
+pub(crate) fn test_env() -> &'static FixedEnv {
+    static ENV: std::sync::LazyLock<FixedEnv> = std::sync::LazyLock::new(|| FixedEnv::new(1_700_000_000));
+    &ENV
+}
+
+/// A frozen clock and a deterministic byte stream: two runs that ask for the same things get the same answers.
+///
+/// The bytes are SHA-256 of a counter, so they are not secret; use it in tests only.
+///
+/// ```
+/// use mercurio::Env;
+/// use mercurio::testing::{FakeTransport, FixedEnv};
+///
+/// let (a, b) = (FixedEnv::new(1_700_000_000), FixedEnv::new(1_700_000_000));
+/// assert_eq!(a.unix_time(), 1_700_000_000);
+/// assert_eq!(a.uuid4(), b.uuid4());
+/// assert_ne!(a.random_hex(8), a.random_hex(8));
+///
+/// let fake = FakeTransport::new().with_env(FixedEnv::new(1_700_000_000));
+/// ```
+#[derive(Debug)]
+pub struct FixedEnv {
+    now: SystemTime,
+    counter: AtomicU64,
+}
+
+impl FixedEnv {
+    /// A clock stopped at `unix_secs`, with the byte stream at its start.
+    pub fn new(unix_secs: u64) -> Self {
+        Self { now: UNIX_EPOCH + Duration::from_secs(unix_secs), counter: AtomicU64::new(0) }
+    }
+}
+
+impl Env for FixedEnv {
+    fn now(&self) -> SystemTime {
+        self.now
+    }
+
+    fn fill_random(&self, buf: &mut [u8]) {
+        for chunk in buf.chunks_mut(32) {
+            let n = self.counter.fetch_add(1, Ordering::Relaxed);
+            let block = crate::crypto::sha256(&n.to_be_bytes());
+            chunk.copy_from_slice(&block[..chunk.len()]);
+        }
     }
 }
 

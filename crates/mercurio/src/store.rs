@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
@@ -86,8 +86,10 @@ pub const STAGING_DIR: &str = "tmp";
 /// Directory of a namespace for the files services keep (keys, subscriptions).
 pub const DATA_DIR: &str = "var";
 
+/// Entry expiry runs on the real clock: it is bookkeeping, not request content.
+#[expect(clippy::disallowed_methods, reason = "store expiry is bookkeeping, not request content")]
 fn now() -> f64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
+    crate::env::system().unix_time_f64()
 }
 
 /// Namespaces and keys: an alphanumeric first character, then alphanumerics, `.`, `_`, `-`.

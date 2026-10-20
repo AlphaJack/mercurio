@@ -2,11 +2,13 @@
 
 use std::fmt;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 use crate::asset::Asset;
+use crate::env::Env;
 use crate::error::{Error, Result};
-use crate::http::{Method, Request};
+use crate::http::{Method, Multipart, Request};
 use crate::message::{NotifyFormat, Prepared};
 use crate::plan::Plan;
 use crate::store::{Memo, StoreRef};
@@ -413,12 +415,30 @@ pub struct Context<'a> {
     pub memo: &'a Memo,
     /// The results of [`Notify::files`].
     files: &'a [(FileOp, Result<FileOutput>)],
+    /// The clock and random source of this send.
+    env: &'a Arc<dyn Env>,
 }
 
 impl<'a> Context<'a> {
-    /// A context over `asset`, `store` and `memo`.
+    /// A context over `asset`, `store` and `memo`, on the [`SystemEnv`](crate::SystemEnv).
+    #[expect(clippy::disallowed_methods, reason = "the default Env")]
     pub fn new(asset: &'a Asset, store: &'a StoreRef, memo: &'a Memo) -> Self {
-        Self { asset, store, memo, files: &[] }
+        Self { asset, store, memo, files: &[], env: crate::env::system() }
+    }
+
+    /// This context on another clock and random source (the transport's, see [`crate::Transport::env`]).
+    pub fn with_env(self, env: &'a Arc<dyn Env>) -> Self {
+        Self { env, ..self }
+    }
+
+    /// The clock and random source of this send. Clone it into continuations that need the time or randomness after a response.
+    pub fn env(&self) -> &'a Arc<dyn Env> {
+        self.env
+    }
+
+    /// An empty `multipart/form-data` body with a boundary from [`Context::env`].
+    pub fn multipart(&self) -> Multipart {
+        Multipart::with_env(self.env.as_ref())
     }
 
     /// This context with the results of [`Notify::files`].

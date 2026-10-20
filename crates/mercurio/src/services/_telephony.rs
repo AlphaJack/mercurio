@@ -84,8 +84,9 @@ pub(crate) fn http_err(r: &Response) -> Error {
 }
 
 /// `multipart/form-data` builder where any part may carry a filename and/or a content type (requests' `files=[(name, (None, data, mime))]`).
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct Form {
+    boundary: String,
     parts: Vec<FormPart>,
 }
 
@@ -98,8 +99,9 @@ struct FormPart {
 }
 
 impl Form {
-    pub(crate) fn new() -> Self {
-        Self::default()
+    /// A form whose boundary comes from `env`.
+    pub(crate) fn new(env: &dyn crate::Env) -> Self {
+        Self { boundary: env.random_hex(16), parts: Vec::new() }
     }
 
     pub(crate) fn part(
@@ -124,7 +126,7 @@ impl Form {
 
     /// `(content_type, body)`.
     pub(crate) fn finish(self) -> (String, Vec<u8>) {
-        let boundary = crate::crypto::random_hex(16);
+        let boundary = self.boundary;
         let mut body = Vec::new();
         for FormPart { name, filename, content_type: ct, data } in &self.parts {
             body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());

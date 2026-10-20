@@ -150,7 +150,7 @@ impl Notify for WPush {
             let req = ctx.post(NOTIFY_URL)
                 .header("Content-Type", "application/json")
                 .header("X-API-Key", self.apikey.expose())
-                .header("X-Idempotency-Key", crate::crypto::uuid4())
+                .header("X-Idempotency-Key", ctx.env().uuid4())
                 .body(serde_json::to_vec(&Value::Object(payload)).unwrap_or_default(), None);
             let plan = Plan::send_check(req, check);
             match topic {

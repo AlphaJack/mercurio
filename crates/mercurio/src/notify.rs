@@ -855,8 +855,11 @@ mod tests {
     }
 
     /// The class of the first failure a single send of `url` reports.
+    /// The clock of [`first_error`]'s transport.
+    const NOW: u64 = 1_700_000_000;
+
     fn first_error(url: &str, replies: Vec<crate::Response>) -> crate::ErrorClass {
-        let fake = crate::testing::FakeTransport::new();
+        let fake = crate::testing::FakeTransport::new().with_env(crate::testing::FixedEnv::new(NOW));
         for r in replies {
             fake.respond_with(r);
         }
@@ -878,8 +881,7 @@ mod tests {
         // Discord retries a 429 once itself, then reports Retry-After.
         assert_eq!(first_error("discord://1234/abcd", vec![slow(), slow()]), limited(9));
         // Without Retry-After, the bucket reset (plus 10 s clock skew) is the wait.
-        let reset =
-            (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() + 30).to_string();
+        let reset = (NOW + 30).to_string();
         let bucket = || {
             Response::new(429, "slow")
                 .with_header("X-RateLimit-Remaining", "1")
@@ -887,6 +889,6 @@ mod tests {
         };
         let class = first_error("discord://1234/abcd", vec![bucket(), bucket()]);
         let ErrorClass::RateLimited { retry_after: Some(d) } = class else { panic!("{class:?}") };
-        assert!((35..=41).contains(&d.as_secs()), "{d:?}");
+        assert_eq!(d.as_secs(), 40, "{d:?}");
     }
 }

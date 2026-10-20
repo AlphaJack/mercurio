@@ -186,12 +186,12 @@ fn bot_post(
     ua: String,
     channel_id: String,
     body: String,
-    files: Vec<(String, Vec<u8>, String)>,
+    files: Vec<(String, Vec<u8>, String, String)>,
     file_ids: Vec<Value>,
 ) -> Plan {
     if file_ids.len() < files.len() {
-        let (fname, data, mime) = files[file_ids.len()].clone();
-        let form = Multipart::new().text("channel_id", channel_id.as_str()).file("files", fname, mime, data);
+        let (fname, data, mime, boundary) = files[file_ids.len()].clone();
+        let form = Multipart::with_boundary(boundary).text("channel_id", channel_id.as_str()).file("files", fname, mime, data);
         let req = Request::post(format!("{base}/api/v4/files"))
             .header("User-Agent", &ua)
             .header("Authorization", &bearer)
@@ -273,13 +273,14 @@ impl Notify for Mattermost {
                     return Plan::Fail(Error::Message("Mattermost BOT mode has no valid channels to notify".into()));
                 }
                 let bearer = format!("Bearer {}", self.token.expose());
-                let files: Vec<(String, Vec<u8>, String)> = msg
+                // (name, data, MIME type, multipart boundary of its upload)
+                let files: Vec<(String, Vec<u8>, String, String)> = msg
                     .attachments
                     .iter()
                     .enumerate()
                     .map(|(i, a)| {
                         let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
-                        (name, a.data.clone(), a.mime.clone())
+                        (name, a.data.clone(), a.mime.clone(), ctx.env().random_hex(16))
                     })
                     .collect();
                 let body = msg.body.to_string();
