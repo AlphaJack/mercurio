@@ -65,10 +65,10 @@ pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     let s = Settings::from_args(args)?;
     let listener = tokio::net::TcpListener::bind(bind).await.map_err(|e| format!("bind {bind}: {e}"))?;
     let addr = listener.local_addr().map_err(|e| e.to_string())?;
+    let mut stop = std::pin::pin!(shutdown());
     outln!("listening on http://{addr}");
     let app = app(s);
     let graceful = hyper_util::server::graceful::GracefulShutdown::new();
-    let mut stop = std::pin::pin!(shutdown());
     loop {
         let (tcp, remote) = tokio::select! {
             accepted = listener.accept() => match accepted {
@@ -103,22 +103,25 @@ pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     Ok(())
 }
 /// Ctrl-C, or SIGTERM / SIGHUP on Unix (a container stop).
-async fn shutdown() {
+/// Resolves on SIGINT, SIGTERM or SIGHUP (Ctrl-C elsewhere). The handlers are installed when this is called, not when it is first awaited, so a signal sent right after the listener is announced is never lost to the default action.
+fn shutdown() -> impl std::future::Future<Output = ()> {
     #[cfg(unix)]
     {
         use tokio::signal::unix::{SignalKind, signal};
-        let (Ok(mut term), Ok(mut hup)) = (signal(SignalKind::terminate()), signal(SignalKind::hangup())) else {
-            tokio::signal::ctrl_c().await.ok();
-            return;
-        };
-        tokio::select! {
-            _ = tokio::signal::ctrl_c() => {}
-            _ = term.recv() => {}
-            _ = hup.recv() => {}
+        let signals = [SignalKind::interrupt(), SignalKind::terminate(), SignalKind::hangup()].map(signal);
+        async move {
+            let mut streams: Vec<_> =
+                signals.into_iter().filter_map(|s| s.map_err(|e| log::warn!("signal: {e}")).ok()).collect();
+            if streams.is_empty() {
+                std::future::pending::<()>().await;
+            }
+            futures_util::future::select_all(streams.iter_mut().map(|s| Box::pin(s.recv()))).await;
         }
     }
     #[cfg(not(unix))]
-    tokio::signal::ctrl_c().await.ok();
+    async {
+        tokio::signal::ctrl_c().await.ok();
+    }
 }
 /// Config IDs: 1 to 128 letters, digits, `_` or `-`.
 pub(crate) fn valid_key(key: &str) -> bool {
