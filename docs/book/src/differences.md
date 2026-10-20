@@ -115,9 +115,12 @@ on its page (see the [service list](services/index.md)), taken from the
 - **Metrics.** apprise-api exports the full `django_prometheus` set ->
   mercurio exports a subset plus one latency histogram. *todo*
 - **Other settings.** Plugin paths are ignored. *intentional*
-- **Logins and times.** apprise-api accepts argon2 and bcrypt password
-  hashes and reports times in the `TZ` zone -> mercurio stores PBKDF2-SHA256
-  only and reports UTC. *todo* (hashes), *intentional* (UTC)
+- **Logins and times.** apprise-api checks logins with Django's default
+  hashers; without `argon2-cffi` and `bcrypt` (not in its requirements) those
+  are `pbkdf2_sha256`, `pbkdf2_sha1` and `scrypt`, and it writes
+  `pbkdf2_sha256`. It reports times in the `TZ` zone -> mercurio reads both
+  PBKDF2 forms and writes `pbkdf2_sha256`; a `scrypt` digest, which
+  apprise-api never writes, is rejected. Times are UTC. *intentional*
 - **JSON `/add` without `format`.** apprise-api rejects it -> mercurio
   detects TEXT or YAML. *intentional*
 - **Stored configurations** cannot include local files; attachment fields
