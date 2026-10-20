@@ -58,8 +58,10 @@ fn upstream(n: usize, status: u16) -> (String, mpsc::Receiver<serde_json::Value>
                 if let Some(v) = h.to_ascii_lowercase().strip_prefix("content-length:") {
                     len = v.trim().parse().unwrap();
                 }
-                if h.to_ascii_lowercase().starts_with("user-agent:") {
-                    agent = h["user-agent:".len()..].trim().to_string();
+                if let Some((name, value)) = h.split_once(':')
+                    && name.eq_ignore_ascii_case("user-agent")
+                {
+                    agent = value.trim().to_string();
                 }
             }
             let mut b = vec![0; len];
