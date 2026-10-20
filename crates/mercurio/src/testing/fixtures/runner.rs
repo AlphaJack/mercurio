@@ -7,7 +7,7 @@ use serde_json::{Map, Value, json};
 use crate::asset::Asset;
 use crate::http::{Request, Response};
 use crate::message::{Attachment, Message, NotifyFormat, NotifyType};
-use crate::notify::Attempt;
+use crate::report::Attempt;
 use crate::testing::FakeTransport;
 use crate::transport::Blocking;
 use crate::url::unquote_plus;

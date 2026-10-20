@@ -220,7 +220,7 @@ fn short(v: &serde_json::Value) -> String {
 #[test]
 fn common_params_match_the_parser() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    let code = ["url.rs", "notify.rs"].map(|f| fs::read_to_string(root.join(f)).unwrap()).join("\n");
+    let code = ["url.rs", "target.rs"].map(|f| fs::read_to_string(root.join(f)).unwrap()).join("\n");
     let code = code.split("pub static COMMON_PARAMS").next().unwrap().to_string()
         + code.split("pub static COMMON_PARAMS").nth(1).and_then(|s| s.split_once("\n];")).map_or("", |(_, rest)| rest);
     let declared: BTreeSet<&str> =
