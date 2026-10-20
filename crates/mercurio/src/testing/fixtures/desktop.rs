@@ -83,85 +83,83 @@ pub(super) const MACOSX: Comparator = Comparator {
     events_on_failure: false,
 };
 
-/// Read back a GVariant text string literal.
-fn gv_str(s: &str) -> String {
-    let inner = s.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')).unwrap_or_else(|| panic!("not a string: {s}"));
-    let mut out = String::new();
-    let mut chars = inner.chars();
-    while let Some(c) = chars.next() {
-        if c != '\\' {
-            out.push(c);
-            continue;
-        }
-        match chars.next() {
-            Some('n') => out.push('\n'),
-            Some('r') => out.push('\r'),
-            Some('t') => out.push('\t'),
-            Some('u') => {
-                let hex: String = chars.by_ref().take(4).collect();
-                out.push(char::from_u32(u32::from_str_radix(&hex, 16).unwrap()).unwrap());
+/// A session bus on the scripted connection: it accepts `AUTH EXTERNAL`, answers `Hello`, records each `Notify` through `record` and answers it (with an error when `fail`).
+fn fake_bus(record: impl Fn(Value) + Send + 'static, fail: bool) -> ScriptedConn {
+    use crate::services::_dbus::{decode_notify, reply, take_message};
+    let tmp = std::env::temp_dir().to_string_lossy().trim_end_matches(['/', '\\']).to_string();
+    let mut rx: Vec<u8> = Vec::new();
+    let mut serial = 0;
+    ScriptedConn::bytes(Vec::new(), move |data| match data {
+        b"\0AUTH EXTERNAL\r\n" => b"DATA\r\n".to_vec(),
+        b"DATA\r\n" => b"OK 0123456789abcdef0123456789abcdef\r\n".to_vec(),
+        _ => {
+            rx.extend_from_slice(data.strip_prefix(b"BEGIN\r\n").unwrap_or(data));
+            let mut out = Vec::new();
+            while let Some(msg) = take_message(&mut rx).unwrap() {
+                serial += 1;
+                let error = match msg.member.as_deref() {
+                    Some("Notify") => {
+                        let n = decode_notify(&msg).expect("Notify arguments");
+                        let hints: serde_json::Map<String, Value> =
+                            n.hints.into_iter().map(|(k, v)| (k, json!(v))).collect();
+                        let icon = redact_tmp(&n.icon, &tmp);
+                        record(json!([n.app, n.replaces_id, icon, n.summary, n.body, [], hints, n.timeout]));
+                        fail.then_some(("org.freedesktop.DBus.Error.Failed", "scripted failure"))
+                    }
+                    _ => None,
+                };
+                out.extend(reply(serial, msg.serial, error));
             }
-            Some(o) => out.push(o),
-            None => {}
+            out
         }
+    })
+}
+
+/// A failing case: any response with a non-zero `exit` or an `error`.
+fn fails(case: &Value) -> bool {
+    responses(case).iter().any(|r| {
+        r.get("exit").and_then(Value::as_i64).is_some_and(|c| c != 0)
+            || r.get("error").and_then(Value::as_bool) == Some(true)
+    })
+}
+
+/// Point the session bus at the fake one and queue it.
+fn setup_bus(s: &mut Session, case: &Value, event: fn(Value) -> Value) {
+    s.fake.set_env(
+        crate::testing::FixedEnv::new(1_700_000_000)
+            .with_var("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus"),
+    );
+    let rec = s.events.clone();
+    s.fake.push_conn(fake_bus(move |args| rec.lock().unwrap().push(event(args)), fails(case)));
+}
+
+/// Every connection goes to the session bus.
+fn bus_events(s: &Session) -> Vec<Value> {
+    for ep in s.fake.endpoints() {
+        assert_eq!(ep.unix.as_deref(), Some("/run/user/1000/bus"));
     }
-    out
+    s.events.lock().unwrap().clone()
 }
 
-fn gdbus_events(_: &Value, fake: &FakeTransport, _: &Recorder) -> Vec<Value> {
-    argv(fake)
-        .into_iter()
-        .map(|a| {
-            assert_eq!(
-                a[..9].join(" "),
-                "gdbus call --session --dest org.freedesktop.Notifications --object-path \
-                 /org/freedesktop/Notifications --method org.freedesktop.Notifications.Notify"
-            );
-            assert_eq!(a[14], "@as []");
-            let mut hints = serde_json::Map::new();
-            let re = regex::Regex::new(r"'(\w+)': <(?:byte|int32) (-?\d+)>").unwrap();
-            for c in re.captures_iter(&a[15]) {
-                hints.insert(c[1].to_string(), json!(c[2].parse::<i64>().unwrap()));
-            }
-            json!({"notify": [
-                gv_str(&a[9]), a[10].parse::<i64>().unwrap(), gv_str(&a[11]), gv_str(&a[12]), gv_str(&a[13]),
-                [], hints, a[16].parse::<i64>().unwrap()
-            ]})
-        })
-        .collect()
-}
-
-pub(super) const GDBUS: Comparator = Comparator {
+pub(super) const DBUS: Comparator = Comparator {
     services: &["dbus", "glib"],
-    setup: queue_commands,
-    events: |s, case| gdbus_events(case, &s.fake, &s.events),
+    setup: |s, case| setup_bus(s, case, |args| json!({ "notify": args })),
+    events: |s, _| bus_events(s),
     events_on_failure: false,
     ..Comparator::DEFAULT
 };
 
-fn gnome_events(s: &Session, _: &Value) -> Vec<Value> {
-    argv(&s.fake)
-        .into_iter()
-        .map(|a| {
-            assert_eq!(a[0], "notify-send");
-            let icon = a[3].strip_prefix("--icon=");
-            let rest = if icon.is_some() { &a[4..] } else { &a[3..] };
-            assert_eq!(rest[0], "--");
-            let urgency = match a[2].strip_prefix("--urgency=").unwrap() {
-                "low" => 0,
-                "normal" => 1,
-                "critical" => 2,
-                other => panic!("urgency {other}"),
-            };
-            json!({"gnome": {"app": a[1].strip_prefix("--app-name=").unwrap(), "body": rest[1], "urgency": urgency, "icon": icon}})
-        })
-        .collect()
+/// libnotify's call, shown as the fields gnome sets: app, summary (the merged message), urgency and icon; no body, the daemon's timeout.
+fn gnome_event(args: Value) -> Value {
+    assert_eq!((&args[1], &args[4], &args[5], &args[7]), (&json!(0), &json!(""), &json!([]), &json!(-1)));
+    let icon = args[2].as_str().filter(|i| !i.is_empty()).map(str::to_string);
+    json!({"gnome": {"app": args[0], "body": args[3], "urgency": args[6]["urgency"], "icon": icon}})
 }
 
 pub(super) const GNOME: Comparator = Comparator {
     services: &["gnome"],
-    setup: queue_commands,
-    events: gnome_events,
+    setup: |s, case| setup_bus(s, case, gnome_event),
+    events: |s, _| bus_events(s),
     events_on_failure: false,
     ..Comparator::DEFAULT
 };

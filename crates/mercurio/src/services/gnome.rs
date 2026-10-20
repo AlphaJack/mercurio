@@ -1,14 +1,14 @@
-//! GNOME (`gnome://`): desktop notifications through libnotify.
+//! GNOME (`gnome://`): desktop notifications as libnotify sends them.
 //!
-//! Mercurio runs libnotify's command-line client: `notify-send --app-name=<app_id> --urgency=<level> --icon=<file> -- <body>` (the title is merged into the body).
+//! Mercurio connects to the session bus itself (`DBUS_SESSION_BUS_ADDRESS`, else `$XDG_RUNTIME_DIR/bus`; `unix:path=` and Linux `unix:abstract=` addresses), authenticates with `EXTERNAL` and calls `Notify` the way libnotify's `Notification.new(body)` does: app id, replaces-id `0`, the icon file (empty with `?image=no`), the body as the summary (the title is merged into it), no body, no actions, `{urgency: byte}` and the daemon's default timeout (`-1`).
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise uses libnotify bindings -> mercurio runs `notify-send`. *todo*
+//! - Apprise uses libnotify bindings -> mercurio speaks D-Bus itself. *intentional*
+//! - libnotify also sends a `sender-pid` hint and the icon as `image-data` pixels -> mercurio passes the icon file as `app_icon`. *intentional*
 
-use super::_desktop::{check_exit, urgency, with_icon, URGENCY_HIGH, URGENCY_LOW};
+use super::_desktop::{DesktopNotify, notify, urgency};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef};
-use crate::transport::Command;
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
@@ -39,24 +39,21 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     Ok(Box::new(Gnome { urgency: urgency(u), include_image: SERVICE.flag_strict(u, "image") }))
 }
 
-/// libnotify urgency names (`NOTIFY_URGENCY_*`).
-fn urgency_name(u: u8) -> &'static str {
-    match u {
-        URGENCY_LOW => "low",
-        URGENCY_HIGH => "critical",
-        _ => "normal",
-    }
-}
-
 impl Notify for Gnome {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let icon = if self.include_image { ctx.asset.icon_file(msg.kind, "svg") } else { None };
-        let mut args = vec![format!("--app-name={}", ctx.app_id()), format!("--urgency={}", urgency_name(self.urgency))];
-        if let Some(i) = &icon {
-            args.push(format!("--icon={}", i.path));
-        }
-        args.extend(["--".to_string(), msg.body.to_string()]);
-        let cmd = with_icon(Command::new("notify-send").args(args), icon.as_ref());
-        Plan::command(cmd, |res| check_exit("notify-send", res))
+        // libnotify's `Notification.new(body)`: the merged title and body is the summary; the daemon picks the timeout.
+        notify(
+            &DesktopNotify {
+                app: ctx.app_id(),
+                icon: icon.as_ref(),
+                title: msg.body,
+                body: "",
+                urgency: self.urgency,
+                xy: None,
+                timeout_ms: -1,
+            },
+            ctx.env().as_ref(),
+        )
     }
 }

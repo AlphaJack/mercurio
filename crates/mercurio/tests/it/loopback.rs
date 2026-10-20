@@ -96,3 +96,44 @@ fn end_to_end_json_service() {
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(v["message"], "body");
 }
+
+/// A Unix stream socket (`path`, or a Linux abstract name after a leading NUL) through the blocking transport.
+#[cfg(unix)]
+fn unix_echo(path: &str, listener: std::os::unix::net::UnixListener) {
+    thread::spawn(move || {
+        let (mut s, _) = listener.accept().unwrap();
+        let mut b = [0u8; 4];
+        s.read_exact(&mut b).unwrap();
+        s.write_all(&b).unwrap();
+    });
+    let mut conn = BlockingTransport::new().connect(&mercurio::Endpoint::unix(path)).unwrap();
+    conn.write_all(b"ping").unwrap();
+    let mut b = [0u8; 4];
+    conn.read_exact(&mut b).unwrap();
+    assert_eq!(&b, b"ping");
+    assert!(conn.start_tls().is_err());
+}
+
+#[cfg(unix)]
+#[test]
+fn unix_socket_round_trip() {
+    let dir = std::env::temp_dir().join(format!("mercurio-unix-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("echo.sock");
+    let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+    unix_echo(&path.to_string_lossy(), listener);
+    assert!(
+        BlockingTransport::new().connect(&mercurio::Endpoint::unix(dir.join("missing").to_string_lossy())).is_err()
+    );
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn abstract_unix_socket_round_trip() {
+    use std::os::linux::net::SocketAddrExt;
+    let name = format!("mercurio-test-{}", std::process::id());
+    let addr = std::os::unix::net::SocketAddr::from_abstract_name(name.as_bytes()).unwrap();
+    let listener = std::os::unix::net::UnixListener::bind_addr(&addr).unwrap();
+    unix_echo(&format!("\0{name}"), listener);
+}

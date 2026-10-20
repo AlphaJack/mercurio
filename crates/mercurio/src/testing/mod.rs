@@ -139,6 +139,12 @@ impl FakeTransport {
         self
     }
 
+    /// Replace the [`Env`] of a fake already shared (see [`FakeTransport::with_env`]).
+    pub fn set_env(&self, env: impl Env + 'static) -> &Self {
+        self.lock().env = Arc::new(env);
+        self
+    }
+
     /// Queue a response.
     pub fn respond(&self, status: u16, body: impl Into<Vec<u8>>) -> &Self {
         self.lock().queue.push_back(Ok(Response::new(status, body)));
@@ -273,7 +279,7 @@ impl Transport for FakeTransport {
                 }
                 Ok(Box::new(c))
             }
-            None => Err(Error::transport(format!("no scripted connection for {}:{}", ep.host, ep.port))),
+            None => Err(Error::transport(format!("no scripted connection for {}", ep.address()))),
         }
     }
 
@@ -364,12 +370,20 @@ pub(crate) fn test_env() -> &'static FixedEnv {
 pub struct FixedEnv {
     now: SystemTime,
     counter: AtomicU64,
+    vars: BTreeMap<String, String>,
 }
 
 impl FixedEnv {
-    /// A clock stopped at `unix_secs`, with the byte stream at its start.
+    /// A clock stopped at `unix_secs`, with the byte stream at its start and no environment variables.
     pub fn new(unix_secs: u64) -> Self {
-        Self { now: UNIX_EPOCH + Duration::from_secs(unix_secs), counter: AtomicU64::new(0) }
+        Self { now: UNIX_EPOCH + Duration::from_secs(unix_secs), counter: AtomicU64::new(0), vars: BTreeMap::new() }
+    }
+
+    /// Set the environment variable `name`.
+    #[must_use]
+    pub fn with_var(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        self.vars.insert(name.into(), value.into());
+        self
     }
 }
 
@@ -384,6 +398,10 @@ impl Env for FixedEnv {
             let block = crate::crypto::sha256(&n.to_be_bytes());
             chunk.copy_from_slice(&block[..chunk.len()]);
         }
+    }
+
+    fn var(&self, name: &str) -> Option<String> {
+        self.vars.get(name).cloned()
     }
 }
 

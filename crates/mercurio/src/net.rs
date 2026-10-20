@@ -96,3 +96,27 @@ impl rustls::client::danger::ServerCertVerifier for NoVerify {
 
 /// Bytes asked for in one read of a socket.
 pub(crate) const READ_CHUNK: usize = 4096;
+
+/// Connect a Unix stream socket: a path, or a Linux abstract name after a leading NUL.
+#[cfg(unix)]
+pub(crate) fn unix_connect(path: &str) -> std::io::Result<std::os::unix::net::UnixStream> {
+    match path.strip_prefix('\0') {
+        Some(name) => unix_connect_abstract(name),
+        None => std::os::unix::net::UnixStream::connect(path),
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn unix_connect_abstract(name: &str) -> std::io::Result<std::os::unix::net::UnixStream> {
+    #[cfg(target_os = "android")]
+    use std::os::android::net::SocketAddrExt;
+    #[cfg(target_os = "linux")]
+    use std::os::linux::net::SocketAddrExt;
+    let addr = std::os::unix::net::SocketAddr::from_abstract_name(name.as_bytes())?;
+    std::os::unix::net::UnixStream::connect_addr(&addr)
+}
+
+#[cfg(all(unix, not(any(target_os = "linux", target_os = "android"))))]
+fn unix_connect_abstract(_: &str) -> std::io::Result<std::os::unix::net::UnixStream> {
+    Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "abstract sockets exist only on Linux"))
+}

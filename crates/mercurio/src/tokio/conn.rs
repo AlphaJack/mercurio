@@ -1,4 +1,4 @@
-//! TCP + rustls streams on tokio, upgraded to TLS in place for STARTTLS: the async twin of `net::NetConn`.
+//! TCP + rustls streams on tokio, upgraded to TLS in place for STARTTLS, and Unix stream sockets: the async twin of `net::NetConn`.
 
 use std::io;
 use std::net::SocketAddr;
@@ -16,6 +16,8 @@ use crate::transport::{AsyncConn, BoxFuture, Endpoint};
 enum Inner {
     Plain(TcpStream),
     Tls(Box<TlsStream<TcpStream>>),
+    #[cfg(unix)]
+    Unix(tokio::net::UnixStream),
     Swapping,
 }
 
@@ -51,6 +53,9 @@ async fn tcp_connect(host: &str, port: u16, limit: Duration) -> io::Result<TcpSt
 
 impl TokioConn {
     pub(super) async fn connect(ep: &Endpoint) -> Result<Self> {
+        if let Some(path) = &ep.unix {
+            return Self::connect_unix(ep, path);
+        }
         let tcp = tcp_connect(&ep.host, ep.port, ep.connect_timeout)
             .await
             .map_err(|e| Error::transport(format!("{}:{}: {e}", ep.host, ep.port)))?;
@@ -66,9 +71,29 @@ impl TokioConn {
         Ok(c)
     }
 
+    /// Connecting a local socket does not block, so the std connect (which also reaches Linux abstract sockets) is used.
+    #[cfg(unix)]
+    fn connect_unix(ep: &Endpoint, path: &str) -> Result<Self> {
+        let failed = |e: io::Error| Error::transport(format!("{}: {e}", ep.address()));
+        let sock = crate::net::unix_connect(path).map_err(failed)?;
+        sock.set_nonblocking(true).map_err(failed)?;
+        let sock = tokio::net::UnixStream::from_std(sock).map_err(failed)?;
+        Ok(TokioConn { inner: Inner::Unix(sock), host: String::new(), verify: ep.verify_tls, timeout: ep.read_timeout })
+    }
+
+    #[cfg(not(unix))]
+    fn connect_unix(_: &Endpoint, _: &str) -> Result<Self> {
+        Err(Error::Unsupported("unix sockets".into()))
+    }
+
     async fn tls(&mut self) -> Result<()> {
         let tcp = match std::mem::replace(&mut self.inner, Inner::Swapping) {
             Inner::Plain(t) => t,
+            #[cfg(unix)]
+            other @ Inner::Unix(_) => {
+                self.inner = other;
+                return Err(Error::transport("TLS over a Unix socket"));
+            }
             other @ (Inner::Tls(_) | Inner::Swapping) => {
                 self.inner = other;
                 return Err(Error::transport("connection already uses TLS"));
@@ -91,6 +116,8 @@ impl AsyncConn for TokioConn {
                 match &mut self.inner {
                     Inner::Plain(t) => t.read(buf).await,
                     Inner::Tls(s) => s.read(buf).await,
+                    #[cfg(unix)]
+                    Inner::Unix(u) => u.read(buf).await,
                     Inner::Swapping => Err(unavailable()),
                 }
             };
@@ -104,6 +131,8 @@ impl AsyncConn for TokioConn {
                 match &mut self.inner {
                     Inner::Plain(t) => t.write_all(data).await,
                     Inner::Tls(s) => s.write_all(data).await,
+                    #[cfg(unix)]
+                    Inner::Unix(u) => u.write_all(data).await,
                     Inner::Swapping => Err(unavailable()),
                 }
             };
@@ -116,6 +145,8 @@ impl AsyncConn for TokioConn {
             match &mut self.inner {
                 Inner::Plain(t) => t.flush().await,
                 Inner::Tls(s) => s.flush().await,
+                #[cfg(unix)]
+                Inner::Unix(u) => u.flush().await,
                 Inner::Swapping => Ok(()),
             }
         })
