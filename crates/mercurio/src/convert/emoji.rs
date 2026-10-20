@@ -56,7 +56,8 @@ mod tests {
         ] {
             let t = crate::parse(&format!("json://localhost/x{query}")).unwrap();
             let asset = crate::Asset { interpret_emojis: asset, ..crate::Asset::default() };
-            let prepared = t.prepare(&crate::Message::new(":rocket:"), &asset).unwrap();
+            let msg = crate::Message::new(":rocket:");
+            let prepared = t.prepare(&msg, &asset).unwrap();
             assert_eq!(prepared.pieces[0].body == "🚀", on, "{asset:?} {query}");
         }
     }

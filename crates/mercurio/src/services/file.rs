@@ -116,7 +116,7 @@ mod tests {
         assert!(crate::parse(&format!("file:///tmp/a.jsonl{extras}")).unwrap().send(&msg, &fake, &asset).is_success());
 
         let body = fake.last_request().unwrap().body;
-        assert_eq!(fake.files()[std::path::Path::new("/tmp/a.jsonl")], [body.as_slice(), b"\n"].concat());
+        assert_eq!(fake.files()[std::path::Path::new("/tmp/a.jsonl")], [&body[..], b"\n"].concat());
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!((json["level"].as_str(), json.get("version")), (Some("info"), None));
         assert_eq!(json["attachments"][0]["base64"], "aGk=");
