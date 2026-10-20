@@ -14,10 +14,10 @@ use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
 use crate::error::{Error, Result};
+use crate::machine::{Input, Output, Protocol};
 use crate::parse::{is_phone_no, parse_phone_no, parse_phone_no_unquoted};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use super::_sockets::send;
-use crate::transport::{AsyncConn, Endpoint};
+use crate::transport::Endpoint;
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared};
 
@@ -135,7 +135,7 @@ impl Notify for Smpp {
             esm,
         };
         let ep = Endpoint::new(self.host.clone(), self.port, self.tls);
-        Plan::socket(ep, move |conn, _| Box::pin(async move { session(conn, &job).await }))
+        Plan::socket(ep, move |conn, _| Box::pin(crate::machine::drive(Session::new(job), conn)))
     }
 
 }
@@ -283,67 +283,175 @@ struct Pdu {
     seq: u32,
 }
 
-async fn read_pdu(conn: &mut dyn AsyncConn) -> Result<Pdu> {
-    let mut head = [0u8; 16];
-    conn.read_exact(&mut head).await.map_err(Error::transport)?;
+/// The next complete PDU in `buf`, removed from it; `Ok(None)` until one has fully arrived.
+fn take_pdu(buf: &mut Vec<u8>) -> Result<Option<Pdu>> {
+    let Some(head) = buf.get(..16) else { return Ok(None) };
     let word = |i: usize| u32::from_be_bytes([head[i], head[i + 1], head[i + 2], head[i + 3]]);
     let len = word(0) as usize;
     if !(16..=65_536).contains(&len) {
         return Err(Error::transport(format!("invalid SMPP PDU length {len}")));
     }
-    let mut body = vec![0u8; len - 16];
-    conn.read_exact(&mut body).await.map_err(Error::transport)?;
-    Ok(Pdu { command: word(4), status: word(8), seq: word(12) })
+    if buf.len() < len {
+        return Ok(None);
+    }
+    let p = Pdu { command: word(4), status: word(8), seq: word(12) };
+    buf.drain(..len);
+    Ok(Some(p))
 }
 
-/// Wait for the response to `seq`, answering `enquire_link` meanwhile.
-async fn response(conn: &mut dyn AsyncConn, seq: u32) -> Result<Pdu> {
-    for _ in 0..64 {
-        let p = read_pdu(conn).await?;
+/// PDUs read while waiting for one response before giving up.
+const MAX_WAIT_PDUS: usize = 64;
+
+/// The request whose response a session waits for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    Bind,
+    /// `submit_sm` of `parts[part]` to `targets[target]`.
+    Submit { target: usize, part: usize },
+    /// The answer (or a failure to get one) is ignored.
+    Unbind,
+    Done,
+}
+
+/// An SMPP session as a sans-IO state machine.
+struct Session {
+    job: Job,
+    state: State,
+    /// Sequence number of the request in flight.
+    seq: u32,
+    /// PDUs read while waiting for its response.
+    seen: usize,
+    rx: Vec<u8>,
+    out: Vec<u8>,
+    failed: Vec<String>,
+    result: Option<Result<()>>,
+}
+
+impl Session {
+    fn new(job: Job) -> Self {
+        // The sequence counter starts at 1 and pre-increments (first PDU: 2).
+        let mut s = Session { job, state: State::Bind, seq: 1, seen: 0, rx: Vec::new(), out: Vec::new(), failed: Vec::new(), result: None };
+        let seq = s.next_seq();
+        let bind = bind_transmitter(seq, &s.job.system_id, s.job.password.expose());
+        s.request(&bind, State::Bind);
+        s
+    }
+
+    fn next_seq(&mut self) -> u32 {
+        self.seq = if self.seq >= 0x7FFF_FFFF { 1 } else { self.seq + 1 };
+        self.seq
+    }
+
+    fn request(&mut self, pdu: &[u8], state: State) {
+        self.out.extend_from_slice(pdu);
+        self.state = state;
+        self.seen = 0;
+    }
+
+    fn fail(&mut self, err: Error) {
+        self.result.get_or_insert(Err(err));
+        self.state = State::Done;
+    }
+
+    /// A read or write failed: fatal, except while unbinding.
+    fn io_failed(&mut self, err: Error) {
+        if self.state == State::Unbind {
+            self.finish();
+        } else {
+            self.fail(err);
+        }
+    }
+
+    /// Submit `parts[part]` to `targets[target]`, moving to the next target after the last part, and unbind after the last target.
+    fn submit(&mut self, mut target: usize, mut part: usize) {
+        if part >= self.job.parts.len() {
+            target += 1;
+            part = 0;
+        }
+        if target >= self.job.targets.len() || self.job.parts.is_empty() {
+            let seq = self.next_seq();
+            return self.request(&pdu(UNBIND, seq, &[]), State::Unbind);
+        }
+        let seq = self.next_seq();
+        let j = &self.job;
+        let p = submit_sm(seq, &j.source, &j.targets[target], j.coding, j.esm, &j.parts[part]);
+        self.request(&p, State::Submit { target, part });
+    }
+
+    fn on_pdu(&mut self, p: &Pdu) {
         if p.command == ENQUIRE_LINK {
-            send(conn, &pdu(ENQUIRE_LINK | RESP, p.seq, &[])).await?;
-            continue;
+            self.out.extend_from_slice(&pdu(ENQUIRE_LINK | RESP, p.seq, &[]));
+        } else if p.seq == self.seq && p.command & RESP != 0 {
+            return self.on_response(p);
         }
-        if p.seq == seq && p.command & RESP != 0 {
-            return Ok(p);
+        self.seen += 1;
+        if self.seen >= MAX_WAIT_PDUS {
+            self.io_failed(Error::transport("no SMPP response"));
         }
     }
-    Err(Error::transport("no SMPP response"))
+
+    fn on_response(&mut self, r: &Pdu) {
+        let ok = r.status == 0 && r.command != GENERIC_NACK;
+        match self.state {
+            State::Bind if !ok => {
+                self.fail(Error::Service(format!("SMPP bind_transmitter failed: {}", status_text(r.status))));
+            }
+            State::Bind => self.submit(0, 0),
+            State::Submit { target, part } if ok => self.submit(target, part + 1),
+            State::Submit { target, .. } => {
+                self.failed.push(format!("{}: {}", self.job.targets[target], status_text(r.status)));
+                self.submit(target + 1, 0);
+            }
+            State::Unbind => self.finish(),
+            State::Done => {}
+        }
+    }
+
+    fn finish(&mut self) {
+        let res = if self.failed.is_empty() {
+            Ok(())
+        } else {
+            Err(Error::Service(format!("SMPP submit_sm failed for {}", self.failed.join(", "))))
+        };
+        self.result.get_or_insert(res);
+        self.state = State::Done;
+    }
 }
 
-async fn session(conn: &mut dyn AsyncConn, job: &Job) -> Result<()> {
-    // The sequence counter starts at 1 and pre-increments (first PDU: 2).
-    let mut seq = 1u32;
-    let mut next = move || {
-        seq = if seq >= 0x7FFF_FFFF { 1 } else { seq + 1 };
-        seq
-    };
-    let s = next();
-    send(conn, &bind_transmitter(s, &job.system_id, job.password.expose())).await?;
-    let r = response(conn, s).await?;
-    if r.status != 0 || r.command == GENERIC_NACK {
-        return Err(Error::Service(format!("SMPP bind_transmitter failed: {}", status_text(r.status))));
+impl Protocol for Session {
+    fn next(&mut self) -> Output {
+        if !self.out.is_empty() {
+            return Output::Write(std::mem::take(&mut self.out));
+        }
+        match self.state {
+            State::Done => Output::Done(self.result.take().unwrap_or(Ok(()))),
+            State::Bind | State::Submit { .. } | State::Unbind => Output::Read,
+        }
     }
-    let mut failed = Vec::new();
-    for target in &job.targets {
-        for part in &job.parts {
-            let s = next();
-            send(conn, &submit_sm(s, &job.source, target, job.coding, job.esm, part)).await?;
-            let r = response(conn, s).await?;
-            if r.status != 0 || r.command == GENERIC_NACK {
-                failed.push(format!("{target}: {}", status_text(r.status)));
-                break;
+
+    fn input(&mut self, input: Input<'_>) {
+        match input {
+            Input::Data([]) => self.io_failed(Error::transport(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "failed to fill whole buffer",
+            ))),
+            Input::Data(data) => {
+                self.rx.extend_from_slice(data);
+                while self.state != State::Done {
+                    match take_pdu(&mut self.rx) {
+                        Ok(Some(p)) => self.on_pdu(&p),
+                        Ok(None) => break,
+                        Err(e) => self.io_failed(e),
+                    }
+                }
+            }
+            Input::ReadError(e) | Input::WriteError(e) => self.io_failed(Error::transport(e)),
+            Input::Tls(r) => {
+                if let Err(e) = r {
+                    self.fail(e);
+                }
             }
         }
-    }
-    let s = next();
-    if send(conn, &pdu(UNBIND, s, &[])).await.is_ok() {
-        response(conn, s).await.ok();
-    }
-    if failed.is_empty() {
-        Ok(())
-    } else {
-        Err(Error::Service(format!("SMPP submit_sm failed for {}", failed.join(", "))))
     }
 }
 

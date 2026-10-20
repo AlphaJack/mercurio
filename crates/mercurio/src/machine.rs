@@ -82,6 +82,7 @@ pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn) -> Resu
             }
             Output::Read => match conn.read(&mut buf).await {
                 Ok(n) => machine.input(Input::Data(&buf[..n])),
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
                 Err(e) => machine.input(Input::ReadError(e)),
             },
             Output::StartTls => {
