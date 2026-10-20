@@ -58,7 +58,7 @@ fn max_parallel() -> usize {
 pub struct Mercurio {
     core: Core,
     transport: Arc<dyn Transport>,
-    parallel: bool,
+    pub(crate) sequential: bool,
 }
 
 /// Targets, template entries and settings shared by [`Mercurio`] and [`crate::AsyncMercurio`].
@@ -237,7 +237,7 @@ impl Mercurio {
 
     /// A notifier using `transport` for all I/O (e.g. [`crate::testing::FakeTransport`]).
     pub fn with_transport(transport: Arc<dyn Transport>) -> Self {
-        Self { core: Core::default(), transport, parallel: true }
+        Self { core: Core::default(), transport, sequential: false }
     }
 
     /// Replace the [`Asset`] (branding, pipeline defaults, storage).
@@ -248,7 +248,7 @@ impl Mercurio {
 
     /// Send to targets one after another instead of in parallel threads.
     pub fn sequential(mut self) -> Self {
-        self.parallel = false;
+        self.sequential = true;
         self
     }
 
@@ -388,7 +388,7 @@ impl Mercurio {
                 self.transport.sleep(gap);
             }
         };
-        if !self.parallel || targets.len() < 2 {
+        if self.sequential || targets.len() < 2 {
             let _permit = SEND_PERMITS.acquire_blocking();
             let mut last: BTreeMap<&str, Instant> = BTreeMap::new();
             return targets
