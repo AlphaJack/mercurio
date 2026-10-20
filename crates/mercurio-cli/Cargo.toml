@@ -15,8 +15,8 @@ name = "mercurio"
 path = "src/main.rs"
 
 [features]
-default = ["extra"]
-extra = ["mercurio/extra"]
+default = ["all-services"]
+all-services = ["mercurio/all-services"]
 
 [dependencies]
 mercurio = { workspace = true }

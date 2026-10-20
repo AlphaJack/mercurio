@@ -164,15 +164,18 @@
 //!
 //! ## Cargo features
 //!
-//! Every service is compiled by default. One feature trims the build:
+//! Every service is compiled by default (`all-services`). Each one also has its own feature, `service-<id>`, so a build can carry only the services it uses:
 //!
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/features.md"))]
 //!
-//! For a slim build, disable default features: `mercurio = { version = "0.1", default-features = false }`
+//! For a slim build, disable default features and pick services: `mercurio = { version = "0.1", default-features = false, features = ["service-telegram", "service-ntfy"] }`
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-// Shared helpers serve optional services: a build without `extra` leaves part of the helpers unused. The default build still checks.
-#![cfg_attr(not(feature = "extra"), allow(dead_code, unused_imports, reason = "helpers serve optional services"))]
+// Shared helpers serve optional services: a build without `all-services` leaves part of the helpers unused. The default build still checks.
+#![cfg_attr(
+    not(feature = "all-services"),
+    allow(dead_code, unused_imports, reason = "helpers serve optional services")
+)]
 
 // Hidden modules are public only for the CLI and the integration tests; they are not a stable API. Use the re-exports below.
 mod asset;

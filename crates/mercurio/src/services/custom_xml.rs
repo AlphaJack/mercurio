@@ -3,7 +3,7 @@
 use crate::crypto::b64;
 use crate::http::Method;
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
-use crate::services::custom_json::{double_unquoted, endpoint, parse_method};
+use crate::services::_webhook::{double_unquoted, endpoint, parse_method};
 use crate::url::ParsedUrl;
 use crate::util::escape_html;
 use crate::{NotifyFormat, Plan, Prepared, Result};

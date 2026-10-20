@@ -33,7 +33,8 @@ pub fn generate(root: &Path, services: Value) -> Result<(), String> {
         return Err("mercurio services --json: expected an array".to_owned());
     };
     services.sort_by_key(|s| str_of(s, "name").to_lowercase());
-    let features = feature_services(&read(&root.join("crates/mercurio/Cargo.toml"))?);
+    let features: BTreeMap<String, String> =
+        services.iter().map(|s| (str_of(s, "id").to_owned(), service_feature(str_of(s, "id")))).collect();
 
     let mut warnings = Vec::new();
     let mut files = BTreeMap::new();
@@ -103,35 +104,9 @@ fn is_set(v: Option<&Value>) -> bool {
     }
 }
 
-/// `[package.metadata.mercurio.feature-services]`: service id -> the Cargo feature that gates it. Services not listed are always compiled.
-fn feature_services(toml: &str) -> BTreeMap<String, String> {
-    let mut out = BTreeMap::new();
-    let mut in_table = false;
-    let mut feature = String::new();
-    for line in toml.lines() {
-        let line = line.split('#').next().unwrap_or_default().trim();
-        if line.starts_with('[') && feature.is_empty() {
-            in_table = line == "[package.metadata.mercurio.feature-services]";
-            continue;
-        }
-        if !in_table || line.is_empty() {
-            continue;
-        }
-        let values = match line.split_once('=') {
-            Some((key, rest)) if feature.is_empty() => {
-                key.trim().clone_into(&mut feature);
-                rest
-            }
-            _ => line,
-        };
-        for service in values.split('"').skip(1).step_by(2) {
-            out.insert(service.to_owned(), feature.clone());
-        }
-        if values.contains(']') {
-            feature.clear();
-        }
-    }
-    out
+/// Same rule as `service_feature` in `crates/mercurio/build.rs`.
+fn service_feature(id: &str) -> String {
+    format!("service-{}", id.replace('_', "-"))
 }
 
 /// Rust files of a service module: `<id>.rs` or every file under `<id>/`.
@@ -638,8 +613,8 @@ fn index_page(services: &[Value], features: &BTreeMap<String, String>) -> String
             services.len()
         ),
         String::new(),
-        "Every service is compiled by default. The few that need extra cryptography crates are behind the `extra` \
-         Cargo feature (the Feature column); `default-features = false` leaves them out."
+        "Every service is compiled by default (`all-services`). Each has its own Cargo feature (the Feature column): \
+         with `default-features = false`, turn on only the ones you use. Matrix end-to-end encryption is `service-matrix-e2ee`."
             .to_owned(),
         String::new(),
         "| Service | Schemes | Attachments | Formats | Feature |".to_owned(),

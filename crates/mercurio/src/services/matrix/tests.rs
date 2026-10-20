@@ -1,4 +1,4 @@
-//! Unit tests for the Matrix service: properties the fixtures do not assert (redirect policy, probe credentials, oversized answers, one UUID per raw-token send; the request sequences themselves are fixture cases `login_success`, `discovery_*`, `raw_token_*`), the `?keystore=` directory store and (feature `extra`) reference vectors plus a simulated homeserver whose second device decrypts what mercurio sends and completes a SAS verification.
+//! Unit tests for the Matrix service: properties the fixtures do not assert (redirect policy, probe credentials, oversized answers, one UUID per raw-token send; the request sequences themselves are fixture cases `login_success`, `discovery_*`, `raw_token_*`), the `?keystore=` directory store and (feature `service-matrix-e2ee`) reference vectors plus a simulated homeserver whose second device decrypts what mercurio sends and completes a SAS verification.
 
 use serde_json::{Value, json};
 
@@ -288,7 +288,7 @@ fn dm_without_home_server_is_skipped() {
     assert!(store.keys().iter().all(|k| !k.starts_with("dm_room_")), "{:?}", store.keys());
 }
 
-#[cfg(feature = "extra")]
+#[cfg(feature = "service-matrix-e2ee")]
 mod e2ee {
     use std::collections::BTreeMap;
     use std::sync::Mutex;

@@ -9,13 +9,13 @@ cargo install mdbook cargo-insta
 ## Add or fix a service
 
 ```sh
-cargo xtask new <id>                               # new service: src/services/<id>.rs + fixture
+cargo xtask new <id>                               # add a new service
 cargo test -p mercurio --test it services::<id>    # run its fixture
 cargo insta review                                 # check each request against the API docs, accept
 cargo xtask try 'gotify://real.host/TOKEN'         # send real test messages with your working tree
 ```
 
-- Everything about a service lives in `crates/mercurio/src/services/<id>.rs` and `crates/mercurio/tests/fixtures/services/<id>.json`. `build.rs` registers both; no shared file to edit.
+- Everything about a service lives in `crates/mercurio/src/services/<id>.rs` and `crates/mercurio/tests/fixtures/services/<id>.json`. `build.rs` registers both. Code shared by several services goes in a `_<name>.rs` helper, never in another service's module, so each service compiles on its own.
 - `SERVICE` declares the URL templates, path tokens and query parameters. The service page and `mercurio services --json` are generated from them. `tests/it/params.rs` fails when a declared key is never read or a declared default is not what the parser does; mark a default that depends on the rest of the URL with `.inferred()`.
 - A fixture case is one line in the `cases` list: a `name`, a `url`, and only what differs from the defaults: `title`, `body`, `type`, `format`, `attachments`, scripted `responses`, `ignore` for changing values. Add one per URL form, option and error branch. Every field is described in the rustdoc of `mercurio::testing::fixtures`.
 

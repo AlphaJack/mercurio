@@ -1,4 +1,4 @@
-//! Jellyfin (`jellyfin://`, `jellyfins://`): messages to the active Jellyfin client sessions; same API and engine as Emby (`emby.rs`).
+//! Jellyfin (`jellyfin://`, `jellyfins://`): messages to the active Jellyfin client sessions; same API and engine as Emby (`_emby.rs`).
 
 use crate::Result;
 use crate::service::{Notify, Param, ServiceDef};
@@ -29,5 +29,5 @@ pub static SERVICE: ServiceDef = ServiceDef {
 };
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::services::emby::parse_with(u, &SERVICE)
+    super::_emby::parse_with(u, &SERVICE)
 }
