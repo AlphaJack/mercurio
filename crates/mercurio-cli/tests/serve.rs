@@ -750,6 +750,19 @@ fn body_limit_follows_the_attachment_size() {
     assert_eq!(post_bytes(&large.addr, 22 * MIB), Some(413));
 }
 
+/// `APPRISE_WORKER_TIMEOUT` is how long a request head may take: a client that sends half of one is dropped after it, not after the 30 s default.
+#[test]
+fn worker_timeout_closes_a_stalled_request() {
+    let s = start_with(&tmpdir("worker-timeout"), &[("APPRISE_WORKER_TIMEOUT", "1")]);
+    let mut c = TcpStream::connect(&s.addr).unwrap();
+    c.set_read_timeout(Some(std::time::Duration::from_secs(10))).unwrap();
+    c.write_all(b"POST /notify HTTP/1.1\r\nHost: x\r\n").unwrap();
+    let started = std::time::Instant::now();
+    let mut out = Vec::new();
+    c.read_to_end(&mut out).ok();
+    assert!(started.elapsed() < std::time::Duration::from_secs(8), "still open after {:?}", started.elapsed());
+}
+
 #[test]
 fn non_ascii_header_values_are_used() {
     let s = start(&tmpdir("utf8-headers"));

@@ -123,6 +123,12 @@ pub(crate) struct ServeArgs {
     /// Live streams sending at the same time
     #[arg(long, env = "APPRISE_STREAM_WORKER_COUNT", default_value = "4", value_name = "N")]
     stream_worker_count: String,
+    /// Workers: each takes 128 requests in progress at once, more get `503`
+    #[arg(long, env = "APPRISE_WORKER_COUNT", default_value = "4", value_name = "N")]
+    worker_count: String,
+    /// Seconds a request head, and each piece of its body, may take to arrive
+    #[arg(long, env = "APPRISE_WORKER_TIMEOUT", default_value = "30", value_name = "SECONDS")]
+    worker_timeout: String,
     /// Further live streams admitted; more get `503`
     #[arg(long, env = "APPRISE_STREAM_QUEUE_SIZE", default_value = "8", value_name = "N")]
     stream_queue_size: String,
@@ -146,6 +152,9 @@ impl ServeArgs {
         self.log_format == "json"
     }
 }
+/// Requests one worker of `APPRISE_WORKER_COUNT` stands for: the library's 128 sends at once.
+const REQUESTS_PER_WORKER: usize = 128;
+
 fn int(name: &str, raw: &str, min: i64, max: i64) -> Result<i64, String> {
     let v: i64 = raw.trim().parse().map_err(|_| format!("{name} must be a whole number"))?;
     if v < min || v > max {
@@ -214,6 +223,10 @@ pub(crate) struct Settings {
     pub(super) interpret_emojis: Option<bool>,
     pub(super) log_level: u8,
     pub(super) stream_slots: usize,
+    /// Requests in progress at once (`APPRISE_WORKER_COUNT` workers of [`REQUESTS_PER_WORKER`]).
+    pub(super) max_requests: usize,
+    /// How long a request head, and each piece of its body, may take (`APPRISE_WORKER_TIMEOUT`).
+    pub(super) io_timeout: Duration,
     pub(super) storage_idlen: usize,
     pub(super) storage_mode: mercurio::StorageMode,
     /// The periodic clean-up; `None` when `APPRISE_PRUNE_ENABLED=no`.
@@ -282,6 +295,10 @@ impl Settings {
             interpret_emojis: a.emojis.as_deref().map(|v| flag(v, false)),
             log_level,
             stream_slots,
+            max_requests: int("APPRISE_WORKER_COUNT", &a.worker_count, 1, 1 << 20)? as usize * REQUESTS_PER_WORKER,
+            io_timeout: Duration::from_secs(
+                int("APPRISE_WORKER_TIMEOUT", &a.worker_timeout, 1, 86_400)?.unsigned_abs(),
+            ),
             storage_idlen: match a.storage_uid_length {
                 n @ 2..=64 => n,
                 _ => return Err("APPRISE_STORAGE_UID_LENGTH must be between 2 and 64".into()),

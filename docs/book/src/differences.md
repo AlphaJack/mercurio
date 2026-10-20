@@ -107,9 +107,15 @@ on its page (see the [service list](services/index.md)), taken from the
   `APPRISE_AUTH_PRUNE_SECONDS`): apprise-api in a separate container
   process, mercurio inside the server. The storage layout differs and
   `APPRISE_STORAGE_UID_LENGTH` works the same. *intentional*
-- **Workers.** apprise-api sizes gunicorn by `WORKER_COUNT` /
-  `WORKER_TIMEOUT` -> mercurio allows 512 requests in flight and a 30 s
-  socket timeout. *intentional*
+- **Workers.** apprise-api sizes gunicorn by `APPRISE_WORKER_COUNT` (twice the
+  CPUs plus one by default), gives a worker `APPRISE_WORKER_TIMEOUT` seconds
+  (300 by default) and recycles it after `APPRISE_WORKER_MAX_REQUESTS`
+  requests, while mercurio reads the first two with its own meaning and
+  defaults. Each worker stands for 128 requests in progress (4 workers, so
+  512, by default), and the timeout is how long a request head, and each
+  piece of a body, may take to arrive (30 s by default). It has no worker
+  processes to recycle, so `APPRISE_WORKER_MAX_REQUESTS` and its jitter are
+  ignored. *intentional*
 - **Request log.** apprise-api logs requests through nginx (`combined`
   format) plus `NOTIFY - ip - ...` warnings -> mercurio logs one line per
   request with its key, services, failures and error. *intentional*
