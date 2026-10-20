@@ -50,6 +50,7 @@ poly1305 = { version = "0.9", optional = true }
 curve25519-dalek = { version = "5", optional = true, default-features = false }
 p256 = { version = "0.14", optional = true, default-features = false, features = ["arithmetic"] }
 zeroize = { version = "1.8", optional = true }
+thiserror = "2"
 
 [dev-dependencies]
 # The integration tests use the fixture runner (`testing` feature).
