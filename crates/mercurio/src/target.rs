@@ -235,11 +235,11 @@ impl Target {
     }
 
     /// Run the message pipeline (payload cap, escapes, conversion, title merging, overflow) without planning anything.
-    pub fn prepare(&self, msg: &Message, asset: &Asset) -> Result<PreparedMessage> {
+    pub fn prepare<'m>(&self, msg: &'m Message, asset: &Asset) -> Result<PreparedMessage<'m>> {
         self.prepare_in(msg, &Context::new(asset, self.store(asset), &Memo::disabled()).with_tz(self.tz.as_ref()))
     }
 
-    fn prepare_in(&self, msg: &Message, ctx: &Context<'_>) -> Result<PreparedMessage> {
+    fn prepare_in<'m>(&self, msg: &'m Message, ctx: &Context<'_>) -> Result<PreparedMessage<'m>> {
         let opts = PipelineOptions {
             format_override: self.format_override,
             overflow: self.overflow,
@@ -256,7 +256,7 @@ impl Target {
         }
     }
 
-    fn piece<'a>(&self, prep: &'a PreparedMessage, msg: &'a Message, index: usize) -> Prepared<'a> {
+    fn piece<'a>(&self, prep: &'a PreparedMessage<'_>, msg: &'a Message, index: usize) -> Prepared<'a> {
         let piece = &prep.pieces[index];
         let attachments: &[crate::message::Attachment] = if !piece.attach {
             &[]

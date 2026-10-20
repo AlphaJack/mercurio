@@ -3,6 +3,7 @@
 use std::fmt;
 use std::time::Duration;
 
+use bytes::Bytes;
 use serde_json::{Map, Value};
 
 use crate::url::form_urlencode;
@@ -90,8 +91,8 @@ pub struct Request {
     pub url: String,
     /// Header order is preserved; names compare case-insensitively.
     pub headers: Vec<(String, String)>,
-    /// Raw body bytes; empty for no body.
-    pub body: Vec<u8>,
+    /// Raw body bytes; empty for no body. Shared, so a retry or a redirect sends the same buffer instead of a copy.
+    pub body: Bytes,
     /// Connect timeout (5 s unless the URL sets `cto=`).
     pub connect_timeout: Duration,
     /// Read timeout (30 s unless the URL sets `rto=`).
@@ -124,7 +125,7 @@ impl Request {
             method,
             url: url.into(),
             headers: Vec::new(),
-            body: Vec::new(),
+            body: Bytes::new(),
             connect_timeout: DEFAULT_CONNECT_TIMEOUT,
             read_timeout: DEFAULT_READ_TIMEOUT,
             verify_tls: true,
@@ -198,7 +199,7 @@ impl Request {
 
     /// JSON body with `Content-Type: application/json` (unless already set).
     pub fn json(mut self, value: &Value) -> Self {
-        self.body = serde_json::to_vec(value).unwrap_or_default();
+        self.body = serde_json::to_vec(value).unwrap_or_default().into();
         if self.header_value("content-type").is_none() {
             self = self.header("Content-Type", "application/json");
         }
@@ -207,7 +208,7 @@ impl Request {
 
     /// Form body (`application/x-www-form-urlencoded`).
     pub fn form<K: AsRef<str>, V: AsRef<str>>(mut self, pairs: &[(K, V)]) -> Self {
-        self.body = form_urlencode(pairs.iter()).into_bytes();
+        self.body = form_urlencode(pairs.iter()).into_bytes().into();
         if self.header_value("content-type").is_none() {
             self = self.header("Content-Type", "application/x-www-form-urlencoded");
         }
@@ -215,7 +216,7 @@ impl Request {
     }
 
     /// Raw body with a content type.
-    pub fn body(mut self, body: impl Into<Vec<u8>>, content_type: Option<&str>) -> Self {
+    pub fn body(mut self, body: impl Into<Bytes>, content_type: Option<&str>) -> Self {
         self.body = body.into();
         if let Some(ct) = content_type {
             self = self.set_header("Content-Type", ct);
@@ -225,14 +226,14 @@ impl Request {
 
     /// Text body with no content type change.
     pub fn text(mut self, body: impl Into<String>) -> Self {
-        self.body = body.into().into_bytes();
+        self.body = Bytes::from(body.into().into_bytes());
         self
     }
 
     /// Multipart body.
     pub fn multipart(mut self, form: Multipart) -> Self {
         let (ct, body) = form.finish();
-        self.body = body;
+        self.body = body.into();
         self.set_header("Content-Type", ct)
     }
 

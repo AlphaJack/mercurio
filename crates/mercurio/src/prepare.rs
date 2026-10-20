@@ -1,5 +1,7 @@
 //! The message pipeline between [`Message`] and a service's `plan`: payload cap, escapes, format conversion, title merging and overflow.
 
+use std::borrow::Cow;
+
 use crate::convert;
 use crate::error::{Error, Result};
 use crate::message::{Message, NotifyFormat, OverflowMode};
@@ -7,20 +9,20 @@ use crate::service::{Context, Limits, Notify, ServiceDef};
 
 /// One piece of a message after the pipeline, ready for `plan`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Piece {
+pub struct Piece<'m> {
     /// Title, converted to the service's format.
     pub title: String,
-    /// Body, converted to the service's format.
-    pub body: String,
+    /// Body, converted to the service's format. Borrowed from the message while nothing had to change it, so a large body is not copied once per service.
+    pub body: Cow<'m, str>,
     /// This piece carries the message's attachments.
     pub attach: bool,
 }
 
 /// All pieces of one message for one service.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PreparedMessage {
+pub struct PreparedMessage<'m> {
     /// The pieces to send, in order (more than one when the body was split).
-    pub pieces: Vec<Piece>,
+    pub pieces: Vec<Piece<'m>>,
     /// Resolved format the service renders.
     pub format: NotifyFormat,
     /// The caller's declared input format (`None`: passthrough).
@@ -62,13 +64,13 @@ pub fn resolve_format(
 }
 
 /// Run the whole pipeline for one service.
-pub fn prepare(
+pub fn prepare<'m>(
     def: &ServiceDef,
     service: &dyn Notify,
     opts: PipelineOptions,
-    msg: &Message,
+    msg: &'m Message,
     ctx: &Context<'_>,
-) -> Result<PreparedMessage> {
+) -> Result<PreparedMessage<'m>> {
     let asset = ctx.asset;
     let input_format = msg.format.or(asset.body_format);
     let format = resolve_format(def.formats, opts.format_override, input_format);
@@ -81,7 +83,7 @@ pub fn prepare(
     }
 
     // The body stays borrowed until a conversion changes it: it can be megabytes.
-    let (mut title, mut body) = (msg.title.clone(), std::borrow::Cow::Borrowed(msg.body.as_str()));
+    let (mut title, mut body) = (msg.title.clone(), Cow::Borrowed(msg.body.as_str()));
     if opts.emojis {
         title = convert::emoji::apply(&title);
         body = convert::emoji::apply(&body).into();
@@ -96,7 +98,7 @@ pub fn prepare(
     let limits = service.limits(&title, &body, format, ctx).unwrap_or(def.limits);
     let passthrough = input_format.is_none();
     let overflow = opts.overflow;
-    let chunks = apply_overflow(&title, &body, limits, overflow, format, passthrough);
+    let chunks = apply_overflow(&title, body, limits, overflow, format, passthrough);
     let dialect = !passthrough && service.convert("", format).is_some();
     let mut pieces: Vec<Piece> = Vec::new();
     for chunk in chunks {
@@ -122,7 +124,7 @@ pub fn prepare(
         };
         for (i, b) in bodies.into_iter().enumerate() {
             let title = if i == 0 { chunk.title.clone() } else { String::new() };
-            pieces.push(Piece { title, body: b, attach: false });
+            pieces.push(Piece { title, body: b.into(), attach: false });
         }
     }
     if let Some(p) = pieces.first_mut() {
@@ -138,9 +140,9 @@ pub fn prepare(
 
 /// A chunk produced by [`apply_overflow`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Chunk {
+pub struct Chunk<'m> {
     pub title: String,
-    pub body: String,
+    pub body: Cow<'m, str>,
 }
 
 /// Drop leading line breaks (`\r`, `\n`, `\x0b`, `\x0c`) and trailing whitespace.
@@ -148,21 +150,32 @@ fn tidy_chunk(s: &str) -> String {
     s.trim_start_matches(['\r', '\n', '\x0b', '\x0c']).trim_end().to_string()
 }
 
-fn chunk(title: impl Into<String>, body: impl Into<String>) -> Chunk {
+fn chunk<'m>(title: impl Into<String>, body: impl Into<Cow<'m, str>>) -> Chunk<'m> {
     Chunk { title: title.into(), body: body.into() }
 }
 
+/// Drop trailing whitespace without copying a borrowed body.
+fn trim_end_cow(body: Cow<'_, str>) -> Cow<'_, str> {
+    match body {
+        Cow::Borrowed(s) => Cow::Borrowed(s.trim_end()),
+        Cow::Owned(mut s) => {
+            s.truncate(s.trim_end().len());
+            Cow::Owned(s)
+        }
+    }
+}
+
 /// Fit a message into `limits`: a service without a title gets it merged into the body, the title is cut to `title_maxlen`, the body to `body_max_line_count` lines, then truncated or split into pieces of at most `body_maxlen` characters (`0`: unlimited). Only the first piece carries the title.
-pub fn apply_overflow(
+pub fn apply_overflow<'m>(
     title: &str,
-    body: &str,
+    body: Cow<'m, str>,
     limits: Limits,
     overflow: OverflowMode,
     format: NotifyFormat,
     passthrough: bool,
-) -> Vec<Chunk> {
+) -> Vec<Chunk<'m>> {
     let mut title = title.trim().to_string();
-    let mut body = body.trim_end().to_string();
+    let mut body = trim_end_cow(body);
     if limits.title_maxlen == 0 && !title.is_empty() {
         body = match format {
             NotifyFormat::Html => format!("<b>{title}</b><br />\r\n{body}"),
@@ -170,12 +183,13 @@ pub fn apply_overflow(
                 format!("# {}\n{body}", title.trim_start_matches(['#', '-', ' ']))
             }
             NotifyFormat::Text | NotifyFormat::Markdown => format!("{title}\r\n{body}"),
-        };
+        }
+        .into();
         title.clear();
     }
     if limits.body_max_line_count > 0 {
         let re = crate::regex!(r"\r*\n");
-        body = re.split(&body).take(limits.body_max_line_count).collect::<Vec<_>>().join("\r\n");
+        body = re.split(&body).take(limits.body_max_line_count).collect::<Vec<_>>().join("\r\n").into();
     }
     if overflow == OverflowMode::Upstream {
         return vec![chunk(title, body)];
@@ -211,23 +225,30 @@ mod tests {
     use super::*;
     use crate::asset::Asset;
 
-    fn bodies(c: &[Chunk]) -> Vec<(&str, &str)> {
-        c.iter().map(|c| (c.title.as_str(), c.body.as_str())).collect()
+    fn bodies<'a>(c: &'a [Chunk<'_>]) -> Vec<(&'a str, &'a str)> {
+        c.iter().map(|c| (c.title.as_str(), &*c.body)).collect()
     }
 
     #[test]
     fn title_merges_when_service_has_no_title() {
         let limits = Limits { title_maxlen: 0, ..Limits::DEFAULT };
-        let p = apply_overflow("T", "B", limits, OverflowMode::Upstream, NotifyFormat::Text, true);
+        let p = apply_overflow("T", "B".into(), limits, OverflowMode::Upstream, NotifyFormat::Text, true);
         assert_eq!(bodies(&p), vec![("", "T\r\nB")]);
-        let p = apply_overflow("T", "B", limits, OverflowMode::Upstream, NotifyFormat::Html, true);
+        let p = apply_overflow("T", "B".into(), limits, OverflowMode::Upstream, NotifyFormat::Html, true);
         assert_eq!(p[0].body, "<b>T</b><br />\r\nB");
     }
 
     #[test]
     fn truncate() {
         let limits = Limits { title_maxlen: 5, body_maxlen: 10, body_max_line_count: 0 };
-        let p = apply_overflow("Title long", "0123456789ABC", limits, OverflowMode::Truncate, NotifyFormat::Text, true);
+        let p = apply_overflow(
+            "Title long",
+            "0123456789ABC".into(),
+            limits,
+            OverflowMode::Truncate,
+            NotifyFormat::Text,
+            true,
+        );
         assert_eq!(bodies(&p), vec![("Title", "0123456789")]);
     }
 
@@ -238,7 +259,7 @@ mod tests {
         for body in
             [format!("{}\r\n{}", "a".repeat(9), "b".repeat(15)), format!("{} {}", "a".repeat(10), "b".repeat(15))]
         {
-            let p = apply_overflow("T", &body, limits, OverflowMode::Split, NotifyFormat::Text, true);
+            let p = apply_overflow("T", body.as_str().into(), limits, OverflowMode::Split, NotifyFormat::Text, true);
             assert!(p.iter().all(|c| !c.body.is_empty()), "{:?}", bodies(&p));
             assert_eq!(p[0].title, "T");
             assert_eq!(p.len(), 3, "{:?}", bodies(&p));
@@ -259,7 +280,7 @@ mod tests {
         let asset = Asset::default();
         let body = |url: &str, msg: &Message, asset: &Asset| {
             let p = crate::parse(url).unwrap().prepare(msg, asset).unwrap();
-            (p.pieces[0].title.clone(), p.pieces[0].body.clone())
+            (p.pieces[0].title.clone(), p.pieces[0].body.to_string())
         };
         assert_eq!(body("json://localhost", &msg, &asset), (":rocket: Up".into(), "**hi** :smile:".into()));
 

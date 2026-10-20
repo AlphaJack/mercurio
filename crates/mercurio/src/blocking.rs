@@ -75,7 +75,7 @@ impl Transport for BlockingTransport {
         if !has_ua {
             builder = builder.header("User-Agent", self.user_agent.as_str());
         }
-        let http_req = builder.body(req.body.clone()).map_err(|e| Error::transport(format!("bad request: {e}")))?;
+        let http_req = builder.body(req.body.as_ref()).map_err(|e| Error::transport(format!("bad request: {e}")))?;
         let agent = self.agent(req.verify_tls);
         let configured = http_req
             .with_agent(agent)
