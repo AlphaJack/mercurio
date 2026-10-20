@@ -4,6 +4,7 @@ use md5::{Digest, Md5};
 
 use crate::crypto;
 use crate::error::{Error, Result};
+use crate::machine::Machine;
 use crate::net::LineConn;
 use crate::service::Secret;
 use crate::transport::AsyncConn;
@@ -244,8 +245,13 @@ async fn run(c: &mut LineConn<'_>, job: &Job, quit_sent: &mut bool) -> Result<()
     }
 }
 
-/// Run a whole SMTP session on `conn`.
-pub async fn session(conn: &mut dyn AsyncConn, job: &Job) -> Result<()> {
+/// A whole SMTP session as a sans-IO [`Machine`]; `tls` is whether the stream starts encrypted.
+pub fn session(job: Job, tls: bool) -> Machine {
+    Machine::new(tls, move |mut wire| async move { run_session(&mut wire, &job).await })
+}
+
+/// The session's protocol, written against any connection (the [`Machine`]'s wire in practice).
+async fn run_session(conn: &mut dyn AsyncConn, job: &Job) -> Result<()> {
     let mut c = LineConn::new(conn);
     let mut quit_sent = false;
     let res = run(&mut c, job, &mut quit_sent).await;
@@ -259,6 +265,7 @@ pub async fn session(conn: &mut dyn AsyncConn, job: &Job) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::machine::{Input, Output};
 
     #[test]
     fn hmac_md5_rfc2202() {
@@ -268,6 +275,51 @@ mod tests {
             crypto::hex(&hmac_md5(&[0xaa; 80], b"Test Using Larger Than Block-Size Key - Hash Key First")),
             "6b1ab7fe4bd7bf8f0b62e6ce61b9d0cd"
         );
+    }
+
+    /// Plays the server: feeds `reply` for every command the session writes, collects the commands.
+    fn converse(mut m: Machine, reply: impl Fn(&str) -> &'static str) -> (Vec<String>, Result<()>) {
+        let mut sent = Vec::new();
+        let mut pending = String::from("220 hi\r\n");
+        loop {
+            match m.next() {
+                Output::Write(data) => {
+                    for line in String::from_utf8(data).unwrap().split_inclusive("\r\n") {
+                        let line = line.trim_end().to_string();
+                        if !line.is_empty() {
+                            pending.push_str(reply(&line));
+                            sent.push(line);
+                        }
+                    }
+                }
+                Output::Read => m.input(Input::Data(std::mem::take(&mut pending).as_bytes())),
+                Output::StartTls => m.input(Input::Tls(Ok(()))),
+                Output::Done(r) => return (sent, r),
+            }
+        }
+    }
+
+    #[test]
+    fn session_is_driven_by_bytes_alone() {
+        let job = Job {
+            security: Security::StartTls,
+            helo: "me".into(),
+            user: Some("u".into()),
+            password: Some(Secret::new("p")),
+            messages: vec![Envelope { from: "a@x".into(), recipients: vec!["b@x".into()], data: "Subject: s\r\n\r\nhi\r\n".into() }],
+        };
+        let (sent, res) = converse(session(job, false), |line| match line.split(' ').next().unwrap() {
+            "EHLO" => "250-x\r\n250-STARTTLS\r\n250 AUTH PLAIN\r\n",
+            "STARTTLS" => "220 go\r\n",
+            "AUTH" => "235 ok\r\n",
+            "DATA" => "354 go\r\n",
+            "QUIT" => "221 bye\r\n",
+            "Subject:" | "hi" => "",
+            _ => "250 ok\r\n",
+        });
+        res.unwrap();
+        let verbs: Vec<&str> = sent.iter().map(|l| l.split([' ', ':']).next().unwrap()).collect();
+        assert_eq!(verbs, ["EHLO", "STARTTLS", "EHLO", "AUTH", "MAIL", "RCPT", "DATA", "Subject", "hi", ".", "QUIT"]);
     }
 
     #[test]

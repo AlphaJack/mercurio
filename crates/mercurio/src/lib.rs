@@ -230,6 +230,7 @@ mod crypto;
 mod env;
 mod error;
 mod http;
+mod machine;
 mod message;
 mod net;
 mod parse;
