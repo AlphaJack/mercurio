@@ -651,7 +651,11 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
 
 fn run() -> Result<u8, u8> {
     let args = parse_args();
-    logger::init(args.verbose);
+    if args.command.as_deref() == Some("serve") {
+        serve::init_logging(args.verbose);
+    } else {
+        logger::init(args.verbose);
+    }
     match args.command.as_deref() {
         Some("services") => {
             return Ok(if cmd_services(args.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE });

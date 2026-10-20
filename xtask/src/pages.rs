@@ -500,11 +500,7 @@ fn examples_section(fixtures: &[Fixture]) -> String {
     }
     let mut out = vec!["## Examples".to_owned(), String::new()];
     if !good.is_empty() {
-        out.extend([
-            "Accepted URLs (from the test fixtures; tokens are fake):".to_owned(),
-            String::new(),
-            "```text".to_owned(),
-        ]);
+        out.extend(["Accepted URLs (tokens are fake):".to_owned(), String::new(), "```text".to_owned()]);
         out.extend(good.iter().cloned());
         out.extend(["```".to_owned(), String::new()]);
     }
@@ -571,16 +567,12 @@ fn page(
     let (notes, diff) = split_differences(&doc);
     check_differences(sid, &fixtures, notes, diff, warnings);
     if !notes.is_empty() {
-        parts.extend(["## Implementation notes", "", "From the module documentation:", ""].map(str::to_owned));
+        parts.extend(["## Notes", ""].map(str::to_owned));
         parts.extend([demote(notes), String::new()]);
     }
     if !diff.is_empty() {
         parts.extend(["## Differences".to_owned(), String::new(), demote(diff), String::new()]);
     }
-    parts.extend(["## Source".to_owned(), String::new()]);
-    parts.extend(own.iter().map(|p| format!("- {}", code(p))));
-    parts.extend(fixtures.iter().map(|(n, _, _)| format!("- {}", code(&format!("{FIXTURES}/{n}")))));
-    parts.push(String::new());
     Ok(parts.join("\n"))
 }
 
@@ -609,7 +601,7 @@ fn index_page(services: &[Value], features: &BTreeMap<String, String>) -> String
         String::new(),
         format!(
             "{} services. Each page lists the URL formats, every query parameter with its default, known differences and \
-             examples taken from the test fixtures.",
+             examples.",
             services.len()
         ),
         String::new(),

@@ -112,7 +112,7 @@ impl Verifier {
 
 impl AuthSettings {
     /// The key's state; an unreadable login stays locked.
-    pub fn key_state(&self, store: &ConfigStore, key: &str, config_lock: bool) -> KeyState {
+    pub async fn key_state(&self, store: &ConfigStore, key: &str, config_lock: bool) -> KeyState {
         let effective =
             |a: &str| if config_lock && a == ACCESS_USER { ACCESS_LOCKED.to_string() } else { a.to_string() };
         if !self.required {
@@ -124,7 +124,7 @@ impl AuthSettings {
                 saved_access: None,
             };
         }
-        match store.auth(key) {
+        match store.auth(key).await {
             Err(()) => KeyState {
                 mode: "assigned",
                 username: None,

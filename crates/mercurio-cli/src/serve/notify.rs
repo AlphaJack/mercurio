@@ -4,6 +4,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, SystemTime};
 
+use axum::response::IntoResponse;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use mercurio::{Asset, AsyncMercurio, AsyncTransport, BoxFuture, Message, Report, TagFilter, TemplateVars};
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
@@ -118,18 +120,17 @@ pub async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<Log
     let report = job.run().await;
     let all = report_logs(&report);
     let logs = filter_level(all.clone(), level);
+    req.note(|ev| {
+        ev.services = Some(report.entries.len());
+        ev.failed = Some(report.entries.iter().filter(|e| !e.delivery.is_success()).count());
+    });
     let reply = if report.is_success() {
-        log::info!("NOTIFY - {} - Delivered Notification(s){}", req.remote, key_suffix(job));
         render(req, 200, &logs, None)
     } else {
-        log::warn!("NOTIFY - {} - One or more notifications not sent{}", req.remote, key_suffix(job));
+        req.note(|ev| ev.error = Some(job.failure_message().to_string()));
         render(req, 424, &logs, Some(job.failure_message()))
     };
     (reply, report, all)
-}
-
-fn key_suffix(job: &Job) -> String {
-    job.key.as_ref().map(|k| format!(" using KEY: {k}")).unwrap_or_default()
 }
 
 /// Numeric log level of a level name (`TRACE` 5 ... `CRITICAL` 50).
@@ -155,11 +156,11 @@ fn entry_logs(e: &mercurio::ReportEntry) -> Vec<LogEntry> {
 }
 
 /// One Server-Sent Event.
-pub fn sse(event: &str, data: &Value) -> Vec<u8> {
-    format!("event: {event}\ndata: {data}\n\n").into_bytes()
+pub fn sse(event: &str, data: &Value) -> Event {
+    Event::default().event(event).data(data.to_string())
 }
 
-fn log_event(l: &LogEntry) -> Vec<u8> {
+fn log_event(l: &LogEntry) -> Event {
     sse("log", &json!({"level": l.level, "asctime": l.asctime(), "message": l.message, "service": l.service}))
 }
 
@@ -198,13 +199,13 @@ pub type OnDone = Box<dyn FnOnce(Report, Vec<LogEntry>) -> BoxFuture<'static, ()
 
 /// Runs the job in a task, sending a `log` event as each service finishes and a final `result` event; `done` gets the report and logs. While idle the stream sends a heartbeat comment.
 pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: OnDone) -> Reply {
-    let (tx, rx) = mpsc::unbounded_channel::<Vec<u8>>();
-    let send = move |tx: &mpsc::UnboundedSender<Vec<u8>>, event: Vec<u8>| {
+    let (tx, rx) = mpsc::unbounded_channel::<Event>();
+    let send = move |tx: &mpsc::UnboundedSender<Event>, event: Event| {
         if tx.send(event).is_err() {
             log::debug!("stream client went away");
         }
     };
-    send(&tx, b": connected\n\n".to_vec());
+    send(&tx, Event::default().comment("connected"));
     tokio::spawn(async move {
         let sel = job.notifier.select(&job.filter, &job.vars);
         let (asset, transport, msg) = (&job.asset, job.transport.as_ref(), &job.message);
@@ -252,18 +253,11 @@ pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: 
         let logs = report_logs(&report);
         done(report, logs).await;
     });
-    let events = futures_util::stream::unfold((rx, slot), move |(mut rx, slot)| async move {
-        let chunk = match tokio::time::timeout(heartbeat, rx.recv()).await {
-            Ok(Some(chunk)) => chunk,
-            Ok(None) => return None,
-            Err(_) => b": heartbeat\n\n".to_vec(),
-        };
-        Some((Ok::<_, std::convert::Infallible>(chunk), (rx, slot)))
+    // The stream holds `slot` until the client has the last event.
+    let events = futures_util::stream::unfold((rx, slot), |(mut rx, slot)| async move {
+        rx.recv().await.map(|event| (Ok::<_, std::convert::Infallible>(event), (rx, slot)))
     });
-    Reply {
-        status: 200,
-        ctype: "text/event-stream".into(),
-        body: Body::Stream(axum::body::Body::from_stream(events)),
-        headers: vec![("Cache-Control".into(), "no-cache".into()), ("X-Accel-Buffering".into(), "no".into())],
-    }
+    let sse = Sse::new(events).keep_alive(KeepAlive::new().interval(heartbeat).text("heartbeat"));
+    let response = ([("X-Accel-Buffering", "no")], sse).into_response();
+    Reply { status: 200, ctype: String::new(), body: Body::Response(Box::new(response)), headers: Vec::new() }
 }

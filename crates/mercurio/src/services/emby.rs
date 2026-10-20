@@ -1,4 +1,4 @@
-//! Emby (`emby://`, `embys://`): messages to the active Emby client sessions (engine in `_emby.rs`, shared with Jellyfin).
+//! Emby (`emby://`, `embys://`): messages to the active Emby client sessions (the same code serves Jellyfin).
 //!
 //! The login session lives as long as the parsed URL (a non-persistent store entry): later sends only look up the client sessions and post. [`Target::close`](crate::Target::close) logs out.
 

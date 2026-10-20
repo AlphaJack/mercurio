@@ -53,8 +53,8 @@ pub const MAX_RETRY_AFTER: Duration = Duration::from_secs(300);
 const MAX_RETRY: u32 = 10;
 /// Seconds between attempts without `?wait=`.
 const DEFAULT_WAIT: f64 = 0.5;
-/// Longest `?wait=` in seconds.
-const MAX_WAIT: f64 = 60.0;
+/// Longest `?wait=` in seconds (Apprise's `APPRISE_MAX_SERVICE_WAIT`).
+const MAX_WAIT: f64 = 20.0;
 
 /// A parsed URL bound to its service, ready to send.
 pub struct Target {

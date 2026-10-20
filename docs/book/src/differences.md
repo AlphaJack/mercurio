@@ -84,6 +84,10 @@ on its page (see the [service list](services/index.md)), taken from the
 - **Non-ASCII header values** (UTF-8 titles in `X-Apprise-Title`).
   apprise-api gets them as WSGI Latin-1 strings -> mercurio decodes them as
   UTF-8, as Latin-1 only when they are not valid UTF-8. *intentional*
+- **Basic Auth credentials.** apprise-api decodes them as UTF-8, so a
+  non-ASCII password from Apprise Mobile (which sends Latin-1) fails ->
+  mercurio decodes them as UTF-8, as Latin-1 only when they are not valid
+  UTF-8. *intentional*
 - **Translated messages.** apprise-api translates its error and status
   messages by `Accept-Language` or cookie and sets `Content-Language` ->
   mercurio answers in English only. *intentional*
@@ -98,8 +102,14 @@ on its page (see the [service list](services/index.md)), taken from the
   mercurio uses fixed 8-character ids, a different layout and no
   automatic pruning. *todo*
 - **Workers.** apprise-api sizes gunicorn by `WORKER_COUNT` /
-  `WORKER_TIMEOUT` -> mercurio allows 64 requests in flight and a 30 s
+  `WORKER_TIMEOUT` -> mercurio allows 512 requests in flight and a 30 s
   socket timeout. *intentional*
+- **Request log.** apprise-api logs requests through nginx (`combined`
+  format) plus `NOTIFY - ip - ...` warnings -> mercurio logs one line per
+  request with its key, services, failures and error. *intentional*
+- **Unknown paths.** apprise-api answers `404` with an error message ->
+  mercurio answers an empty `404`, before authentication; its `405`
+  `Allow` header omits `OPTIONS`. *intentional*
 - **Metrics.** apprise-api exports the full `django_prometheus` set ->
   mercurio exports a subset plus one latency histogram. *todo*
 - **Other settings.** Plugin paths and `INTERPRET_EMOJIS` are ignored.
@@ -176,10 +186,9 @@ on its page (see the [service list](services/index.md)), taken from the
   (429, 503 with `Retry-After`) and transient failures (408, 5xx, DNS and
   connect errors). It stops on authentication errors, other 4xx and
   failures after the request was sent. It honours `Retry-After` up to
-  300 s. The
-  `humhub__store.json` case `retry_without_post_id` records it. *intentional*
-- **`?wait=`.** Apprise defaults to 0 and caps at 20 s -> mercurio defaults
-  to 0.5 s and caps at 60 s. *intentional*
+  300 s. *intentional*
+- **`?wait=`.** Apprise defaults to 0 -> mercurio defaults to 0.5 s. Both
+  cap it at 20 s. *intentional*
 - **Unclassified failures.** `Error::Service` failures (for example a JSON
   body with `"ok": false`) and `register_scheme` closures are not retried.
   *intentional*

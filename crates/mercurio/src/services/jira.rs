@@ -2,7 +2,7 @@
 //!
 //! `opsgenie://` URLs land here too: Opsgenie shuts down on 2027-04-05 and its alert API lives on unchanged as JSM Operations (`api.atlassian.com/jsm/ops/integration/v2/alerts`, `GenieKey` auth).
 //!
-//! The `requestId`s of created alerts are kept in the persistent store (60 days) so later `close`/`acknowledge`/`note`/`delete` actions act on them (see `_alerts.rs`).
+//! The `requestId`s of created alerts are kept in the persistent store (60 days) so later `close`/`acknowledge`/`note`/`delete` actions act on them.
 //!
 //! # Differences
 //!

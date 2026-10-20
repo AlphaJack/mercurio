@@ -1,6 +1,6 @@
 //! [`TokioTransport`]: the I/O of [`crate::AsyncMercurio`] on tokio and reqwest (feature `transport-tokio`).
 //!
-//! The only module that names tokio, reqwest or tokio-rustls. It gives the same results as [`crate::BlockingTransport`]: rustls with ring, the Mozilla roots or `SSL_CERT_FILE`, HTTP/1.1, at most 10 redirects (the last 3xx is returned), 16 MiB bodies, `HTTP(S)_PROXY` / `NO_PROXY` from the environment and the same error classes.
+//! The only module that names tokio, reqwest or tokio-rustls. It gives the same results as `BlockingTransport` (feature `transport-blocking`): rustls with ring, the Mozilla roots or `SSL_CERT_FILE`, HTTP/1.1, at most 10 redirects (the last 3xx is returned), 16 MiB bodies, `HTTP(S)_PROXY` / `NO_PROXY` from the environment and the same error classes.
 
 mod conn;
 
