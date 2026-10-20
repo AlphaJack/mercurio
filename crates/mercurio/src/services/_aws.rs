@@ -83,7 +83,7 @@ pub fn aws_check(res: Result<Response>) -> Result<Response> {
         200 => Ok(r),
         403 => Err(Error::Http { status: 403, reason: "Unauthorized - Invalid Access/Secret Key Combination.".into() }),
         _ if r.status == 429 || (r.status == 400 && r.text().contains("<Code>Throttling")) => {
-            Err(Error::RateLimited { status: r.status, reason: r.snippet(), retry_after: r.retry_after() })
+            Err(r.rate_limited())
         }
         _ => Err(r.http_error()),
     }

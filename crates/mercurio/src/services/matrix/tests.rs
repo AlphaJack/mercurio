@@ -164,6 +164,20 @@ fn rate_limit_sleeps_as_requested() {
 }
 
 #[test]
+fn rate_limit_hint_reaches_the_retry_loop() {
+    let fake = FakeTransport::new();
+    fake.respond_with(json_resp(json!({"access_token": "tok", "user_id": "@me:localhost"})));
+    fake.default_response(Response::new(429, br#"{"retry_after_ms": 1500}"#.to_vec()));
+    let d = send("matrix://me:secret@localhost/!room:localhost", &fake);
+    let err = d.outcomes.iter().find_map(|o| o.result.as_ref().err()).expect("a failure");
+    assert_eq!(
+        err.class(),
+        crate::ErrorClass::RateLimited { retry_after: Some(std::time::Duration::from_millis(1500)) },
+        "{err:?}"
+    );
+}
+
+#[test]
 fn keystore_is_loaded_and_saved_through_the_transport() {
     let url = "matrix://me:secret@localhost/!room:localhost?keystore=/ks";
     let fake = FakeTransport::new();

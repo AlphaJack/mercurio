@@ -14,7 +14,6 @@
 //!
 //! - Non-string ids in server answers (room ids, tokens) are treated as missing instead of raising. *intentional*
 //! - **Raw-token transaction ids.** Apprise reuses one UUID for every event of a send, so homeservers drop the later ones as duplicates -> mercurio uses a fresh UUID per event. *intentional*
-//! - `retry_after_ms` is not fed into the retry loop (see Retries). *todo*
 //! - **Encryption state.** Apprise treats a `200` with an empty `m.room.encryption` state as unencrypted -> mercurio treats the room as encrypted. *intentional*
 //! - **Failed state lookup or E2EE setup.** Apprise falls back to plaintext -> mercurio fails the room. *intentional*
 //! - **Room keys.** Apprise shares the Megolm key once per session -> mercurio re-shares it with new devices and rotates it when a member leaves. *intentional*

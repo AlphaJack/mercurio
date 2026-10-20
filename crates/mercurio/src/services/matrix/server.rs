@@ -161,6 +161,23 @@ pub(super) struct Fetched {
     pub transport: Option<Error>,
 }
 
+/// `e` (below its step names) as a 429 that asked to wait `wait`, when it is a plain HTTP 429 or a service failure.
+fn limit(e: Error, wait: Duration) -> Error {
+    if let Error::Context { context, source } = e {
+        return Error::Context { context, source: Box::new(limit(*source, wait)) };
+    }
+    if let Error::Http { status: 429, reason: r } | Error::Service(r) = &e {
+        return Error::RateLimited { status: 429, reason: r.clone(), retry_after: Some(wait) };
+    }
+    e
+}
+
+/// A 429 body's `retry_after_ms` (top level or under `error`), when positive.
+fn retry_hint(json: &Value) -> Option<Duration> {
+    let ms = json.get("retry_after_ms").or_else(|| json.get("error")?.get("retry_after_ms"))?.as_f64()?;
+    (ms.is_finite() && ms > 0.0).then(|| Duration::from_secs_f64(ms / 1000.0))
+}
+
 impl Fetched {
     fn fail(json: Value, status: u16) -> Self {
         Fetched { ok: false, json, status, transport: None }
@@ -267,6 +284,8 @@ pub(super) struct Session {
     outcomes: Vec<(String, Option<Error>)>,
     /// Plaintext attachment events, uploaded once per send.
     attachments: Option<Vec<Value>>,
+    /// The wait a 429 asked for when the back-off gave up on it; the next failure is reported as rate limited, so `?retry=` waits that long.
+    throttled: Option<Duration>,
     #[cfg(feature = "service-matrix-e2ee")]
     pub e2ee: super::e2ee_flow::E2ee,
 }
@@ -287,6 +306,7 @@ impl Session {
             queue: VecDeque::new(),
             outcomes: Vec::new(),
             attachments: None,
+            throttled: None,
             #[cfg(feature = "service-matrix-e2ee")]
             e2ee: Default::default(),
         };
@@ -354,7 +374,14 @@ impl Session {
     }
 
     pub fn fail_target_with(&mut self, label: impl Into<String>, error: Error) {
+        let error = self.rate_limited(error);
         self.outcomes.push((label.into(), Some(error)));
+    }
+
+    /// `e` as [`Error::RateLimited`] when a 429 the back-off gave up on caused it (the step names stay).
+    fn rate_limited(&mut self, e: Error) -> Error {
+        let Some(wait) = self.throttled.take() else { return e };
+        limit(e, wait)
     }
 
     pub fn ok_target(&mut self, label: impl Into<String>) {
@@ -456,7 +483,7 @@ impl Session {
 
     #[expect(clippy::too_many_arguments, reason = "retry state is passed along explicitly")]
     fn attempt(
-        self,
+        mut self,
         f: Arc<Fetch>,
         url: String,
         left: u32,
@@ -466,6 +493,9 @@ impl Session {
         k: K<Fetched>,
     ) -> Plan {
         if left == 0 {
+            if status == 429 {
+                self.throttled = retry_hint(&last);
+            }
             return k(self, Fetched::fail(empty(), status));
         }
         let req = self.request(&f, &url);
@@ -505,6 +535,7 @@ impl Session {
                     let remaining = d.saturating_duration_since(Instant::now());
                     if remaining.is_zero() {
                         log::warn!("Matrix server requested we throttle back, but our retry budget is exhausted.");
+                        self.throttled = retry_hint(&json);
                         return k(self, Fetched::fail(json, status));
                     }
                     wait_ms = wait_ms.min(remaining.as_secs_f64() * 1000.0);
@@ -519,6 +550,7 @@ impl Session {
                     Plan::Sleep(wait),
                     Plan::defer(move || {
                         if deadline.is_some_and(|d| Instant::now() >= d) {
+                            self.throttled = retry_hint(&json);
                             return k(self, Fetched::fail(json, status));
                         }
                         self.attempt(f, url, left - 1, json, status, deadline, k)
@@ -531,6 +563,7 @@ impl Session {
                 }
                 return k(self, Fetched::fail(json, status));
             }
+            self.throttled = None;
             k(self, Fetched { ok: true, json, status, transport: None })
         })
     }
@@ -910,7 +943,8 @@ impl Session {
     }
 
     /// End of `send()`. The session stays open; [`Session::logout`] runs when the target is closed.
-    pub fn finish(self, fatal: Option<Error>) -> Plan {
+    pub fn finish(mut self, fatal: Option<Error>) -> Plan {
+        let fatal = fatal.map(|e| self.rate_limited(e));
         let done = move |s: Session| -> Plan {
             if let Some(e) = fatal {
                 return Plan::Fail(e);
