@@ -1,6 +1,6 @@
 //! IFTTT (`ifttt://`): triggers IFTTT Webhooks events with the notification as values.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise ignores `+`/`-` options (attribute typo) -> mercurio applies them. *intentional*
 

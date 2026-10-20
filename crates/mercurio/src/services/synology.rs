@@ -1,6 +1,6 @@
 //! Synology Chat (`synology://`, `synologys://`): messages through Synology Chat incoming webhooks.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise crashes on URLs without a path -> mercurio handles them. *intentional*
 

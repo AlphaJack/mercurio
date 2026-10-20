@@ -2,7 +2,7 @@
 //!
 //! SMTP with STARTTLS or implicit TLS, AUTH CRAM-MD5/PLAIN/LOGIN, the provider template table (Gmail, Outlook, Yahoo, ...), To/Cc/Bcc/Reply-To, HTML + text `multipart/alternative`, attachments (inline with `?inline=yes`) and `?+X-Header=value`.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - PGP (`?pgp=sign|encrypt`, `?wkd=yes`) is validated like Apprise, but delivery fails with `Unsupported` before connecting (Apprise without PGPy fails after logging in). *todo*
 //! - `?tz=` is not validated and `Date:` is always UTC. *todo*

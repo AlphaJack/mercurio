@@ -1,6 +1,6 @@
 //! Twitter / X (`x://`, `twitter://`, `tweet://`): direct messages and public tweets through the X API v2, with image uploads; requests are signed with OAuth 1.0a HMAC-SHA1 (header signature, body never signed).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - The `?cache=` user lookup cache lives for one send. *todo*
 

@@ -2,7 +2,7 @@
 //!
 //! `POST https://{region}.platform.bird.com/v1/sms/messages` with a Bird API key (`bk_{region}_...`) as a Bearer token, one request per target. Classic MessageBird keys (25 characters, `rest.messagebird.com`) stop working on 2026-12-31 and are rejected.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise posts to the classic `rest.messagebird.com/messages` API with a 25-character key -> mercurio uses Bird's SMS API (`{region}.platform.bird.com/v1/sms/messages`, `bk_...` key as Bearer, JSON `from`/`to`/`text`/`category`, new `?category=`); classic keys, which stop working on 2026-12-31, are rejected. *intentional*
 

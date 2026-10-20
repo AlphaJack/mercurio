@@ -2,7 +2,7 @@
 //!
 //! Mercurio runs libnotify's command-line client: `notify-send --app-name=<app_id> --urgency=<level> --icon=<file> -- <body>` (the title is merged into the body).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise uses libnotify bindings -> mercurio runs `notify-send`. *todo*
 

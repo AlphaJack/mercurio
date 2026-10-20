@@ -4,7 +4,7 @@
 //!
 //! Only Windows can display these: on other platforms delivery fails with [`Error::Unsupported`].
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise uses the Win32 API -> mercurio runs `powershell.exe` (`System.Windows.Forms.NotifyIcon`). *intentional*
 //! - The tray icon is the stock application icon; `?image=` is accepted and ignored. *intentional*

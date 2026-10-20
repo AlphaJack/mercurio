@@ -2,7 +2,7 @@
 //!
 //! Logs in (OAuth password or JWT grant) and sends one SMS/MMS per target. A token with a positive lifetime is kept in memory (a non-persistent store entry) and reused until it expires; [`Target::close`](crate::Target::close) revokes it.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - `?env=sandbox` sends to `platform.devtest.ringcentral.com` in Apprise -> mercurio rejects it: RingCentral retired that sandbox on 2025-01-01. *intentional*
 

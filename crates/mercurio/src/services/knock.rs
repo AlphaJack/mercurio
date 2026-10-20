@@ -9,7 +9,7 @@
 //!
 //! Each recipient is a user id, an e-mail (inline identification `{"id": email, "email": email}`) or `+<phone>` (`{"id": phone, "phone_number": phone}`). One `POST /v1/workflows/{key}/trigger` is sent per 1000 recipients with `Authorization: Bearer {api_key}` and `{"recipients": [...], "data": {"title", "body", "type"}}`; any 2xx is success.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Not in Apprise; written from the vendor documentation (hand-written fixtures). *intentional*
 

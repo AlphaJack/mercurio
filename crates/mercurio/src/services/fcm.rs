@@ -2,7 +2,7 @@
 //!
 //! Reads a service account JSON key file, signs an RS256 JWT assertion, trades it for an access token and sends through the HTTP v1 API. The legacy API (server keys, `fcm/send`) was shut down in July 2024: URLs without a key file are rejected. So are URLs with `?mode=legacy`.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - The key file must be local (a path or `file://`); only RSA service account keys are supported (Apprise fails on others as well). *intentional*
 //! - Legacy mode (server API key, `fcm/send`) defaults on in Apprise when no key file is given -> mercurio rejects such URLs and `?mode=legacy`: Google shut that API down in July 2024. Only the HTTP v1 API is used. *intentional*

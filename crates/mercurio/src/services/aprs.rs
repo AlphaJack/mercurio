@@ -2,7 +2,7 @@
 //!
 //! One TCP connection to the regional APRS-IS server (port 10152): the `user ... pass ... vers ...` login, the server's `# logresp` check, then one message packet per call sign: `FROMCALL>APPRIS::TOCALL   :text` (text cleaned and cut to 67 chars).
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - The login names the software `mercurio <version>` (Apprise: `apprise <version>`). *intentional*
 //! - When the first read holds only the server banner, mercurio reads once more for the `# logresp` line (Apprise fails). *intentional*

@@ -1,11 +1,11 @@
-# Differences from Apprise
+# Differences with Apprise
 
 mercurio aims to accept every Apprise URL and configuration file; sending
 byte-for-byte the same requests is not a goal. Each entry reads: what Apprise
 does -> what mercurio does -> status, where *intentional* means it stays that
 way and *todo* means it could be added. Differences of a single service are
 on its page (see the [service list](services/index.md)), taken from the
-`# Differences` section of its module docs.
+`# Differences with Apprise` section of its module docs.
 
 ## General
 

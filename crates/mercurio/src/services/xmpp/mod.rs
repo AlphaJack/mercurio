@@ -4,7 +4,7 @@
 //!
 //! Mercurio speaks XMPP itself over a [`Plan::socket`] session: stream negotiation, STARTTLS (`?mode=starttls`, the `xmpps://` default) or direct TLS (`?mode=tls`, port 5223), SASL SCRAM-SHA-512/256/1 or PLAIN, resource binding, session establishment, initial presence, optional roster fetch (`?roster=yes`), XEP-0045 room join for `#room` targets, then one `<message type="chat|groupchat">` per target (the account itself when there are none) and a clean stream close.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - SCRAM `-PLUS` channel binding is not implemented; `?scramplus=` has no effect. *todo*
 //! - `?keepalive=yes` is accepted, but every notification opens its own connection. *intentional*

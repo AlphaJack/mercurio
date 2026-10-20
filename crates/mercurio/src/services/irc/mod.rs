@@ -4,7 +4,7 @@
 //!
 //! Auth modes (`?mode=`): `server` (default, `PASS`), `nickserv` (`PRIVMSG NickServ :IDENTIFY` after registration), `znc` (`PASS user:password`), `none`. Known networks (Libera.Chat, SynIRC, EFnet) get TLS / port / mode defaults when no port is given.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - NickServ identification is sent (Apprise clears the password first, so its `nickserv` mode never identifies). *intentional*
 //! - After the welcome mercurio continues at once instead of draining the MOTD for a quiet period. *intentional*

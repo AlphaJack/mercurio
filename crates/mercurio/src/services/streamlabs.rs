@@ -2,7 +2,7 @@
 //!
 //! `POST https://streamlabs.com/api/v2.0/{alerts,donations}` with the access token as a Bearer header (v2.0 refuses it in the body) and a JSON body.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - Apprise posts forms to API v1.0 with `access_token` in the body -> mercurio uses API v2.0 (Bearer header, JSON, empty options left out), since Streamlabs is disabling v1.0. *intentional*
 //! - The donation `identifier` defaults to the application id and `sound_href` keeps its case (Apprise upper-cases the URL). *intentional*

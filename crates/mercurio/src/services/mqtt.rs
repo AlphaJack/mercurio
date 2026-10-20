@@ -2,7 +2,7 @@
 //!
 //! The client is built in: MQTT 3.1 / 3.1.1 / 5, with CONNECT (client id, clean session, credentials, keepalive 30) -> CONNACK, then one PUBLISH per topic (QoS 1 waits for PUBACK, QoS 2 runs PUBREC/PUBREL/PUBCOMP), then DISCONNECT.
 //!
-//! # Differences
+//! # Differences with Apprise
 //!
 //! - MQTT 5 works (Apprise passes `clean_session` to paho for every version, which paho rejects for v5). *intentional*
 //! - TLS uses the bundled Mozilla roots or the `SSL_CERT_FILE` bundle (Apprise refuses verified `mqtts://` without a CA bundle on disk). *intentional*
