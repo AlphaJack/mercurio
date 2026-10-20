@@ -100,9 +100,13 @@ on its page (see the [service list](services/index.md)), taken from the
   request's level and stream them live while sending. mercurio's lines
   have their own wording, redact URLs, and add one INFO or ERROR line per
   finished service; `APPRISE_WEBHOOK_URL` gets INFO and up. *intentional*
-- **Persistent storage.** apprise-api prunes storage and logins on a
-  schedule -> mercurio uses a different layout and no automatic pruning;
-  `APPRISE_STORAGE_UID_LENGTH` works the same. *todo*
+- **Persistent storage.** Both prune old persistent storage and logins
+  without a configuration once at start-up and then daily
+  (`APPRISE_PRUNE_ENABLED`, `APPRISE_PRUNE_INTERVAL_SECONDS`,
+  `APPRISE_PRUNE_TIMEOUT_SECONDS`, `APPRISE_STORAGE_PRUNE_DAYS`,
+  `APPRISE_AUTH_PRUNE_SECONDS`): apprise-api in a separate container
+  process, mercurio inside the server. The storage layout differs and
+  `APPRISE_STORAGE_UID_LENGTH` works the same. *intentional*
 - **Workers.** apprise-api sizes gunicorn by `WORKER_COUNT` /
   `WORKER_TIMEOUT` -> mercurio allows 512 requests in flight and a 30 s
   socket timeout. *intentional*

@@ -468,6 +468,65 @@ async fn read_stamped(path: &Path) -> std::io::Result<(Stamp, Vec<u8>)> {
     Ok((stamp, raw))
 }
 
+impl ConfigStore {
+    /// Remove logins (`.<name>.lock`) older than `older_than` whose key has no configuration, then empty `hash` directories; the count removed. As apprise-api's `authprune`.
+    pub async fn prune_unused_locks(&self, older_than: std::time::Duration) -> usize {
+        let (dirs, name_ok): (Vec<PathBuf>, fn(&str) -> bool) = match self.mode {
+            Mode::Disabled => return 0,
+            Mode::Simple => (vec![self.root.clone()], |n| super::valid_key(n)),
+            Mode::Hash => {
+                let mut dirs = Vec::new();
+                if let Ok(mut entries) = fs::read_dir(&self.root).await {
+                    while let Ok(Some(e)) = entries.next_entry().await {
+                        let name = e.file_name().to_string_lossy().to_string();
+                        let hex =
+                            name.len() == 2 && name.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase());
+                        if hex && e.file_type().await.is_ok_and(|t| t.is_dir()) {
+                            dirs.push(e.path());
+                        }
+                    }
+                }
+                (dirs, |n| n.len() == 54 && n.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
+            }
+        };
+        let now = SystemTime::now();
+        let mut pruned = 0;
+        for dir in dirs {
+            let Ok(mut entries) = fs::read_dir(&dir).await else { continue };
+            while let Ok(Some(e)) = entries.next_entry().await {
+                let file = e.file_name().to_string_lossy().to_string();
+                let Some(name) = file.strip_prefix('.').and_then(|f| f.strip_suffix(".lock")) else { continue };
+                if !name_ok(name) {
+                    continue;
+                }
+                let Ok(modified) = e.metadata().await.and_then(|m| m.modified()) else { continue };
+                if now.duration_since(modified).unwrap_or_default() < older_than {
+                    continue;
+                }
+                let mut has_config = false;
+                for f in [ConfigFormat::Text, ConfigFormat::Yaml] {
+                    has_config |= is_file(&dir.join(format!("{name}.{}", self.ext(f)))).await;
+                }
+                if has_config {
+                    continue;
+                }
+                match fs::remove_file(e.path()).await {
+                    Ok(()) => {
+                        log::info!("pruned stale unused login: {name}");
+                        pruned += 1;
+                    }
+                    Err(err) => log::error!("could not prune stale unused login {name}: {err}"),
+                }
+            }
+            // Only an empty directory goes, so no configuration can be lost.
+            if self.mode == Mode::Hash {
+                fs::remove_dir(&dir).await.ok();
+            }
+        }
+        pruned
+    }
+}
+
 /// `true` when `path` is a regular file.
 async fn is_file(path: &Path) -> bool {
     fs::metadata(path).await.is_ok_and(|m| m.is_file())
