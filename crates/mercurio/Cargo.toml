@@ -396,3 +396,7 @@ service-zulip = []
 [[bench]]
 name = "smtp"
 harness = false
+
+[[bench]]
+name = "irc"
+harness = false
