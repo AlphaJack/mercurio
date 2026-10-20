@@ -2,6 +2,7 @@
 //!
 //! Endpoints, payloads, settings and status codes are documented in the user guide: `docs/book/src/server.md`.
 
+mod alerts;
 mod api;
 mod auth;
 mod codec;

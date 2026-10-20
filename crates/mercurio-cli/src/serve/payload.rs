@@ -135,6 +135,9 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
         return Err(Reply::error(req, 400, &msg));
     }
     let mut c = Content { uploads, ..Content::default() };
+    if json && super::alerts::is_alert_payload(&data) {
+        super::alerts::convert(&mut data);
+    }
     if json {
         for field in ["body", "title", "type"] {
             if data.get(field).is_some_and(|v| !v.is_string()) {
