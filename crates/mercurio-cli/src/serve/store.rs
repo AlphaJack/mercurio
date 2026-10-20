@@ -5,8 +5,13 @@
 //! - `disabled`: nothing is read or written.
 //!
 //! Next to each entry: `.<name>.created` (creation time marker) and `.<name>.lock` (per-key login, JSON `{"access", "username", "digest"}`).
+//!
+//! Configurations and logins are cached per key and checked with one `stat` per request: a file whose modification time, size and inode are unchanged is not read, decompressed or decoded again. Another process editing the files is seen on the next request.
 
+use std::collections::BTreeMap;
+use std::fs::Metadata;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::SystemTime;
 
 use mercurio::ConfigFormat;
@@ -18,6 +23,8 @@ use super::codec;
 
 /// Largest stored configuration read back (decompressed).
 const MAX_READ: usize = 16 * 1024 * 1024;
+/// Most bytes of configuration kept in the read cache; past it the cache starts over.
+const MAX_CACHED: usize = 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
@@ -73,15 +80,75 @@ pub const ACCESS_PUBLIC: &str = "public";
 pub const ACCESS_DISABLED: &str = "disabled";
 pub const ACCESS_CHOICES: [&str; 4] = [ACCESS_USER, ACCESS_LOCKED, ACCESS_PUBLIC, ACCESS_DISABLED];
 
+/// What identifies one version of a file: an atomic replace changes the inode, an edit in place the time or the size.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Stamp {
+    modified: Option<SystemTime>,
+    len: u64,
+    inode: u64,
+}
+
+impl Stamp {
+    fn of(m: &Metadata) -> Self {
+        #[cfg(unix)]
+        let inode = std::os::unix::fs::MetadataExt::ino(m);
+        #[cfg(not(unix))]
+        let inode = 0;
+        Stamp { modified: m.modified().ok(), len: m.len(), inode }
+    }
+}
+
+/// Decoded files by key, each with the [`Stamp`] it was read at.
+#[derive(Default)]
+struct Cache {
+    configs: BTreeMap<String, (Stamp, String, ConfigFormat)>,
+    logins: BTreeMap<String, (Stamp, AuthRecord)>,
+    /// Total length of the cached configurations.
+    bytes: usize,
+}
+
+impl Cache {
+    fn config(&self, key: &str, stamp: Stamp, fmt: ConfigFormat) -> Option<String> {
+        self.configs.get(key).filter(|(s, _, f)| *s == stamp && *f == fmt).map(|(_, c, _)| c.clone())
+    }
+
+    fn set_config(&mut self, key: &str, stamp: Stamp, content: &str, fmt: ConfigFormat) {
+        self.drop_config(key);
+        if self.bytes + content.len() > MAX_CACHED {
+            self.configs.clear();
+            self.bytes = 0;
+        }
+        if content.len() <= MAX_CACHED {
+            self.bytes += content.len();
+            self.configs.insert(key.to_string(), (stamp, content.to_string(), fmt));
+        }
+    }
+
+    fn drop_config(&mut self, key: &str) {
+        if let Some((_, c, _)) = self.configs.remove(key) {
+            self.bytes -= c.len();
+        }
+    }
+
+    fn login(&self, key: &str, stamp: Stamp) -> Option<AuthRecord> {
+        self.logins.get(key).filter(|(s, _)| *s == stamp).map(|(_, r)| r.clone())
+    }
+}
+
 pub struct ConfigStore {
     pub root: PathBuf,
     pub mode: Mode,
     salt: String,
+    cache: Mutex<Cache>,
 }
 
 impl ConfigStore {
     pub fn new(root: PathBuf, mode: Mode, salt: String) -> Self {
-        ConfigStore { root, mode, salt }
+        ConfigStore { root, mode, salt, cache: Mutex::default() }
+    }
+
+    fn cache(&self) -> MutexGuard<'_, Cache> {
+        self.cache.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     pub fn enabled(&self) -> bool {
@@ -126,13 +193,17 @@ impl ConfigStore {
         }
         for fmt in [ConfigFormat::Text, ConfigFormat::Yaml] {
             let path = self.content_path(key, fmt);
-            if !is_file(&path).await {
-                continue;
+            let Some(stamp) = file_stamp(&path).await else { continue };
+            if let Some(content) = self.cache().config(key, stamp, fmt) {
+                return Ok(Some((content, fmt)));
             }
-            let raw = fs::read(&path).await.map_err(|_| ())?;
+            let (stamp, raw) = read_stamped(&path).await.map_err(|_| ())?;
             let raw = if self.mode == Mode::Hash { codec::gunzip(&raw, MAX_READ).ok_or(())? } else { raw };
-            return String::from_utf8(raw).map(|s| Some((s, fmt))).map_err(|_| ());
+            let content = String::from_utf8(raw).map_err(|_| ())?;
+            self.cache().set_config(key, stamp, &content, fmt);
+            return Ok(Some((content, fmt)));
         }
+        self.cache().drop_config(key);
         Ok(None)
     }
 
@@ -142,6 +213,7 @@ impl ConfigStore {
             return false;
         }
         let created = self.created(key).await;
+        self.cache().drop_config(key);
         let data = if self.mode == Mode::Hash { codec::gzip(content.as_bytes()) } else { content.as_bytes().to_vec() };
         if write_atomic(&self.content_path(key, fmt), &data).await.is_err() {
             log::error!("could not save the configuration for KEY: {key}");
@@ -160,6 +232,9 @@ impl ConfigStore {
         {
             log::debug!("could not keep the creation time of KEY {key}: {e}");
         }
+        if let Some(stamp) = file_stamp(&self.content_path(key, fmt)).await {
+            self.cache().set_config(key, stamp, content, fmt);
+        }
         true
     }
 
@@ -168,6 +243,7 @@ impl ConfigStore {
         if !self.enabled() {
             return Cleared::Nothing;
         }
+        self.cache().drop_config(key);
         let mut result = Cleared::Nothing;
         for fmt in [ConfigFormat::Text, ConfigFormat::Yaml] {
             match remove(&self.content_path(key, fmt)).await {
@@ -243,37 +319,44 @@ impl ConfigStore {
 
     /// The saved login: `Ok(None)` when there is none, `Err` when unreadable.
     pub async fn auth(&self, key: &str) -> Result<Option<AuthRecord>, ()> {
-        let text = match fs::read_to_string(self.lock_path(key)).await {
-            Ok(t) => t,
+        let path = self.lock_path(key);
+        match fs::metadata(&path).await {
+            Ok(m) => {
+                if let Some(rec) = self.cache().login(key, Stamp::of(&m)) {
+                    return Ok(Some(rec));
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                self.cache().logins.remove(key);
+                return Ok(None);
+            }
+            Err(_) => return Err(()),
+        }
+        let (stamp, raw) = match read_stamped(&path).await {
+            Ok(r) => r,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(_) => return Err(()),
         };
-        let v: Value = serde_json::from_str(text.trim()).map_err(|_| ())?;
-        let access = v.get("access").and_then(Value::as_str).ok_or(())?.to_string();
-        let opt = |k: &str| -> Result<Option<String>, ()> {
-            match v.get(k) {
-                Some(Value::Null) => Ok(None),
-                Some(Value::String(s)) => Ok(Some(s.clone())),
-                _ => Err(()),
-            }
-        };
-        let (username, digest) = (opt("username")?, opt("digest")?);
-        let open = access == ACCESS_PUBLIC || access == ACCESS_DISABLED;
-        if !ACCESS_CHOICES.contains(&access.as_str())
-            || username.is_none() != digest.is_none()
-            || (digest.is_none() && !open)
-        {
-            return Err(());
-        }
-        Ok(Some(AuthRecord { access, username, digest }))
+        let rec = parse_auth(&raw)?;
+        self.cache().logins.insert(key.to_string(), (stamp, rec.clone()));
+        Ok(Some(rec))
     }
 
     pub async fn write_auth(&self, key: &str, rec: &AuthRecord) -> bool {
+        let path = self.lock_path(key);
+        self.cache().logins.remove(key);
         let body = json!({"access": rec.access, "username": rec.username, "digest": rec.digest});
-        write_atomic(&self.lock_path(key), body.to_string().as_bytes()).await.is_ok()
+        if write_atomic(&path, body.to_string().as_bytes()).await.is_err() {
+            return false;
+        }
+        if let Some(stamp) = file_stamp(&path).await {
+            self.cache().logins.insert(key.to_string(), (stamp, rec.clone()));
+        }
+        true
     }
 
     pub async fn clear_auth(&self, key: &str) -> Cleared {
+        self.cache().logins.remove(key);
         remove(&self.lock_path(key)).await
     }
 
@@ -290,6 +373,11 @@ impl ConfigStore {
     pub async fn move_key(&self, from: &str, to: &str) -> Moved {
         if !self.enabled() {
             return Moved::Failed;
+        }
+        for key in [from, to] {
+            let mut cache = self.cache();
+            cache.drop_config(key);
+            cache.logins.remove(key);
         }
         let pairs: Vec<(PathBuf, PathBuf)> = vec![
             (self.content_path(from, ConfigFormat::Text), self.content_path(to, ConfigFormat::Text)),
@@ -336,6 +424,44 @@ impl ConfigStore {
         }
         Moved::Done
     }
+}
+
+/// A `.lock` file's login; `Err` when it is not valid.
+fn parse_auth(raw: &[u8]) -> Result<AuthRecord, ()> {
+    let text = std::str::from_utf8(raw).map_err(|_| ())?;
+    let v: Value = serde_json::from_str(text.trim()).map_err(|_| ())?;
+    let access = v.get("access").and_then(Value::as_str).ok_or(())?.to_string();
+    let opt = |k: &str| -> Result<Option<String>, ()> {
+        match v.get(k) {
+            Some(Value::Null) => Ok(None),
+            Some(Value::String(s)) => Ok(Some(s.clone())),
+            _ => Err(()),
+        }
+    };
+    let (username, digest) = (opt("username")?, opt("digest")?);
+    let open = access == ACCESS_PUBLIC || access == ACCESS_DISABLED;
+    if !ACCESS_CHOICES.contains(&access.as_str())
+        || username.is_none() != digest.is_none()
+        || (digest.is_none() && !open)
+    {
+        return Err(());
+    }
+    Ok(AuthRecord { access, username, digest })
+}
+
+/// The [`Stamp`] of `path` when it is a regular file.
+async fn file_stamp(path: &Path) -> Option<Stamp> {
+    fs::metadata(path).await.ok().filter(Metadata::is_file).map(|m| Stamp::of(&m))
+}
+
+/// Read a file with the [`Stamp`] of the opened handle, so the two always describe the same version.
+async fn read_stamped(path: &Path) -> std::io::Result<(Stamp, Vec<u8>)> {
+    use tokio::io::AsyncReadExt;
+    let mut f = fs::File::open(path).await?;
+    let stamp = Stamp::of(&f.metadata().await?);
+    let mut raw = Vec::new();
+    f.read_to_end(&mut raw).await?;
+    Ok((stamp, raw))
 }
 
 /// `true` when `path` is a regular file.
@@ -398,6 +524,63 @@ mod tests {
         assert_eq!(store.get("def").await.ok().flatten().map(|c| c.1), Some(ConfigFormat::Yaml));
         assert_eq!(store.clear("def").await, Cleared::Removed);
         assert_eq!(store.clear("def").await, Cleared::Nothing);
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    fn temp_store(name: &str) -> (PathBuf, ConfigStore) {
+        let dir = std::env::temp_dir().join(format!("mercurio-store-{name}-{}", std::process::id()));
+        std::fs::remove_dir_all(&dir).ok();
+        (dir.clone(), ConfigStore::new(dir, Mode::Simple, String::new()))
+    }
+
+    #[tokio::test]
+    async fn cached_config_follows_changes_on_disk() {
+        let (dir, store) = temp_store("cache");
+        assert!(store.put("k", "json://localhost/a", ConfigFormat::Text).await);
+        let file = dir.join("k.cfg");
+        let read = |s: &'static str| (s.to_string(), ConfigFormat::Text);
+        assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/a"))));
+
+        // Atomic replace by another process: new inode.
+        let tmp = dir.join(".k.cfg.tmp");
+        std::fs::write(&tmp, "json://localhost/b").unwrap();
+        std::fs::rename(&tmp, &file).unwrap();
+        assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/b"))));
+
+        // Edit in place: new size.
+        std::fs::write(&file, "json://localhost/cc").unwrap();
+        assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/cc"))));
+
+        // An unchanged file is served from the cache without reading it.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o000)).unwrap();
+            assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/cc"))));
+            std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o644)).unwrap();
+        }
+
+        std::fs::remove_file(&file).unwrap();
+        assert_eq!(store.get("k").await, Ok(None));
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[tokio::test]
+    async fn cached_login_follows_changes_on_disk() {
+        let (dir, store) = temp_store("login");
+        let rec = AuthRecord { access: ACCESS_PUBLIC.into(), username: None, digest: None };
+        assert!(store.write_auth("k", &rec).await);
+        assert_eq!(store.auth("k").await, Ok(Some(rec)));
+
+        let lock = dir.join(".k.lock");
+        std::fs::write(&lock, r#"{"access": "disabled", "username": null, "digest": null}"#).unwrap();
+        assert_eq!(store.auth("k").await.ok().flatten().map(|r| r.access), Some(ACCESS_DISABLED.to_string()));
+
+        std::fs::write(&lock, "not json").unwrap();
+        assert_eq!(store.auth("k").await, Err(()));
+
+        assert_eq!(store.clear_auth("k").await, Cleared::Removed);
+        assert_eq!(store.auth("k").await, Ok(None));
         std::fs::remove_dir_all(dir).ok();
     }
 }
