@@ -690,6 +690,66 @@ fn raw_status(out: &str) -> Option<u16> {
     out.split_whitespace().nth(1).and_then(|c| c.parse().ok())
 }
 
+/// A body announced by `Content-Length` is charged to the 256 MiB read budget before it arrives: the head of a second large body is answered `503`, and the budget is free again once the first request is gone.
+#[test]
+#[expect(clippy::disallowed_methods, reason = "the server's read budget is charged in another process")]
+fn bodies_over_the_read_budget_get_503() {
+    let s = start(&tmpdir("body-budget"));
+    let head = "POST /notify HTTP/1.1\r\nHost: x\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 157286400\r\n\r\n";
+    // The first head must be read before the probe's: retry with a fresh first request if the probe was.
+    let mut first = None;
+    let mut refused = None;
+    for _ in 0..10 {
+        let mut c = TcpStream::connect(&s.addr).unwrap();
+        c.write_all(head.as_bytes()).unwrap();
+        thread::sleep(std::time::Duration::from_millis(300));
+        let out = raw(&s.addr, head.as_bytes());
+        first = Some(c);
+        if raw_status(&out) == Some(503) {
+            refused = Some(out);
+            break;
+        }
+    }
+    let out = refused.expect("a second 150 MiB body was never refused");
+    assert!(out.to_ascii_lowercase().contains("retry-after: 1"), "{out}");
+    drop(first);
+    let ok = (0..50).any(|_| {
+        thread::sleep(std::time::Duration::from_millis(100));
+        raw_status(&raw(&s.addr, b"GET /status HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")) == Some(200)
+    });
+    assert!(ok, "the budget was not released");
+}
+
+/// Status of a `text/plain` POST of `n` bytes (the server may answer, and close, before all of them are written).
+fn post_bytes(addr: &str, n: usize) -> Option<u16> {
+    let mut s = TcpStream::connect(addr).unwrap();
+    s.set_read_timeout(Some(std::time::Duration::from_secs(10))).unwrap();
+    let head = format!(
+        "POST /notify HTTP/1.1\r\nHost: x\r\nContent-Type: text/plain\r\nConnection: close\r\nContent-Length: {n}\r\n\r\n"
+    );
+    let mut writer = s.try_clone().unwrap();
+    let sender = thread::spawn(move || {
+        writer.write_all(head.as_bytes()).ok();
+        writer.write_all(&vec![b'a'; n]).ok();
+    });
+    let mut out = Vec::new();
+    s.read_to_end(&mut out).ok();
+    sender.join().unwrap();
+    raw_status(&String::from_utf8_lossy(&out))
+}
+
+/// The body limit is the attachment size plus 1 MiB, at least 8 MiB.
+#[test]
+fn body_limit_follows_the_attachment_size() {
+    const MIB: usize = 1024 * 1024;
+    let off = start_with(&tmpdir("limit-off"), &[("APPRISE_ATTACH_SIZE", "0")]);
+    assert_ne!(post_bytes(&off.addr, 7 * MIB), Some(413));
+    assert_eq!(post_bytes(&off.addr, 9 * MIB), Some(413));
+    let large = start_with(&tmpdir("limit-large"), &[("APPRISE_ATTACH_SIZE", "20")]);
+    assert_ne!(post_bytes(&large.addr, 20 * MIB), Some(413));
+    assert_eq!(post_bytes(&large.addr, 22 * MIB), Some(413));
+}
+
 #[test]
 fn non_ascii_header_values_are_used() {
     let s = start(&tmpdir("utf8-headers"));
