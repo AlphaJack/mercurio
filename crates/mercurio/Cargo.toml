@@ -408,3 +408,7 @@ harness = false
 [[bench]]
 name = "smpp"
 harness = false
+
+[[bench]]
+name = "xmpp"
+harness = false
