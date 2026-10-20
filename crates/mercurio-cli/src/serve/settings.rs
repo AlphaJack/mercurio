@@ -1,6 +1,7 @@
 //! Server settings: the flags of `mercurio serve`, each also an environment variable, read once at start-up.
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use mercurio::NotifyFormat;
 
@@ -98,6 +99,21 @@ pub(crate) struct ServeArgs {
     /// `no` stops following HTTP redirects for URLs without `?redirect=`
     #[arg(long, env = "APPRISE_HTTP_REDIRECTS", default_value = "yes", value_name = "YES|NO")]
     http_redirects: String,
+    /// `no` turns off the daily clean-up of old persistent storage and unused logins
+    #[arg(long, env = "APPRISE_PRUNE_ENABLED", default_value = "yes", value_name = "YES|NO")]
+    prune_enabled: String,
+    /// Seconds between clean-ups (at least 2; the first runs at start-up)
+    #[arg(long, env = "APPRISE_PRUNE_INTERVAL_SECONDS", default_value = "86400", value_name = "N")]
+    prune_interval_seconds: String,
+    /// Longest a clean-up may run, in seconds (kept below the interval)
+    #[arg(long, env = "APPRISE_PRUNE_TIMEOUT_SECONDS", default_value = "28800", value_name = "N")]
+    prune_timeout_seconds: String,
+    /// Age in seconds after which a login without a configuration is removed
+    #[arg(long, env = "APPRISE_AUTH_PRUNE_SECONDS", default_value = "2592000", value_name = "N")]
+    auth_prune_seconds: String,
+    /// `--storage-prune-days` / `APPRISE_STORAGE_PRUNE_DAYS`, an option every command shares (set by `main`).
+    #[arg(skip = 30)]
+    pub(crate) storage_prune_days: i64,
     /// `--storage-uid-length` / `APPRISE_STORAGE_UID_LENGTH`, an option every command shares (set by `main`).
     #[arg(skip = mercurio::DEFAULT_STORAGE_IDLEN)]
     pub(crate) storage_uid_length: usize,
@@ -138,6 +154,40 @@ fn int(name: &str, raw: &str, min: i64, max: i64) -> Result<i64, String> {
     Ok(v)
 }
 
+/// The periodic clean-up of apprise-api's container: persistent storage older than `storage` and logins without a configuration older than `logins`, every `interval`, each run stopped after `timeout`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Prune {
+    pub(super) interval: Duration,
+    pub(super) timeout: Duration,
+    pub(super) storage: Duration,
+    pub(super) logins: Duration,
+}
+
+impl Prune {
+    fn from_args(a: &ServeArgs) -> Result<Prune, String> {
+        // As apprise-api's pruner loop: a bad interval or timeout falls back to its default.
+        let positive = |name: &str, raw: &str, min: u64, default: u64| match raw.trim().parse::<u64>() {
+            Ok(n) if n >= min => n,
+            _ => {
+                log::warn!("{name}={raw:?} must be a whole number of at least {min}; using {default}");
+                default
+            }
+        };
+        let interval = positive("APPRISE_PRUNE_INTERVAL_SECONDS", &a.prune_interval_seconds, 2, 86_400);
+        let timeout = positive("APPRISE_PRUNE_TIMEOUT_SECONDS", &a.prune_timeout_seconds, 1, 28_800).min(interval - 1);
+        if a.storage_prune_days < 0 {
+            return Err("APPRISE_STORAGE_PRUNE_DAYS must not be negative".into());
+        }
+        let logins = int("APPRISE_AUTH_PRUNE_SECONDS", &a.auth_prune_seconds, 0, i64::MAX)?;
+        Ok(Prune {
+            interval: Duration::from_secs(interval),
+            timeout: Duration::from_secs(timeout),
+            storage: Duration::from_secs(a.storage_prune_days.unsigned_abs() * 86_400),
+            logins: Duration::from_secs(logins.unsigned_abs()),
+        })
+    }
+}
+
 /// Server settings, read once at start-up.
 pub(crate) struct Settings {
     pub(super) config_dir: PathBuf,
@@ -166,6 +216,8 @@ pub(crate) struct Settings {
     pub(super) stream_slots: usize,
     pub(super) storage_idlen: usize,
     pub(super) storage_mode: mercurio::StorageMode,
+    /// The periodic clean-up; `None` when `APPRISE_PRUNE_ENABLED=no`.
+    pub(super) prune: Option<Prune>,
     pub(super) services: filters::ServiceFilter,
     pub(super) attach_urls: filters::UrlFilter,
     pub(super) webhook: Option<String>,
@@ -235,6 +287,7 @@ impl Settings {
                 _ => return Err("APPRISE_STORAGE_UID_LENGTH must be between 2 and 64".into()),
             },
             storage_mode,
+            prune: flag(&a.prune_enabled, true).then(|| Prune::from_args(a)).transpose()?,
             services,
             attach_urls,
             webhook: a.webhook_url.clone().filter(|u| !u.trim().is_empty()),

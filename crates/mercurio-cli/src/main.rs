@@ -667,6 +667,7 @@ fn run() -> u8 {
         Command::Services => Ok(if cmd_services(o.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE }),
         Command::Serve(mut settings) => {
             settings.storage_uid_length = o.storage_uid_length;
+            settings.storage_prune_days = o.storage_prune_days;
             if o.interpret_emojis {
                 settings.emojis = Some("yes".into());
             }

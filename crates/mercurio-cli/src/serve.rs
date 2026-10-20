@@ -67,6 +67,10 @@ pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     let addr = listener.local_addr().map_err(|e| e.to_string())?;
     let mut stop = std::pin::pin!(shutdown());
     outln!("listening on http://{addr}");
+    if let Some(p) = s.prune {
+        let store = store::ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
+        tokio::spawn(prune_loop(p, store, s.storage.clone()));
+    }
     let app = app(s);
     let graceful = hyper_util::server::graceful::GracefulShutdown::new();
     loop {
@@ -103,6 +107,31 @@ pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     Ok(())
 }
 /// Ctrl-C, or SIGTERM / SIGHUP on Unix (a container stop).
+/// apprise-api's container clean-up: one run at start-up, then one every interval, each stopped after the timeout. It ends with the server.
+async fn prune_loop(p: settings::Prune, store: store::ConfigStore, storage: Option<std::path::PathBuf>) {
+    loop {
+        match tokio::time::timeout(p.timeout, prune_once(&p, &store, storage.as_deref())).await {
+            Ok((files, logins)) => log::info!("pruned {files} persistent storage file(s) and {logins} unused login(s)"),
+            Err(_) => log::warn!("pruning did not complete within {}s", p.timeout.as_secs()),
+        }
+        tokio::time::sleep(p.interval).await;
+    }
+}
+
+/// Persistent storage older than `p.storage`, then logins without a configuration older than `p.logins`: the counts removed.
+async fn prune_once(
+    p: &settings::Prune,
+    store: &store::ConfigStore,
+    storage: Option<&std::path::Path>,
+) -> (usize, usize) {
+    let mut files = 0;
+    if let Some(dir) = storage {
+        let pruned = crate::storage::prune(dir, &[], p.storage, true).await;
+        files = pruned.values().flatten().filter(|f| f.removed).count();
+    }
+    (files, store.prune_unused_locks(p.logins).await)
+}
+
 /// Resolves on SIGINT, SIGTERM or SIGHUP (Ctrl-C elsewhere). The handlers are installed when this is called, not when it is first awaited, so a signal sent right after the listener is announced is never lost to the default action.
 fn shutdown() -> impl std::future::Future<Output = ()> {
     #[cfg(unix)]

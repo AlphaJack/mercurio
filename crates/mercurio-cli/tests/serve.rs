@@ -631,6 +631,37 @@ fn interpret_emojis_setting() {
     assert_eq!(rx.recv().unwrap()["message"], "go :rocket:");
 }
 
+#[test]
+#[expect(clippy::disallowed_methods, reason = "waiting for the server's background clean-up")]
+fn prunes_unused_logins_and_old_storage_at_start() {
+    let dir = tmpdir("prune");
+    let store = dir.join("store");
+    std::fs::create_dir_all(store.join("abcdef12")).unwrap();
+    std::fs::write(store.join("abcdef12").join("cache.json"), b"{}").unwrap();
+    std::fs::create_dir_all(&dir).unwrap();
+    let login = br#"{"access": "public", "username": null, "digest": null}"#;
+    std::fs::write(dir.join(".orphan.lock"), login).unwrap();
+    std::fs::write(dir.join(".kept.lock"), login).unwrap();
+    std::fs::write(dir.join("kept.cfg"), b"json://localhost").unwrap();
+    let _s = start_with(
+        &dir,
+        &[
+            ("APPRISE_STATEFUL_MODE", "simple"),
+            ("APPRISE_STORAGE_DIR", store.to_str().unwrap()),
+            ("APPRISE_STORAGE_PRUNE_DAYS", "0"),
+            ("APPRISE_AUTH_PRUNE_SECONDS", "0"),
+        ],
+    );
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while dir.join(".orphan.lock").exists() && std::time::Instant::now() < deadline {
+        thread::sleep(std::time::Duration::from_millis(50));
+    }
+    assert!(!dir.join(".orphan.lock").exists(), "a login without configuration is pruned");
+    assert!(dir.join(".kept.lock").exists(), "a login with configuration stays");
+    assert!(dir.join("kept.cfg").exists());
+    assert!(!store.join("abcdef12").join("cache.json").exists(), "old persistent storage is pruned");
+}
+
 /// Send raw bytes, half-close and return everything the server wrote.
 fn raw(addr: &str, bytes: &[u8]) -> String {
     let mut s = TcpStream::connect(addr).unwrap();
