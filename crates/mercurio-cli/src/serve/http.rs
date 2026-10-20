@@ -3,13 +3,22 @@
 //! Header values are read as UTF-8 (clients send UTF-8 titles in `X-Apprise-Title`). Values that are not valid UTF-8 are read as Latin-1.
 
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, LazyLock, Mutex, PoisonError};
 
+use axum::body::Bytes;
 use mercurio::__private::unquote_plus;
 use serde_json::{Value, json};
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 /// Largest request body read.
 pub const MAX_BODY: usize = 64 * 1024 * 1024;
+/// Bytes of request bodies held at once: a request charges its `Content-Length` (or [`UNSIZED_BODY`]) before its body is read, and a request that does not fit gets `503` instead of more memory.
+const BODY_BUDGET: usize = 256 * 1024 * 1024;
+/// What a body without a `Content-Length` (chunked) is charged.
+const UNSIZED_BODY: usize = 1024 * 1024;
+/// The budget's unit, so that [`BODY_BUDGET`] fits the semaphore's `u32` permits.
+const BUDGET_UNIT: usize = 1024;
+static BODIES: LazyLock<Arc<Semaphore>> = LazyLock::new(|| Arc::new(Semaphore::new(BODY_BUDGET / BUDGET_UNIT)));
 /// How long a client may take to send a request head (and how long an idle connection stays open), and each piece of its body.
 pub const IO_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
@@ -53,7 +62,10 @@ pub struct Req {
     pub method: String,
     pub query: Vec<(String, String)>,
     pub headers: Vec<(String, String)>,
-    pub body: Vec<u8>,
+    /// Shared with [`Req::body`] handles; [`Req::release_body`] drops the request's own.
+    body: Mutex<Bytes>,
+    /// Keeps this request's share of [`BODY_BUDGET`] until the request is done.
+    _budget: Option<OwnedSemaphorePermit>,
     pub remote: String,
     /// Who this request has proven to be.
     pub role: Slot<super::auth::Role>,
@@ -75,7 +87,14 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for Req {
         let query = form_pairs(request.uri().query().unwrap_or(""));
         let headers =
             request.headers().iter().map(|(k, v)| (k.as_str().to_string(), decode_header(v.as_bytes()))).collect();
-        let body = axum::body::Bytes::from_request(request, state).await.map_err(|rejection| {
+        let length = request.headers().get("content-length").and_then(|v| v.to_str().ok()).and_then(|v| v.parse().ok());
+        let units =
+            u32::try_from(length.unwrap_or(UNSIZED_BODY).min(MAX_BODY).div_ceil(BUDGET_UNIT)).unwrap_or(u32::MAX);
+        let budget = (units > 0)
+            .then(|| Arc::clone(&BODIES).try_acquire_many_owned(units))
+            .transpose()
+            .map_err(|_| Reply::text(503, "busy").header("Retry-After", "1").header("Connection", "close"))?;
+        let body = Bytes::from_request(request, state).await.map_err(|rejection| {
             let status = rejection.status().as_u16();
             Reply::text(status, &rejection.body_text()).header("Connection", "close")
         })?;
@@ -83,7 +102,8 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for Req {
             method,
             query,
             headers,
-            body: body.to_vec(),
+            body: Mutex::new(body),
+            _budget: budget,
             remote: remote.unwrap_or_default(),
             role: Slot(Mutex::new(role)),
             disabled_key: Slot::default(),
@@ -124,6 +144,16 @@ impl Req {
     /// The first query string value for `name`.
     pub fn query(&self, name: &str) -> Option<&str> {
         self.query.iter().find(|(k, _)| k == name).map(|(_, v)| v.as_str())
+    }
+
+    /// The request body: another handle on the same bytes, not a copy.
+    pub fn body(&self) -> Bytes {
+        self.body.lock().unwrap_or_else(PoisonError::into_inner).clone()
+    }
+
+    /// Drop the request's own handle on the body once it is parsed, so the bytes are freed while the notification is sent.
+    pub fn release_body(&self) {
+        *self.body.lock().unwrap_or_else(PoisonError::into_inner) = Bytes::new();
     }
 
     /// The media type of the body, lower-cased, without parameters.
