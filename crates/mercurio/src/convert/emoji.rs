@@ -1,7 +1,4 @@
-//! `:shortcode:` emoji, as Apprise's `apply_emojis` (`?emojis=yes`, `-j`, [`crate::Asset::interpret_emojis`]).
-
-#[rustfmt::skip]
-mod table;
+//! `:shortcode:` emoji (`?emojis=yes`, `-j`, [`crate::Asset::interpret_emojis`]): GitHub's gemoji names from the `emojis` crate, applied the way Apprise's `apply_emojis` applies its own table.
 
 /// Replace every known `:name:` (case-insensitive) with its emoji. Names never contain `:`, so at each colon the text up to the next one is the only candidate; an unknown one is left as written and its closing colon may open the next.
 pub fn apply(text: &str) -> String {
@@ -24,12 +21,12 @@ pub fn apply(text: &str) -> String {
     out
 }
 
+/// The emoji of gemoji shortcode `name`, ignoring case.
 fn lookup(name: &str) -> Option<&'static str> {
     if name.is_empty() || !name.is_ascii() {
         return None;
     }
-    let name = name.to_ascii_lowercase();
-    table::EMOJIS.binary_search_by(|(n, _)| (*n).cmp(name.as_str())).ok().map(|i| table::EMOJIS[i].1)
+    emojis::get_by_shortcode(&name.to_ascii_lowercase()).map(emojis::Emoji::as_str)
 }
 
 #[cfg(test)]
@@ -62,10 +59,5 @@ mod tests {
             let prepared = t.prepare(&crate::Message::new(":rocket:"), &asset).unwrap();
             assert_eq!(prepared.pieces[0].body == "🚀", on, "{asset:?} {query}");
         }
-    }
-
-    #[test]
-    fn table_is_sorted_for_binary_search() {
-        assert!(table::EMOJIS.windows(2).all(|w| w[0].0 < w[1].0));
     }
 }

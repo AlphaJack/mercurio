@@ -24,6 +24,12 @@ on its page (see the [service list](services/index.md)), taken from the
 - **`?tag=` on a URL.** Apprise ignores it -> mercurio tags the URL for
   `--tag` / `TagFilter`; in a configuration file the values are added to
   the entry's tags. *intentional*
+- **Emoji names.** Apprise expands `:shortcode:` from its own table ->
+  mercurio uses GitHub's gemoji names (the `emojis` crate). They agree on
+  1,843 of Apprise's 1,855 names; 10 give another emoji (`:grinning:` is
+  😀, not 😄; `:beetle:` 🪲, not 🐞), `:blond_woman:` and
+  `:information_deskperson:` stay as text, and about 70 gemoji names that
+  Apprise lacks are expanded. *intentional*
 - **`%2F` in a URL path.** Both decode it into a separator, so
   `json://`, `xml://` and `form://` request another path (Apprise issue
   #1799). Keeping it encoded for every service would also change xmpp

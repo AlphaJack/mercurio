@@ -31,7 +31,7 @@ icon images, priority or the `type` field of `json://`, `form://` and
 characters they stand for (`mercurio -e -b 'sda: 91%\nsdb: 40%' ...`); other
 escapes stay as written. The library does not decode escapes.
 
-`:shortcode:` emoji (`:rocket:`, `:+1:`, Apprise's 1,800-odd names,
+`:shortcode:` emoji (`:rocket:`, `:+1:`: GitHub's gemoji names,
 case-insensitive) become the emoji itself when emoji are on for a URL:
 
 - `-j` / `--interpret-emojis` (CLI), `APPRISE_INTERPRET_EMOJIS=yes`
