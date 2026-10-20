@@ -10,7 +10,7 @@
 //! <storage_path>/<url_id>/var/         files services keep (keys, subscriptions)
 //! ```
 //!
-//! `cache.json` maps keys to `{"v": value, "x": expiry_unix_secs|null}`. Files are created `0600` (directories `0700`), written to `tmp/` and renamed into place.
+//! `cache.json` maps keys to `{"v": value, "x": expiry_unix_secs|null, "!": checksum}`; an entry whose checksum does not match is dropped on load, as in Apprise. Files are created `0600` (directories `0700`), written to `tmp/` and renamed into place.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -20,6 +20,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use crate::crypto;
 use crate::plan::Plan;
 use crate::transport::{FileOp, FileOutput};
 
@@ -97,6 +98,17 @@ pub fn is_valid_key(s: &str) -> bool {
     let mut chars = s.chars();
     chars.next().is_some_and(|c| c.is_ascii_alphanumeric())
         && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+}
+
+/// Hex characters of an entry's SHA-256 kept as its checksum, as in Apprise.
+const HASH_LENGTH: usize = 6;
+
+/// The checksum of a saved entry: the leading [`HASH_LENGTH`] hex characters of the SHA-256 of `<value JSON>:<expiry>`.
+fn checksum(value: &Value, expires: Option<f64>) -> String {
+    let x = expires.map_or_else(|| "never".to_owned(), |x| x.to_string());
+    let mut sum = crypto::hex(&crypto::sha256(format!("{value}:{x}").as_bytes()));
+    sum.truncate(HASH_LENGTH);
+    sum
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -177,17 +189,27 @@ impl PersistentStore {
     }
 }
 
-/// The saved entries of a cache file; `None` when it is corrupt.
-fn parse_cache(bytes: &[u8]) -> Option<BTreeMap<String, Entry>> {
+/// The saved entries of a cache file and whether any were dropped (malformed or failing their checksum); `None` when the file is corrupt.
+fn parse_cache(bytes: &[u8]) -> Option<(BTreeMap<String, Entry>, bool)> {
     let Ok(Value::Object(map)) = serde_json::from_slice::<Value>(bytes) else { return None };
-    let entries = map.into_iter().filter_map(|(k, v)| {
-        let expires = match v.get("x") {
-            None | Some(Value::Null) => None,
-            Some(x) => Some(x.as_f64()?),
-        };
-        Some((k, Entry { value: v.get("v")?.clone(), expires, saved: true }))
-    });
-    Some(entries.collect())
+    let total = map.len();
+    let entries: BTreeMap<_, _> = map
+        .into_iter()
+        .filter_map(|(k, v)| {
+            let expires = match v.get("x") {
+                None | Some(Value::Null) => None,
+                Some(x) => Some(x.as_f64()?),
+            };
+            let value = v.get("v")?.clone();
+            if v.get("!").and_then(Value::as_str) != Some(checksum(&value, expires).as_str()) {
+                log::debug!("tampering detected with cache entry {k:?}");
+                return None;
+            }
+            Some((k, Entry { value, expires, saved: true }))
+        })
+        .collect();
+    let dropped = entries.len() < total;
+    Some((entries, dropped))
 }
 
 impl Store for PersistentStore {
@@ -259,11 +281,13 @@ impl Store for PersistentStore {
                         return Plan::Done;
                     }
                 };
-                let Some(disk) = parse_cache(&bytes) else {
+                let Some((disk, dropped)) = parse_cache(&bytes) else {
                     log::warn!("corrupted persistent cache content: {}", file.display());
                     return Plan::file(FileOp::Remove { path: file }, |_| Plan::Done);
                 };
                 let mut st = lock(&self.state);
+                // Rewrite the file without the dropped entries on the next flush.
+                st.dirty |= dropped;
                 for (k, e) in disk {
                     st.entries.entry(k).or_insert(e);
                 }
@@ -283,7 +307,7 @@ impl Store for PersistentStore {
             .entries
             .iter()
             .filter(|(_, e)| e.saved && e.live())
-            .map(|(k, e)| (k, json!({"v": e.value, "x": e.expires})))
+            .map(|(k, e)| (k, json!({"v": e.value, "x": e.expires, "!": checksum(&e.value, e.expires)})))
             .collect();
         if saved.is_empty() {
             return Plan::file(FileOp::Remove { path: file }, |_| Plan::Done);
@@ -415,6 +439,24 @@ mod tests {
         let s = disk(&fake, "ns");
         assert!(s.keys().is_empty());
         assert!(fake.files().is_empty());
+    }
+
+    #[test]
+    fn entries_failing_their_checksum_are_dropped() {
+        let fake = FakeTransport::new();
+        let good = checksum(&json!("tok"), None);
+        assert_eq!(good.len(), HASH_LENGTH);
+        let text = json!({
+            "good": {"v": "tok", "x": null, "!": good},
+            "edited": {"v": "forged", "x": null, "!": good},
+            "unsigned": {"v": "tok", "x": null},
+        });
+        fake.file("/data/ns/cache.json", text.to_string());
+        let s = disk(&fake, "ns");
+        assert_eq!(s.keys(), vec!["good"]);
+        run_files(s.flush(), &fake);
+        let text = String::from_utf8(fake.files()[&PathBuf::from("/data/ns/cache.json")].clone()).unwrap();
+        assert!(text.contains("good") && !text.contains("forged") && !text.contains("unsigned"), "{text}");
     }
 
     #[test]
