@@ -176,7 +176,13 @@ impl UrlFilter {
 }
 
 /// POST the result of a notification call to `APPRISE_WEBHOOK_URL`.
-pub fn send_webhook(transport: &dyn mercurio::Transport, url: &str, source: &str, ok: bool, logs: &[LogEntry]) {
+pub async fn send_webhook(
+    transport: &dyn mercurio::AsyncTransport,
+    url: &str,
+    source: &str,
+    ok: bool,
+    logs: &[LogEntry],
+) {
     let lower = url.to_ascii_lowercase();
     if !(lower.starts_with("http://") || lower.starts_with("https://")) {
         log::warn!("The webhook result URL is not using the HTTP protocol");
@@ -197,7 +203,7 @@ pub fn send_webhook(transport: &dyn mercurio::Transport, url: &str, source: &str
         None => mercurio::Request::post(url.to_string()),
     };
     req = req.header("User-Agent", format!("Mercurio/{}", env!("CARGO_PKG_VERSION"))).json(&body);
-    match transport.http(&req) {
+    match transport.http(&req).await {
         Ok(r) if r.is_success() => {}
         Ok(r) => log::warn!("The webhook result URL returned HTTP {}", r.status),
         Err(e) => log::warn!("A connection error occurred sending the webhook results: {e}"),

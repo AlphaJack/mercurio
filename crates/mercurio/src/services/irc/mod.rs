@@ -19,7 +19,7 @@ use crate::error::Error;
 use crate::net::LineConn;
 use crate::parse::{parse_list, parse_list_unquoted};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::transport::{Conn, Endpoint};
+use crate::transport::{AsyncConn, Endpoint};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
@@ -42,7 +42,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_channel", "Target Channel").prefix("#"),
         Param::new("target_user", "Target User").prefix("@"),
         Param::new("targets", "Targets").list("/").required().group(&["target_channel", "target_user"]),
@@ -210,20 +210,20 @@ struct Client<'a> {
 }
 
 impl Client<'_> {
-    fn send(&mut self, line: &str) -> Result<()> {
-        self.lc.write_line(line)
+    async fn send(&mut self, line: &str) -> Result<()> {
+        self.lc.write_line(line).await
     }
 
     /// Next line; `None` when the server went quiet or closed.
-    fn read(&mut self) -> Option<IrcMessage> {
-        self.lc.read_line().ok().map(|l| parse_line(&l))
+    async fn read(&mut self) -> Option<IrcMessage> {
+        self.lc.read_line().await.ok().map(|l| parse_line(&l))
     }
 
     /// PING and nickname-collision handling shared by every wait loop. Returns `Ok(true)` when the message was consumed.
-    fn common(&mut self, msg: &IrcMessage) -> Result<bool> {
+    async fn common(&mut self, msg: &IrcMessage) -> Result<bool> {
         if msg.is("PING") {
             let payload = msg.ping_payload().to_string();
-            self.send(&format!("PONG :{payload}"))?;
+            self.send(&format!("PONG :{payload}")).await?;
             return Ok(true);
         }
         if matches!(msg.numeric(), Some(432 | 433)) {
@@ -232,23 +232,23 @@ impl Client<'_> {
             }
             self.collisions += 1;
             let nick = nick_generation(&self.prefix, NICK_MAX_LENGTH, self.collisions);
-            self.send(&format!("NICK {nick}"))?;
+            self.send(&format!("NICK {nick}")).await?;
             return Ok(true);
         }
         Ok(false)
     }
 
-    fn register(&mut self, s: &Session) -> Result<()> {
+    async fn register(&mut self, s: &Session) -> Result<()> {
         if let Some(p) = &s.pass {
-            self.send(&format!("PASS {p}"))?;
+            self.send(&format!("PASS {p}")).await?;
         }
-        self.send(&format!("NICK {}", s.nickname))?;
-        self.send(&format!("USER {} 0 * :{}", s.nickname, s.fullname))?;
+        self.send(&format!("NICK {}", s.nickname)).await?;
+        self.send(&format!("USER {} 0 * :{}", s.nickname, s.fullname)).await?;
         loop {
-            let Some(msg) = self.read() else {
+            let Some(msg) = self.read().await else {
                 return Err(Error::transport("IRC registration timeout"));
             };
-            if self.common(&msg)? {
+            if self.common(&msg).await? {
                 continue;
             }
             if let Some(n) = msg.numeric() {
@@ -262,9 +262,9 @@ impl Client<'_> {
         }
     }
 
-    fn check_connection(&mut self) -> Result<()> {
-        self.send("PING :mercurio")?;
-        while let Some(msg) = self.read() {
+    async fn check_connection(&mut self) -> Result<()> {
+        self.send("PING :mercurio").await?;
+        while let Some(msg) = self.read().await {
             if msg.is("PONG") {
                 return Ok(());
             }
@@ -272,13 +272,13 @@ impl Client<'_> {
         Err(Error::Service("ZNC connection check failed".into()))
     }
 
-    fn join(&mut self, chan: &str, key: Option<&str>) -> Result<()> {
+    async fn join(&mut self, chan: &str, key: Option<&str>) -> Result<()> {
         match key {
-            Some(k) => self.send(&format!("JOIN {chan} {k}"))?,
-            None => self.send(&format!("JOIN {chan}"))?,
+            Some(k) => self.send(&format!("JOIN {chan} {k}")).await?,
+            None => self.send(&format!("JOIN {chan}")).await?,
         }
-        while let Some(msg) = self.read() {
-            if self.common(&msg)? {
+        while let Some(msg) = self.read().await {
+            if self.common(&msg).await? {
                 continue;
             }
             let n = msg.numeric();
@@ -298,33 +298,33 @@ impl Client<'_> {
         Ok(())
     }
 
-    fn privmsg(&mut self, target: &str, lines: &[String]) -> Result<()> {
+    async fn privmsg(&mut self, target: &str, lines: &[String]) -> Result<()> {
         for line in lines {
-            self.send(&format!("PRIVMSG {target} :{line}"))?;
+            self.send(&format!("PRIVMSG {target} :{line}")).await?;
         }
         Ok(())
     }
 }
 
-fn run(s: Session, conn: &mut dyn Conn) -> Result<()> {
+async fn run(s: Session, conn: &mut dyn AsyncConn) -> Result<()> {
     let mut c = Client { lc: LineConn::new(conn), prefix: s.prefix.clone(), collisions: 0 };
-    c.register(&s)?;
+    c.register(&s).await?;
     if let Some(pw) = &s.identify {
-        c.send(&format!("PRIVMSG NickServ :IDENTIFY {pw}"))?;
+        c.send(&format!("PRIVMSG NickServ :IDENTIFY {pw}")).await?;
     }
     if s.znc {
-        c.check_connection()?;
+        c.check_connection().await?;
     }
     for (chan, key, join) in &s.joins {
         if *join {
-            c.join(chan, key.as_deref())?;
+            c.join(chan, key.as_deref()).await?;
         }
-        c.privmsg(chan, &s.lines)?;
+        c.privmsg(chan, &s.lines).await?;
     }
     for user in &s.users {
-        c.privmsg(user.trim_start_matches('@'), &s.lines)?;
+        c.privmsg(user.trim_start_matches('@'), &s.lines).await?;
     }
-    c.send(&format!("QUIT :{}", s.quit))?;
+    c.send(&format!("QUIT :{}", s.quit)).await?;
     Ok(())
 }
 
@@ -374,7 +374,7 @@ impl Notify for Irc {
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.secure);
         ep.read_timeout = REGISTER_TIMEOUT;
-        Plan::socket(ep, move |conn| run(session, conn))
+        Plan::socket(ep, move |conn, _| Box::pin(run(session, conn)))
     }
 
 }

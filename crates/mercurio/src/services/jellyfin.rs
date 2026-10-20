@@ -19,7 +19,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").secret(),
-        Param::new("port", "Port").int().default("8096").range(1, 65535),
+        Param::new("port", "Port").port().default("8096"),
         Param::new("user", "Username"),
     ],
     params: &[

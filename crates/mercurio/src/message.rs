@@ -136,6 +136,7 @@ impl Attachment {
     }
 
     /// Read a file from disk, guessing its MIME type from the extension.
+    #[expect(clippy::disallowed_methods, reason = "a caller-side helper; delivery never calls it")]
     pub fn from_path(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
         let path = path.as_ref();
         let data = std::fs::read(path)?;

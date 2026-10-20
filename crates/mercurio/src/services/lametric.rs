@@ -34,7 +34,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("app_token", "App Access Token").pattern("^[A-Z0-9]{80,}==$"),
         Param::new("app_ver", "App Version").default("1").pattern("^[1-9][0-9]*$"),
         Param::new("host", "Hostname"),
-        Param::new("port", "Port").int().default("8080").range(1, 65535),
+        Param::new("port", "Port").port().default("8080"),
         Param::new("user", "Username"),
     ],
     params: &[

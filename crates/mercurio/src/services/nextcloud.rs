@@ -36,7 +36,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_group", "Target Group").prefix("#"),
         Param::new("target_user", "Target User").prefix("@"),
         Param::new("targets", "Targets").list("/").required().group(&["target_group", "target_user"]),

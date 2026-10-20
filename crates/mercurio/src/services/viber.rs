@@ -47,7 +47,6 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     targets.extend(u.path_segments());
     let token = SERVICE.text(u, "token").unwrap_or_else(|| targets.remove(0));
     if let Some(to) = u.param_nonempty("to") {
-        // `?to=` is split as a list of targets.
         targets.extend(parse_list([to]));
     }
     let source = SERVICE.text(u, "from").unwrap_or_default();

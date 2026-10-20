@@ -12,27 +12,41 @@ mod notify;
 mod payload;
 mod store;
 
-use std::net::{TcpListener, TcpStream};
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant, SystemTime};
 
+use axum::extract::{ConnectInfo, State};
 use mercurio::config::{Config, ConfigFormat, ConfigOptions, ConfigService};
-use mercurio::{Mercurio, Message, NotifyFormat, NotifyType, TagFilter, Transport};
+use mercurio::{
+    AsyncMercurio, AsyncTransport, BoxFuture, Message, NotifyFormat, NotifyType, TagFilter, TokioTransport,
+};
 use serde_json::{Map, Value, json};
+use tower::ServiceExt;
 
 use auth::{AuthSettings, KeyState, Role};
-use http::{Conn, ReadError, Reply, Req, parse_bool};
+use http::{Reply, Req, parse_bool};
 use payload::Content;
 use store::{Cleared, ConfigStore, Mode, Moved};
 
+/// Requests in progress at once; more get 503 + `Retry-After`.
 const MAX_CONNECTIONS: usize = 64;
 
-/// A route handler, run after the authentication gate.
-type Handler<'a> = Box<dyn FnOnce() -> Reply + 'a>;
-/// Socket read/write timeout, also how long an idle connection stays open.
-const IO_TIMEOUT: Duration = Duration::from_secs(30);
+/// A route handler, run after the authentication gate: an answer computed now, or one that waits for I/O.
+enum Handler<'a> {
+    Now(Box<dyn FnOnce() -> Reply + Send + 'a>),
+    Later(BoxFuture<'a, Reply>),
+}
+
+fn now<'a>(f: impl FnOnce() -> Reply + Send + 'a) -> Handler<'a> {
+    Handler::Now(Box::new(f))
+}
+
+fn later<'a>(f: impl Future<Output = Reply> + Send + 'a) -> Handler<'a> {
+    Handler::Later(Box::pin(f))
+}
 /// Django's built-in default `SECRET_KEY`, the hash-mode salt when none is set.
 const DEFAULT_SECRET_KEY: &str = "+reua88v8rs4j!bcfdtinb-f0edxazf!$x_q1g7jtgckxd7gi=";
 
@@ -322,7 +336,9 @@ impl Settings {
 }
 
 struct Server {
-    transport: Arc<dyn Transport>,
+    transport: Arc<dyn AsyncTransport>,
+    /// Requests in progress.
+    active: AtomicUsize,
     s: Settings,
     store: ConfigStore,
     metrics: Arc<metrics::Metrics>,
@@ -352,22 +368,15 @@ pub fn healthcheck(bind: &str) -> Result<(), String> {
     }
 }
 
-pub fn run(bind: &str, args: &ServeArgs, transport: Arc<dyn Transport>) -> Result<(), String> {
+pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     let s = Settings::from_args(args)?;
-    let listener = TcpListener::bind(bind).map_err(|e| format!("bind {bind}: {e}"))?;
-    listener.set_nonblocking(true).map_err(|e| format!("listener: {e}"))?;
-    // Install before announcing readiness, including when running as container PID 1.
-    // The termination feature also handles SIGTERM (and SIGHUP) on Unix.
-    let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel();
-    ctrlc::set_handler(move || {
-        shutdown_tx.send(()).ok();
-    })
-    .map_err(|e| format!("install shutdown handler: {e}"))?;
+    let listener = tokio::net::TcpListener::bind(bind).await.map_err(|e| format!("bind {bind}: {e}"))?;
     let addr = listener.local_addr().map_err(|e| e.to_string())?;
     let store = ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
     let s_slots = s.stream_slots;
     let server = Arc::new(Server {
-        transport,
+        transport: Arc::new(TokioTransport::new()),
+        active: AtomicUsize::new(0),
         s,
         store,
         metrics: Arc::new(metrics::Metrics::default()),
@@ -375,31 +384,90 @@ pub fn run(bind: &str, args: &ServeArgs, transport: Arc<dyn Transport>) -> Resul
         streams: notify::StreamSlots::new(s_slots),
     });
     outln!("listening on http://{addr}");
-    let active = Arc::new(AtomicUsize::new(0));
+    let app = axum::Router::new().fallback(answer).with_state(server);
+    let graceful = hyper_util::server::graceful::GracefulShutdown::new();
+    let mut stop = std::pin::pin!(shutdown());
     loop {
-        if shutdown_rx.try_recv().is_ok() {
-            break;
-        }
-        let stream = match listener.accept() {
-            Ok((stream, _)) => {
-                // Accepted sockets may inherit the listener's nonblocking mode.
-                stream.set_nonblocking(false).map_err(|e| format!("connection: {e}"))?;
-                stream
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                if shutdown_rx.recv_timeout(Duration::from_millis(50)).is_ok() {
-                    break;
+        let (tcp, remote) = tokio::select! {
+            accepted = listener.accept() => match accepted {
+                Ok(a) => a,
+                Err(e) => {
+                    log::debug!("accept: {e}");
+                    continue;
                 }
-                continue;
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-            Err(e) => return Err(format!("accept: {e}")),
+            },
+            () = &mut stop => break,
         };
-        let server = server.clone();
-        let active = active.clone();
-        std::thread::spawn(move || server.connection(stream, &active));
+        let app = app.clone();
+        let service = hyper::service::service_fn(move |mut request: hyper::Request<hyper::body::Incoming>| {
+            request.extensions_mut().insert(ConnectInfo(remote));
+            app.clone().oneshot(request.map(axum::body::Body::new))
+        });
+        // `half_close`: a client that shut its writing side still gets its answer.
+        let conn = hyper::server::conn::http1::Builder::new()
+            .timer(hyper_util::rt::TokioTimer::new())
+            .header_read_timeout(http::IO_TIMEOUT)
+            .half_close(true)
+            .title_case_headers(true)
+            .serve_connection(hyper_util::rt::TokioIo::new(tcp), service);
+        let conn = graceful.watch(conn);
+        tokio::spawn(async move {
+            if let Err(e) = conn.await {
+                log::debug!("connection: {e}");
+            }
+        });
     }
+    drop(listener);
+    graceful.shutdown().await;
     Ok(())
+}
+
+/// Ctrl-C, or SIGTERM / SIGHUP on Unix (a container stop).
+async fn shutdown() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{SignalKind, signal};
+        let (Ok(mut term), Ok(mut hup)) = (signal(SignalKind::terminate()), signal(SignalKind::hangup())) else {
+            tokio::signal::ctrl_c().await.ok();
+            return;
+        };
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {}
+            _ = term.recv() => {}
+            _ = hup.recv() => {}
+        }
+    }
+    #[cfg(not(unix))]
+    tokio::signal::ctrl_c().await.ok();
+}
+
+/// Gives back a request's place in [`Server::active`].
+struct InFlight<'a>(&'a AtomicUsize);
+
+impl Drop for InFlight<'_> {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+/// Every request: at most [`MAX_CONNECTIONS`] in progress (503 + `Retry-After` beyond), then [`Server::handle`].
+async fn answer(
+    State(server): State<Arc<Server>>,
+    ConnectInfo(remote): ConnectInfo<SocketAddr>,
+    request: axum::extract::Request,
+) -> axum::response::Response {
+    let req = match http::read(request, remote).await {
+        Ok(req) => req,
+        Err(reply) => {
+            log::info!("bad request -> {}", reply.status);
+            return reply.header("Connection", "close").into_response();
+        }
+    };
+    let _in_flight = InFlight(&server.active);
+    if server.active.fetch_add(1, Ordering::SeqCst) >= MAX_CONNECTIONS {
+        return Reply::text(503, "busy").header("Retry-After", "1").header("Connection", "close").into_response();
+    }
+    server.handle(&req).await.into_response()
 }
 
 /// Config IDs: 1 to 128 letters, digits, `_` or `-`.
@@ -422,34 +490,8 @@ fn resolve_key(req: &Req, path_key: Option<&str>) -> Result<String, Reply> {
 }
 
 impl Server {
-    /// Serve the requests of one connection, at most [`MAX_CONNECTIONS`] in progress across all connections (503 + `Retry-After` beyond).
-    fn connection(&self, stream: TcpStream, active: &AtomicUsize) {
-        let Ok(mut conn) = Conn::new(stream, IO_TIMEOUT) else { return };
-        loop {
-            let mut req = match conn.read() {
-                Ok(req) => req,
-                Err(ReadError::Closed) => return,
-                Err(ReadError::Reply(reply)) => {
-                    log::info!("bad request -> {}", reply.status);
-                    conn.send(reply, None);
-                    return conn.close();
-                }
-            };
-            let keep_alive = if active.fetch_add(1, Ordering::SeqCst) >= MAX_CONNECTIONS {
-                req.keep_alive = false;
-                conn.send(Reply::text(503, "busy").header("Retry-After", "1"), Some(&req))
-            } else {
-                self.handle(&mut conn, &req)
-            };
-            active.fetch_sub(1, Ordering::SeqCst);
-            if !keep_alive {
-                return conn.close();
-            }
-        }
-    }
-
-    /// Answer one request; `true` when the connection stays open.
-    fn handle(&self, conn: &mut Conn, req: &Req) -> bool {
+    /// Answer one request.
+    async fn handle(&self, req: &Req) -> Reply {
         let started = Instant::now();
         let role = if !self.s.auth.required {
             Role::Open
@@ -459,13 +501,17 @@ impl Server {
             Role::Anonymous
         };
         req.role.set(role);
-        let (reply, view) = self.route(req);
+        let (handler, view) = self.route(req);
+        let reply = match handler {
+            Handler::Now(f) => f(),
+            Handler::Later(f) => f.await,
+        };
         log::info!("{} {} -> {}", req.method, req.path, reply.status);
         self.metrics.record(&req.method, view, reply.status, started.elapsed());
-        conn.send(reply, Some(req))
+        reply
     }
 
-    fn route(&self, req: &Req) -> (Reply, &'static str) {
+    fn route<'a>(&'a self, req: &'a Req) -> (Handler<'a>, &'static str) {
         let path = req.path.trim_matches('/');
         let segs: Vec<&str> = if path.is_empty() { Vec::new() } else { path.split('/').collect() };
         let get = matches!(req.method.as_str(), "GET" | "HEAD");
@@ -473,44 +519,44 @@ impl Server {
         let delete = req.method == "DELETE";
         let any = get || post || delete;
         let not_allowed =
-            |allow: &'static str| -> Handler<'_> { Box::new(move || Reply::empty(405).header("Allow", allow)) };
+            |allow: &'static str| -> Handler<'a> { now(move || Reply::empty(405).header("Allow", allow)) };
         let key = |k: &str| valid_key(k);
-        let missing = || -> Handler<'_> { Box::new(|| Reply::error(req, 400, MISSING_KEY)) };
-        let (view, handler): (&'static str, Handler<'_>) = match segs.as_slice() {
-            ["status"] if get => ("health", Box::new(|| self.status(req, None))),
+        let missing = || -> Handler<'a> { now(|| Reply::error(req, 400, MISSING_KEY)) };
+        let (view, handler): (&'static str, Handler<'a>) = match segs[..] {
+            ["status"] if get => ("health", now(|| self.status(req, None))),
             ["status", "@"] if get => ("health_current", missing()),
-            ["status", k] if get && key(k) => ("health_key", Box::new(move || self.status(req, Some(k)))),
-            ["details"] if get => ("details", Box::new(|| self.details(req))),
-            ["metrics"] if get => ("prometheus-django-metrics", Box::new(|| self.metrics_page(req))),
-            ["cfg"] if get => ("config_list", Box::new(|| self.list(req))),
+            ["status", k] if get && key(k) => ("health_key", now(move || self.status(req, Some(k)))),
+            ["details"] if get => ("details", now(|| self.details(req))),
+            ["metrics"] if get => ("prometheus-django-metrics", now(|| self.metrics_page(req))),
+            ["cfg"] if get => ("config_list", now(|| self.list(req))),
             ["cfg", "@"] if get || post => ("config_current", missing()),
-            ["cfg", k] if post && key(k) => ("config", Box::new(move || self.get_config(req, Some(k)))),
-            ["get"] if post => ("get_by_header", Box::new(|| self.get_config(req, None))),
-            ["get", k] if post && key(k) => ("get", Box::new(move || self.get_config(req, Some(k)))),
-            ["add"] if post => ("add_by_header", Box::new(|| self.add(req, None))),
-            ["add", k] if post && key(k) => ("add", Box::new(move || self.add(req, Some(k)))),
-            ["del"] if post => ("del_by_header", Box::new(|| self.del(req, None))),
-            ["del", k] if post && key(k) => ("del", Box::new(move || self.del(req, Some(k)))),
-            ["move"] if post => ("move_by_header", Box::new(|| self.move_config(req, None))),
-            ["move", k] if post && key(k) => ("move", Box::new(move || self.move_config(req, Some(k)))),
+            ["cfg", k] if post && key(k) => ("config", now(move || self.get_config(req, Some(k)))),
+            ["get"] if post => ("get_by_header", now(|| self.get_config(req, None))),
+            ["get", k] if post && key(k) => ("get", now(move || self.get_config(req, Some(k)))),
+            ["add"] if post => ("add_by_header", later(self.add(req, None))),
+            ["add", k] if post && key(k) => ("add", later(self.add(req, Some(k)))),
+            ["del"] if post => ("del_by_header", now(|| self.del(req, None))),
+            ["del", k] if post && key(k) => ("del", now(move || self.del(req, Some(k)))),
+            ["move"] if post => ("move_by_header", now(|| self.move_config(req, None))),
+            ["move", k] if post && key(k) => ("move", now(move || self.move_config(req, Some(k)))),
             ["auth", "@"] if any => ("auth_current", missing()),
-            ["auth"] if any => ("auth_by_header", Box::new(|| self.auth_view(req, None))),
-            ["auth", k] if any && key(k) => ("auth", Box::new(move || self.auth_view(req, Some(k)))),
-            ["notify"] if post => ("s_notify", Box::new(|| self.notify_stateless(req))),
-            ["notify", k] if post && key(k) => ("notify", Box::new(move || self.notify_route(req, k))),
-            ["json", "urls"] if get => ("json_urls_by_header", Box::new(|| self.json_urls(req, None))),
-            ["json", "urls", k] if get && key(k) => ("json_urls", Box::new(move || self.json_urls(req, Some(k)))),
+            ["auth"] if any => ("auth_by_header", now(|| self.auth_view(req, None))),
+            ["auth", k] if any && key(k) => ("auth", now(move || self.auth_view(req, Some(k)))),
+            ["notify"] if post => ("s_notify", later(self.notify_stateless(req))),
+            ["notify", k] if post && key(k) => ("notify", later(self.notify_route(req, k))),
+            ["json", "urls"] if get => ("json_urls_by_header", later(self.json_urls(req, None))),
+            ["json", "urls", k] if get && key(k) => ("json_urls", later(self.json_urls(req, Some(k)))),
             ["status" | "details" | "metrics" | "cfg"] | ["json", "urls"] => {
                 ("<405>", not_allowed("GET, HEAD, OPTIONS"))
             }
-            ["status", k] | ["json", "urls", k] if key(k) || *k == "@" => ("<405>", not_allowed("GET, HEAD, OPTIONS")),
+            ["status", k] | ["json", "urls", k] if key(k) || k == "@" => ("<405>", not_allowed("GET, HEAD, OPTIONS")),
             ["auth"] => ("<405>", not_allowed("GET, POST, DELETE, HEAD, OPTIONS")),
-            ["auth", k] if key(k) || *k == "@" => ("<405>", not_allowed("GET, POST, DELETE, HEAD, OPTIONS")),
+            ["auth", k] if key(k) || k == "@" => ("<405>", not_allowed("GET, POST, DELETE, HEAD, OPTIONS")),
             ["get" | "add" | "del" | "move" | "notify"] => ("<405>", not_allowed("POST, OPTIONS")),
-            ["cfg" | "get" | "add" | "del" | "move" | "notify", k] if key(k) || *k == "@" => {
+            ["cfg" | "get" | "add" | "del" | "move" | "notify", k] if key(k) || k == "@" => {
                 ("<405>", not_allowed("POST, OPTIONS"))
             }
-            _ => ("<unnamed view>", Box::new(|| Reply::error(req, 404, "Not Found"))),
+            _ => ("<unnamed view>", now(|| Reply::error(req, 404, "Not Found"))),
         };
         if req.role.get() == Role::Anonymous && view != "<405>" {
             const KEYED: &[&str] =
@@ -529,10 +575,10 @@ impl Server {
             let keyed = KEYED.contains(&view) || (BY_HEADER.contains(&view) && req.x_header("Config-ID").is_some());
             if !keyed {
                 let realm = format!("Basic realm=\"{}\"", self.s.auth.realm);
-                return (Reply::error(req, 401, "Access Denied").header("WWW-Authenticate", &realm), view);
+                return (now(move || Reply::error(req, 401, "Access Denied").header("WWW-Authenticate", &realm)), view);
             }
         }
-        (handler(), if view == "<405>" { "<unnamed view>" } else { view })
+        (handler, if view == "<405>" { "<unnamed view>" } else { view })
     }
 
     fn key_state(&self, key: &str) -> KeyState {
@@ -555,7 +601,7 @@ impl Server {
             return false;
         }
         if state.disabled() {
-            *req.disabled_key.borrow_mut() = Some(key.to_string());
+            req.disabled_key.set(Some(key.to_string()));
             return false;
         }
         req.role.set(Role::User);
@@ -564,7 +610,7 @@ impl Server {
 
     /// The answer when [`Server::key_ok`] said no.
     fn key_denied(&self, req: &Req, key: &str) -> Reply {
-        if req.disabled_key.borrow().as_deref() == Some(key) {
+        if req.disabled_key.get().as_deref() == Some(key) {
             return Reply::error(req, 403, "This configuration has been disabled by an administrator");
         }
         log::warn!("AUTH - {} - Per-key Authentication Failed - Request Denied for KEY: {key}", req.remote);
@@ -876,8 +922,9 @@ impl Server {
     }
 
     /// Parse configuration text held by the server (a memory source, so includes can not read local files).
-    fn load(&self, content: &str, format: Option<ConfigFormat>) -> Result<Config, String> {
-        let mut cfg = Config::from_text(content, format, self.transport.as_ref(), &self.config_options())
+    async fn load(&self, content: &str, format: Option<ConfigFormat>) -> Result<Config, String> {
+        let mut cfg = Config::from_text_async(content, format, self.transport.as_ref(), &self.config_options())
+            .await
             .map_err(|e| e.to_string())?;
         cfg.services.retain(|s| {
             let id = match s {
@@ -889,7 +936,7 @@ impl Server {
         Ok(cfg)
     }
 
-    fn add(&self, req: &Req, key: Option<&str>) -> Reply {
+    async fn add(&self, req: &Req, key: Option<&str>) -> Reply {
         if let Some(r) = self.stateful_disabled(req) {
             return r;
         }
@@ -960,7 +1007,7 @@ impl Server {
                     return Reply::error(req, 400, "The configuration format could not be auto-detected");
                 };
                 stored = detected;
-                let Ok(cfg) = self.load(config, Some(detected)) else {
+                let Ok(cfg) = self.load(config, Some(detected)).await else {
                     return Reply::error(req, 400, "The configuration could not be parsed");
                 };
                 if cfg.services.is_empty() && detected == ConfigFormat::Yaml && yaml_refused(config) {
@@ -1075,7 +1122,7 @@ impl Server {
         }
     }
 
-    fn json_urls(&self, req: &Req, key: Option<&str>) -> Reply {
+    async fn json_urls(&self, req: &Req, key: Option<&str>) -> Reply {
         if let Some(r) = self.stateful_disabled(req) {
             return r;
         }
@@ -1098,7 +1145,8 @@ impl Server {
             Ok(None) => return Reply::empty(204),
             Ok(Some(c)) => c,
         };
-        let cfg = Config::from_text(&content, Some(format), self.transport.as_ref(), &self.config_options())
+        let cfg = Config::from_text_async(&content, Some(format), self.transport.as_ref(), &self.config_options())
+            .await
             .unwrap_or_default();
         let defaults = if show_defaults { template_defaults(&content, format) } else { Default::default() };
         let filter = TagFilter::parse(req.query("tag").filter(|t| !t.trim().is_empty()).unwrap_or("all"));
@@ -1152,7 +1200,7 @@ impl Server {
         Reply::json(200, &json!({"tags": all_tags, "urls": urls}))
     }
 
-    fn notify_route(&self, req: &Req, key: &str) -> Reply {
+    async fn notify_route(&self, req: &Req, key: &str) -> Reply {
         if let Some(r) = self.stateful_disabled(req) {
             return r;
         }
@@ -1165,10 +1213,10 @@ impl Server {
             Ok(c) => c,
             Err(r) => return r,
         };
-        self.notify_stored(req, &key, content)
+        self.notify_stored(req, &key, content).await
     }
 
-    fn notify_stored(&self, req: &Req, key: &str, mut content: Content) -> Reply {
+    async fn notify_stored(&self, req: &Req, key: &str, mut content: Content) -> Reply {
         if !self.key_ok(req, key, true) {
             return self.key_denied(req, key);
         }
@@ -1181,7 +1229,7 @@ impl Server {
         let Ok(tag) = tag else {
             return Reply::error(req, 400, "Unsupported characters found in tag definition");
         };
-        let attachments = match self.attachments(req, &mut content) {
+        let attachments = match self.attachments(req, &mut content).await {
             Ok(a) => a,
             Err(r) => return r,
         };
@@ -1200,9 +1248,10 @@ impl Server {
             Err(r) => return r,
         };
         let asset = self.request_asset(req, true, recursion);
-        let mut m =
-            Mercurio::with_transport(self.transport.clone()).config_options(self.config_options()).asset(asset.clone());
-        match self.load(&config, Some(format)) {
+        let mut m = AsyncMercurio::with_transport(self.transport.clone())
+            .config_options(self.config_options())
+            .asset(asset.clone());
+        match self.load(&config, Some(format)).await {
             Ok(cfg) => {
                 m.add_loaded(cfg);
             }
@@ -1213,10 +1262,10 @@ impl Server {
         let vars = content.template.take().unwrap_or_default();
         let transport = self.transport.clone();
         let job = notify::Job { notifier: m, message, filter, vars, key: Some(key.to_string()), transport, asset };
-        self.deliver(req, job)
+        self.deliver(req, job).await
     }
 
-    fn notify_stateless(&self, req: &Req) -> Reply {
+    async fn notify_stateless(&self, req: &Req) -> Reply {
         let key = match req.x_header("Config-ID") {
             Some(h) if valid_key(h) => Some(h.to_string()),
             Some(_) => return Reply::error(req, 400, INVALID_KEY_HEADER),
@@ -1235,7 +1284,7 @@ impl Server {
             if let Some(r) = self.stateful_disabled(req) {
                 return r;
             }
-            return self.notify_stored(req, key, content);
+            return self.notify_stored(req, key, content).await;
         }
         if !self.s.stateless_enabled {
             log::warn!("STATELESS NOTIFY - {} - Stateless Mode Disabled - Request Denied", req.remote);
@@ -1259,7 +1308,7 @@ impl Server {
             return Reply::error(req, 400, "Unsupported characters found in tag definition");
         };
         query_overrides(req, &mut content);
-        let attachments = match self.attachments(req, &mut content) {
+        let attachments = match self.attachments(req, &mut content).await {
             Ok(a) => a,
             Err(r) => return r,
         };
@@ -1272,7 +1321,7 @@ impl Server {
             Err(r) => return r,
         };
         let asset = self.request_asset(req, self.s.stateless_storage, recursion);
-        let mut m = Mercurio::with_transport(self.transport.clone()).asset(asset.clone());
+        let mut m = AsyncMercurio::with_transport(self.transport.clone()).asset(asset.clone());
         for u in mercurio::parse::parse_urls(urls.iter().map(String::as_str), true) {
             match mercurio::parse(&u) {
                 Ok(t) if self.s.services.enabled(t.service().id) => {
@@ -1294,7 +1343,7 @@ impl Server {
         let vars = content.template.take().unwrap_or_default();
         let transport = self.transport.clone();
         let job = notify::Job { notifier: m, message, filter, vars, key: None, transport, asset };
-        self.deliver(req, job)
+        self.deliver(req, job).await
     }
 
     /// The asset for a send, with persistent storage when enabled.
@@ -1326,7 +1375,7 @@ impl Server {
         }
     }
 
-    fn deliver(&self, req: &Req, job: notify::Job) -> Reply {
+    async fn deliver(&self, req: &Req, job: notify::Job) -> Reply {
         let level = self.log_level(req, job.key.as_deref());
         let wants_stream = req.header("accept").is_some_and(|a| {
             a.split(',').any(|m| m.split(';').next().unwrap_or("").trim().eq_ignore_ascii_case("text/event-stream"))
@@ -1339,26 +1388,28 @@ impl Server {
             };
             let (metrics, webhook, transport, remote) =
                 (self.metrics.clone(), self.s.webhook.clone(), self.transport.clone(), req.remote.clone());
-            let done = Box::new(move |report: &mercurio::Report, logs: &[notify::LogEntry]| {
-                metrics.notified(report.status().as_str());
-                if let Some(url) = webhook {
-                    filters::send_webhook(transport.as_ref(), &url, &remote, report.is_success(), logs);
-                }
+            let done: notify::OnDone = Box::new(move |report, logs| {
+                Box::pin(async move {
+                    metrics.notified(report.status().as_str());
+                    if let Some(url) = webhook {
+                        filters::send_webhook(transport.as_ref(), &url, &remote, report.is_success(), &logs).await;
+                    }
+                })
             });
             return notify::stream(job, level, slot, Duration::from_secs(15), done);
         }
-        let (reply, report, logs) = notify::deliver(req, &job, level);
+        let (reply, report, logs) = notify::deliver(req, &job, level).await;
         self.metrics.notified(report.status().as_str());
         if let Some(url) = &self.s.webhook {
-            filters::send_webhook(self.transport.as_ref(), url, &req.remote, report.is_success(), &logs);
+            filters::send_webhook(self.transport.as_ref(), url, &req.remote, report.is_success(), &logs).await;
         }
         reply
     }
 
-    fn attachments(&self, req: &Req, content: &mut Content) -> Result<Vec<mercurio::Attachment>, Reply> {
+    async fn attachments(&self, req: &Req, content: &mut Content) -> Result<Vec<mercurio::Attachment>, Reply> {
         let allowed = |u: &str| self.s.attach_urls.allowed(u);
         let rules = payload::AttachRules { size: self.s.attach_size, max: self.s.max_attachments, allowed: &allowed };
-        payload::attachments(content, &rules, self.transport.as_ref()).map_err(|e| {
+        payload::attachments(content, &rules, self.transport.as_ref()).await.map_err(|e| {
             log::warn!("NOTIFY - {} - Bad attachment: {e}", req.remote);
             Reply::error(req, 400, "Bad Attachment")
         })

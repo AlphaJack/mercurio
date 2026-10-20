@@ -235,11 +235,9 @@ fn common_params_match_the_parser() {
 
     let retry = mercurio::COMMON_PARAMS.iter().find(|p| p.key == "retry").unwrap();
     let wait = mercurio::COMMON_PARAMS.iter().find(|p| p.key == "wait").unwrap();
-    assert!(code.contains(&format!("parsed.retry.unwrap_or({}).min({})", retry.default, retry.max.unwrap())));
-    assert!(code.contains(&format!(
-        "parsed.wait.unwrap_or({}).clamp({}.0, {}.0)",
-        wait.default,
-        wait.min.unwrap(),
-        wait.max.unwrap()
-    )));
+    assert!(code.contains(&format!("const MAX_RETRY: u32 = {};", retry.max.unwrap())));
+    assert!(code.contains(&format!("parsed.retry.unwrap_or({}).min(MAX_RETRY)", retry.default)));
+    assert!(code.contains(&format!("const DEFAULT_WAIT: f64 = {};", wait.default)));
+    assert!(code.contains(&format!("const MAX_WAIT: f64 = {}.0;", wait.max.unwrap())));
+    assert!(code.contains(&format!("parsed.wait.unwrap_or(DEFAULT_WAIT).clamp({}.0, MAX_WAIT)", wait.min.unwrap())));
 }

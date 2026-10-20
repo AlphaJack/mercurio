@@ -1,8 +1,8 @@
-//! Helpers shared by the raw protocol services: syslog facilities and levels; a small blocking reader for socket sessions.
+//! Helpers shared by the raw protocol services: syslog facilities and levels; a small reader for socket sessions.
 
 use crate::NotifyType;
 use crate::error::{Error, Result};
-use crate::transport::Conn;
+use crate::transport::AsyncConn;
 
 /// Syslog facilities in lookup order (prefix lookups depend on it). Values are the shifted facility codes (`LOG_USER = 8`).
 pub const SYSLOG_FACILITIES: &[(&str, u32)] = &[
@@ -53,11 +53,17 @@ pub fn syslog_level(kind: NotifyType) -> u32 {
     }
 }
 
+/// Write and flush `data`; failures are transport errors.
+pub async fn send(conn: &mut dyn AsyncConn, data: &[u8]) -> Result<()> {
+    conn.write_all(data).await.map_err(Error::transport)?;
+    conn.flush().await.map_err(Error::transport)
+}
+
 /// Read exactly `buf.len()` bytes; a closed stream is a transport error.
-pub fn read_exact(conn: &mut dyn Conn, buf: &mut [u8]) -> Result<()> {
+pub async fn read_exact(conn: &mut dyn AsyncConn, buf: &mut [u8]) -> Result<()> {
     let mut filled = 0;
     while filled < buf.len() {
-        let n = conn.read(&mut buf[filled..]).map_err(Error::transport)?;
+        let n = conn.read(&mut buf[filled..]).await.map_err(Error::transport)?;
         if n == 0 {
             return Err(Error::transport("connection closed"));
         }

@@ -244,11 +244,9 @@ pub(super) fn is_secure_http_url(url: &str) -> bool {
     };
     if let Some(p) = port
         && !p.is_empty()
+        && crate::parse::port(p).is_none()
     {
-        match p.parse::<u32>() {
-            Ok(n) if (1..=65535).contains(&n) && p.bytes().all(|b| b.is_ascii_digit()) => {}
-            _ => return false,
-        }
+        return false;
     }
     !host.is_empty() && crate::parse::is_hostname(&host.to_lowercase(), true, true, true).is_some()
 }

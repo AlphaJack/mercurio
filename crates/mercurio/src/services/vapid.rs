@@ -20,13 +20,12 @@ use ring::signature::{ECDSA_P256_SHA256_FIXED_SIGNING, EcdsaKeyPair, KeyPair};
 use ring::{aead, hkdf};
 use serde_json::{Value, json};
 
-use super::_keys::read_local_file;
-use super::_keys::{local_path, p256_keys_from_der, pem_decode};
+use super::_keys::{local_file_ops, p256_keys_from_der, pem_decode, read_local_file};
 use crate::crypto::{b64_url_decode, b64_url_nopad, random_bytes, unix_time};
 use crate::error::Error;
 use crate::parse::{is_email, is_hostname, parse_list, parse_list_unquoted};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef, UrlIdentifier};
-use crate::store::write_private_file;
+use crate::transport::FileOp;
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
@@ -162,7 +161,7 @@ fn webpush_origin(endpoint: &str) -> Option<String> {
             if !p.bytes().all(|b| b.is_ascii_digit()) {
                 return None;
             }
-            let n: u32 = p.parse().ok().filter(|n| *n <= 65535)?;
+            let n = u32::from(p.parse::<u16>().ok()?);
             if n == 0 {
                 return None;
             }
@@ -213,10 +212,9 @@ fn load_subscription(content: &Value) -> Option<Subscription> {
 type Subscriptions = Vec<(String, Subscription)>;
 
 /// Load the subscriptions from a local JSON file.
-fn load_subscriptions(spec: &str) -> Option<Subscriptions> {
-    let path = local_path(spec)?;
-    let data = read_local_file(&path, MAX_SUBFILE_SIZE)?;
-    let content: Value = serde_json::from_slice(&data).ok()?;
+fn load_subscriptions(ctx: &Context<'_>, spec: &str) -> Option<Subscriptions> {
+    let data = read_local_file(ctx, spec, MAX_SUBFILE_SIZE)?;
+    let content: Value = serde_json::from_slice(data).ok()?;
     let obj = content.as_object()?;
     let mut subs: Vec<(String, Subscription)> = Vec::new();
     let mut add = |name: String, s: Subscription| {
@@ -302,9 +300,9 @@ fn encrypt_webpush(message: &[u8], ua_public: &[u8], auth: &[u8]) -> Option<Vec<
 }
 
 /// Load the P-256 signing key from a PEM file (PKCS#8 or SEC1).
-fn load_signing_key(spec: &str) -> Option<EcdsaKeyPair> {
-    let data = read_local_file(&local_path(spec)?, MAX_KEYFILE_SIZE)?;
-    let (label, der) = pem_decode(std::str::from_utf8(&data).ok()?)?;
+fn load_signing_key(ctx: &Context<'_>, spec: &str) -> Option<EcdsaKeyPair> {
+    let data = read_local_file(ctx, spec, MAX_KEYFILE_SIZE)?;
+    let (label, der) = pem_decode(std::str::from_utf8(data).ok()?)?;
     if label != "PRIVATE KEY" && label != "EC PRIVATE KEY" {
         return None;
     }
@@ -329,25 +327,37 @@ fn pem(label: &str, der: &[u8]) -> String {
     out
 }
 
-/// The key kept in the store directory, generated (with its public key) when there is none.
-fn stored_key(dir: &Path) -> Option<EcdsaKeyPair> {
-    if let Some(found) = PRIVATE_KEY_FILES.iter().map(|f| dir.join(f)).find(|p| p.is_file()) {
-        return load_signing_key(found.to_str()?);
+/// The key kept in the store directory and the steps that save it: generated (with its public key) when there is none.
+fn stored_key(ctx: &Context<'_>, dir: &Path) -> Option<(EcdsaKeyPair, Plan)> {
+    if let Some(found) = PRIVATE_KEY_FILES.iter().map(|f| dir.join(f)).find(|p| ctx.stat(p).is_some_and(|m| m.is_file)) {
+        return Some((load_signing_key(ctx, found.to_str()?)?, Plan::Done));
     }
     let pkcs8 = EcdsaKeyPair::generate_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &SystemRandom::new()).ok()?;
     let key = EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pkcs8.as_ref(), &SystemRandom::new()).ok()?;
     let mut spki = SPKI_P256_PREFIX.to_vec();
     spki.extend_from_slice(key.public_key().as_ref());
-    let written = write_private_file(&dir.join("private_key.pem"), pem("PRIVATE KEY", pkcs8.as_ref()).as_bytes())
-        .and_then(|()| write_private_file(&dir.join("public_key.pem"), pem("PUBLIC KEY", &spki).as_bytes()));
-    match written {
-        Ok(()) => log::info!("generated a Vapid key pair in {}", dir.display()),
-        Err(e) => {
-            log::warn!("could not write the Vapid key pair to {}: {e}", dir.display());
-            return None;
-        }
-    }
-    Some(key)
+    let write = |name: &str, label: &str, der: &[u8]| FileOp::WriteAtomic {
+        path: dir.join(name),
+        data: pem(label, der).into_bytes(),
+        private: true,
+    };
+    let public = write("public_key.pem", "PUBLIC KEY", &spki);
+    let shown = dir.display().to_string();
+    let failed = move |e: Error, dir: &str| {
+        log::warn!("could not write the Vapid key pair to {dir}: {e}");
+        Plan::Fail(Error::Service("no Vapid/WebPush (PEM) private key could be loaded".into()))
+    };
+    let save = Plan::file(write("private_key.pem", "PRIVATE KEY", pkcs8.as_ref()), move |res| match res {
+        Ok(_) => Plan::file(public, move |res| match res {
+            Ok(_) => {
+                log::info!("generated a Vapid key pair in {shown}");
+                Plan::Done
+            }
+            Err(e) => failed(e, &shown),
+        }),
+        Err(e) => failed(e, &shown),
+    });
+    Some((key, save))
 }
 
 /// The VAPID JWT for one endpoint origin.
@@ -372,20 +382,20 @@ impl Notify for Vapid {
         // Without `?keyfile=` / `?subfile=`, use the store directory.
         let dir: Option<PathBuf> = ctx.store.path();
         let key = match (&self.keyfile, &dir) {
-            (Some(k), _) => load_signing_key(k),
-            (None, Some(d)) => stored_key(d),
+            (Some(k), _) => load_signing_key(ctx, k).map(|k| (k, Plan::Done)),
+            (None, Some(d)) => stored_key(ctx, d),
             (None, None) => None,
         };
-        let Some(key) = key else {
+        let Some((key, save)) = key else {
             return Plan::Fail(Error::Service("no Vapid/WebPush (PEM) private key could be loaded".into()));
         };
         let subfile = self.subfile.clone().or_else(|| {
             dir.as_ref()
                 .map(|d| d.join("subscriptions.json"))
-                .filter(|p| p.is_file())
+                .filter(|p| ctx.stat(p).is_some_and(|m| m.is_file))
                 .and_then(|p| p.to_str().map(str::to_string))
         });
-        let Some(loaded) = subfile.as_deref().and_then(load_subscriptions) else {
+        let Some(loaded) = subfile.as_deref().and_then(|s| load_subscriptions(ctx, s)) else {
             return Plan::Fail(Error::Service("Vapid/WebPush subscriptions could not be loaded".into()));
         };
         if loaded.is_empty() {
@@ -471,7 +481,18 @@ impl Notify for Vapid {
                 Plan::Done
             }
         });
-        Plan::all([Plan::all(plans), finish])
+        Plan::chain([save, Plan::all([Plan::all(plans), finish])])
+    }
+
+    fn files(&self, ctx: &Context<'_>) -> Vec<FileOp> {
+        let dir = ctx.store.path();
+        let in_dir = |name: &str| dir.as_ref().map(|d| d.join(name).display().to_string());
+        let keys: Vec<String> = match &self.keyfile {
+            Some(k) => vec![k.clone()],
+            None => PRIVATE_KEY_FILES.iter().filter_map(|f| in_dir(f)).collect(),
+        };
+        let subs = self.subfile.clone().or_else(|| in_dir("subscriptions.json"));
+        keys.iter().chain(&subs).flat_map(|f| local_file_ops(f)).collect()
     }
 
     fn url_identifier(&self) -> UrlIdentifier {
@@ -482,6 +503,7 @@ impl Notify for Vapid {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::{FakeTransport, file_context};
     use ring::signature::{ECDSA_P256_SHA256_FIXED, UnparsedPublicKey as SigKey};
 
     fn b64d(s: &str) -> Vec<u8> {
@@ -543,28 +565,33 @@ mod tests {
         assert_eq!(decrypt_with(&shared, &ua_public, &auth, &body), msg);
     }
 
+    fn key_files(dir: &Path) -> Vec<FileOp> {
+        PRIVATE_KEY_FILES.iter().flat_map(|f| local_file_ops(&dir.join(f).display().to_string())).collect()
+    }
+
+    fn signing_key(path: &str) -> Option<EcdsaKeyPair> {
+        file_context(local_file_ops(path), &crate::BlockingTransport::new(), |ctx| load_signing_key(ctx, path))
+    }
+
     #[test]
     fn key_generated_in_store_directory() {
-        let dir = std::env::temp_dir().join(format!("mercurio-vapid-{}", crate::crypto::random_hex(6)));
-        let ns = dir.join("ns");
-        let key = stored_key(&ns).expect("generated");
-        let file = ns.join("private_key.pem");
-        assert!(file.is_file() && ns.join("public_key.pem").is_file());
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            assert_eq!(std::fs::metadata(&file).unwrap().permissions().mode() & 0o777, 0o600);
-        }
+        let (fake, ns) = (FakeTransport::new(), PathBuf::from("/data/ns"));
+        let (key, save) = file_context(key_files(&ns), &fake, |ctx| stored_key(ctx, &ns)).expect("generated");
+        crate::testing::run_files(save, &fake);
+        let private = ns.join("private_key.pem");
+        let files = fake.files();
+        assert!(files.contains_key(&ns.join("public_key.pem")));
+        assert!(fake.file_ops().contains(&FileOp::WriteAtomic { path: private.clone(), data: files[&private].clone(), private: true }));
         // The next send loads the same key instead of generating another.
-        let again = stored_key(&ns).expect("loaded");
+        let (again, save) = file_context(key_files(&ns), &fake, |ctx| stored_key(ctx, &ns)).expect("loaded");
+        assert!(matches!(save, Plan::Done));
         assert_eq!(key.public_key().as_ref(), again.public_key().as_ref());
-        std::fs::remove_dir_all(dir).ok();
     }
 
     #[test]
     fn jwt_verifies() {
         for f in ["vapid_private_key.pem", "vapid_private_key_sec1.pem"] {
-            let key = load_signing_key(&data(f)).unwrap();
+            let key = signing_key(&data(f)).unwrap();
             let jwt = jwt_token(&key, "https://push.example.com:8443", "a@example.com", 1_700_000_000).unwrap();
             let parts: Vec<&str> = jwt.split('.').collect();
             assert_eq!(String::from_utf8(b64d(parts[0])).unwrap(), r#"{"alg":"ES256","typ":"JWT"}"#);
@@ -576,7 +603,7 @@ mod tests {
                 .verify(format!("{}.{}", parts[0], parts[1]).as_bytes(), &b64d(parts[2]))
                 .unwrap();
         }
-        assert!(load_signing_key(&data("vapid_public_key.pem")).is_none());
+        assert!(signing_key(&data("vapid_public_key.pem")).is_none());
     }
 
     #[test]

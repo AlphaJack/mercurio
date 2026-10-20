@@ -27,7 +27,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("facility", "Facility").choice(&["kern", "user", "mail", "daemon", "auth", "syslog", "lpr", "news", "uucp", "cron", "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]).default("user").required(),
         Param::new("host", "Hostname").required(),
-        Param::new("port", "Port").int().default("514").range(1, 65535),
+        Param::new("port", "Port").port().default("514"),
     ],
     params: &[
         Param::sets("facility", &["facility"]),

@@ -37,7 +37,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").required().secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_channels", "Target Channel").prefix("#"),
         Param::new("target_user", "Target User"),
         Param::new("targets", "Targets").list("/").group(&["target_channels", "target_user"]),
@@ -155,7 +155,7 @@ impl Notify for Xmpp {
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.mode == Mode::Tls);
         ep.verify_tls = self.verify;
-        Plan::socket(ep, move |conn| client::run(conn, &session))
+        Plan::socket(ep, move |conn, _| Box::pin(async move { client::run(conn, &session).await }))
     }
 
     fn limits(&self, _title: &str, _body: &str, _format: crate::NotifyFormat, _ctx: &Context<'_>) -> Option<Limits> {

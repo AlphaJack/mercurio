@@ -305,7 +305,6 @@ fn check_case(case: &Value, exprs: &[Value], dir: &Path) -> Result<(), String> {
             return Err(format!("asset {k}: expected {v}, got {:?}", got_asset.get(k)));
         }
     }
-    // Template resolution.
     for row in exp["resolved"].as_array().unwrap() {
         let vars = vars_of(&row["vars"], &env);
         for (i, (e, s)) in row["services"].as_array().unwrap().iter().zip(&cfg.services).enumerate() {
@@ -341,7 +340,6 @@ fn check_case(case: &Value, exprs: &[Value], dir: &Path) -> Result<(), String> {
             }
         }
     }
-    // Tag matching.
     for (ei, (expr, want)) in exprs.iter().zip(exp["matches"].as_array().unwrap()).enumerate() {
         let f = filter_of(expr);
         let got: Vec<usize> =

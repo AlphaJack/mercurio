@@ -1,21 +1,24 @@
 //! High-level API: parse URLs into [`Target`]s and fan a [`Message`] out.
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::{Arc, Condvar, LazyLock, Mutex, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
 
 use crate::asset::Asset;
+#[cfg(feature = "transport-blocking")]
+use crate::blocking::BlockingTransport;
 use crate::config::template::TemplateVars;
 use crate::config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
 use crate::error::{Error, ErrorClass, Result};
 use crate::message::{Message, NotifyFormat, OverflowMode, Prepared};
-use crate::plan::{Delivery, DeliveryTracker, ExecOptions, Executor, Outcome, Plan};
+use crate::plan::{Delivery, DeliveryTracker, ExecOptions, Executor, Outcome, Plan, read_files, run_files};
 use crate::prepare::{PipelineOptions, PreparedMessage};
 use crate::service::{Context, Notify, ServiceDef, UrlIdentifier};
 use crate::store::{Memo, PersistentStore, StoreRef};
 use crate::tag::{Tag, TagFilter};
-use crate::transport::{DefaultTransport, Transport};
+use crate::transport::{AsyncTransport, Blocking, Transport};
 use crate::url::{ParseOptions, ParsedUrl, parse_url_with, scheme_of};
 
 /// Every service compiled into this build (services added at runtime with [`crate::register`] are not listed).
@@ -46,6 +49,12 @@ pub fn service_for_scheme(scheme: &str) -> Option<&'static ServiceDef> {
 
 /// Longest `Retry-After` a `?retry=` loop waits for; longer requests end the retries instead of blocking the caller.
 pub const MAX_RETRY_AFTER: Duration = Duration::from_secs(300);
+/// Most extra attempts `?retry=` asks for.
+const MAX_RETRY: u32 = 10;
+/// Seconds between attempts without `?wait=`.
+const DEFAULT_WAIT: f64 = 0.5;
+/// Longest `?wait=` in seconds.
+const MAX_WAIT: f64 = 60.0;
 
 /// A parsed URL bound to its service, ready to send.
 pub struct Target {
@@ -135,8 +144,8 @@ impl Target {
                 throttle: def.throttle,
             },
             redirect_set: parsed.query.get("redirect").is_some(),
-            retry: parsed.retry.unwrap_or(0).min(10),
-            wait: Duration::from_secs_f64(parsed.wait.unwrap_or(0.5).clamp(0.0, 60.0)),
+            retry: parsed.retry.unwrap_or(0).min(MAX_RETRY),
+            wait: Duration::from_secs_f64(parsed.wait.unwrap_or(DEFAULT_WAIT).clamp(0.0, MAX_WAIT)),
             scheme: parsed.scheme.clone(),
             tags: Vec::new(),
             tag_set: Vec::new(),
@@ -256,6 +265,11 @@ impl Target {
         Some(id)
     }
 
+    /// Whether a send created this target's store (closing it then has something to clean up).
+    pub(crate) fn has_sent(&self) -> bool {
+        self.storage.store.get().is_some()
+    }
+
     /// `false` when the URL has `?store=no`.
     pub fn persistent_storage(&self) -> bool {
         self.storage.persistent
@@ -285,10 +299,19 @@ impl Target {
     ///
     /// With `?retry=N`, failed attempts are repeated after `?wait=`; message pieces and targets (`Plan::Target`) that an earlier attempt delivered are skipped and reported as delivered.
     pub fn deliver(&self, msg: &Message, transport: &dyn Transport, asset: &Asset) -> Vec<Attempt> {
+        pollster::block_on(self.deliver_async(msg, &Blocking(transport), asset))
+    }
+
+    /// [`Target::deliver`] on an [`AsyncTransport`].
+    pub async fn deliver_async(&self, msg: &Message, transport: &dyn AsyncTransport, asset: &Asset) -> Vec<Attempt> {
         let started = Instant::now();
         let store = self.store(asset);
         let memo = if self.retry > 0 { Memo::enabled() } else { Memo::disabled() };
         let ctx = Context::new(asset, store, &memo);
+        let stores = self.stores(&ctx);
+        for s in &stores {
+            run_files(s.clone().load(), transport).await;
+        }
         let prep = match self.prepare_in(msg, &ctx) {
             Ok(p) => p,
             Err(e) => {
@@ -300,7 +323,7 @@ impl Target {
         let mut attempts = Vec::new();
         loop {
             let started = Instant::now();
-            let mut ex = Executor::new(transport, self.exec_for(asset));
+            let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(stores.clone());
             if self.retry > 0 {
                 ex = ex.with_tracker(&mut tracker);
             }
@@ -313,12 +336,13 @@ impl Target {
                     continue;
                 }
                 let prepared = self.piece(&prep, msg, index);
-                if !ex.run(self.service.plan(&prepared, &ctx)) {
+                let plan = self.plan_piece(&prepared, &ctx, transport).await;
+                if !ex.run(plan).await {
                     ok = false;
                     break;
                 }
             }
-            let delivery = ex.finish(ok);
+            let delivery = ex.finish(ok).await;
             let done = delivery.is_success();
             attempts.push(Attempt::new(delivery, started));
             if done || attempts.len() > self.retry as usize {
@@ -328,9 +352,22 @@ impl Target {
                 break;
             };
             log::warn!("{}: attempt {}/{} failed; trying again", self.def.name, attempts.len(), self.retry + 1);
-            transport.sleep(wait);
+            transport.sleep(wait).await;
         }
         attempts
+    }
+
+    /// The target's store and those its service opens.
+    fn stores(&self, ctx: &Context<'_>) -> Vec<StoreRef> {
+        let mut stores = vec![ctx.store()];
+        stores.extend(self.service.stores(ctx));
+        stores
+    }
+
+    /// The service's plan for one piece, after running the file reads it asks for.
+    async fn plan_piece(&self, msg: &Prepared<'_>, ctx: &Context<'_>, transport: &dyn AsyncTransport) -> Plan {
+        let files = read_files(self.service.files(ctx), transport).await;
+        self.service.plan(msg, &ctx.with_files(&files))
     }
 
     /// The pause before retrying a failed attempt. `None` means stop: either some failure is not retryable ([`ErrorClass::is_retryable`]) or the service asked to wait longer than [`MAX_RETRY_AFTER`].
@@ -355,9 +392,18 @@ impl Target {
 
     /// Run the service's clean-up (log out, revoke a token) if this target has sent something. Returns its outcome; `None` when there was nothing to do. Later sends start a new session.
     pub fn close(&self, transport: &dyn Transport, asset: &Asset) -> Option<Delivery> {
+        pollster::block_on(self.close_async(&Blocking(transport), asset))
+    }
+
+    /// [`Target::close`] on an [`AsyncTransport`].
+    pub async fn close_async(&self, transport: &dyn AsyncTransport, asset: &Asset) -> Option<Delivery> {
         let store = self.storage.store.get()?;
-        let plan = self.service.close(&Context::new(asset, store, &Memo::disabled()))?;
-        Some(crate::plan::execute(plan, transport, self.exec_for(asset)))
+        let memo = Memo::disabled();
+        let ctx = Context::new(asset, store, &memo);
+        let plan = self.service.close(&ctx)?;
+        let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(self.stores(&ctx));
+        let ok = ex.run(plan).await;
+        Some(ex.finish(ok).await)
     }
 
     /// Build the plan for the first piece without executing it (for inspection).
@@ -524,20 +570,29 @@ impl Report {
 const MAX_PARALLEL: usize = 128;
 
 /// The process-wide budget of [`MAX_PARALLEL`] sends, shared so that concurrent `notify` calls (the HTTP server's requests) cannot multiply it.
-static SEND_SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: MAX_PARALLEL };
+static SEND_SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: LazyLock::new(max_parallel) };
+
+/// [`MAX_PARALLEL`], or `MERCURIO_BENCH_MAX_PARALLEL` (`0` = unlimited) for the benchmark harness only.
+pub(crate) fn max_parallel() -> usize {
+    match std::env::var("MERCURIO_BENCH_MAX_PARALLEL").ok().and_then(|v| v.parse().ok()) {
+        Some(0) => usize::MAX,
+        Some(n) => n,
+        None => MAX_PARALLEL,
+    }
+}
 
 /// A counting semaphore.
 struct Slots {
     used: Mutex<usize>,
     freed: Condvar,
-    max: usize,
+    max: LazyLock<usize>,
 }
 
 impl Slots {
     /// Block until a slot is free and take it; the guard gives it back.
     fn acquire(&'static self) -> SlotGuard {
         let mut used = self.used.lock().unwrap_or_else(PoisonError::into_inner);
-        while *used >= self.max {
+        while *used >= *self.max {
             used = self.freed.wait(used).unwrap_or_else(PoisonError::into_inner);
         }
         *used += 1;
@@ -573,20 +628,125 @@ impl Drop for SlotGuard {
 /// m.notify_tagged(&Message::new("deployed"), &TagFilter::parse("devops"));
 /// ```
 pub struct Mercurio {
-    targets: Vec<Target>,
-    pending: Vec<PendingTarget>,
-    asset: Asset,
+    core: Core,
     transport: Arc<dyn Transport>,
     parallel: bool,
-    config: ConfigOptions,
+}
+
+/// Targets, template entries and settings shared by [`Mercurio`] and [`crate::AsyncMercurio`].
+#[derive(Default)]
+pub(crate) struct Core {
+    pub(crate) targets: Vec<Target>,
+    pub(crate) pending: Vec<PendingTarget>,
+    pub(crate) asset: Asset,
+    pub(crate) config: ConfigOptions,
+}
+
+impl Core {
+    pub(crate) fn add(&mut self, url: &str) -> Result<()> {
+        self.targets.push(parse(url)?);
+        Ok(())
+    }
+
+    pub(crate) fn add_all(&mut self, urls: &str) -> Vec<Error> {
+        crate::parse::parse_urls([urls], true).iter().filter_map(|url| self.add(url).err()).collect()
+    }
+
+    pub(crate) fn add_loaded(&mut self, cfg: Config) -> usize {
+        for w in &cfg.warnings {
+            log::warn!("{w}");
+        }
+        let n = cfg.services.len();
+        for s in cfg.services {
+            match s {
+                ConfigService::Ready(t) => self.targets.push(t),
+                ConfigService::Pending(p) => self.pending.push(*p),
+            }
+        }
+        n
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.targets.len() + self.pending.len()
+    }
+
+    pub(crate) fn select(&self, filter: &TagFilter, vars: &TemplateVars) -> Selection<'_> {
+        let mut sel = Selection {
+            targets: self.targets.iter().filter(|t| filter.matches(t.tag_set())).collect(),
+            ..Selection::default()
+        };
+        for p in self.pending.iter().filter(|p| filter.matches(&p.tags)) {
+            match p.resolve(vars) {
+                Ok(t) => sel.resolved.push(t),
+                Err(e) => sel.unresolved.push((p, e)),
+            }
+        }
+        sel
+    }
+
+    /// The asset `t` sends with: this notifier's, with the target's configuration overrides.
+    pub(crate) fn asset_for(&self, t: &Target) -> Cow<'_, Asset> {
+        t.effective_asset(&self.asset).map_or(Cow::Borrowed(&self.asset), Cow::Owned)
+    }
+
+    pub(crate) fn entry(&self, t: &Target, attempts: Vec<Attempt>) -> ReportEntry {
+        ReportEntry {
+            label: t.label(),
+            service: t.def.id,
+            delivery: attempts.last().map(|a| a.delivery.clone()).unwrap_or_default(),
+            attempts,
+            url_id: t.url_id(&self.asset_for(t)),
+        }
+    }
+
+    /// The report of a selection: `entries` for its targets, then a failed entry per unresolved template entry.
+    pub(crate) fn report(entries: Vec<ReportEntry>, unresolved: Vec<(&PendingTarget, Error)>) -> Report {
+        let mut report = Report { entries };
+        for (p, e) in unresolved {
+            report.entries.push(ReportEntry {
+                label: p.label(),
+                service: p.service().id,
+                delivery: Delivery { outcomes: vec![Outcome { target: None, result: Err(e) }] },
+                attempts: Vec::new(),
+                url_id: None,
+            });
+        }
+        report
+    }
+}
+
+/// Targets of a throttled service share one lane, sent in order; every other target is a lane of its own.
+pub(crate) fn lanes(targets: &[&Target]) -> Vec<Vec<usize>> {
+    let mut lanes: Vec<Vec<usize>> = Vec::new();
+    let mut lane_of: BTreeMap<&str, usize> = BTreeMap::new();
+    for (i, t) in targets.iter().enumerate() {
+        if t.def.throttle.is_zero() {
+            lanes.push(vec![i]);
+        } else if let Some(&l) = lane_of.get(t.def.id) {
+            lanes[l].push(i);
+        } else {
+            lane_of.insert(t.def.id, lanes.len());
+            lanes.push(vec![i]);
+        }
+    }
+    lanes
+}
+
+/// What is left of the service's throttle since its previous target finished at `last`, so a throttled service keeps its throttle between targets too.
+pub(crate) fn throttle_wait(t: &Target, last: Option<Instant>) -> Option<Duration> {
+    last.map(|at| t.def.throttle.saturating_sub(at.elapsed())).filter(|g| !g.is_zero())
 }
 
 impl fmt::Debug for Mercurio {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Mercurio").field("targets", &self.targets.len()).field("pending", &self.pending.len()).finish()
+        f.debug_struct("Mercurio")
+            .field("targets", &self.core.targets.len())
+            .field("pending", &self.core.pending.len())
+            .finish()
     }
 }
 
+#[cfg(feature = "transport-blocking")]
 impl Default for Mercurio {
     fn default() -> Self {
         Self::new()
@@ -641,26 +801,20 @@ impl Mercurio {
         crate::registry::register(def)
     }
 
-    /// A notifier using [`DefaultTransport`] and the default [`Asset`].
+    /// A notifier using [`BlockingTransport`] and the default [`Asset`] (feature `transport-blocking`).
+    #[cfg(feature = "transport-blocking")]
     pub fn new() -> Self {
-        Self::with_transport(Arc::new(DefaultTransport::new()))
+        Self::with_transport(Arc::new(BlockingTransport::new()))
     }
 
     /// A notifier using `transport` for all I/O (e.g. [`crate::testing::FakeTransport`]).
     pub fn with_transport(transport: Arc<dyn Transport>) -> Self {
-        Self {
-            targets: Vec::new(),
-            pending: Vec::new(),
-            asset: Asset::default(),
-            transport,
-            parallel: true,
-            config: ConfigOptions::default(),
-        }
+        Self { core: Core::default(), transport, parallel: true }
     }
 
     /// Replace the [`Asset`] (branding, pipeline defaults, storage).
     pub fn asset(mut self, asset: Asset) -> Self {
-        self.asset = asset;
+        self.core.asset = asset;
         self
     }
 
@@ -672,100 +826,73 @@ impl Mercurio {
 
     /// Options for [`Mercurio::add_config`] (include depth, templates, ...).
     pub fn config_options(mut self, opts: ConfigOptions) -> Self {
-        self.config = opts;
+        self.core.config = opts;
         self
     }
 
     /// Parse and add one URL.
     pub fn add(&mut self, url: &str) -> Result<&mut Self> {
-        let target = parse(url)?;
-        self.targets.push(target);
+        self.core.add(url)?;
         Ok(self)
     }
 
     /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse.
     pub fn add_all(&mut self, urls: &str) -> Vec<Error> {
-        let mut errors = Vec::new();
-        for url in crate::parse::parse_urls([urls], true) {
-            if let Err(e) = self.add(&url) {
-                errors.push(e);
-            }
-        }
-        errors
+        self.core.add_all(urls)
     }
 
     /// Add an already parsed target.
     pub fn push(&mut self, target: Target) -> &mut Self {
-        self.targets.push(target);
+        self.core.targets.push(target);
         self
     }
 
     /// Load a configuration file or URL (path, `file://`, `http(s)://`) and add its services. Remote configurations are fetched through this notifier's transport. Returns the number of services added.
     pub fn add_config(&mut self, source: &str) -> Result<usize> {
-        let cfg = Config::load(source, self.transport.as_ref(), &self.config)?;
+        let cfg = Config::load(source, self.transport.as_ref(), &self.core.config)?;
         Ok(self.add_loaded(cfg))
     }
 
     /// Add configuration text (TEXT or YAML; detected when `format` is `None`).
     pub fn add_config_text(&mut self, content: &str, format: Option<ConfigFormat>) -> Result<usize> {
-        let cfg = Config::from_text(content, format, self.transport.as_ref(), &self.config)?;
+        let cfg = Config::from_text(content, format, self.transport.as_ref(), &self.core.config)?;
         Ok(self.add_loaded(cfg))
     }
 
     /// Add the services of an already loaded [`Config`].
     pub fn add_loaded(&mut self, cfg: Config) -> usize {
-        for w in &cfg.warnings {
-            log::warn!("{w}");
-        }
-        let n = cfg.services.len();
-        for s in cfg.services {
-            match s {
-                ConfigService::Ready(t) => self.targets.push(t),
-                ConfigService::Pending(p) => self.pending.push(*p),
-            }
-        }
-        n
+        self.core.add_loaded(cfg)
     }
 
     /// Keep only targets for which `keep` returns true (e.g. tag filtering).
     pub fn retain(&mut self, keep: impl FnMut(&Target) -> bool) -> &mut Self {
-        self.targets.retain(keep);
+        self.core.targets.retain(keep);
         self
     }
 
     /// Targets ready to notify (pending template entries are separate).
     pub fn targets(&self) -> &[Target] {
-        &self.targets
+        &self.core.targets
     }
 
     /// Configuration entries still waiting for template values.
     pub fn pending(&self) -> &[PendingTarget] {
-        &self.pending
+        &self.core.pending
     }
 
     /// Number of targets plus pending template entries.
     pub fn len(&self) -> usize {
-        self.targets.len() + self.pending.len()
+        self.core.len()
     }
 
     /// Nothing matched at all (not even an unresolved entry).
     pub fn is_empty(&self) -> bool {
-        self.targets.is_empty() && self.pending.is_empty()
+        self.core.len() == 0
     }
 
     /// Targets matching `filter`, with matching template entries built from `vars`. Sends nothing (the CLI's `--dry-run`). Targets built from template entries live only for the call, so their in-memory store does not carry over between calls.
     pub fn select(&self, filter: &TagFilter, vars: &TemplateVars) -> Selection<'_> {
-        let mut sel = Selection {
-            targets: self.targets.iter().filter(|t| filter.matches(t.tag_set())).collect(),
-            ..Selection::default()
-        };
-        for p in self.pending.iter().filter(|p| filter.matches(&p.tags)) {
-            match p.resolve(vars) {
-                Ok(t) => sel.resolved.push(t),
-                Err(e) => sel.unresolved.push((p, e)),
-            }
-        }
-        sel
+        self.core.select(filter, vars)
     }
 
     /// Send `msg` to every target; template entries use their defaults and `APPRISE_TEMPLATE_*` values. Never panics; failures are in the report.
@@ -801,111 +928,78 @@ impl Mercurio {
     /// # Ok::<(), mercurio::Error>(())
     /// ```
     pub fn notify_with(&self, msg: &Message, filter: &TagFilter, vars: &TemplateVars) -> Report {
-        let sel = self.select(filter, vars);
-        let mut report = self.send_all(msg, sel.iter().collect());
+        let sel = self.core.select(filter, vars);
+        let entries = self.send_all(msg, sel.iter().collect());
         // Template targets only live for this call.
         for t in &sel.resolved {
             self.close_target(t);
         }
-        for (p, e) in sel.unresolved {
-            report.entries.push(ReportEntry {
-                label: p.label(),
-                service: p.service().id,
-                delivery: Delivery { outcomes: vec![Outcome { target: None, result: Err(e) }] },
-                attempts: Vec::new(),
-                url_id: None,
-            });
-        }
-        report
+        Core::report(entries, sel.unresolved)
     }
 
     fn close_target(&self, t: &Target) {
-        let own = t.effective_asset(&self.asset);
-        t.close(self.transport.as_ref(), own.as_ref().unwrap_or(&self.asset));
+        t.close(self.transport.as_ref(), &self.core.asset_for(t));
+    }
+
+    /// The targets and settings, and the transport; nothing is closed.
+    pub(crate) fn into_parts(mut self) -> (Core, Arc<dyn Transport>) {
+        (std::mem::take(&mut self.core), self.transport.clone())
     }
 
     /// Run every target's clean-up now (log out, revoke tokens). Also done on drop.
     pub fn close(&mut self) {
-        for t in &self.targets {
+        for t in &self.core.targets {
             self.close_target(t);
         }
     }
 
-    fn send_all(&self, msg: &Message, targets: Vec<&Target>) -> Report {
-        let send = |t: &Target| {
-            let own = t.effective_asset(&self.asset);
-            let asset = own.as_ref().unwrap_or(&self.asset);
-            let attempts = t.deliver(msg, self.transport.as_ref(), asset);
-            ReportEntry {
-                label: t.label(),
-                service: t.def.id,
-                delivery: attempts.last().map(|a| a.delivery.clone()).unwrap_or_default(),
-                attempts,
-                url_id: t.url_id(asset),
-            }
-        };
-        // Wait out the service's throttle since its previous target, so throttled services also pace across targets.
-        let pace = |t: &Target, last: Option<Instant>| {
-            if let Some(gap) = last.map(|at| t.def.throttle.saturating_sub(at.elapsed())).filter(|g| !g.is_zero()) {
+    fn send_all(&self, msg: &Message, targets: Vec<&Target>) -> Vec<ReportEntry> {
+        let send = |t: &Target| self.core.entry(t, t.deliver(msg, self.transport.as_ref(), &self.core.asset_for(t)));
+        let wait = |t: &Target, last: Option<Instant>| {
+            if let Some(gap) = throttle_wait(t, last) {
                 self.transport.sleep(gap);
             }
         };
-        let entries = if self.parallel && targets.len() > 1 {
-            // Targets of a throttled service share one lane, sent in order; every other target is a lane of its own.
-            let mut lanes: Vec<Vec<usize>> = Vec::new();
-            let mut lane_of: BTreeMap<&str, usize> = BTreeMap::new();
-            for (i, t) in targets.iter().enumerate() {
-                if t.def.throttle.is_zero() {
-                    lanes.push(vec![i]);
-                } else if let Some(&l) = lane_of.get(t.def.id) {
-                    lanes[l].push(i);
-                } else {
-                    lane_of.insert(t.def.id, lanes.len());
-                    lanes.push(vec![i]);
-                }
-            }
-            let run_lane = |lane: &[usize]| {
-                let mut last = None;
-                lane.iter()
-                    .map(|&i| {
-                        pace(targets[i], last);
-                        let entry = send(targets[i]);
-                        last = Some(Instant::now());
-                        (i, entry)
-                    })
-                    .collect::<Vec<_>>()
-            };
-            // One thread per lane, each started only once it holds a slot: threads and sockets stay within the process-wide budget.
-            let mut done: Vec<(usize, ReportEntry)> = std::thread::scope(|s| {
-                let handles: Vec<_> = lanes
-                    .iter()
-                    .map(|lane| {
-                        let slot = SEND_SLOTS.acquire();
-                        s.spawn(move || {
-                            let _slot = slot;
-                            run_lane(lane)
-                        })
-                    })
-                    .collect();
-                // Re-raise a service thread's panic on the caller's thread unchanged.
-                handles.into_iter().flat_map(|h| h.join().unwrap_or_else(|p| std::panic::resume_unwind(p))).collect()
-            });
-            done.sort_by_key(|(i, _)| *i);
-            done.into_iter().map(|(_, entry)| entry).collect()
-        } else {
+        if !self.parallel || targets.len() < 2 {
             let _slot = SEND_SLOTS.acquire();
             let mut last: BTreeMap<&str, Instant> = BTreeMap::new();
-            targets
+            return targets
                 .into_iter()
                 .map(|t| {
-                    pace(t, last.get(t.def.id).copied());
+                    wait(t, last.get(t.def.id).copied());
                     let entry = send(t);
                     last.insert(t.def.id, Instant::now());
                     entry
                 })
-                .collect()
+                .collect();
+        }
+        let run_lane = |lane: &[usize]| {
+            let mut last = None;
+            lane.iter()
+                .map(|&i| {
+                    wait(targets[i], last);
+                    let entry = send(targets[i]);
+                    last = Some(Instant::now());
+                    (i, entry)
+                })
+                .collect::<Vec<_>>()
         };
-        Report { entries }
+        let lanes = lanes(&targets);
+        let mut done: Vec<(usize, ReportEntry)> = std::thread::scope(|s| {
+            let handles: Vec<_> = lanes
+                .iter()
+                .map(|lane| {
+                    let slot = SEND_SLOTS.acquire();
+                    s.spawn(move || {
+                        let _slot = slot;
+                        run_lane(lane)
+                    })
+                })
+                .collect();
+            handles.into_iter().flat_map(|h| h.join().unwrap_or_else(|p| std::panic::resume_unwind(p))).collect()
+        });
+        done.sort_by_key(|(i, _)| *i);
+        done.into_iter().map(|(_, entry)| entry).collect()
     }
 }
 
@@ -914,8 +1008,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn async_entry_points_are_send() {
+        fn assert_send<T: Send>(_: &T) {}
+        let fake = crate::testing::FakeTransport::new();
+        let (t, msg, asset) = (crate::parse("json://localhost").unwrap(), Message::new("x"), Asset::default());
+        let blocking = Blocking(&fake);
+        assert_send(&t.deliver_async(&msg, &blocking, &asset));
+        assert_send(&t.close_async(&blocking, &asset));
+        assert_send(&Config::load_async("/nowhere", &blocking, &ConfigOptions::default()));
+        assert_send(&crate::AttachmentSet::default().load_async(&blocking, &asset));
+    }
+
+    #[test]
     fn send_slots_block_beyond_the_budget() {
-        static SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: 2 };
+        static SLOTS: Slots = Slots { used: Mutex::new(0), freed: Condvar::new(), max: LazyLock::new(|| 2) };
         let (first, second) = (SLOTS.acquire(), SLOTS.acquire());
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
@@ -931,7 +1037,7 @@ mod tests {
     }
 
     #[test]
-    fn throttled_service_paces_across_targets() {
+    fn throttled_service_waits_between_targets() {
         use crate::testing::FakeTransport;
 
         #[derive(Debug)]
@@ -964,7 +1070,6 @@ mod tests {
             }
             assert!(m.notify(&Message::new("b")).is_success());
             assert_eq!(fake.requests().len(), 6);
-            // Two gaps between the three throttled targets; the fake does not sleep, so each is nearly the full throttle.
             let sleeps = fake.sleeps();
             assert_eq!(sleeps.len(), 2, "sequential={sequential}");
             assert!(sleeps.iter().all(|d| *d > Duration::from_secs(4)), "{sleeps:?}");
@@ -976,7 +1081,6 @@ mod tests {
         use crate::testing::FakeTransport;
         let fake = Arc::new(FakeTransport::new());
         fake.default_response(crate::Response::new(200, b"{}".to_vec()));
-        // More targets than workers: every odd target fails, so the report order is visible.
         let n = MAX_PARALLEL * 3 + 1;
         let mut m = Mercurio::with_transport(fake.clone());
         for i in 0..n {

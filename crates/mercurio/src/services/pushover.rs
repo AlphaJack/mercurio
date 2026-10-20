@@ -20,6 +20,11 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, parse_url_unverified, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
+/// Longest emergency `?expire=` in seconds.
+const MAX_EXPIRE: i64 = 10_800;
+/// Shortest emergency `?interval=` in seconds.
+const MIN_INTERVAL: i64 = 30;
+
 pub static SERVICE: ServiceDef = ServiceDef {
     id: "pushover",
     name: "Pushover",
@@ -42,8 +47,8 @@ pub static SERVICE: ServiceDef = ServiceDef {
     ],
     params: &[
         Param::new("e2ee", "E2EE").bool(true),
-        Param::new("expire", "Expire").int().default("3600").range(0, 10800),
-        Param::new("interval", "Emergency Retry Interval").int().default("900").min(30),
+        Param::new("expire", "Expire").int().default("3600").range(0, MAX_EXPIRE),
+        Param::new("interval", "Emergency Retry Interval").int().default("900").min(MIN_INTERVAL),
         Param::new("key", "Encryption Key").secret(),
         Param::new("priority", "Priority").choice(&["-2", "-1", "0", "1", "2"]).default("0"),
         Param::new("sound", "Sound").default("pushover").pattern("^[a-z]{1,12}$"),
@@ -121,11 +126,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let emergency = if priority == EMERGENCY {
         let interval = SERVICE.int_or_default(&r, "interval");
         let expire = SERVICE.int_or_default(&r, "expire");
-        if interval < 30 {
-            return Err(SERVICE.err("the emergency interval must be at least 30 seconds"));
+        if interval < MIN_INTERVAL {
+            return Err(SERVICE.err(format!("the emergency interval must be at least {MIN_INTERVAL} seconds")));
         }
-        if !(0..=10800).contains(&expire) {
-            return Err(SERVICE.err("expire must reside in the range of 0 to 10800 seconds"));
+        if !(0..=MAX_EXPIRE).contains(&expire) {
+            return Err(SERVICE.err(format!("expire must reside in the range of 0 to {MAX_EXPIRE} seconds")));
         }
         Some((interval, expire))
     } else {

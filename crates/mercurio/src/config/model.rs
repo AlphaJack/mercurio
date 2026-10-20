@@ -13,7 +13,7 @@ use crate::asset::Asset;
 use crate::error::{Error, Result};
 use crate::notify::Target;
 use crate::tag::Tag;
-use crate::transport::Transport;
+use crate::transport::{AsyncTransport, Blocking, Transport};
 
 /// Largest configuration read (`max_buffer_size`, 128 KiB).
 pub const MAX_BUFFER_SIZE: usize = 131072;
@@ -115,11 +115,13 @@ pub struct Config {
 impl Config {
     /// Load a configuration from a path, `file://`, `http://` or `https://` URL.
     pub fn load(source: &str, transport: &dyn Transport, opts: &ConfigOptions) -> Result<Config> {
+        pollster::block_on(Self::load_async(source, &Blocking(transport), opts))
+    }
+
+    /// [`Config::load`] on an [`AsyncTransport`].
+    pub async fn load_async(source: &str, transport: &dyn AsyncTransport, opts: &ConfigOptions) -> Result<Config> {
         let src = Source::instantiate(source, opts.format)?;
-        let mut cfg = Config::default();
-        Loader { transport, opts }.services(&src, opts.recursion, &mut cfg);
-        cfg.apply_asset();
-        Ok(cfg)
+        Ok(Self::from_source(src, transport, opts).await)
     }
 
     /// Load configuration text held in memory. `format` is detected when `None`; an undetectable format is an error.
@@ -129,15 +131,29 @@ impl Config {
         transport: &dyn Transport,
         opts: &ConfigOptions,
     ) -> Result<Config> {
+        pollster::block_on(Self::from_text_async(content, format, &Blocking(transport), opts))
+    }
+
+    /// [`Config::from_text`] on an [`AsyncTransport`] (includes are read through it).
+    pub async fn from_text_async(
+        content: &str,
+        format: Option<ConfigFormat>,
+        transport: &dyn AsyncTransport,
+        opts: &ConfigOptions,
+    ) -> Result<Config> {
         let format = format.or(opts.format).or_else(|| detect_format(content));
         let Some(format) = format else {
             return Err(cfg_err("the format of the configuration could not be detected"));
         };
         let src = Source { kind: SourceKind::Memory(content.to_string()), format: Some(format) };
+        Ok(Self::from_source(src, transport, opts).await)
+    }
+
+    async fn from_source(src: Source, transport: &dyn AsyncTransport, opts: &ConfigOptions) -> Config {
         let mut cfg = Config::default();
-        Loader { transport, opts }.services(&src, opts.recursion, &mut cfg);
+        Loader { transport, opts }.services(&src, opts.recursion, &mut cfg).await;
         cfg.apply_asset();
-        Ok(cfg)
+        cfg
     }
 
     /// The asset overrides applied to `base`.

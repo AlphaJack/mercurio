@@ -2,31 +2,36 @@
 //!
 #![doc = env!("CARGO_PKG_DESCRIPTION")]
 //!
-//! Services are addressed by URL scheme and query parameters. They can be grouped in configuration files (TEXT and YAML) with tags and `${NAME}` templates. I/O is blocking by default; the core is sans-IO, so any [`Transport`] (async runtime, wasm, proxy, test double) can drive it.
+//! Services are addressed by URL scheme and query parameters. They can be grouped in configuration files (TEXT and YAML) with tags and `${NAME}` templates. The default API is async on tokio ([`AsyncMercurio`]); [`Mercurio`] is the blocking one. The core is sans-IO, so any [`AsyncTransport`] or [`Transport`] (another runtime, wasm, a proxy, a test double) can drive it.
 //!
 //! ## Quick start
 //!
 //! ```no_run
-//! use mercurio::{Mercurio, Message, NotifyType};
+//! # async fn run() -> Result<(), mercurio::Error> {
+//! use mercurio::{AsyncMercurio, Message, NotifyType};
 //!
-//! let mut m = Mercurio::new();
+//! let mut m = AsyncMercurio::new();
 //! m.add("ntfy://my-topic")?;
 //! m.add("discord://webhook_id/webhook_token")?;
-//! let report = m.notify(&Message::new("Disk almost full").title("server-1").kind(NotifyType::Warning));
+//! let msg = Message::new("Disk almost full").title("server-1").kind(NotifyType::Warning);
+//! let report = m.notify(&msg).await;
 //! for (entry, outcome) in report.failures() {
 //!     eprintln!("{}: {:?}", entry.label, outcome.result);
 //! }
-//! # Ok::<(), mercurio::Error>(())
+//! m.close().await;
+//! # Ok(()) }
 //! ```
 //!
-//! [`Mercurio::notify`] never panics and never returns early: every URL gets a [`ReportEntry`] in the [`Report`], with one [`Outcome`] per target and every [`Attempt`] made (more than one with `?retry=`). [`Report::status`] sums it up as a [`Status`].
+//! `AsyncMercurio` works on any runtime and spawns nothing. One `notify` call sends to its targets concurrently inside the calling task (at most 128 sends in flight across the process), so it uses one thread; spawn several calls to use more cores. [`AsyncMercurio::new`] does its I/O on tokio and reqwest ([`TokioTransport`], feature `transport-tokio`); [`AsyncMercurio::with_transport`] takes any [`AsyncTransport`].
+//!
+//! `notify` never panics and never returns early: every URL gets a [`ReportEntry`] in the [`Report`], with one [`Outcome`] per target and every [`Attempt`] made (more than one with `?retry=`). [`Report::status`] sums it up as a [`Status`].
 //!
 //! ## Architecture
 //!
 //! 1. **Parse.** [`parse()`] splits a URL into a [`ParsedUrl`] (lenient: tokens may contain `:`, `/` or `@`), finds the [`ServiceDef`] for the scheme ([`service_for_scheme`]) and calls its parser. The parser validates the URL and returns a typed [`Notify`] value, wrapped in a [`Target`].
 //! 2. **Prepare.** [`Target::prepare`] runs the message pipeline: payload cap, escapes, format conversion ([`NotifyFormat`]), title merging and overflow handling ([`OverflowMode`]: `upstream`, `truncate`, `split`). The result is one or more [`Prepared`] pieces.
 //! 3. **Plan.** [`Notify::plan`] turns each piece into a [`Plan`]: HTTP requests with continuations that inspect the responses, socket sessions, datagrams, local commands. No I/O happens here ([`Target::plan`] does steps 2 and 3).
-//! 4. **Execute.** [`Target::send`] walks the plan on a [`Transport`]: [`DefaultTransport`] (blocking `ureq` + rustls) by default, [`testing::FakeTransport`] in tests or your own. [`Target::deliver`] adds `?retry=` / `?wait=` handling based on [`ErrorClass`].
+//! 4. **Execute.** [`Target::deliver_async`] walks the plan on an [`AsyncTransport`] ([`TokioTransport`] by default) and [`Target::deliver`] on a blocking [`Transport`] (`BlockingTransport`, [`testing::FakeTransport`] in tests, or your own), both with `?retry=` / `?wait=` handling based on [`ErrorClass`].
 //!
 //! Around this core:
 //!
@@ -65,30 +70,68 @@
 //!
 //! ## Custom transport
 //!
-//! Implement [`Transport::http`] (the other methods are optional: raw sockets, datagrams and local programs default to [`Error::Unsupported`]). Pass it to [`Mercurio::with_transport`].
+//! Implement [`AsyncTransport`] (for [`AsyncMercurio`]) or [`Transport`] (for [`Mercurio`]) to add logging, tracing, metrics, a proxy or a test double. Only `http`, `file` and `sleep` are required; `connect`, `datagram` and `command` default to [`Error::Unsupported`], so a wrapper forwards them to keep e-mail, chat protocols, syslog and desktop notifications working:
 //!
 //! ```no_run
 //! use std::sync::Arc;
-//! use mercurio::{DefaultTransport, Mercurio, Message, Request, Response, Result, Transport};
+//! use std::time::Duration;
+//! use mercurio::{
+//!     AsyncConn, AsyncMercurio, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp,
+//!     FileOutput, Request, Response, Result, TokioTransport,
+//! };
 //!
-//! /// Logs every request, then delegates to the default transport.
-//! #[derive(Debug)]
-//! struct Logging(DefaultTransport);
+//! /// Logs every operation, then lets tokio do it.
+//! struct Logged(TokioTransport);
 //!
-//! impl Transport for Logging {
-//!     fn http(&self, req: &Request) -> Result<Response> {
+//! impl AsyncTransport for Logged {
+//!     fn http<'a>(&'a self, req: &'a Request) -> BoxFuture<'a, Result<Response>> {
 //!         eprintln!("{} {}", req.method.as_str(), mercurio::redact_url(&req.url));
 //!         self.0.http(req)
 //!     }
+//!     fn connect<'a>(&'a self, ep: &'a Endpoint) -> BoxFuture<'a, Result<Box<dyn AsyncConn>>> {
+//!         eprintln!("connect {ep:?}");
+//!         self.0.connect(ep)
+//!     }
+//!     fn datagram<'a>(&'a self, dg: &'a Datagram) -> BoxFuture<'a, Result<()>> {
+//!         self.0.datagram(dg)
+//!     }
+//!     fn command<'a>(&'a self, cmd: &'a Command) -> BoxFuture<'a, Result<CommandOutput>> {
+//!         eprintln!("run {}", cmd.program);
+//!         self.0.command(cmd)
+//!     }
+//!     fn file<'a>(&'a self, op: &'a FileOp) -> BoxFuture<'a, Result<FileOutput>> {
+//!         self.0.file(op)
+//!     }
+//!     fn sleep(&self, d: Duration) -> BoxFuture<'_, ()> {
+//!         self.0.sleep(d)
+//!     }
 //! }
 //!
-//! let mut m = Mercurio::with_transport(Arc::new(Logging(DefaultTransport::new())));
-//! m.add("ntfy://my-topic")?;
-//! m.notify(&Message::new("hello"));
+//! let mut m = AsyncMercurio::with_transport(Arc::new(Logged(TokioTransport::new())));
+//! m.add("mailto://user:pass@example.com")?;
 //! # Ok::<(), mercurio::Error>(())
 //! ```
 //!
-//! An async application can run [`Mercurio::notify`] on a blocking thread pool (`spawn_blocking`). It can also drive plans itself: walk the [`Plan`] tree and feed each [`Request`]'s [`Response`] to the continuation.
+//! A `tracing` wrapper does the same with each future wrapped in a span (`Instrument::instrument`).
+//!
+//! ## Blocking API
+//!
+//! [`Mercurio`] has the same targets, configuration and reports as [`AsyncMercurio`] without a runtime: `notify` blocks until every service has answered, sending on one thread per target. `Mercurio::new` uses `BlockingTransport` (ureq + rustls), which needs the `transport-blocking` feature:
+//!
+//! ```toml
+//! mercurio = { version = "0.1", default-features = false, features = ["all-services", "transport-blocking"] }
+//! ```
+//!
+//! ```no_run
+//! use mercurio::{Mercurio, Message};
+//!
+//! let mut m = Mercurio::new();
+//! m.add("ntfy://my-topic")?;
+//! let report = m.notify(&Message::new("Finished in 42s").title("Backup"));
+//! # Ok::<(), mercurio::Error>(())
+//! ```
+//!
+//! [`Blocking`] puts a blocking [`Transport`] behind [`AsyncTransport`]; [`AsyncMercurio`] converts from a [`Mercurio`].
 //!
 //! ## Custom services
 //!
@@ -171,7 +214,6 @@
 //! For a slim build, disable default features and pick services: `mercurio = { version = "0.1", default-features = false, features = ["service-telegram", "service-ntfy"] }`
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-// Shared helpers serve optional services: a build without `all-services` leaves part of the helpers unused. The default build still checks.
 #![cfg_attr(
     not(feature = "all-services"),
     allow(dead_code, unused_imports, reason = "helpers serve optional services")
@@ -212,7 +254,12 @@ mod transport;
 pub mod url;
 mod util;
 
+#[cfg(feature = "transport-blocking")]
+mod blocking;
+mod mercurio_async;
 mod notify;
+#[cfg(feature = "transport-tokio")]
+mod tokio;
 
 pub use asset::{Asset, ICON_PNG, ICON_SVG, IconFile, PAGES_URL, REPOSITORY_URL};
 pub use attachment::{AttachSource, AttachmentSet};
@@ -233,10 +280,18 @@ pub use registry::{CustomScheme, Handler, Hook, register, register_scheme, unreg
 /// The Cargo feature table of the crate docs, generated from `Cargo.toml` (the book's library page shows it too).
 #[doc(hidden)]
 pub const FEATURES_TABLE: &str = include_str!(concat!(env!("OUT_DIR"), "/features.md"));
+#[cfg(feature = "transport-tokio")]
+pub use crate::tokio::TokioTransport;
+#[cfg(feature = "transport-blocking")]
+pub use blocking::BlockingTransport;
+pub use mercurio_async::AsyncMercurio;
 pub use service::{Context, Kind, Limits, Notify, Param, Secret, ServiceDef, UrlIdentifier};
 pub use store::{Memo, PersistentStore, Store, StoreRef};
 pub use tag::{Tag, TagFilter};
-pub use transport::{DefaultTransport, Transport};
+pub use transport::{
+    AsyncConn, AsyncTransport, Blocking, BoxFuture, Command, CommandOutput, Conn, Datagram, DatagramTarget, Endpoint,
+    FileMeta, FileOp, FileOutput, Transport,
+};
 pub use url::COMMON_PARAMS;
 pub use url::ParsedUrl;
 

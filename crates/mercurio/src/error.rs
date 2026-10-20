@@ -198,14 +198,7 @@ fn parse_imf_fixdate(s: &str) -> Option<i64> {
     if !(1..=31).contains(&day) || h > 23 || m > 59 || sec > 60 {
         return None;
     }
-    // days_from_civil (Howard Hinnant).
-    let y = if month <= 2 { year - 1 } else { year };
-    let era = y.div_euclid(400);
-    let yoe = y - era * 400;
-    let doy = (153 * (if month > 2 { month - 3 } else { month + 9 }) + 2) / 5 + day - 1;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    let days = era * 146_097 + doe - 719_468;
-    Some(days * 86_400 + h * 3600 + m * 60 + sec)
+    Some(crate::crypto::unix_secs(year, month, day) + h * 3600 + m * 60 + sec)
 }
 
 impl fmt::Display for Error {

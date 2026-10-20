@@ -4,7 +4,7 @@
 //!
 
 use crate::service::{Context, Notify, Param, ServiceDef};
-use crate::transport::{Datagram, DatagramTarget};
+use crate::transport::FileOp;
 use crate::services::_webhook::double_unquoted;
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
@@ -29,10 +29,8 @@ struct File {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    // Read the path from the input: the generic parser treats the first segment as a host and drops the leading `/` of an absolute path.
     let rest = u.original.split_once("://").map_or("", |(_, rest)| rest);
     let mut path = unquote(rest.split_once('?').map_or(rest, |(path, _)| path));
-    // `file:///C:/logs/x` names `C:/logs/x`, as in browsers.
     if let [b'/', drive, b':', ..] = path.as_bytes()
         && drive.is_ascii_alphabetic()
     {
@@ -48,15 +46,19 @@ impl Notify for File {
     fn plan(&self, msg: &Prepared<'_>, _: &Context<'_>) -> Plan {
         let mut payload = super::_json::encode(super::_json::object(msg), &self.payload);
         payload.push(b'\n');
-        Plan::Datagram(Datagram { target: DatagramTarget::File(self.path.clone()), payload })
+        Plan::file(FileOp::Append { path: self.path.clone().into(), data: payload }, |res| match res {
+            Ok(_) => Plan::Done,
+            Err(e) => Plan::Fail(e),
+        })
     }
 }
 
 #[cfg(test)]
+#[expect(clippy::disallowed_methods, reason = "tests set up real files")]
 mod tests {
     use crate::testing::FakeTransport;
-    use crate::transport::DatagramTarget;
-    use crate::{Asset, DefaultTransport, Message, NotifyType};
+    use crate::transport::FileOp;
+    use crate::{Asset, BlockingTransport, Message, NotifyType};
 
     fn lines(path: &std::path::Path) -> Vec<serde_json::Value> {
         std::fs::read_to_string(path).unwrap().lines().map(|l| serde_json::from_str(l).unwrap()).collect()
@@ -67,8 +69,9 @@ mod tests {
         let path_of = |url: &str| {
             let fake = FakeTransport::new();
             assert!(crate::parse(url).unwrap().send(&Message::new("b"), &fake, &Asset::default()).is_success());
-            let DatagramTarget::File(path) = &fake.datagrams()[0].target else { panic!("not a file target") };
-            path.clone()
+            let ops = fake.file_ops();
+            let [FileOp::Append { path, .. }] = ops.as_slice() else { panic!("not one append: {ops:?}") };
+            path.display().to_string()
         };
         assert_eq!(path_of("file:///var/log/alerts.jsonl"), "/var/log/alerts.jsonl");
         assert_eq!(path_of("file://alerts.jsonl"), "alerts.jsonl");
@@ -89,7 +92,7 @@ mod tests {
             std::fs::remove_file(&path).unwrap();
         }
         let target = crate::parse(&format!("file://{}", path.display())).unwrap();
-        let transport = DefaultTransport::new();
+        let transport = BlockingTransport::new();
         let asset = Asset::default();
         assert!(target.send(&Message::new("disk full").title("server-1").kind(NotifyType::Warning), &transport, &asset).is_success());
         assert!(target.send(&Message::new("line one\nline two"), &transport, &asset).is_success());
@@ -113,7 +116,7 @@ mod tests {
         assert!(crate::parse(&format!("file:///tmp/a.jsonl{extras}")).unwrap().send(&msg, &fake, &asset).is_success());
 
         let body = fake.last_request().unwrap().body;
-        assert_eq!(fake.datagrams()[0].payload, [body.as_slice(), b"\n"].concat());
+        assert_eq!(fake.files()[std::path::Path::new("/tmp/a.jsonl")], [body.as_slice(), b"\n"].concat());
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!((json["level"].as_str(), json.get("version")), (Some("info"), None));
         assert_eq!(json["attachments"][0]["base64"], "aGk=");
@@ -127,7 +130,7 @@ mod tests {
         let (real, link) = (dir.join("real.jsonl"), dir.join("link.jsonl"));
         std::os::unix::fs::symlink(&real, &link).unwrap();
         let target = crate::parse(&format!("file://{}", link.display())).unwrap();
-        assert!(target.send(&Message::new("via link"), &DefaultTransport::new(), &Asset::default()).is_success());
+        assert!(target.send(&Message::new("via link"), &BlockingTransport::new(), &Asset::default()).is_success());
         assert_eq!(lines(&real)[0]["message"], "via link");
         assert!(std::fs::symlink_metadata(&link).unwrap().file_type().is_symlink());
         std::fs::remove_dir_all(&dir).unwrap();
@@ -136,7 +139,7 @@ mod tests {
     #[test]
     fn missing_directory_fails() {
         let target = crate::parse("file:///nonexistent-mercurio-dir/alerts.jsonl").unwrap();
-        let delivery = target.send(&Message::new("b"), &DefaultTransport::new(), &Asset::default());
+        let delivery = target.send(&Message::new("b"), &BlockingTransport::new(), &Asset::default());
         assert!(!delivery.is_success());
     }
 }

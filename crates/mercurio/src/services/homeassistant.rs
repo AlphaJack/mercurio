@@ -33,7 +33,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("accesstoken", "Long-Lived Access Token").required().secret(),
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("target_device", "Target Device"),
         Param::new("targets", "Targets").list("/").group(&["target_device"]),
         Param::new("user", "Username"),

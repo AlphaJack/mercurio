@@ -34,7 +34,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname"),
         Param::new("password", "Password").secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("targets", "Targets").list("/").required().group(&["topic"]),
         Param::new("token", "Token").secret(),
         Param::new("topic", "Topic").pattern("^[a-z0-9_-]{1,64}$"),

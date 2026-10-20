@@ -1,4 +1,4 @@
-//! Raw-protocol services against real local servers (no internet needed): MQTT broker, UDP syslog collector and IRC server on 127.0.0.1, driven through `DefaultTransport`.
+//! Raw-protocol services against real local servers (no internet needed): MQTT broker, UDP syslog collector and IRC server on 127.0.0.1, driven through `BlockingTransport`.
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream, UdpSocket};
@@ -7,10 +7,10 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-use mercurio::{DefaultTransport, Mercurio, Message};
+use mercurio::{BlockingTransport, Mercurio, Message};
 
 fn mercurio() -> Mercurio {
-    Mercurio::with_transport(Arc::new(DefaultTransport::new()))
+    Mercurio::with_transport(Arc::new(BlockingTransport::new()))
 }
 
 fn read_packet(s: &mut TcpStream) -> Option<(u8, Vec<u8>)> {
@@ -245,7 +245,7 @@ fn loopback_plain_delivery() {
     let url = format!("mailto://bob:pw@127.0.0.1:{port}/alice@example.com?from=bob@example.com&name=Bob");
     let t = mercurio::parse(&url).unwrap();
     let msg = Message::new("Hello ✓\n.dot line").title("Grüße");
-    let d = t.send(&msg, &DefaultTransport::new(), &Asset::default());
+    let d = t.send(&msg, &BlockingTransport::new(), &Asset::default());
     assert!(d.is_success(), "{d:?}");
     let lines = server.join().unwrap();
     assert!(lines[0].starts_with("EHLO "));
@@ -267,7 +267,7 @@ fn loopback_plain_delivery() {
 fn loopback_starttls_not_offered_refuses_plaintext_auth() {
     let (port, server) = loopback(false, "");
     let t = mercurio::parse(&format!("mailtos://bob:pw@127.0.0.1:{port}?from=bob@example.com")).unwrap();
-    let d = t.send(&Message::new("hi"), &DefaultTransport::new(), &Asset::default());
+    let d = t.send(&Message::new("hi"), &BlockingTransport::new(), &Asset::default());
     assert!(!d.is_success());
     let lines = server.join().unwrap();
     assert!(lines.iter().all(|l| !l.starts_with("AUTH") && !l.starts_with("MAIL")), "{lines:?}");
@@ -277,7 +277,7 @@ fn loopback_starttls_not_offered_refuses_plaintext_auth() {
 fn loopback_starttls_rejected() {
     let (port, server) = loopback(true, "454 TLS not available\r\n");
     let t = mercurio::parse(&format!("mailtos://bob:pw@127.0.0.1:{port}?from=bob@example.com")).unwrap();
-    let d = t.send(&Message::new("hi"), &DefaultTransport::new(), &Asset::default());
+    let d = t.send(&Message::new("hi"), &BlockingTransport::new(), &Asset::default());
     assert!(!d.is_success());
     let lines = server.join().unwrap();
     assert!(lines.contains(&"STARTTLS".to_string()));
@@ -289,7 +289,7 @@ fn loopback_starttls_handshake_failure() {
     // The server accepts STARTTLS but never speaks TLS: the handshake fails, no credentials leak.
     let (port, server) = loopback(true, "220 go ahead\r\n");
     let t = mercurio::parse(&format!("mailtos://bob:pw@127.0.0.1:{port}?from=bob@example.com&rto=2&cto=2")).unwrap();
-    let d = t.send(&Message::new("hi"), &DefaultTransport::new(), &Asset::default());
+    let d = t.send(&Message::new("hi"), &BlockingTransport::new(), &Asset::default());
     assert!(!d.is_success());
     let lines = server.join().unwrap();
     assert!(lines.iter().all(|l| !l.contains("AUTH")), "{lines:?}");

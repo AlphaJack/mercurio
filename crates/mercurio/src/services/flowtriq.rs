@@ -21,7 +21,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("apikey", "API Key").required().secret(),
         Param::new("host", "Hostname").required(),
         Param::new("path", "Webhook Path").required(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
     ],
     ..ServiceDef::DEFAULTS
 };

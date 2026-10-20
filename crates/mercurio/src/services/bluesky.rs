@@ -94,11 +94,8 @@ fn is_secure_http_url(url: &str) -> bool {
             None => (netloc, ""),
         },
     };
-    if !port.is_empty() {
-        match port.parse::<u32>() {
-            Ok(p) if p > 0 && p <= 65535 && port.bytes().all(|b| b.is_ascii_digit()) => {}
-            _ => return false,
-        }
+    if !port.is_empty() && crate::parse::port(port).is_none() {
+        return false;
     }
     let hostname = hostname.to_lowercase();
     !hostname.is_empty() && is_hostname(&hostname, true, true, true).is_some()

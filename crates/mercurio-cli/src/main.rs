@@ -26,6 +26,7 @@ macro_rules! errln {
 
 mod logger;
 mod serve;
+mod storage;
 
 use std::io::Read;
 use std::process::ExitCode;
@@ -33,8 +34,8 @@ use std::sync::Arc;
 
 use mercurio::config::{ConfigOptions, default_paths, expand_path};
 use mercurio::{
-    Asset, Attachment, DefaultTransport, Mercurio, Message, NotifyFormat, NotifyType, TagFilter, TemplateVars,
-    Transport,
+    Asset, AsyncMercurio, AsyncTransport, Attachment, Message, NotifyFormat, NotifyType, TagFilter, TemplateVars,
+    TokioTransport,
 };
 
 /// stdout went away: exit 0 when the reader closed the pipe (as `head` does), 1 otherwise.
@@ -158,7 +159,6 @@ const DEFAULT_STORAGE_PATH: &str =
 
 /// Exit codes; `--help` lists them with their meaning.
 mod exit {
-    // Meanings are in `ALL`.
     pub const OK: u8 = 0;
     pub const FAILURE: u8 = 1;
     pub const USAGE: u8 = 2;
@@ -324,10 +324,10 @@ fn unescape(s: &str) -> String {
 }
 
 /// A path, `file://`, `http(s)://` or `memory://` attachment (`mercurio::attachment`).
-fn load_attachment(spec: &str, transport: &dyn Transport) -> Result<Attachment, String> {
+async fn load_attachment(spec: &str, transport: &dyn AsyncTransport) -> Result<Attachment, String> {
     let source =
         mercurio::AttachSource::parse(spec).map_err(|e| format!("{}: {e}", mercurio::plan::redact_url(spec)))?;
-    source.load(transport, &mercurio::Asset::default()).map_err(|e| e.to_string())
+    source.load_async(transport, &mercurio::Asset::default()).await.map_err(|e| e.to_string())
 }
 
 fn cmd_services(json: bool) -> ExitCode {
@@ -412,9 +412,9 @@ fn source(args: &Args) -> Source {
 }
 
 /// Load every service; returns the notifier, the number of sources that failed and the tag filter to apply.
-fn build(args: &Args, transport: Arc<dyn Transport>) -> Result<(Mercurio, usize, TagFilter), u8> {
+async fn build(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<(AsyncMercurio, usize, TagFilter), u8> {
     let opts = ConfigOptions { recursion: args.recursion.unwrap_or(DEFAULT_RECURSION), ..ConfigOptions::default() };
-    let mut m = Mercurio::with_transport(transport).config_options(opts).asset(storage_asset(args)?.0);
+    let mut m = AsyncMercurio::with_transport(transport).config_options(opts).asset(storage_asset(args)?.0);
     if args.sequential {
         m = m.sequential();
     }
@@ -432,7 +432,7 @@ fn build(args: &Args, transport: Arc<dyn Transport>) -> Result<(Mercurio, usize,
         }
         Source::Configs(paths) => {
             for path in &paths {
-                match m.add_config(path) {
+                match m.add_config(path).await {
                     Ok(0) => log::warn!("no services loaded from {}", mercurio::plan::redact_url(path)),
                     Ok(_) => {}
                     Err(e) => {
@@ -488,7 +488,7 @@ fn print_tags(tags: &[mercurio::Tag]) {
 }
 
 /// `--dry-run`: what would be notified, with tags and template needs.
-fn print_dry_run(m: &Mercurio, filter: &TagFilter, vars: &TemplateVars) {
+fn print_dry_run(m: &AsyncMercurio, filter: &TagFilter, vars: &TemplateVars) {
     let sel = m.select(filter, vars);
     let mut n = 0;
     for t in sel.iter() {
@@ -537,7 +537,7 @@ fn bytes_to_str(n: u64) -> String {
 }
 
 /// `mercurio storage [list|prune|clear] [UID-prefix...|URL...]`: URL ids of the configured services next to what is on disk (list); removal of old (prune) or all (clear) cached files.
-fn cmd_storage(args: &Args, transport: Arc<dyn Transport>) -> Result<u8, u8> {
+async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<u8, u8> {
     const ACTIONS: [&str; 3] = ["list", "prune", "clear"];
     let (asset, mut days) = storage_asset(args)?;
     if days < 0 {
@@ -572,7 +572,7 @@ fn cmd_storage(args: &Args, transport: Arc<dyn Transport>) -> Result<u8, u8> {
         Source::Configs(c) => !c.is_empty(),
     };
     let mut uids: Vec<(String, Vec<&mercurio::Target>)> = Vec::new();
-    let loaded = if has_source { build(&load, transport).ok() } else { None };
+    let loaded = if has_source { build(&load, transport).await.ok() } else { None };
     let vars = TemplateVars::new();
     let selection = loaded.as_ref().map(|(m, _, filter)| m.select(filter, &vars));
     for t in selection.iter().flat_map(|s| s.targets.iter().copied()) {
@@ -593,12 +593,11 @@ fn cmd_storage(args: &Args, transport: Arc<dyn Transport>) -> Result<u8, u8> {
         } else {
             uid_filters.clone()
         };
-        let on_disk =
-            if had_url_filters && ns.is_empty() { Vec::new() } else { mercurio::store::disk_scan(&base, &ns) };
+        let on_disk = if had_url_filters && ns.is_empty() { Vec::new() } else { storage::scan(&base, &ns).await };
         let mut rows: Vec<(String, u64, &str, Vec<&mercurio::Target>)> =
             uids.into_iter().map(|(u, t)| (u, 0, "unused", t)).collect();
         for id in on_disk {
-            let size = mercurio::store::dir_size(&base.join(&id));
+            let size = storage::dir_size(&base.join(&id)).await;
             match rows.iter_mut().find(|r| r.0 == id) {
                 Some(r) => {
                     r.1 = size;
@@ -634,7 +633,7 @@ fn cmd_storage(args: &Args, transport: Arc<dyn Transport>) -> Result<u8, u8> {
         uid_filters
     };
     let age = std::time::Duration::from_secs(days as u64 * 86400);
-    let results = mercurio::store::disk_prune(&base, &ns, age, !args.dry_run);
+    let results = storage::prune(&base, &ns, age, !args.dry_run).await;
     for (uid, files) in results {
         for f in files {
             let what = if args.dry_run {
@@ -653,8 +652,6 @@ fn cmd_storage(args: &Args, transport: Arc<dyn Transport>) -> Result<u8, u8> {
 fn run() -> Result<u8, u8> {
     let args = parse_args();
     logger::init(args.verbose);
-    let transport: Arc<dyn Transport> = Arc::new(DefaultTransport::new());
-
     match args.command.as_deref() {
         Some("services") => {
             return Ok(if cmd_services(args.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE });
@@ -662,7 +659,11 @@ fn run() -> Result<u8, u8> {
         Some("serve") => {
             let bind = args.bind.clone().unwrap_or_else(|| "127.0.0.1:8000".into());
             let Some(settings) = &args.serve else { return Err(exit::USAGE) };
-            return serve::run(&bind, settings, transport).map(|_| exit::OK).map_err(|e| {
+            let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(|e| {
+                errln!("error: {e}");
+                exit::FAILURE
+            })?;
+            return runtime.block_on(serve::run(&bind, settings)).map(|()| exit::OK).map_err(|e| {
                 errln!("error: {e}");
                 exit::FAILURE
             });
@@ -674,9 +675,21 @@ fn run() -> Result<u8, u8> {
                 exit::FAILURE
             });
         }
-        Some("storage") => return cmd_storage(&args, transport),
+        _ => {}
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| {
+        errln!("error: {e}");
+        exit::FAILURE
+    })?;
+    runtime.block_on(run_async(args))
+}
+
+async fn run_async(args: Args) -> Result<u8, u8> {
+    let transport: Arc<dyn AsyncTransport> = Arc::new(TokioTransport::new());
+    match args.command.as_deref() {
+        Some("storage") => return cmd_storage(&args, transport).await,
         Some("check") => {
-            let (mercurio, bad, _) = build(&args, transport)?;
+            let (mercurio, bad, _) = build(&args, transport).await?;
             for t in mercurio.targets() {
                 outln!("ok   {}", t.label());
             }
@@ -689,7 +702,7 @@ fn run() -> Result<u8, u8> {
     }
 
     let vars = template_vars(&args)?;
-    let (selected, bad, filter) = build(&args, transport.clone())?;
+    let (mut selected, bad, filter) = build(&args, transport.clone()).await?;
     if bad > 0 {
         errln!("error: {bad} invalid URL or configuration source; nothing was sent");
         return Err(exit::USAGE);
@@ -723,7 +736,7 @@ fn run() -> Result<u8, u8> {
     let mut msg = Message::new(body).title(title).kind(args.kind);
     msg.format = args.format;
     for spec in &args.attach {
-        match load_attachment(spec, transport.as_ref()) {
+        match load_attachment(spec, transport.as_ref()).await {
             Ok(a) => msg.attachments.push(a),
             Err(e) => {
                 errln!("error: attachment {e}");
@@ -732,7 +745,8 @@ fn run() -> Result<u8, u8> {
         }
     }
 
-    let report = selected.notify_with(&msg, &filter, &vars);
+    let report = selected.notify_with(&msg, &filter, &vars).await;
+    selected.close().await;
     let total = report.entries.len();
     let ok = report.entries.iter().filter(|e| e.delivery.is_success()).count();
     for (entry, outcome) in report.failures() {

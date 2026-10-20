@@ -25,7 +25,9 @@ it supports that, else its default (the first one on its page). See
 servers); attachment URLs and HTTP configuration URLs accept it too. To
 trust a private CA instead, point `SSL_CERT_FILE` (or `REQUESTS_CA_BUNDLE`)
 at a PEM bundle: it replaces the bundled Mozilla roots for every
-connection, HTTP and socket services alike.
+connection, HTTP and socket services alike. The bundle is read once, at the
+first TLS connection; restart `mercurio serve` (or your program) after
+changing it.
 
 Timeouts are decimal seconds (`?cto=2.5`). A value that is not a number
 greater than zero falls back to the default.

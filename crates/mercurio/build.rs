@@ -3,6 +3,7 @@
 //! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `service-<id>`, which `Cargo.toml` must declare and list in `all-services`. It must export `pub static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
 
 #![expect(clippy::unwrap_used, clippy::expect_used, clippy::panic, reason = "a build script should fail loudly")]
+#![expect(clippy::disallowed_methods, reason = "a build script reads and writes files")]
 
 use std::collections::BTreeSet;
 use std::env;
@@ -49,14 +50,12 @@ fn main() {
     // `_name.rs` files are shared helpers for a group of services: always compiled, never registered, no feature of their own.
     let (helpers, modules): (Vec<_>, Vec<_>) = modules.into_iter().partition(|(n, _)| n.starts_with('_'));
     let mut code = String::new();
-    // Without `all-services` some helpers lose their only callers. Which ones depends on the features, so `expect(dead_code)` could go unfulfilled: allow it and expect the `allow_attributes` lint that `allow` trips.
     let helper_attr = "#[cfg_attr(not(feature = \"all-services\"), \
         expect(clippy::allow_attributes, reason = \"generated: which helpers go unused depends on the features\"), \
         allow(dead_code, reason = \"helpers serve optional services\"))]";
     for (name, path) in &helpers {
         writeln!(code, "{helper_attr}\n#[path = {path:?}]\npub mod {name};").unwrap();
     }
-    // Every service is compiled only with its own feature.
     for (name, _) in &modules {
         assert!(
             name.starts_with(|c: char| c.is_ascii_lowercase())
@@ -83,7 +82,6 @@ fn main() {
     code.push_str("];\n");
     fs::write(out.join("services_generated.rs"), code).unwrap();
 
-    // A `service-*` feature either gates a service or adds to one it turns on (`service-matrix-e2ee` turns on `service-matrix`).
     for feature in features.iter().filter(|f| f.starts_with("service-")) {
         let gates = modules.iter().any(|(m, _)| service_feature(m) == **feature);
         let extends =

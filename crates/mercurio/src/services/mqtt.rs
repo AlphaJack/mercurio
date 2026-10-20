@@ -11,11 +11,11 @@
 
 use std::time::Duration;
 
-use super::_sockets::read_exact;
+use super::_sockets::{read_exact, send};
 use crate::error::Error;
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::transport::{Conn, Endpoint};
+use crate::transport::{AsyncConn, Endpoint};
 use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
@@ -37,7 +37,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").required().secret(),
-        Param::new("port", "Port").int().range(1, 65535),
+        Param::new("port", "Port").port(),
         Param::new("targets", "Targets").list("/").group(&["topic"]),
         Param::new("topic", "Target Queue").required(),
         Param::new("user", "User Name").required(),
@@ -225,13 +225,13 @@ pub struct Packet {
     pub body: Vec<u8>,
 }
 
-fn read_packet(conn: &mut dyn Conn) -> Result<Packet> {
+async fn read_packet(conn: &mut dyn AsyncConn) -> Result<Packet> {
     let mut head = [0u8; 1];
-    read_exact(conn, &mut head)?;
+    read_exact(conn, &mut head).await?;
     let mut len_bytes = Vec::new();
     loop {
         let mut b = [0u8; 1];
-        read_exact(conn, &mut b)?;
+        read_exact(conn, &mut b).await?;
         len_bytes.push(b[0]);
         if b[0] & 0x80 == 0 {
             break;
@@ -242,14 +242,14 @@ fn read_packet(conn: &mut dyn Conn) -> Result<Packet> {
     }
     let (len, _) = decode_varint(&len_bytes).ok_or_else(|| Error::transport("MQTT: malformed remaining length"))?;
     let mut body = vec![0u8; len];
-    read_exact(conn, &mut body)?;
+    read_exact(conn, &mut body).await?;
     Ok(Packet { kind: head[0] >> 4, flags: head[0] & 0x0f, body })
 }
 
 /// Read packets until one of `kind` arrives (others, e.g. PINGRESP, are skipped).
-fn expect_packet(conn: &mut dyn Conn, kind: u8, packet_id: Option<u16>) -> Result<Packet> {
+async fn expect_packet(conn: &mut dyn AsyncConn, kind: u8, packet_id: Option<u16>) -> Result<Packet> {
     loop {
-        let p = read_packet(conn)?;
+        let p = read_packet(conn).await?;
         if p.kind != kind {
             continue;
         }
@@ -300,14 +300,10 @@ struct Session {
     retain: bool,
 }
 
-fn run_session(s: Session, conn: &mut dyn Conn) -> Result<()> {
-    let send = |conn: &mut dyn Conn, data: &[u8]| -> Result<()> {
-        conn.write_all(data).map_err(Error::transport)?;
-        conn.flush().map_err(Error::transport)
-    };
+async fn run_session(s: Session, conn: &mut dyn AsyncConn) -> Result<()> {
     let connect = connect_packet(s.version, &s.client_id, s.clean, KEEPALIVE, s.user.as_deref(), s.password.as_deref());
-    send(conn, &connect)?;
-    let ack = expect_packet(conn, 2, None)?;
+    send(conn, &connect).await?;
+    let ack = expect_packet(conn, 2, None).await?;
     let code_at = 1;
     let code = ack.body.get(code_at).copied().unwrap_or(0xff);
     if code != 0 {
@@ -316,27 +312,27 @@ fn run_session(s: Session, conn: &mut dyn Conn) -> Result<()> {
     let mut packet_id: u16 = 0;
     for topic in &s.topics {
         packet_id = packet_id.checked_add(1).unwrap_or(1);
-        send(conn, &publish_packet(s.version, topic, &s.payload, s.qos, s.retain, packet_id))?;
+        send(conn, &publish_packet(s.version, topic, &s.payload, s.qos, s.retain, packet_id)).await?;
         match s.qos {
             1 => {
-                let p = expect_packet(conn, 4, Some(packet_id))?;
+                let p = expect_packet(conn, 4, Some(packet_id)).await?;
                 if ack_failed(s.version, &p) {
                     return Err(Error::Service(format!("MQTT broker rejected the message for {topic}")));
                 }
             }
             2 => {
-                let p = expect_packet(conn, 5, Some(packet_id))?;
+                let p = expect_packet(conn, 5, Some(packet_id)).await?;
                 if ack_failed(s.version, &p) {
                     return Err(Error::Service(format!("MQTT broker rejected the message for {topic}")));
                 }
-                send(conn, &packet(0x62, &packet_id.to_be_bytes()))?;
-                expect_packet(conn, 7, Some(packet_id))?;
+                send(conn, &packet(0x62, &packet_id.to_be_bytes())).await?;
+                expect_packet(conn, 7, Some(packet_id)).await?;
             }
             _ => {}
         }
     }
     // Best effort: the messages are already delivered.
-    send(conn, &[0xe0, 0x00]).ok();
+    send(conn, &[0xe0, 0x00]).await.ok();
     Ok(())
 }
 
@@ -363,7 +359,7 @@ impl Notify for Mqtt {
             retain: self.retain,
         };
         let ep = Endpoint::new(self.host.clone(), self.port, self.secure);
-        Plan::socket(ep, move |conn| run_session(session, conn))
+        Plan::socket(ep, move |conn, _| Box::pin(run_session(session, conn)))
     }
 
 }

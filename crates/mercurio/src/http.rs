@@ -70,6 +70,12 @@ pub const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 /// Default read timeout.
 pub const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// Redirects followed before the last 3xx response is returned as is.
+pub(crate) const MAX_REDIRECTS: u32 = 10;
+
+/// Response bodies larger than this fail (as a transport error).
+pub(crate) const MAX_BODY: u64 = 16 * 1024 * 1024;
+
 /// An outgoing HTTP request.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Request {

@@ -5,7 +5,7 @@ use std::net::TcpListener;
 use std::sync::mpsc;
 use std::thread;
 
-use mercurio::{DefaultTransport, Mercurio, Message, Method, Request, Transport};
+use mercurio::{BlockingTransport, Mercurio, Message, Method, Request, Transport};
 
 type Captured = (String, Vec<(String, String)>, Vec<u8>);
 
@@ -52,7 +52,7 @@ fn server(n: usize, status: u16, body: &'static str) -> (String, mpsc::Receiver<
 #[test]
 fn http_round_trip() {
     let (addr, rx) = server(1, 201, "{\"ok\":true}");
-    let t = DefaultTransport::new();
+    let t = BlockingTransport::new();
     let req = Request::new(Method::Put, format!("http://{addr}/a/b?x=1"))
         .header("X-Test", "1")
         .json(&serde_json::json!({"k": "v"}));
@@ -70,7 +70,7 @@ fn http_round_trip() {
 #[test]
 fn error_status_is_returned_not_raised() {
     let (addr, _rx) = server(1, 503, "busy");
-    let res = DefaultTransport::new().http(&Request::get(format!("http://{addr}/"))).unwrap();
+    let res = BlockingTransport::new().http(&Request::get(format!("http://{addr}/"))).unwrap();
     assert_eq!(res.status, 503);
     assert_eq!(res.text(), "busy");
 }
@@ -80,7 +80,7 @@ fn connection_refused_is_transport_error() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
     drop(listener);
-    let err = DefaultTransport::new().http(&Request::get(format!("http://127.0.0.1:{port}/"))).unwrap_err();
+    let err = BlockingTransport::new().http(&Request::get(format!("http://127.0.0.1:{port}/"))).unwrap_err();
     assert!(matches!(err, mercurio::Error::Transport(_)), "{err:?}");
 }
 

@@ -483,14 +483,14 @@ pub struct AttachRules<'a> {
     /// Most attachments per request; `0` means no limit.
     pub max: usize,
     /// Whether a URL may be downloaded.
-    pub allowed: &'a dyn Fn(&str) -> bool,
+    pub allowed: &'a (dyn Fn(&str) -> bool + Sync),
 }
 
 /// Attachments: hosted URLs (strings or `{"url", "filename"}`), base64 (`{"base64", "filename"}`) and uploaded files. Errors carry a log message; callers answer `400 Bad Attachment`.
-pub fn attachments(
+pub async fn attachments(
     c: &mut Content,
     rules: &AttachRules<'_>,
-    transport: &dyn mercurio::Transport,
+    transport: &dyn mercurio::AsyncTransport,
 ) -> Result<Vec<Attachment>, String> {
     let payload: Vec<Value> = if let Some(form) = c.form_attach.take() {
         form.into_iter().map(Value::String).collect()
@@ -571,7 +571,10 @@ pub fn attachments(
         if let Some(n) = name {
             source = source.with_name(n);
         }
-        let loaded = source.load(transport, &asset).map_err(|e| format!("Failed to retrieve attachment {no}: {e}"))?;
+        let loaded = source
+            .load_async(transport, &asset)
+            .await
+            .map_err(|e| format!("Failed to retrieve attachment {no}: {e}"))?;
         out.push(loaded);
     }
     for (i, up) in c.uploads.drain(..).enumerate() {

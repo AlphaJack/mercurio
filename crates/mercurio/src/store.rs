@@ -2,7 +2,7 @@
 //!
 //! Services cache tokens, sessions and lookups between sends. Every [`Target`](crate::Target) owns one namespace, named after its URL id (a SHA-256 of the URL's identifying parts), so several URLs with the same credentials share it.
 //!
-//! Without a storage path (or with `?store=no`) entries live as long as the target. With one, entries saved with [`Store::set`] are written to disk on every change; [`Store::remember`] keeps a value (an access token) in memory only.
+//! Without a storage path (or with `?store=no`) entries live as long as the target. With one, the store is read from disk before the target's first send, and entries saved with [`Store::set`] are written back before each I/O step of a send and after it; [`Store::remember`] keeps a value (an access token) in memory only. The reads and writes are [`FileOp`]s run on the transport.
 //!
 //! ```text
 //! <storage_path>/<url_id>/cache.json   saved entries
@@ -14,19 +14,21 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
+use crate::plan::Plan;
+use crate::transport::{FileOp, FileOutput};
+
 /// Values are JSON. A `null` value reads back as `Some(Value::Null)`; services treat it like a missing key.
 pub trait Store: Send + Sync + fmt::Debug {
     /// The value for `key`, unless it is missing or expired.
     fn get(&self, key: &str) -> Option<Value>;
 
-    /// Save `value` under `key`; `expires` is relative to now (`None`: never). Returns `false` when it could not be written.
+    /// Save `value` under `key`; `expires` is relative to now (`None`: never). Returns `true` once the value is held in memory; a failed write to disk is logged when the store is flushed.
     fn set(&self, key: &str, value: Value, expires: Option<Duration>) -> bool;
 
     /// Keep `value` under `key` in memory only (never written to disk).
@@ -57,18 +59,32 @@ pub trait Store: Send + Sync + fmt::Debug {
     fn get_str(&self, key: &str) -> Option<String> {
         self.get(key).and_then(|v| v.as_str().map(str::to_string))
     }
+
+    /// The file steps that read the store from disk, once; run before a send.
+    #[doc(hidden)]
+    fn load(self: Arc<Self>) -> Plan {
+        Plan::Done
+    }
+
+    /// The file steps that write unsaved changes to disk; run between the steps of a send and after it.
+    #[doc(hidden)]
+    fn flush(self: Arc<Self>) -> Plan {
+        Plan::Done
+    }
 }
 
 /// Shared handle to a [`Store`]; cheap to clone into plan continuations.
 pub type StoreRef = Arc<dyn Store>;
 
-/// Caches untouched for this long are removed by [`disk_prune`]: 31 days.
+/// Caches untouched for this long are removed by `mercurio storage prune`: 31 days.
 pub const DEFAULT_FILE_EXPIRY: Duration = Duration::from_secs(2_678_400);
 
 /// Name of the cache file inside a namespace directory.
 pub const CACHE_FILE: &str = "cache.json";
-const TEMP_DIR: &str = "tmp";
-const DATA_DIR: &str = "var";
+/// Directory of a namespace where writes are staged before they replace a file.
+pub const STAGING_DIR: &str = "tmp";
+/// Directory of a namespace for the files services keep (keys, subscriptions).
+pub const DATA_DIR: &str = "var";
 
 fn now() -> f64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
@@ -97,29 +113,30 @@ impl Entry {
 
 /// The built-in [`Store`]: memory or a JSON file per namespace.
 ///
-/// Entries saved with [`Store::set`] are written to disk on every change; [`Store::remember`] keeps a value in memory only.
+/// The store itself does no I/O. A target's sends read it from disk first and write entries saved with [`Store::set`] back as they go; [`Store::remember`] keeps a value in memory only.
 ///
 /// ```
 /// use std::time::Duration;
 /// use mercurio::{PersistentStore, Store};
 /// use serde_json::json;
 ///
-/// let dir = std::env::temp_dir().join(format!("mercurio-doc-{}", std::process::id()));
-/// let store = PersistentStore::new(Some(&dir), "abcd1234");
+/// let store = PersistentStore::memory();
 /// store.set("token", json!("secret"), Some(Duration::from_secs(3600)));
 /// assert_eq!(store.get_str("token").as_deref(), Some("secret"));
-/// assert!(dir.join("abcd1234").join("cache.json").exists());
-///
-/// // A new store over the same directory sees the entry.
-/// let again = PersistentStore::new(Some(&dir), "abcd1234");
-/// assert_eq!(again.get_str("token").as_deref(), Some("secret"));
-/// # std::fs::remove_dir_all(&dir).ok();
 /// ```
 pub struct PersistentStore {
     /// The namespace directory; `None` keeps everything in memory.
     base: Option<PathBuf>,
-    /// Loaded from disk on first use.
-    entries: Mutex<Option<BTreeMap<String, Entry>>>,
+    state: Mutex<State>,
+}
+
+#[derive(Default)]
+struct State {
+    entries: BTreeMap<String, Entry>,
+    /// The cache file was read (or reading it was attempted).
+    loaded: bool,
+    /// Saved entries changed since the last flush.
+    dirty: bool,
 }
 
 impl fmt::Debug for PersistentStore {
@@ -140,7 +157,7 @@ impl PersistentStore {
             log::warn!("persistent storage namespace {namespace:?} is invalid; using memory");
         }
         // Directories are created on the first write, so URLs that never store anything leave no trace on disk.
-        Self { base: path.filter(|_| valid).map(|p| p.join(namespace)), entries: Mutex::default() }
+        Self { base: path.filter(|_| valid).map(|p| p.join(namespace)), state: Mutex::default() }
     }
 
     /// An in-memory store.
@@ -156,241 +173,134 @@ impl PersistentStore {
     fn cache_file(&self) -> Option<PathBuf> {
         self.base.as_ref().map(|b| b.join(CACHE_FILE))
     }
+}
 
-    fn with<R>(&self, f: impl FnOnce(&mut BTreeMap<String, Entry>) -> R) -> R {
-        let mut guard = lock(&self.entries);
-        f(guard.get_or_insert_with(|| self.load()))
-    }
-
-    /// Read the cache file; a corrupt one is removed.
-    fn load(&self) -> BTreeMap<String, Entry> {
-        let Some(file) = self.cache_file() else { return BTreeMap::new() };
-        let bytes = match std::fs::read(&file) {
-            Ok(b) => b,
-            Err(e) => {
-                if e.kind() != std::io::ErrorKind::NotFound {
-                    log::warn!("could not load persistent cache {}: {e}", file.display());
-                }
-                return BTreeMap::new();
-            }
+/// The saved entries of a cache file; `None` when it is corrupt.
+fn parse_cache(bytes: &[u8]) -> Option<BTreeMap<String, Entry>> {
+    let Ok(Value::Object(map)) = serde_json::from_slice::<Value>(bytes) else { return None };
+    let entries = map.into_iter().filter_map(|(k, v)| {
+        let expires = match v.get("x") {
+            None | Some(Value::Null) => None,
+            Some(x) => Some(x.as_f64()?),
         };
-        // Keep the cache from being pruned while it is in use.
-        if let Ok(f) = std::fs::File::options().write(true).open(&file) {
-            f.set_modified(SystemTime::now()).ok();
-        }
-        let Ok(Value::Object(map)) = serde_json::from_slice::<Value>(&bytes) else {
-            log::warn!("corrupted persistent cache content: {}", file.display());
-            std::fs::remove_file(&file).ok();
-            return BTreeMap::new();
-        };
-        map.into_iter()
-            .filter_map(|(k, v)| {
-                let expires = match v.get("x") {
-                    None | Some(Value::Null) => None,
-                    Some(x) => Some(x.as_f64()?),
-                };
-                Some((k, Entry { value: v.get("v")?.clone(), expires, saved: true }))
-            })
-            .collect()
-    }
-
-    /// Write the saved, live entries (or remove the file when there are none).
-    fn save(&self, entries: &BTreeMap<String, Entry>) -> bool {
-        let (Some(base), Some(file)) = (&self.base, self.cache_file()) else { return true };
-        let saved: BTreeMap<&String, Value> = entries
-            .iter()
-            .filter(|(_, e)| e.saved && e.live())
-            .map(|(k, e)| (k, json!({"v": e.value, "x": e.expires})))
-            .collect();
-        if saved.is_empty() {
-            return match std::fs::remove_file(&file) {
-                Ok(()) => true,
-                Err(e) => e.kind() == std::io::ErrorKind::NotFound,
-            };
-        }
-        let Ok(text) = serde_json::to_vec(&saved) else { return false };
-        let tmp = base.join(TEMP_DIR);
-        let ok = [base.clone(), tmp.clone(), base.join(DATA_DIR)].iter().all(|d| create_private_dir(d).is_ok())
-            && write_atomic(&tmp, &file, &text).is_ok();
-        if !ok {
-            log::warn!("could not write persistent cache {}", file.display());
-        }
-        ok
-    }
+        Some((k, Entry { value: v.get("v")?.clone(), expires, saved: true }))
+    });
+    Some(entries.collect())
 }
 
 impl Store for PersistentStore {
     fn get(&self, key: &str) -> Option<Value> {
-        self.with(|entries| entries.get(key).filter(|e| e.live()).map(|e| e.value.clone()))
+        lock(&self.state).entries.get(key).filter(|e| e.live()).map(|e| e.value.clone())
     }
 
     fn set(&self, key: &str, value: Value, expires: Option<Duration>) -> bool {
         let entry = Entry { value, expires: expires.map(|d| now() + d.as_secs_f64()), saved: true };
-        let mut guard = lock(&self.entries);
-        let entries = guard.get_or_insert_with(|| self.load());
+        let mut st = lock(&self.state);
         // Rewriting an identical, non-expiring entry changes nothing.
-        if entry.expires.is_none() && entries.get(key) == Some(&entry) {
+        if entry.expires.is_none() && st.entries.get(key) == Some(&entry) {
             return true;
         }
-        entries.insert(key.to_string(), entry);
-        self.save(entries)
+        st.entries.insert(key.to_string(), entry);
+        st.dirty = true;
+        true
     }
 
     fn remember(&self, key: &str, value: Value, expires: Option<Duration>) {
         let entry = Entry { value, expires: expires.map(|d| now() + d.as_secs_f64()), saved: false };
-        self.with(|entries| entries.insert(key.to_string(), entry));
+        lock(&self.state).entries.insert(key.to_string(), entry);
     }
 
     fn clear(&self, keys: &[&str]) -> bool {
-        let mut guard = lock(&self.entries);
-        let entries = guard.get_or_insert_with(|| self.load());
-        let mut changed = false;
-        if keys.is_empty() {
-            changed = entries.values().any(|e| e.saved);
-            entries.clear();
+        let mut st = lock(&self.state);
+        let changed = if keys.is_empty() {
+            let saved = st.entries.values().any(|e| e.saved);
+            st.entries.clear();
+            saved
         } else {
+            let mut changed = false;
             for k in keys {
-                changed |= entries.remove(*k).is_some_and(|e| e.saved);
+                changed |= st.entries.remove(*k).is_some_and(|e| e.saved);
             }
-        }
-        !changed || self.save(entries)
+            changed
+        };
+        st.dirty |= changed;
+        true
     }
 
     fn keys(&self) -> Vec<String> {
-        self.with(|entries| {
-            let mut k: Vec<String> = entries.keys().cloned().collect();
-            k.sort();
-            k
-        })
+        lock(&self.state).entries.keys().cloned().collect()
     }
 
     fn path(&self) -> Option<PathBuf> {
         self.base.clone()
     }
-}
 
-fn create_private_dir(dir: &Path) -> std::io::Result<()> {
-    let mut b = std::fs::DirBuilder::new();
-    b.recursive(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::DirBuilderExt;
-        b.mode(0o700);
-    }
-    b.create(dir)
-}
-
-/// Write `data` to a fresh `0600` file in `tmp_dir`, sync it and rename it over `dest` (atomic on POSIX filesystems).
-pub(crate) fn write_atomic(tmp_dir: &Path, dest: &Path, data: &[u8]) -> std::io::Result<()> {
-    let tmp = tmp_dir.join(format!(".{}-{}.tmp", std::process::id(), crate::crypto::random_hex(6)));
-    let mut opts = std::fs::OpenOptions::new();
-    opts.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        opts.mode(0o600);
-    }
-    let res = opts.open(&tmp).and_then(|mut f| {
-        f.write_all(data)?;
-        f.sync_all()
-    });
-    let res = res.and_then(|()| std::fs::rename(&tmp, dest));
-    if res.is_err() {
-        std::fs::remove_file(&tmp).ok();
-    }
-    res
-}
-
-/// Write `data` to `path` as a private (`0600`) file, atomically, creating its directory (`0700`) first. For services that keep files next to their cache (keys, subscriptions).
-pub fn write_private_file(path: &Path, data: &[u8]) -> std::io::Result<()> {
-    let dir = path.parent().ok_or_else(|| std::io::Error::other("no parent directory"))?;
-    create_private_dir(dir)?;
-    write_atomic(dir, path, data)
-}
-
-/// Bytes used by every file below `path`.
-pub fn dir_size(path: &Path) -> u64 {
-    let Ok(rd) = std::fs::read_dir(path) else { return 0 };
-    rd.flatten()
-        .map(|e| match e.file_type() {
-            Ok(t) if t.is_dir() => dir_size(&e.path()),
-            Ok(t) if t.is_file() => e.metadata().map(|m| m.len()).unwrap_or(0),
-            _ => 0,
-        })
-        .sum()
-}
-
-/// Namespaces (directories) under `path`, optionally only those starting with one of `prefixes`. Sorted.
-pub fn disk_scan(path: &Path, prefixes: &[String]) -> Vec<String> {
-    let Ok(rd) = std::fs::read_dir(path) else { return Vec::new() };
-    let mut out: Vec<String> = rd
-        .flatten()
-        .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
-        .filter_map(|e| e.file_name().into_string().ok())
-        .filter(|n| is_valid_key(n))
-        .filter(|n| prefixes.is_empty() || prefixes.iter().any(|p| n.starts_with(p.as_str())))
-        .collect();
-    out.sort();
-    out
-}
-
-/// One file found by [`disk_prune`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PrunedFile {
-    /// The file found.
-    pub path: PathBuf,
-    /// `true` when it was deleted (`false` for a dry run or a failed delete).
-    pub removed: bool,
-}
-
-/// Find (and with `action`, remove) store files under `path` not modified for `older_than`. Empty namespace directories are removed afterwards. `older_than == 0` matches everything.
-pub fn disk_prune(
-    path: &Path,
-    prefixes: &[String],
-    older_than: Duration,
-    action: bool,
-) -> BTreeMap<String, Vec<PrunedFile>> {
-    let cutoff = SystemTime::now().checked_sub(older_than).unwrap_or(UNIX_EPOCH);
-    let mut out = BTreeMap::new();
-    for ns in disk_scan(path, prefixes) {
-        let base = path.join(&ns);
-        let data = base.join(DATA_DIR);
-        let temp = base.join(TEMP_DIR);
-        let mut files = vec![base.join(CACHE_FILE)];
-        files.extend(std::fs::read_dir(&temp).into_iter().flatten().flatten().map(|e| e.path()));
-        let mut sweep = true;
-        let mut records = Vec::new();
-        for f in files.into_iter().filter(|p| p.is_file()) {
-            let Ok(mtime) = std::fs::metadata(&f).and_then(|m| m.modified()) else {
-                sweep = false;
-                continue;
-            };
-            if mtime > cutoff {
-                continue;
+    /// Stat and read the cache file; a corrupt one is removed, a good one touched so pruning keeps it while it is in use.
+    fn load(self: Arc<Self>) -> Plan {
+        let Some(file) = self.cache_file() else { return Plan::Done };
+        if std::mem::replace(&mut lock(&self.state).loaded, true) {
+            return Plan::Done;
+        }
+        Plan::file(FileOp::Stat { path: file.clone() }, move |stat| {
+            if let Err(e) = &stat {
+                log::warn!("could not load persistent cache {}: {e}", file.display());
             }
-            let mut removed = false;
-            if action {
-                match std::fs::remove_file(&f) {
-                    Ok(()) => {
-                        removed = true;
-                        log::info!("removed persistent file {}", f.display());
-                    }
+            if !matches!(stat, Ok(FileOutput::Meta(Some(_)))) {
+                return Plan::Done;
+            }
+            Plan::file(FileOp::Read { path: file.clone(), max: 0 }, move |read| {
+                let bytes = match read {
+                    Ok(FileOutput::Bytes(b)) => b,
+                    Ok(_) => return Plan::Done,
                     Err(e) => {
-                        log::error!("could not remove persistent file {}: {e}", f.display());
-                        sweep = false;
+                        log::warn!("could not load persistent cache {}: {e}", file.display());
+                        return Plan::Done;
                     }
+                };
+                let Some(disk) = parse_cache(&bytes) else {
+                    log::warn!("corrupted persistent cache content: {}", file.display());
+                    return Plan::file(FileOp::Remove { path: file }, |_| Plan::Done);
+                };
+                let mut st = lock(&self.state);
+                for (k, e) in disk {
+                    st.entries.entry(k).or_insert(e);
                 }
-            }
-            records.push(PrunedFile { path: f, removed });
-        }
-        if sweep && action {
-            for d in [&temp, &data, &base] {
-                std::fs::remove_dir(d).ok();
-            }
-        }
-        out.insert(ns, records);
+                Plan::file(FileOp::Touch { path: file }, |_| Plan::Done)
+            })
+        })
     }
-    out
+
+    /// Write the saved, live entries (or remove the file when there are none).
+    fn flush(self: Arc<Self>) -> Plan {
+        let mut st = lock(&self.state);
+        let (Some(base), Some(file)) = (&self.base, self.cache_file()) else { return Plan::Done };
+        if !std::mem::take(&mut st.dirty) {
+            return Plan::Done;
+        }
+        let saved: BTreeMap<&String, Value> = st
+            .entries
+            .iter()
+            .filter(|(_, e)| e.saved && e.live())
+            .map(|(k, e)| (k, json!({"v": e.value, "x": e.expires})))
+            .collect();
+        if saved.is_empty() {
+            return Plan::file(FileOp::Remove { path: file }, |_| Plan::Done);
+        }
+        let Ok(data) = serde_json::to_vec(&saved) else { return Plan::Done };
+        let failed = move |file: PathBuf| {
+            log::warn!("could not write persistent cache {}", file.display());
+            Plan::Done
+        };
+        Plan::file(FileOp::CreateDir { path: base.join(DATA_DIR), private: true }, move |res| match res {
+            Ok(_) => {
+                Plan::file(FileOp::WriteAtomic { path: file.clone(), data, private: true }, move |res| match res {
+                    Ok(_) => Plan::Done,
+                    Err(_) => failed(file),
+                })
+            }
+            Err(_) => failed(file),
+        })
+    }
 }
 
 /// Per-notification scratch space shared by the retry attempts of one send (values to remember; delivery marks for services that track finer than per target). Disabled (no-op) when retries are off. Clones share the same slots.
@@ -436,11 +346,13 @@ impl Memo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::FakeTransport;
+    use crate::testing::run_files;
 
-    fn tmpdir(tag: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("mercurio-store-{tag}-{}", crate::crypto::random_hex(6)));
-        std::fs::create_dir_all(&d).unwrap();
-        d
+    fn disk(fake: &FakeTransport, ns: &str) -> StoreRef {
+        let s = PersistentStore::new(Some(Path::new("/data")), ns).shared();
+        run_files(s.clone().load(), fake);
+        s
     }
 
     #[test]
@@ -465,39 +377,48 @@ mod tests {
     }
 
     #[test]
-    fn saved_entries_survive_and_remembered_ones_do_not() {
-        let dir = tmpdir("disk");
-        let s = PersistentStore::new(Some(&dir), "ns");
-        assert!(s.set("a", json!({"x": 1}), None));
+    fn flush_writes_saved_entries_and_load_reads_them() {
+        let fake = FakeTransport::new();
+        let s = disk(&fake, "ns");
+        s.set("a", json!({"x": 1}), None);
         s.remember("token", json!("secret"), None);
-        let file = dir.join("ns").join(CACHE_FILE);
-        let text = std::fs::read_to_string(&file).unwrap();
+        run_files(s.clone().flush(), &fake);
+        let file = PathBuf::from("/data/ns/cache.json");
+        let text = String::from_utf8(fake.files()[&file].clone()).unwrap();
         assert!(text.contains("\"a\"") && !text.contains("secret"), "{text}");
-        let again = PersistentStore::new(Some(&dir), "ns");
+        assert!(fake.file_ops().contains(&FileOp::CreateDir { path: "/data/ns/var".into(), private: true }));
+
+        let again = disk(&fake, "ns");
         assert_eq!(again.get("a"), Some(json!({"x": 1})));
         assert_eq!(again.get("token"), None);
-        assert!(again.clear(&[]));
-        assert!(!file.exists());
-        std::fs::remove_dir_all(&dir).ok();
+        assert_eq!(fake.file_ops().last(), Some(&FileOp::Touch { path: file.clone() }));
+        again.clear(&[]);
+        run_files(again.flush(), &fake);
+        assert!(!fake.files().contains_key(&file));
     }
 
     #[test]
-    fn corrupt_cache_is_dropped() {
-        let dir = tmpdir("corrupt");
-        std::fs::create_dir_all(dir.join("ns")).unwrap();
-        std::fs::write(dir.join("ns").join(CACHE_FILE), b"not json").unwrap();
-        let s = PersistentStore::new(Some(&dir), "ns");
+    fn load_and_flush_run_once() {
+        let fake = FakeTransport::new();
+        let s = disk(&fake, "ns");
+        run_files(s.clone().load(), &fake);
+        run_files(s.clone().flush(), &fake);
+        assert_eq!(fake.file_ops(), vec![FileOp::Stat { path: "/data/ns/cache.json".into() }]);
+    }
+
+    #[test]
+    fn corrupt_cache_is_removed() {
+        let fake = FakeTransport::new();
+        fake.file("/data/ns/cache.json", "not json");
+        let s = disk(&fake, "ns");
         assert!(s.keys().is_empty());
-        assert!(!dir.join("ns").join(CACHE_FILE).exists());
-        std::fs::remove_dir_all(&dir).ok();
+        assert!(fake.files().is_empty());
     }
 
     #[test]
     fn invalid_namespace_uses_memory() {
-        let dir = tmpdir("invalid");
-        let s = PersistentStore::new(Some(&dir), "../x");
+        let s = PersistentStore::new(Some(Path::new("/data")), "../x");
         assert!(s.path().is_none());
         assert!(s.set("a", json!(1), None));
-        std::fs::remove_dir_all(&dir).ok();
     }
 }

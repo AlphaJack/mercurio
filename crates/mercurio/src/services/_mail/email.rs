@@ -17,6 +17,13 @@ use crate::service::{Context, Notify, Secret, ServiceDef};
 use crate::transport::Endpoint;
 use crate::url::{ParsedUrl, unquote};
 
+/// SMTP without TLS.
+const SMTP_PORT: u16 = 25;
+/// SMTP over TLS from the first byte.
+const SMTPS_PORT: u16 = 465;
+/// SMTP submission with STARTTLS.
+const SUBMISSION_PORT: u16 = 587;
+
 const SMTP_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Which service this instance serves.
@@ -44,9 +51,9 @@ impl Mode {
     }
     fn default_port(self) -> u16 {
         match self {
-            Mode::Insecure => 25,
-            Mode::Ssl => 465,
-            Mode::StartTls => 587,
+            Mode::Insecure => SMTP_PORT,
+            Mode::Ssl => SMTPS_PORT,
+            Mode::StartTls => SUBMISSION_PORT,
         }
     }
 }
@@ -113,50 +120,50 @@ const USERID: &[Login] = &[Login::UserId];
 const TEMPLATES: &[Template] = &[
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>gmail\.com)$",
-        587,
+        SUBMISSION_PORT,
         "smtp.gmail.com",
         Mode::StartTls,
         EMAIL,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>yandex\.(com|ru|ua|by|kz|uz|tr|fr))$",
-        465,
+        SMTPS_PORT,
         "smtp.yandex.ru",
         Mode::Ssl,
         USERID,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>(hotmail|live)\.com(\.au)?)$",
-        587,
+        SUBMISSION_PORT,
         "smtp-mail.outlook.com",
         Mode::StartTls,
         EMAIL,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>(smtp\.)?outlook\.com(\.au)?)$",
-        587,
+        SUBMISSION_PORT,
         "smtp.outlook.com",
         Mode::StartTls,
         EMAIL,
     ),
-    provider(r"^[^@]+@(?P<domain>(smtp\.)?office365\.com)$", 587, "smtp.office365.com", Mode::StartTls, &[]),
+    provider(r"^[^@]+@(?P<domain>(smtp\.)?office365\.com)$", SUBMISSION_PORT, "smtp.office365.com", Mode::StartTls, &[]),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>yahoo\.(ca|com))$",
-        465,
+        SMTPS_PORT,
         "smtp.mail.yahoo.com",
         Mode::Ssl,
         EMAIL,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>gmx\.(com|net|de|at|ch|fr))$",
-        587,
+        SUBMISSION_PORT,
         "mail.gmx.com",
         Mode::StartTls,
         EMAIL,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>fastmail\.(com|cn|co\.uk|com\.au|de|es|fm|fr|im|in|jp|mx|net|nl|org|se|to|tw|uk|us))$",
-        465,
+        SMTPS_PORT,
         "smtp.fastmail.com",
         Mode::Ssl,
         EMAIL,
@@ -189,36 +196,36 @@ const TEMPLATES: &[Template] = &[
             r"the-fastest\.net|the-quickest\.com|theinternetemail\.com|",
             r"veryfast\.biz|veryspeedy\.net|yepmail\.net)$"
         ),
-        465,
+        SMTPS_PORT,
         "smtp.fastmail.com",
         Mode::Ssl,
         EMAIL,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>zoho(mail)?\.com)$",
-        587,
+        SUBMISSION_PORT,
         "smtp.zoho.com",
         Mode::StartTls,
         EMAIL,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>(\.smtp)?sendgrid\.(com|net))$",
-        465,
+        SMTPS_PORT,
         "smtp.sendgrid.net",
         Mode::Ssl,
         USERID,
     ),
-    provider(r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>163\.com)$", 465, "smtp.163.com", Mode::Ssl, EMAIL),
+    provider(r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>163\.com)$", SMTPS_PORT, "smtp.163.com", Mode::Ssl, EMAIL),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>(foxmail|qq)\.com)$",
-        587,
+        SUBMISSION_PORT,
         "smtp.qq.com",
         Mode::StartTls,
         EMAIL,
     ),
     provider(
         r"^((?P<label>[^+]+)\+)?(?P<id>[^@]+)@(?P<domain>(comcast)\.net)$",
-        465,
+        SMTPS_PORT,
         "smtp.comcast.net",
         Mode::Ssl,
         EMAIL,
@@ -301,7 +308,6 @@ impl Email {
         let mut targets_raw: Vec<String> = Vec::new();
         let mut host_raw = u.host.clone();
         if is_ipaddr(&host_raw, true, true).is_some() {
-            // Keep
         } else if is_hostname(&host_raw, false, false, false).is_none() {
             let h = unquote(&host_raw);
             if is_email(&h).is_some() {
@@ -654,7 +660,7 @@ impl Notify for Email {
         let mut ep = Endpoint::new(self.smtp_host.clone(), self.port, self.mode == Mode::Ssl);
         ep.connect_timeout = SMTP_TIMEOUT;
         ep.read_timeout = SMTP_TIMEOUT;
-        Plan::socket(ep, move |conn| session(conn, &job))
+        Plan::socket(ep, move |conn, _| Box::pin(async move { session(conn, &job).await }))
     }
 
 }

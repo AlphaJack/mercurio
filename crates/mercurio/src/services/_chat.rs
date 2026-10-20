@@ -4,6 +4,8 @@ use std::collections::BTreeMap;
 
 use serde_json::Value;
 
+use crate::service::Context;
+use crate::transport::FileOp;
 use crate::util::json_escape;
 
 /// Lowercased `{name: id}` map from a list of `{"name": .., "id": ..}` objects (a missing name counts as `""`). `None` on a non-object entry or a non-string name.
@@ -45,14 +47,18 @@ pub fn template_source(s: &str) -> Option<TemplateSrc> {
     }
 }
 
-/// Read a template (at most `max` bytes); `None` when it is inaccessible.
-pub fn read_template(src: &TemplateSrc, max: u64) -> Option<String> {
-    let TemplateSrc::File(path) = src else { return None };
-    let meta = std::fs::metadata(path).ok()?;
-    if !meta.is_file() || meta.len() > max {
-        return None;
+/// The file steps behind [`read_template`], for [`crate::Notify::files`].
+pub fn template_files(src: Option<&TemplateSrc>) -> Vec<FileOp> {
+    match src {
+        Some(TemplateSrc::File(path)) => FileOp::local_file(path).into(),
+        _ => Vec::new(),
     }
-    std::fs::read_to_string(path).ok()
+}
+
+/// The template (at most `max` bytes) read by [`template_files`]; `None` when it is inaccessible.
+pub fn read_template(ctx: &Context<'_>, src: &TemplateSrc, max: u64) -> Option<String> {
+    let TemplateSrc::File(path) = src else { return None };
+    String::from_utf8(ctx.local_file(path, max).ok()?.to_vec()).ok()
 }
 
 /// Fill `{{ token }}` placeholders in a JSON template (values JSON-escaped). Keys match case-insensitively but are looked up exactly: a case mismatch returns `None`.

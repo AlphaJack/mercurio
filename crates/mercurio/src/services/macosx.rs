@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use crate::error::Error;
 use crate::service::{Context, Limits, Notify, Param, ServiceDef};
-use crate::transport::{Command, CommandOutput};
+use crate::transport::{Command, CommandOutput, FileOp};
 use crate::url::ParsedUrl;
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
@@ -84,23 +84,12 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 /// First executable `terminal-notifier` among the known paths.
-fn notifier_path() -> String {
+fn notifier_path(ctx: &Context<'_>) -> String {
     NOTIFY_PATHS
         .iter()
-        .find(|p| is_executable(p))
+        .find(|p| ctx.stat(p).is_some_and(|m| m.executable))
         .map(|p| p.to_string())
         .unwrap_or_else(|| "terminal-notifier".to_string())
-}
-
-#[cfg(unix)]
-fn is_executable(path: &str) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::metadata(path).map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0).unwrap_or(false)
-}
-
-#[cfg(not(unix))]
-fn is_executable(path: &str) -> bool {
-    std::path::Path::new(path).is_file()
 }
 
 /// `-version` output -> major version (2 for anything before 3).
@@ -185,11 +174,15 @@ impl Send {
 }
 
 impl Notify for MacOSX {
+    fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
+        NOTIFY_PATHS.iter().map(|p| FileOp::Stat { path: p.into() }).collect()
+    }
+
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         if !cfg!(target_os = "macos") {
             return Plan::Fail(Error::Unsupported("macOS notifications are only available on macOS".into()));
         }
-        let path = notifier_path();
+        let path = notifier_path(ctx);
         let send = Send {
             path: path.clone(),
             title: msg.title.to_string(),
