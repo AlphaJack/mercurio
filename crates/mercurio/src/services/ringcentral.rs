@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `?env=sandbox` sends to `platform.devtest.ringcentral.com` in Apprise -> mercurio rejects it: RingCentral retired that sandbox on 2025-01-01. *intentional*
+//! - `?env=sandbox` sends to `platform.devtest.ringcentral.com` in Apprise, while mercurio rejects it: RingCentral retired that sandbox on 2025-01-01. *intentional*
 
 use serde_json::{Value, json};
 

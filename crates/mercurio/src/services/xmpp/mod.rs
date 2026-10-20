@@ -8,7 +8,7 @@
 //!
 //! - SCRAM `-PLUS` channel binding is not implemented; `?scramplus=` has no effect. *todo*
 //! - `?keepalive=yes` is accepted, but every notification opens its own connection. *intentional*
-//! - `?mode=none`: slixmpp refuses every password mechanism on an unencrypted stream and Apprise then reports success without sending -> mercurio authenticates with SCRAM, refuses PLAIN and fails when nothing usable is offered. *intentional*
+//! - `?mode=none`: slixmpp refuses every password mechanism on an unencrypted stream and Apprise then reports success without sending, while mercurio authenticates with SCRAM, refuses PLAIN and fails when nothing usable is offered. *intentional*
 //! - A server without STARTTLS under `?mode=starttls` is a failure (slixmpp reports silent success). *intentional*
 
 mod client;

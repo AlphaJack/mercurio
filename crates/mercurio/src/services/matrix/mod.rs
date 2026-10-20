@@ -13,10 +13,10 @@
 //! # Differences with Apprise
 //!
 //! - Non-string ids in server answers (room ids, tokens) are treated as missing instead of raising. *intentional*
-//! - **Raw-token transaction ids.** Apprise reuses one UUID for every event of a send, so homeservers drop the later ones as duplicates -> mercurio uses a fresh UUID per event. *intentional*
-//! - **Encryption state.** Apprise treats a `200` with an empty `m.room.encryption` state as unencrypted -> mercurio treats the room as encrypted. *intentional*
-//! - **Failed state lookup or E2EE setup.** Apprise falls back to plaintext -> mercurio fails the room. *intentional*
-//! - **Room keys.** Apprise shares the Megolm key once per session -> mercurio re-shares it with new devices and rotates it when a member leaves. *intentional*
+//! - **Raw-token transaction ids.** Apprise reuses one UUID for every event of a send, so homeservers drop the later ones as duplicates, while mercurio uses a fresh UUID per event. *intentional*
+//! - **Encryption state.** Apprise treats a `200` with an empty `m.room.encryption` state as unencrypted, while mercurio treats the room as encrypted. *intentional*
+//! - **Failed state lookup or E2EE setup.** Apprise falls back to plaintext, while mercurio fails the room. *intentional*
+//! - **Room keys.** Apprise shares the Megolm key once per session, while mercurio re-shares it with new devices and rotates it when a member leaves. *intentional*
 //! - **Device verification.** Cross-signing is not checked; devices are trusted on first use. *todo*
 //! - **Stored state.** The pickled Olm/Megolm state in the store is plain, not encrypted at rest. *todo*
 

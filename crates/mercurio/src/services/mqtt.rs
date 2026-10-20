@@ -1,6 +1,6 @@
 //! MQTT (`mqtt://`, `mqtts://`): publishes the message to an MQTT broker.
 //!
-//! The client is built in: MQTT 3.1 / 3.1.1 / 5, with CONNECT (client id, clean session, credentials, keepalive 30) -> CONNACK, then one PUBLISH per topic (QoS 1 waits for PUBACK, QoS 2 runs PUBREC/PUBREL/PUBCOMP), then DISCONNECT.
+//! The client is built in: MQTT 3.1 / 3.1.1 / 5, with CONNECT (client id, clean session, credentials, keepalive 30) answered by CONNACK, then one PUBLISH per topic (QoS 1 waits for PUBACK, QoS 2 runs PUBREC/PUBREL/PUBCOMP), then DISCONNECT.
 //!
 //! # Differences with Apprise
 //!

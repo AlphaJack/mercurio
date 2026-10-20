@@ -4,8 +4,8 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise uses libnotify bindings -> mercurio speaks D-Bus itself. *intentional*
-//! - libnotify also sends a `sender-pid` hint and the icon as `image-data` pixels -> mercurio passes the icon file as `app_icon`. *intentional*
+//! - Apprise uses libnotify bindings, while mercurio speaks D-Bus itself. *intentional*
+//! - libnotify also sends a `sender-pid` hint and the icon as `image-data` pixels, while mercurio passes the icon file as `app_icon`. *intentional*
 
 use super::_desktop::{DesktopNotify, notify, urgency};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef};
