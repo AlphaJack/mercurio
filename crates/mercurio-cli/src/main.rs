@@ -623,7 +623,16 @@ async fn cmd_storage(args: &[String], o: &Opts) -> Result<u8, u8> {
 /// Run the command; the exit code.
 fn run() -> u8 {
     let (command, o) = parse_args();
-    logging::init(o.verbose, matches!(command, Command::Serve(_)));
+    let style = match &command {
+        Command::Serve(settings) if settings.json_logs() => logging::Style::Json,
+        Command::Serve(_) => logging::Style::Server,
+        Command::Notify { .. }
+        | Command::Services
+        | Command::Check { .. }
+        | Command::Healthcheck
+        | Command::Storage { .. } => logging::Style::Cli,
+    };
+    logging::init(o.verbose, style);
     let code = match command {
         Command::Services => Ok(if cmd_services(o.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE }),
         Command::Serve(settings) => cmd_serve(&o.bind, &settings),

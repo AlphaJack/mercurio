@@ -71,8 +71,19 @@ impl Visit for Fields {
     }
 }
 
-/// Log to stderr at the `-v` level. `serve` keeps the timestamped `tracing` format plus one `request` event per request at INFO; the other commands print `LEVEL - message` lines.
-pub fn init(verbose: u8, serve: bool) {
+/// How the log looks on stderr.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Style {
+    /// `LEVEL - message` lines (every command but `serve`).
+    Cli,
+    /// `serve`: timestamped `tracing` lines.
+    Server,
+    /// `serve --log-format json`: one JSON object per line, fields included.
+    Json,
+}
+
+/// Log to stderr at the `-v` level. `serve` adds one `request` event per request at INFO and hands library lines to the request that caused them ([`capture`]).
+pub fn init(verbose: u8, style: Style) {
     let level = match verbose {
         0 => LevelFilter::ERROR,
         1 => LevelFilter::WARN,
@@ -82,14 +93,18 @@ pub fn init(verbose: u8, serve: bool) {
     };
     let filter = Targets::new().with_default(level);
     let output = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
-    let result = if serve {
-        let filter = filter.with_target("request", LevelFilter::INFO);
-        tracing_subscriber::registry()
-            .with(output.with_filter(filter))
+    let server = filter.clone().with_target("request", LevelFilter::INFO);
+    // `Capture` hands library lines to the request that caused them, whatever the `-v` level.
+    let result = match style {
+        Style::Server => tracing_subscriber::registry()
+            .with(output.with_filter(server))
             .with(Capture.with_filter(LevelFilter::DEBUG))
-            .try_init()
-    } else {
-        tracing_subscriber::registry().with(output.event_format(Plain)).with(filter).try_init()
+            .try_init(),
+        Style::Json => tracing_subscriber::registry()
+            .with(output.json().flatten_event(true).with_current_span(false).with_span_list(false).with_filter(server))
+            .with(Capture.with_filter(LevelFilter::DEBUG))
+            .try_init(),
+        Style::Cli => tracing_subscriber::registry().with(output.event_format(Plain)).with(filter).try_init(),
     };
     if let Err(e) = result {
         errln!("logging: {e}");
