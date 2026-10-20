@@ -28,5 +28,8 @@ pub(crate) fn object(msg: &Prepared<'_>) -> Map<String, Value> {
 /// Apply the URL's `:key=value` entries (rename, drop or add fields) and serialize.
 pub(crate) fn encode(mut payload: Map<String, Value>, extras: &[(String, String)]) -> Vec<u8> {
     crate::util::remap_payload(&mut payload, extras.iter().map(|(k, v)| (k.as_str(), v.as_str())));
-    serde_json::to_vec(&Value::Object(payload)).unwrap_or_default()
+    // Sized up front: `to_vec` regrows by doubling, which holds two copies of a large body at once.
+    let message = payload.get("message").and_then(Value::as_str).map_or(0, str::len);
+    let mut out = Vec::with_capacity(message + message / 64 + 1024);
+    serde_json::to_writer(&mut out, &Value::Object(payload)).map(|()| out).unwrap_or_default()
 }

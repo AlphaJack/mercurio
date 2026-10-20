@@ -80,13 +80,14 @@ pub fn prepare(
         return Err(Error::Message(format!("{} does not support attachments", def.name)));
     }
 
-    let (mut title, mut body) = (msg.title.clone(), msg.body.clone());
+    // The body stays borrowed until a conversion changes it: it can be megabytes.
+    let (mut title, mut body) = (msg.title.clone(), std::borrow::Cow::Borrowed(msg.body.as_str()));
     if opts.emojis {
         title = convert::emoji::apply(&title);
-        body = convert::emoji::apply(&body);
+        body = convert::emoji::apply(&body).into();
     }
     if let Some(input) = input_format {
-        body = convert::convert_between(input, format, &body);
+        body = convert::convert_between(input, format, &body).into();
         if !title.is_empty() && def.limits.title_maxlen == 0 {
             title = convert::convert_between(input, format, &title);
         }
