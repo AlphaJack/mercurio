@@ -414,7 +414,7 @@ async fn build(
         Source::Urls(urls) => {
             for url in &urls {
                 if let Err(e) = m.add(url) {
-                    errln!("error: {}: {e}", mercurio::redact_url(url));
+                    log::error!("{}: {e}", mercurio::redact_url(url));
                     bad += 1;
                 }
             }
@@ -427,7 +427,7 @@ async fn build(
                     Ok(0) => log::warn!("no services loaded from {}", mercurio::redact_url(path)),
                     Ok(_) => {}
                     Err(e) => {
-                        errln!("error: {}: {e}", mercurio::redact_url(path));
+                        log::error!("{}: {e}", mercurio::redact_url(path));
                         bad += 1;
                     }
                 }
@@ -438,8 +438,8 @@ async fn build(
     };
     if m.is_empty() {
         if bad == 0 {
-            errln!(
-                "error: no URLs given (pass them as arguments, use --config, set APPRISE_URLS, \
+            log::error!(
+                "no URLs given (pass them as arguments, use --config, set APPRISE_URLS, \
                  or create ~/.config/apprise/apprise.yml)"
             );
             return Err(exit::USAGE);
@@ -656,11 +656,10 @@ fn run() -> u8 {
     let style = match &command {
         Command::Serve(settings) if settings.json_logs() => logging::Style::Json,
         Command::Serve(_) => logging::Style::Server,
-        Command::Notify { .. }
-        | Command::Services
-        | Command::Check { .. }
-        | Command::Healthcheck
-        | Command::Storage { .. } => logging::Style::Cli,
+        Command::Notify { .. } => logging::Style::Notify,
+        Command::Services | Command::Check { .. } | Command::Healthcheck | Command::Storage { .. } => {
+            logging::Style::Cli
+        }
     };
     logging::init(o.verbose, style);
     let code = match command {
@@ -723,11 +722,11 @@ async fn cmd_notify(urls: &[String], o: &Opts) -> Result<u8, u8> {
     let vars = template_vars(o)?;
     let (mut selected, bad, filter) = build(urls, o, transport.clone()).await?;
     if bad > 0 {
-        errln!("error: {bad} invalid URL or configuration source; nothing was sent");
+        log::error!("{bad} invalid URL or configuration source; nothing was sent");
         return Err(exit::USAGE);
     }
     if selected.select(&filter, &vars).is_empty() {
-        errln!("no URLs matched the given tags");
+        log::error!("no URLs matched the given tags");
         return Err(exit::NO_MATCH);
     }
 
@@ -741,7 +740,7 @@ async fn cmd_notify(urls: &[String], o: &Opts) -> Result<u8, u8> {
         None => {
             let mut s = String::new();
             std::io::stdin().read_to_string(&mut s).map_err(|e| {
-                errln!("error: reading stdin: {e}");
+                log::error!("reading stdin: {e}");
                 exit::FAILURE
             })?;
             s
@@ -758,7 +757,7 @@ async fn cmd_notify(urls: &[String], o: &Opts) -> Result<u8, u8> {
         match load_attachment(spec, transport.as_ref()).await {
             Ok(a) => msg.attachments.push(a),
             Err(e) => {
-                errln!("error: attachment {e}");
+                log::error!("attachment {e}");
                 return Err(exit::FAILURE);
             }
         }
@@ -771,7 +770,7 @@ async fn cmd_notify(urls: &[String], o: &Opts) -> Result<u8, u8> {
     for (entry, outcome) in report.failures() {
         let target = outcome.target.as_deref().map(|t| format!(" [{t}]")).unwrap_or_default();
         if let Err(e) = &outcome.result {
-            errln!("failed: {}{target}: {e}", entry.label);
+            log::error!("failed: {}{target}: {e}", entry.label);
         }
     }
     log::info!("{ok} of {total} services notified");

@@ -120,7 +120,7 @@ Africas Talking                    atalk://
 
 The exit codes are listed at the end of `--help` above.
 
-A URL that fails to parse is reported on stderr and skipped; the other URLs
+A URL that fails to parse is reported and skipped; the other URLs
 are still notified. The exit code only counts them. Use `check` first
 to catch typos.
 

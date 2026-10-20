@@ -171,6 +171,16 @@ fn urls_from_environment() {
     assert_eq!(out.status.code(), Some(2));
 }
 
+/// Sending logs on stdout, as Apprise does: Uptime Kuma reads stdout only and looks for `ERROR` in it.
+#[test]
+fn send_log_goes_to_stdout() {
+    let (addr, _rx) = server(500);
+    let out = bin().args(["-b", "x", &format!("json://{addr}")]).output().unwrap();
+    let (stdout, stderr) = (String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+    assert!(stdout.contains("ERROR - failed: "), "{stdout}");
+    assert!(stderr.is_empty(), "{stderr}");
+}
+
 #[test]
 fn exit_codes() {
     let (addr, _rx) = server(500);
