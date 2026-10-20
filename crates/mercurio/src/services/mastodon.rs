@@ -2,10 +2,13 @@
 //!
 //! # Differences with Apprise
 //!
-//! - The `X-RateLimit-*` back-off is not tracked; the `?cache=` whoami cache lasts one send. *todo*
+//! - The rate-limit reset is read from `X-RateLimit-Reset` (an RFC 3339 time); Apprise reads `X-RateLimit-Limit`, a request count, so its back-off never waits. The budget is kept for the life of the URL, as in Apprise. *intentional*
+//! - The `?cache=` whoami cache lasts one send. *todo*
 //! - In direct mode prepended targets keep their configured (sorted) order; Apprise iterates an unordered set. *intentional*
 
 use std::sync::Arc;
+
+use super::_ratelimit::{RateLimit, Reset};
 
 use serde_json::{Map, Value, json};
 
@@ -69,6 +72,8 @@ struct Config {
     targets: Vec<String>,
     hashtags: Vec<String>,
     ping: Vec<String>,
+    /// The request budget, shared by every send of this URL.
+    rate: Arc<RateLimit>,
 }
 
 #[derive(Debug)]
@@ -334,6 +339,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         targets,
         hashtags,
         ping,
+        rate: RateLimit::new(Reset::Rfc3339, std::time::Duration::from_millis(500)),
     }))))
 }
 
@@ -351,6 +357,9 @@ impl Config {
             .header("Authorization", format!("Bearer {}", self.token.expose()))
     }
 }
+
+/// The statuses Mastodon succeeds with.
+const OK: &[u16] = &[200, 201, 202];
 
 /// Success: 200, 201 or 202; body parsed as JSON (or `{}`).
 fn outcome(res: Result<Response>) -> std::result::Result<Value, (Error, Value)> {
@@ -406,7 +415,7 @@ impl Notify for Mastodon {
                 .request(Method::Get, "/api/v1/accounts/verify_credentials", &job.ua)
                 .header("Content-Type", "application/json")
                 .body(b"null".to_vec(), None);
-            return Plan::http(req, move |res| match outcome(res) {
+            return self.0.rate.send(req, OK, move |res| match outcome(res) {
                 Err((e, _)) => Plan::Fail(e),
                 Ok(v) => match v.get("username").zip(v.get("id")) {
                     Some((Value::String(user), _)) => {
@@ -460,7 +469,8 @@ impl Job {
             att.data,
         );
         let req = self.cfg.request(Method::Post, "/api/v1/media", &self.ua).multipart(form);
-        Plan::http(req, move |res| match outcome(res) {
+        let rate = self.cfg.rate.clone();
+        rate.send(req, OK, move |res| match outcome(res) {
             Err((e, _)) => Plan::Fail(e),
             Ok(v) => {
                 if let Some(id) = v.as_object().and_then(|o| o.get("id")).filter(|id| json_has_value(id)) {
@@ -544,7 +554,7 @@ impl Job {
                 .request(Method::Post, "/api/v1/statuses", &self.ua)
                 .header("Content-Type", "application/json")
                 .body(serde_json::to_vec(&Value::Object(p)).unwrap_or_default(), None);
-            let post = Plan::http(req, |res| match outcome(res) {
+            let post = cfg.rate.send(req, OK, |res| match outcome(res) {
                 Ok(_) => Plan::Done,
                 Err((e, _)) => Plan::Fail(e),
             });
@@ -567,4 +577,15 @@ mod tests {
         assert_eq!(dialect_convert("**b** [l](https://x)"), "b l (https://x)");
         assert_eq!(dialect_convert("a\\_b"), "a_b");
     }
+
+    #[test]
+    fn rate_limit_is_kept_between_sends() {
+        let reset = crate::time::iso8601_utc(crate::time::unix_time() + 60);
+        let spent = Response::new(200, b"{}".to_vec())
+            .with_header("X-RateLimit-Remaining", "0")
+            .with_header("X-RateLimit-Reset", reset);
+        let wait = super::super::_ratelimit::second_send_waits("mastodon://token@hostname", vec![spent], Response::new(200, b"{}".to_vec()));
+        assert!(wait > std::time::Duration::from_secs(55) && wait <= std::time::Duration::from_secs(61), "{wait:?}");
+    }
+
 }
