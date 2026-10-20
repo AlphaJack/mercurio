@@ -117,7 +117,11 @@ on its page (see the [service list](services/index.md)), taken from the
   mercurio answers an empty `404`, before authentication; its `405`
   `Allow` header omits `OPTIONS`. *intentional*
 - **Metrics.** apprise-api exports the full `django_prometheus` set ->
-  mercurio exports a subset plus one latency histogram. *todo*
+  mercurio exports its HTTP metrics under the same names (request and
+  response counts, latency overall and by view, body sizes, streaming
+  responses) and, on Linux, `prometheus_client`'s `process_*` metrics.
+  Django's model, database, cache and migration metrics and Python's `gc`
+  and `info` metrics have no equivalent. *intentional*
 - **Other settings.** Plugin paths are ignored. *intentional*
 - **Logins and times.** apprise-api checks logins with Django's default
   hashers; without `argon2-cffi` and `bcrypt` (not in its requirements) those
