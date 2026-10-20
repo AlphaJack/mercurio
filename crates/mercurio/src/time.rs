@@ -71,9 +71,79 @@ pub fn parse_rfc3339(s: &str) -> Option<f64> {
     Some(secs as f64 + frac)
 }
 
+/// The time zone `name` names, looked up as Apprise does: the UTC family (`utc`, `z`, `gmt`, `etc/utc`, ...), an exact IANA name, the same name in any case, or its location alone (`paris`, `argentina/salta`). `None` when nothing matches.
+pub fn zone(name: &str) -> Option<jiff::tz::TimeZone> {
+    let raw = name.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    let lowered = raw.to_lowercase();
+    if ["utc", "z", "gmt", "etc/utc", "etc/gmt", "gmt0", "utc0"].contains(&lowered.as_str()) {
+        return Some(jiff::tz::TimeZone::UTC);
+    }
+    if let Ok(tz) = jiff::tz::TimeZone::get(raw) {
+        return Some(tz);
+    }
+    let db = jiff::tz::db();
+    for zone in db.available() {
+        let full = zone.as_str().to_lowercase();
+        let parts: Vec<&str> = full.split('/').skip(1).take(2).collect();
+        let location = if parts.len() == 1 { parts[0].to_string() } else { parts.join("/") };
+        if full == lowered || (!location.is_empty() && location == lowered) {
+            return db.get(zone.as_str()).ok();
+        }
+    }
+    None
+}
+
+/// The machine's time zone (Apprise's default), UTC when it cannot be found.
+pub fn local_zone() -> jiff::tz::TimeZone {
+    jiff::tz::TimeZone::try_system().unwrap_or(jiff::tz::TimeZone::UTC)
+}
+
+/// RFC 2822 date in `tz`, e.g. `Fri, 16 Oct 2026 14:00:00 +0200` (e-mail `Date:`).
+pub fn rfc2822_in(secs: u64, tz: &jiff::tz::TimeZone) -> String {
+    match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
+        Ok(ts) => ts.to_zoned(tz.clone()).strftime("%a, %d %b %Y %H:%M:%S %z").to_string(),
+        Err(_) => rfc2822_utc(secs),
+    }
+}
+
+/// The wall-clock `(month, day, hour, minute, second)` of `secs` in `tz`.
+pub fn local_parts(secs: u64, tz: &jiff::tz::TimeZone) -> (u32, u32, u32, u32, u32) {
+    match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
+        Ok(ts) => {
+            let dt = ts.to_zoned(tz.clone()).datetime();
+            let n = |v: i8| u32::try_from(v).unwrap_or(0);
+            (n(dt.month()), n(dt.day()), n(dt.hour()), n(dt.minute()), n(dt.second()))
+        }
+        Err(_) => {
+            let (_, mo, d, h, mi, s) = utc_parts(secs);
+            (mo, d, h, mi, s)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn zones() {
+        assert_eq!(zone("UTC0"), Some(jiff::tz::TimeZone::UTC));
+        let paris = zone("Europe/Paris").expect("Europe/Paris");
+        assert_eq!(
+            zone("europe/paris").and_then(|z| z.iana_name().map(str::to_string)).as_deref(),
+            Some("Europe/Paris")
+        );
+        assert_eq!(zone("paris").and_then(|z| z.iana_name().map(str::to_string)).as_deref(), Some("Europe/Paris"));
+        assert!(zone("Mars/Olympus").is_none());
+        assert!(zone("  ").is_none());
+        // 2026-10-16 12:00 UTC is 14:00 in Paris (CEST).
+        assert_eq!(rfc2822_in(1_792_152_000, &paris), "Fri, 16 Oct 2026 14:00:00 +0200");
+        assert_eq!(local_parts(1_792_152_000, &paris), (10, 16, 14, 0, 0));
+        assert_eq!(rfc2822_in(0, &jiff::tz::TimeZone::UTC), rfc2822_utc(0));
+    }
 
     #[test]
     fn rfc3339() {

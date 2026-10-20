@@ -5,7 +5,6 @@
 //! # Differences with Apprise
 //!
 //! - PGP (`?pgp=sign|encrypt`, `?wkd=yes`) is validated like Apprise, but delivery fails with `Unsupported` before connecting (Apprise without PGPy fails after logging in). *todo*
-//! - `?tz=` is not validated and `Date:` is always UTC. *todo*
 //! - `?reply=` with several targets raised on the second target in Apprise -> mercurio sends it. *intentional*
 
 use crate::service::{Notify, Param, ServiceDef};

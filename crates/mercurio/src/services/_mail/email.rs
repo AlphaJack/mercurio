@@ -619,7 +619,7 @@ impl Email {
             headers.push(("From".into(), from_hdr.clone()));
             headers.push(("To".into(), formataddr(to_name.resolve(ctx).unwrap_or(""), to_addr)));
             headers.push(("Message-ID".into(), format!("<{}@{}>", ctx.env().random_hex(16), msgid_host)));
-            headers.push(("Date".into(), crate::time::rfc2822_utc(ctx.env().unix_time())));
+            headers.push(("Date".into(), crate::time::rfc2822_in(ctx.env().unix_time(), &ctx.time_zone())));
             if !self.cc.is_empty() {
                 headers.push(("Cc".into(), cc.iter().map(|a| fmt_addr(a)).collect::<Vec<_>>().join(",")));
             }
