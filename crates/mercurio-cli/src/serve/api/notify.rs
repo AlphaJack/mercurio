@@ -73,8 +73,7 @@ impl Server {
         // Without a tag only untagged entries are notified.
         let filter = tag.as_ref().map(payload::tag_filter).unwrap_or_else(TagFilter::untagged);
         let vars = content.template.take().unwrap_or_default();
-        let transport = self.transport.clone();
-        let job = notify::Job { notifier: m, message, filter, vars, key: Some(key.to_string()), transport, asset };
+        let job = notify::Job { notifier: m, message, filter, vars, key: Some(key.to_string()) };
         self.deliver(req, job).await
     }
 
@@ -150,8 +149,7 @@ impl Server {
         }
         let filter = tag.as_ref().map(payload::tag_filter).unwrap_or_else(TagFilter::all);
         let vars = content.template.take().unwrap_or_default();
-        let transport = self.transport.clone();
-        let job = notify::Job { notifier: m, message, filter, vars, key: None, transport, asset };
+        let job = notify::Job { notifier: m, message, filter, vars, key: None };
         self.deliver(req, job).await
     }
 
