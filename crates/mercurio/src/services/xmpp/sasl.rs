@@ -1,4 +1,4 @@
-//! SASL mechanisms: PLAIN (RFC 4616) and SCRAM-SHA-1/-256/-512 (RFC 5802, RFC 7677), without channel binding.
+//! SASL mechanisms: PLAIN (RFC 4616) and SCRAM-SHA-1/-256/-512 (RFC 5802, RFC 7677), with or without channel binding (`-PLUS`, RFC 5929 and RFC 9266).
 
 use std::num::NonZeroU32;
 
@@ -24,6 +24,14 @@ impl Mech {
             Mech::ScramSha1 => "SCRAM-SHA-1",
             Mech::Plain => "PLAIN",
         }
+    }
+
+    /// Best SCRAM mechanism the server offers with channel binding (`SCRAM-*-PLUS`).
+    pub fn choose_plus<'a>(offered: impl IntoIterator<Item = &'a str> + Clone) -> Option<Mech> {
+        Mech::PREFERENCE.into_iter().filter(|m| *m != Mech::Plain).find(|m| {
+            let plus = format!("{}-PLUS", m.name());
+            offered.clone().into_iter().any(|o| o.trim().eq_ignore_ascii_case(&plus))
+        })
     }
 
     /// Best mechanism the server offers. PLAIN is refused on an unencrypted stream (it would reveal the password).
@@ -79,6 +87,10 @@ impl Hash {
 #[derive(Debug)]
 pub struct Scram {
     hash: Hash,
+    /// The GS2 header: `n,,` without channel binding, `p={type},,` with it.
+    gs2: String,
+    /// The channel binding data sent (base64) with the GS2 header in `c=`.
+    binding: Vec<u8>,
     first_bare: String,
     nonce: String,
     server_signature: Option<Vec<u8>>,
@@ -103,12 +115,31 @@ impl Scram {
             Mech::ScramSha256 => Hash::Sha256,
             Mech::ScramSha1 | Mech::Plain => Hash::Sha1,
         };
-        Scram { hash, first_bare: format!("n={},r={nonce}", saslname(user)), nonce: nonce.to_string(), server_signature: None }
+        Scram {
+            hash,
+            gs2: "n,,".into(),
+            binding: Vec::new(),
+            first_bare: format!("n={},r={nonce}", saslname(user)),
+            nonce: nonce.to_string(),
+            server_signature: None,
+        }
     }
 
-    /// `client-first-message` (no channel binding: `n,,`).
+    /// Bind the exchange to the TLS session: `kind` is the binding type's name (`tls-exporter`), `data` what the connection reported. The mechanism must then be sent with `-PLUS`.
+    pub fn with_binding(mut self, kind: &str, data: Vec<u8>) -> Scram {
+        self.gs2 = format!("p={kind},,");
+        self.binding = data;
+        self
+    }
+
+    /// The channel binding type in use, or `no channel binding`.
+    pub fn binding_name(&self) -> &str {
+        self.gs2.strip_prefix("p=").and_then(|g| g.strip_suffix(",,")).unwrap_or("no channel binding")
+    }
+
+    /// `client-first-message`: the GS2 header, then `n=user,r=nonce`.
     pub fn client_first(&self) -> String {
-        format!("n,,{}", self.first_bare)
+        format!("{}{}", self.gs2, self.first_bare)
     }
 
     /// Answer the `server-first-message` with the `client-final-message`.
@@ -141,7 +172,8 @@ impl Scram {
         let salted = h.pbkdf2(password.as_bytes(), &salt, iterations);
         let client_key = h.hmac(&salted, b"Client Key");
         let stored_key = h.hash(&client_key);
-        let without_proof = format!("c=biws,r={nonce}");
+        let cbind = crypto::b64(&[self.gs2.as_bytes(), &self.binding].concat());
+        let without_proof = format!("c={cbind},r={nonce}");
         let auth_message = format!("{},{server_first},{without_proof}", self.first_bare);
         let client_sig = h.hmac(&stored_key, auth_message.as_bytes());
         let proof: Vec<u8> = client_key.iter().zip(&client_sig).map(|(a, b)| a ^ b).collect();
@@ -184,6 +216,17 @@ mod tests {
         s.verify("v=rmF9pqV8S7suAoZWja4dJRkFsKQ=").unwrap();
         assert!(s.verify("v=AAAA").is_err());
         assert!(s.verify("e=invalid-proof").is_err());
+    }
+
+    #[test]
+    fn plus_mechanisms_and_binding() {
+        assert_eq!(Mech::choose_plus(["SCRAM-SHA-1-PLUS", "SCRAM-SHA-256-PLUS", "SCRAM-SHA-512"]), Some(Mech::ScramSha256));
+        assert_eq!(Mech::choose_plus(["SCRAM-SHA-256", "PLAIN"]), None);
+        let mut s = Scram::with_nonce(Mech::ScramSha1, "user", "abc").with_binding("tls-exporter", b"xyz".to_vec());
+        assert_eq!(s.client_first(), "p=tls-exporter,,n=user,r=abc");
+        let fin = s.client_final("r=abcdef,s=QSXCR+Q6sek8bf92,i=4096", "pencil").unwrap();
+        // c = base64("p=tls-exporter,," + "xyz")
+        assert!(fin.starts_with("c=cD10bHMtZXhwb3J0ZXIsLHh5eg==,r=abcdef,p="), "{fin}");
     }
 
     #[test]

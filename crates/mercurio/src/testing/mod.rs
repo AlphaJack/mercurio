@@ -517,6 +517,10 @@ impl Conn for ScriptedConn {
     fn is_tls(&self) -> bool {
         self.tls
     }
+    /// Once TLS is up: the binding type's name followed by `-data` (`tls-exporter-data`).
+    fn channel_binding(&self, kind: crate::transport::ChannelBinding) -> Option<Vec<u8>> {
+        self.tls.then(|| format!("{}-data", kind.name()).into_bytes())
+    }
 }
 
 impl std::fmt::Debug for FakeTransport {

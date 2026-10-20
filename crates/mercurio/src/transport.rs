@@ -170,6 +170,10 @@ pub trait AsyncConn: Send {
     fn start_tls(&mut self) -> BoxFuture<'_, Result<()>>;
     /// Whether the stream is currently encrypted.
     fn is_tls(&self) -> bool;
+    /// The TLS channel binding data of `kind` (see [`Conn::channel_binding`]).
+    fn channel_binding(&self, _kind: ChannelBinding) -> Option<Vec<u8>> {
+        None
+    }
 
     /// Fill `buf` completely, like [`std::io::Read::read_exact`] (same error when the stream ends first).
     fn read_exact<'a>(&'a mut self, buf: &'a mut [u8]) -> BoxFuture<'a, io::Result<()>> {
@@ -233,6 +237,9 @@ impl AsyncConn for Box<dyn Conn> {
     }
     fn is_tls(&self) -> bool {
         Conn::is_tls(self.as_ref())
+    }
+    fn channel_binding(&self, kind: ChannelBinding) -> Option<Vec<u8>> {
+        Conn::channel_binding(self.as_ref(), kind)
     }
     fn read_exact<'a>(&'a mut self, buf: &'a mut [u8]) -> BoxFuture<'a, io::Result<()>> {
         Box::pin(ready(Read::read_exact(self, buf)))
@@ -304,6 +311,30 @@ pub trait Conn: Read + Write + Send {
     /// Whether the stream is currently encrypted.
     fn is_tls(&self) -> bool {
         false
+    }
+    /// The TLS channel binding data of `kind` (SCRAM `-PLUS`); `None` on a plain stream or when the session cannot provide it.
+    fn channel_binding(&self, _kind: ChannelBinding) -> Option<Vec<u8>> {
+        None
+    }
+}
+
+/// A TLS channel binding type, for SASL SCRAM `-PLUS` mechanisms.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ChannelBinding {
+    /// RFC 9266: 32 bytes of keying material exported from a TLS 1.3 session.
+    TlsExporter,
+    /// RFC 5929: a hash of the server certificate, with the hash of its signature algorithm (SHA-256 for MD5 and SHA-1).
+    TlsServerEndPoint,
+}
+
+impl ChannelBinding {
+    /// The name SASL and XEP-0440 use (`tls-exporter`, `tls-server-end-point`).
+    pub fn name(self) -> &'static str {
+        match self {
+            ChannelBinding::TlsExporter => "tls-exporter",
+            ChannelBinding::TlsServerEndPoint => "tls-server-end-point",
+        }
     }
 }
 

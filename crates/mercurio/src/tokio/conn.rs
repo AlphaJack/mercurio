@@ -159,4 +159,13 @@ impl AsyncConn for TokioConn {
     fn is_tls(&self) -> bool {
         matches!(self.inner, Inner::Tls(_))
     }
+
+    fn channel_binding(&self, kind: crate::transport::ChannelBinding) -> Option<Vec<u8>> {
+        match &self.inner {
+            Inner::Tls(s) => crate::net::channel_binding(s.get_ref().1, kind),
+            #[cfg(unix)]
+            Inner::Unix(_) => None,
+            Inner::Plain(_) | Inner::Swapping => None,
+        }
+    }
 }

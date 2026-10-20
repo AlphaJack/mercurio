@@ -408,6 +408,7 @@ impl Protocol for Client {
                 }
             }
             Input::WriteError(e) => self.fail(Error::unconfirmed(e)),
+            Input::ChannelBinding(_) => {}
             Input::Tls(r) => {
                 if let Err(e) = r {
                     self.fail(e);
@@ -495,6 +496,7 @@ mod tests {
                 Output::Write(data) => sent.push_str(&String::from_utf8(data).unwrap()),
                 Output::Read => c.input(Input::Data(replies.next().unwrap_or("").as_bytes())),
                 Output::StartTls => c.input(Input::Tls(Ok(()))),
+                Output::ChannelBinding(_) => c.input(Input::ChannelBinding(None)),
                 Output::Sleep(_) => {}
                 Output::Done(r) => break r,
             }

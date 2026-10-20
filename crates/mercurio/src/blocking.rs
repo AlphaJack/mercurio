@@ -272,6 +272,15 @@ impl Conn for NetConn {
     fn is_tls(&self) -> bool {
         matches!(self.inner, Inner::Tls(_))
     }
+
+    fn channel_binding(&self, kind: crate::transport::ChannelBinding) -> Option<Vec<u8>> {
+        match &self.inner {
+            Inner::Tls(s) => crate::net::channel_binding(&s.conn, kind),
+            #[cfg(unix)]
+            Inner::Unix(_) => None,
+            Inner::Plain(_) | Inner::Swapping => None,
+        }
+    }
 }
 
 impl Read for NetConn {

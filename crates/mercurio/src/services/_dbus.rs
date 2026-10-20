@@ -451,6 +451,7 @@ impl Protocol for Call {
                 }
             }
             Input::ReadError(e) | Input::WriteError(e) => self.fail(Error::transport(e)),
+            Input::ChannelBinding(_) => {}
             Input::Tls(r) => {
                 if let Err(e) = r {
                     self.fail(e);
@@ -602,7 +603,7 @@ mod tests {
                 }
                 Output::Read => call.input(Input::Data(&std::mem::take(&mut pending))),
                 Output::Done(r) => return (written, r),
-                other @ (Output::StartTls | Output::Sleep(_)) => panic!("unexpected {other:?}"),
+                other @ (Output::StartTls | Output::ChannelBinding(_) | Output::Sleep(_)) => panic!("unexpected {other:?}"),
             }
         }
     }

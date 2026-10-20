@@ -6,7 +6,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - SCRAM `-PLUS` channel binding is not implemented; `?scramplus=` has no effect. *todo*
+//! - SCRAM `-PLUS` uses the `tls-exporter` (TLS 1.3) or `tls-server-end-point` binding the server lists (XEP-0440), `tls-exporter` when it lists none, and plain SCRAM when the connection cannot provide one; slixmpp uses Python's `tls-unique`, which TLS 1.3 does not have. *intentional*
 //! - `?keepalive=yes` is accepted, but every notification opens its own connection. *intentional*
 //! - `?mode=none`: slixmpp refuses every password mechanism on an unencrypted stream and Apprise then reports success without sending, while mercurio authenticates with SCRAM, refuses PLAIN and fails when nothing usable is offered. *intentional*
 //! - A server without STARTTLS under `?mode=starttls` is a failure (slixmpp reports silent success). *intentional*
@@ -47,6 +47,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("mode", "Secure Mode").choice(&["starttls", "tls", "none"]).default("starttls").inferred(),
         Param::new("name", "MUC Nickname"),
         Param::new("roster", "Get Roster").bool(false),
+        Param::new("scramplus", "SCRAM-PLUS Channel Binding").bool(true),
         Param::new("subject", "Use Subject").bool(false),
         Param::sets("to", &["targets"]),
         Param::new("xmpp", "XMPP Server"),
@@ -69,6 +70,7 @@ struct Xmpp {
     targets: Vec<(String, String)>,
     roster: bool,
     subject: bool,
+    scramplus: bool,
     /// MUC nickname; `None` means the app id.
     nick: Option<String>,
 }
@@ -137,6 +139,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         targets,
         roster: flag("roster"),
         subject: flag("subject"),
+        scramplus: SERVICE.flag(u, "scramplus"),
         nick,
     }))
 }
@@ -152,6 +155,7 @@ impl Notify for Xmpp {
             targets: self.targets.clone(),
             subject: if self.subject { msg.title.to_string() } else { String::new() },
             body: msg.body.to_string(),
+            scramplus: self.scramplus,
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.mode == Mode::Tls);
         ep.verify_tls = self.verify;
