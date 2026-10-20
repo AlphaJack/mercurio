@@ -69,8 +69,14 @@ pub struct Asset {
     pub attachment_max_size: u64,
     /// Directory for persistent stores. `None` keeps every store in memory.
     pub storage_path: Option<PathBuf>,
+    /// Hex characters of a URL id ([`crate::Target::url_id`]) that are kept: Apprise's `storage_idlen`, default 8; 0 keeps the whole SHA-256.
+    pub storage_idlen: usize,
+    /// Bytes hashed in front of a URL's identifying parts for its URL id: Apprise's `storage_salt`, default none.
+    pub storage_salt: Vec<u8>,
 }
 
+/// [`Asset::storage_idlen`] by default.
+pub const DEFAULT_STORAGE_IDLEN: usize = 8;
 pub const DEFAULT_APP_ID: &str = "Mercurio";
 pub const DEFAULT_APP_DESC: &str = "Mercurio Notifications";
 /// The repository (`repository` in the workspace `Cargo.toml`, the only place it is written).
@@ -109,6 +115,8 @@ impl Default for Asset {
             body_format: None,
             attachment_max_size: crate::attachment::DEFAULT_MAX_SIZE,
             storage_path: None,
+            storage_idlen: DEFAULT_STORAGE_IDLEN,
+            storage_salt: Vec::new(),
         }
     }
 }

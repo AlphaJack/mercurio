@@ -98,6 +98,9 @@ pub(crate) struct ServeArgs {
     /// `no` stops following HTTP redirects for URLs without `?redirect=`
     #[arg(long, env = "APPRISE_HTTP_REDIRECTS", default_value = "yes", value_name = "YES|NO")]
     http_redirects: String,
+    /// `--storage-uid-length` / `APPRISE_STORAGE_UID_LENGTH`, an option every command shares (set by `main`).
+    #[arg(skip = mercurio::DEFAULT_STORAGE_IDLEN)]
+    pub(crate) storage_uid_length: usize,
     /// Live streams sending at the same time
     #[arg(long, env = "APPRISE_STREAM_WORKER_COUNT", default_value = "4", value_name = "N")]
     stream_worker_count: String,
@@ -157,6 +160,7 @@ pub(crate) struct Settings {
     pub(super) http_redirects: bool,
     pub(super) log_level: u8,
     pub(super) stream_slots: usize,
+    pub(super) storage_idlen: usize,
     pub(super) services: filters::ServiceFilter,
     pub(super) attach_urls: filters::UrlFilter,
     pub(super) webhook: Option<String>,
@@ -217,6 +221,10 @@ impl Settings {
             http_redirects: flag(&a.http_redirects, true),
             log_level,
             stream_slots,
+            storage_idlen: match a.storage_uid_length {
+                n @ 2..=64 => n,
+                _ => return Err("APPRISE_STORAGE_UID_LENGTH must be between 2 and 64".into()),
+            },
             services,
             attach_urls,
             webhook: a.webhook_url.clone().filter(|u| !u.trim().is_empty()),

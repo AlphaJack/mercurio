@@ -57,10 +57,17 @@ out of URL ids.
 
 The namespace is named by a URL id: a SHA-256 hash of the parts that
 identify the account (scheme, user, password, host, port, path and the
-secure flag), cut to 8 hexadecimal characters. Two URLs that differ only
+secure flag), cut to 8 hexadecimal characters by default. Two URLs that differ only
 in options share a namespace. Some services hash their own
 parts instead (for example only the bot
-token for Telegram). The length and the salt are fixed.
+token for Telegram).
+
+`--storage-uid-length N` (`-SUL`, `APPRISE_STORAGE_UID_LENGTH`, at least
+2; the server accepts 2 to 64) keeps N characters instead, which moves
+every URL to a new namespace. In the library, `Asset::storage_idlen` (0
+keeps all 64) and `Asset::storage_salt` (bytes hashed first) work like
+Apprise's `storage_idlen` and `storage_salt`, so the ids match Apprise's
+for the same settings.
 
 `?store=no` keeps a URL's store in memory even when a storage path is set.
 

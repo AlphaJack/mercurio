@@ -273,9 +273,7 @@ impl Server {
         let mut urls = Vec::new();
         for s in cfg.services.iter().filter(|s| filter.matches(s.tags())) {
             let (url, def, id, template_names) = match s {
-                ConfigService::Ready(t) => {
-                    (t.url().to_string(), t.service(), t.url_id(&mercurio::Asset::default()), Vec::new())
-                }
+                ConfigService::Ready(t) => (t.url().to_string(), t.service(), t.url_id(&self.asset(false)), Vec::new()),
                 ConfigService::Pending(p) => (p.url(), p.service(), None, p.template_names().to_vec()),
             };
             let (name, service_id) = (def.name, def.id);

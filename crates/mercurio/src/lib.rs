@@ -257,7 +257,7 @@ mod report;
 #[cfg(feature = "transport-tokio")]
 mod tokio;
 
-pub use asset::{Asset, ICON_PNG, ICON_SVG, IconFile, ImageSize, PAGES_URL, REPOSITORY_URL};
+pub use asset::{Asset, DEFAULT_STORAGE_IDLEN, ICON_PNG, ICON_SVG, IconFile, ImageSize, PAGES_URL, REPOSITORY_URL};
 pub use attachment::{AttachSource, AttachmentSet, Cache, Location};
 pub use config::template::{TemplateError, TemplateVars};
 pub use config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
