@@ -598,7 +598,7 @@ mod e2ee {
                 }
                 ("POST", "media/v3/upload") => {
                     let id = format!("mxc://hs.test/{}", w.media.len());
-                    w.media.insert(id.clone(), req.body.clone());
+                    w.media.insert(id.clone(), req.body.to_vec());
                     Self::ok(json!({"content_uri": id}))
                 }
                 ("GET", "client/v3/sync") => {

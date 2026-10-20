@@ -72,6 +72,7 @@ pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
         let store = store::ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
         tokio::spawn(prune_loop(p, store, s.storage.clone()));
     }
+    let io_timeout = s.io_timeout;
     let app = app(s);
     let graceful = hyper_util::server::graceful::GracefulShutdown::new();
     loop {
@@ -93,7 +94,7 @@ pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
         // `half_close`: a client that shut its writing side still gets its answer.
         let conn = hyper::server::conn::http1::Builder::new()
             .timer(hyper_util::rt::TokioTimer::new())
-            .header_read_timeout(http::IO_TIMEOUT)
+            .header_read_timeout(io_timeout)
             .half_close(true)
             .serve_connection(hyper_util::rt::TokioIo::new(tcp), service);
         let conn = graceful.watch(conn);

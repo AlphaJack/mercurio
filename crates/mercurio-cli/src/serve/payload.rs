@@ -57,21 +57,20 @@ pub fn form_fields(req: &Req) -> FormFields {
     let mut uploads = Vec::new();
     if req.content_type() == "multipart/form-data" {
         let ct = req.header("content-type").unwrap_or("");
-        for part in mercurio::parse_multipart(ct, &req.body()) {
-            let name = part["name"].as_str().unwrap_or("").to_string();
-            if let Some(filename) = part["filename"].as_str() {
-                let data = part["b64"].as_str().and_then(mercurio::__private::b64_decode).unwrap_or_default();
-                let mime = part["content_type"].as_str().map(str::to_ascii_lowercase);
-                uploads.push(Upload { name: filename.trim().to_string(), mime, data });
-            } else if let Some(v) = part["value"].as_str() {
-                pairs.push((name, v.to_string()));
+        req.with_body(|body| {
+            for part in mercurio::multipart_parts(ct, body) {
+                let name = part.name.unwrap_or_default();
+                if let Some(filename) = part.filename {
+                    let mime = part.content_type.map(|m| m.to_ascii_lowercase());
+                    uploads.push(Upload { name: filename.trim().to_string(), mime, data: part.data.to_vec() });
+                } else if let Ok(v) = std::str::from_utf8(part.data) {
+                    pairs.push((name, v.to_string()));
+                }
             }
-        }
+        });
     } else {
-        let body = req.body();
-        if !body.is_empty() {
-            pairs = form_pairs(&String::from_utf8_lossy(&body));
-        }
+        pairs =
+            req.with_body(|body| if body.is_empty() { Vec::new() } else { form_pairs(&String::from_utf8_lossy(body)) });
     }
     // Values move into the map; only the pairs `load_notify` still reads by name are copied (the body field can be huge).
     let mut map = Map::new();
@@ -86,8 +85,9 @@ pub fn form_fields(req: &Req) -> FormFields {
 }
 
 pub fn json_object(req: &Req) -> Result<Map<String, Value>, Reply> {
-    let v: Value =
-        serde_json::from_slice(&req.body()).map_err(|_| Reply::error(req, 400, "Invalid JSON Payload provided"))?;
+    let v: Value = req
+        .with_body(|body| serde_json::from_slice::<Value>(body))
+        .map_err(|_| Reply::error(req, 400, "Invalid JSON Payload provided"))?;
     match v {
         Value::Object(m) => Ok(m),
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Array(_) => {
@@ -107,10 +107,8 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
         _ => None,
     };
     if let Some(fmt) = raw_format {
-        let body = std::str::from_utf8(&req.body())
-            .map(str::to_owned)
+        let body = String::from_utf8(req.take_body())
             .map_err(|_| Reply::error(req, 400, "The message body could not be decoded"))?;
-        req.release_body();
         let mut c = Content::default();
         c.fields.insert("body".into(), Value::String(body));
         c.fields.insert(

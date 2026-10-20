@@ -3,6 +3,7 @@
 use std::fmt;
 use std::time::Duration;
 
+use bytes::Bytes;
 use serde_json::{Map, Value};
 
 use crate::url::form_urlencode;
@@ -90,8 +91,8 @@ pub struct Request {
     pub url: String,
     /// Header order is preserved; names compare case-insensitively.
     pub headers: Vec<(String, String)>,
-    /// Raw body bytes; empty for no body.
-    pub body: Vec<u8>,
+    /// Raw body bytes; empty for no body. Shared, so a retry or a redirect sends the same buffer instead of a copy.
+    pub body: Bytes,
     /// Connect timeout (5 s unless the URL sets `cto=`).
     pub connect_timeout: Duration,
     /// Read timeout (30 s unless the URL sets `rto=`).
@@ -124,7 +125,7 @@ impl Request {
             method,
             url: url.into(),
             headers: Vec::new(),
-            body: Vec::new(),
+            body: Bytes::new(),
             connect_timeout: DEFAULT_CONNECT_TIMEOUT,
             read_timeout: DEFAULT_READ_TIMEOUT,
             verify_tls: true,
@@ -198,7 +199,7 @@ impl Request {
 
     /// JSON body with `Content-Type: application/json` (unless already set).
     pub fn json(mut self, value: &Value) -> Self {
-        self.body = serde_json::to_vec(value).unwrap_or_default();
+        self.body = serde_json::to_vec(value).unwrap_or_default().into();
         if self.header_value("content-type").is_none() {
             self = self.header("Content-Type", "application/json");
         }
@@ -207,7 +208,7 @@ impl Request {
 
     /// Form body (`application/x-www-form-urlencoded`).
     pub fn form<K: AsRef<str>, V: AsRef<str>>(mut self, pairs: &[(K, V)]) -> Self {
-        self.body = form_urlencode(pairs.iter()).into_bytes();
+        self.body = form_urlencode(pairs.iter()).into_bytes().into();
         if self.header_value("content-type").is_none() {
             self = self.header("Content-Type", "application/x-www-form-urlencoded");
         }
@@ -215,7 +216,7 @@ impl Request {
     }
 
     /// Raw body with a content type.
-    pub fn body(mut self, body: impl Into<Vec<u8>>, content_type: Option<&str>) -> Self {
+    pub fn body(mut self, body: impl Into<Bytes>, content_type: Option<&str>) -> Self {
         self.body = body.into();
         if let Some(ct) = content_type {
             self = self.set_header("Content-Type", ct);
@@ -225,14 +226,14 @@ impl Request {
 
     /// Text body with no content type change.
     pub fn text(mut self, body: impl Into<String>) -> Self {
-        self.body = body.into().into_bytes();
+        self.body = Bytes::from(body.into().into_bytes());
         self
     }
 
     /// Multipart body.
     pub fn multipart(mut self, form: Multipart) -> Self {
         let (ct, body) = form.finish();
-        self.body = body;
+        self.body = body.into();
         self.set_header("Content-Type", ct)
     }
 
@@ -491,8 +492,21 @@ fn escape_quotes(s: &str) -> String {
     s.replace('"', "%22")
 }
 
-/// Parse `multipart/form-data` into `[{name, filename, content_type, value|b64}]`.
-pub fn parse_multipart(content_type: &str, body: &[u8]) -> Vec<Value> {
+/// One part of a `multipart/form-data` body; `data` borrows the body.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MultipartPart<'a> {
+    /// The `name` of the form field, if the part has one.
+    pub name: Option<String>,
+    /// The `filename`: set for a file upload.
+    pub filename: Option<String>,
+    /// The part's `Content-Type`, as sent.
+    pub content_type: Option<String>,
+    /// The part's bytes.
+    pub data: &'a [u8],
+}
+
+/// Split a `multipart/form-data` body into its parts without copying their data.
+pub fn multipart_parts<'a>(content_type: &str, body: &'a [u8]) -> Vec<MultipartPart<'a>> {
     let Some(boundary) = content_type.split(';').find_map(|p| p.trim().strip_prefix("boundary=")) else {
         return Vec::new();
     };
@@ -519,32 +533,79 @@ pub fn parse_multipart(content_type: &str, body: &[u8]) -> Vec<Value> {
         let split = find(chunk, b"\r\n\r\n", 0).unwrap_or(chunk.len());
         let head = String::from_utf8_lossy(&chunk[..split]).to_string();
         let data = chunk.get(split + 4..).unwrap_or(&[]);
-        let mut obj = Map::new();
+        let mut part = MultipartPart { name: None, filename: None, content_type: None, data };
         for line in head.split("\r\n") {
             let lower = line.to_ascii_lowercase();
             if lower.starts_with("content-disposition:") {
                 for attr in line.split(';').skip(1) {
                     let attr = attr.trim();
                     if let Some(v) = attr.strip_prefix("name=") {
-                        obj.insert("name".into(), Value::String(v.trim_matches('"').to_string()));
+                        part.name = Some(v.trim_matches('"').to_string());
                     } else if let Some(v) = attr.strip_prefix("filename=") {
-                        obj.insert("filename".into(), Value::String(v.trim_matches('"').to_string()));
+                        part.filename = Some(v.trim_matches('"').to_string());
                     }
                 }
             } else if lower.starts_with("content-type:") {
-                obj.insert("content_type".into(), Value::String(line.get(13..).unwrap_or_default().trim().to_string()));
+                part.content_type = Some(line.get(13..).unwrap_or_default().trim().to_string());
             }
         }
-        match std::str::from_utf8(data) {
-            Ok(s) if obj.get("filename").is_none() => {
-                obj.insert("value".into(), Value::String(s.to_string()));
-            }
-            _ => {
-                obj.insert("b64".into(), Value::String(crate::crypto::b64(data)));
-            }
-        }
-        parts.push(Value::Object(obj));
+        parts.push(part);
         pos = next;
     }
     parts
+}
+
+/// Parse `multipart/form-data` into `[{name, filename, content_type, value|b64}]`. [`multipart_parts`] does not copy the data.
+pub fn parse_multipart(content_type: &str, body: &[u8]) -> Vec<Value> {
+    multipart_parts(content_type, body)
+        .into_iter()
+        .map(|part| {
+            let mut obj = Map::new();
+            for (key, value) in
+                [("name", &part.name), ("filename", &part.filename), ("content_type", &part.content_type)]
+            {
+                if let Some(v) = value {
+                    obj.insert(key.into(), Value::String(v.clone()));
+                }
+            }
+            match std::str::from_utf8(part.data) {
+                Ok(s) if part.filename.is_none() => {
+                    obj.insert("value".into(), Value::String(s.to_string()));
+                }
+                _ => {
+                    obj.insert("b64".into(), Value::String(crate::crypto::b64(part.data)));
+                }
+            }
+            Value::Object(obj)
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod multipart_tests {
+    use super::*;
+
+    const BODY: &[u8] = b"--b\r\nContent-Disposition: form-data; name=\"body\"\r\n\r\nhello\r\n--b\r\nContent-Disposition: form-data; name=\"attach\"; filename=\"a.bin\"\r\nContent-Type: Application/Octet-Stream\r\n\r\n\x00\xffdata\r\n--b--\r\n";
+
+    #[test]
+    fn parts_borrow_the_body() {
+        let parts = multipart_parts("multipart/form-data; boundary=b", BODY);
+        assert_eq!(parts.len(), 2);
+        assert_eq!(
+            (parts[0].name.as_deref(), parts[0].filename.as_deref(), parts[0].data),
+            (Some("body"), None, &b"hello"[..])
+        );
+        assert_eq!(parts[1].filename.as_deref(), Some("a.bin"));
+        assert_eq!(parts[1].content_type.as_deref(), Some("Application/Octet-Stream"));
+        assert_eq!(parts[1].data, b"\x00\xffdata");
+        assert!(multipart_parts("multipart/form-data", BODY).is_empty());
+    }
+
+    #[test]
+    fn json_form_keeps_value_and_b64() {
+        let parts = parse_multipart("multipart/form-data; boundary=b", BODY);
+        assert_eq!(parts[0]["value"], "hello");
+        assert_eq!(parts[1]["b64"], crate::crypto::b64(b"\x00\xffdata"));
+        assert_eq!(parts[1]["filename"], "a.bin");
+    }
 }

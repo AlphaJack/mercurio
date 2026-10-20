@@ -31,11 +31,13 @@ optional path prefix (`https://example.com/files/`, `example.com/files/`),
 or `internal` for every address that is not public (loopback, private,
 link-local). `*` matches any run of characters, `?` one.
 
-Limits: request bodies up to 64 MiB (`413` beyond), 256 MiB of request bodies
+Limits: a request body up to `APPRISE_ATTACH_SIZE` plus 1 MiB (at least 8 MiB; `413`
+beyond), 256 MiB of request bodies
 being read at once (a request is charged its `Content-Length`, 1 MiB when it
-has none; more get `503` with `Retry-After: 1`), 512 requests in progress
-(more get `503` with `Retry-After: 1`). A request head, and each piece of a
-body, must arrive within 30 s.
+has none; more get `503` with `Retry-After: 1`), `APPRISE_WORKER_COUNT` times
+128 requests in progress (512 by default; more get `503` with
+`Retry-After: 1`). A request head, and each piece of a body, must arrive
+within `APPRISE_WORKER_TIMEOUT` seconds (30 by default).
 
 ## Request log
 
@@ -310,7 +312,7 @@ successful checks are remembered for five minutes. Without
 | 405 | known path, wrong method |
 | 406 | `X-Apprise-Recursion-Count` above the limit |
 | 409 | `/move` to a key that is taken |
-| 413 | request body over 64 MiB |
+| 413 | request body over the limit (attachment size plus 1 MiB, at least 8 MiB) |
 | 417 | `/status` found a problem (`CONFIG_PERMISSION_ISSUE`, `STORE_PERMISSION_ISSUE`) |
 | 424 | at least one notification failed; nothing matched the tag |
 | 500 | the configuration or login could not be saved or read |
