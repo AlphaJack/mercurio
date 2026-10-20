@@ -1,13 +1,75 @@
 //! One `tracing` subscriber for every command; the library's `log` records reach it through `tracing-log`.
 
 use std::fmt;
+use std::sync::Arc;
 
+use tracing::field::{Field, Visit};
 use tracing::{Event, Level, Subscriber};
 use tracing_subscriber::filter::{LevelFilter, Targets};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::fmt::{FmtContext, FormatEvent, FormatFields};
+use tracing_subscriber::layer::{Context, Layer};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::registry::LookupSpan;
+
+/// Receives the library's log lines of one `serve` request: level and message, as they happen.
+pub type Sink = Arc<dyn Fn(Level, String) + Send + Sync>;
+
+tokio::task_local! {
+    static SINK: Sink;
+}
+
+/// Run `fut` with the library's log lines (DEBUG and up) also going to `sink`; they still reach stderr at the `-v` level. Delivery runs inside the calling task, so the lines are this request's.
+pub async fn capture<F: Future>(sink: Sink, fut: F) -> F::Output {
+    SINK.scope(sink, fut).await
+}
+
+/// The binary's own modules: they share the library's `mercurio` crate name but are not library lines.
+const BINARY_MODULES: [&str; 3] = ["mercurio::serve", "mercurio::storage", "mercurio::logging"];
+
+/// Hands library events to the current request's [`Sink`], if any.
+struct Capture;
+
+impl<S: Subscriber> Layer<S> for Capture {
+    fn on_event(&self, event: &Event<'_>, _: Context<'_, S>) {
+        // Library lines arrive from `log` (target `log`, the real one in `log.target`).
+        if event.metadata().target() != "log" {
+            return;
+        }
+        if SINK.try_with(|_| ()).is_err() {
+            return;
+        }
+        let mut fields = Fields::default();
+        event.record(&mut fields);
+        let library = fields.target == "mercurio" || fields.target.starts_with("mercurio::");
+        if !library || BINARY_MODULES.iter().any(|m| fields.target.starts_with(m)) {
+            return;
+        }
+        let level = *event.metadata().level();
+        SINK.with(|sink| sink(level, fields.message));
+    }
+}
+
+/// The `message` and `log.target` of a `log` record.
+#[derive(Default)]
+struct Fields {
+    message: String,
+    target: String,
+}
+
+impl Visit for Fields {
+    fn record_str(&mut self, field: &Field, value: &str) {
+        if field.name() == "log.target" {
+            self.target = value.to_string();
+        }
+    }
+
+    fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
+        if field.name() == "message" {
+            self.message = format!("{value:?}");
+        }
+    }
+}
 
 /// Log to stderr at the `-v` level. `serve` keeps the timestamped `tracing` format plus one `request` event per request at INFO; the other commands print `LEVEL - message` lines.
 pub fn init(verbose: u8, serve: bool) {
@@ -22,7 +84,10 @@ pub fn init(verbose: u8, serve: bool) {
     let output = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let result = if serve {
         let filter = filter.with_target("request", LevelFilter::INFO);
-        tracing_subscriber::registry().with(output).with(filter).try_init()
+        tracing_subscriber::registry()
+            .with(output.with_filter(filter))
+            .with(Capture.with_filter(LevelFilter::DEBUG))
+            .try_init()
     } else {
         tracing_subscriber::registry().with(output.event_format(Plain)).with(filter).try_init()
     };

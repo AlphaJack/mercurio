@@ -551,6 +551,49 @@ fn live_streams_apply_yaml_asset_overrides() {
     assert_eq!(rx.recv().unwrap()["_user_agent"], "Stream Bot");
 }
 
+#[test]
+fn library_log_lines_are_returned_per_request() {
+    let s = start(&tmpdir("library-logs"));
+    let ct = ("Content-Type", "application/x-www-form-urlencoded");
+    let debug = ("X-Apprise-Log-Level", "debug");
+    let (up, rx) = upstream(1, 200);
+    let urls = format!("urls=json://{up}/one&body=b");
+    let (code, _, body) = http_full(&s.addr, "POST", "/notify", &[ct, debug], &urls);
+    assert_eq!(code, 200);
+    assert!(body.contains(&format!("DEBUG - POST http://{up}/...")), "{body}");
+    assert!(body.contains("DEBUG - -> HTTP 200"), "{body}");
+    assert!(body.contains("INFO - Sent json:// (JSON) notification."), "{body}");
+    // The library line comes before the service's result.
+    assert!(body.find("-> HTTP 200") < body.find("Sent json://"), "{body}");
+    rx.recv().unwrap();
+
+    // The default level (INFO) hides them.
+    let (up, rx) = upstream(1, 200);
+    let (_, _, body) = http_full(&s.addr, "POST", "/notify", &[ct], &format!("urls=json://{up}&body=b"));
+    assert!(!body.contains("DEBUG"), "{body}");
+    rx.recv().unwrap();
+
+    // Live streams send them as they happen.
+    let (up, rx) = upstream(1, 200);
+    let path = "/notify?stream=yes";
+    let (_, _, body) = http_full(&s.addr, "POST", path, &[ct, debug], &format!("urls=json://{up}&body=b"));
+    assert!(body.contains("-> HTTP 200"), "{body}");
+    rx.recv().unwrap();
+
+    // Concurrent requests only get their own lines.
+    let (a, rxa) = upstream(1, 200);
+    let (b, rxb) = upstream(1, 200);
+    let (line_a, line_b) = (format!("POST http://{a}/"), format!("POST http://{b}/"));
+    let (addr, form_b) = (s.addr.clone(), format!("urls=json://{b}/b&body=b"));
+    let other = thread::spawn(move || http_full(&addr, "POST", "/notify", &[ct, debug], &form_b).2);
+    let mine = http_full(&s.addr, "POST", "/notify", &[ct, debug], &format!("urls=json://{a}/a&body=b")).2;
+    let theirs = other.join().unwrap();
+    assert!(mine.contains(&line_a) && !mine.contains(&line_b), "{mine}");
+    assert!(theirs.contains(&line_b) && !theirs.contains(&line_a), "{theirs}");
+    rxa.recv().unwrap();
+    rxb.recv().unwrap();
+}
+
 /// Send raw bytes, half-close and return everything the server wrote.
 fn raw(addr: &str, bytes: &[u8]) -> String {
     let mut s = TcpStream::connect(addr).unwrap();

@@ -92,11 +92,10 @@ on its page (see the [service list](services/index.md)), taken from the
 - **Translated messages.** apprise-api translates its error and status
   messages by `Accept-Language` or cookie and sets `Content-Language` ->
   mercurio answers in English only. *intentional*
-- **Returned logs.** apprise-api returns the library's own log lines,
-  debug included -> mercurio returns one INFO or ERROR line per service.
-  *todo* (needs a library log hook)
-- **Live streaming.** apprise-api streams log lines while it sends ->
-  mercurio sends one event per finished service. *todo*
+- **Returned logs.** Both return the library's own log lines for the
+  request's level and stream them live while sending. mercurio's lines
+  have their own wording, redact URLs, and add one INFO or ERROR line per
+  finished service; `APPRISE_WEBHOOK_URL` gets INFO and up. *intentional*
 - **Persistent storage.** apprise-api sizes URL ids by
   `STORAGE_UID_LENGTH` and prunes storage and logins on a schedule ->
   mercurio uses fixed 8-character ids, a different layout and no

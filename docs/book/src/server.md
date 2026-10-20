@@ -150,17 +150,20 @@ request's content type:
   `/add`, `/del`, `/move` are `{"error": null}`;
 - otherwise plain text.
 
-Notifications answer with their log, one line per service
-(`2026-10-17 12:00:00,000 - INFO - Sent json:// (JSON) notification.`); a
-JSON failure is
+Notifications answer with their log: the library's own lines for this
+request (`DEBUG - -> HTTP 200`, `WARNING - ...`, URLs redacted) and one line
+per service (`2026-10-17 12:00:00,000 - INFO - Sent json:// (JSON) notification.`),
+in the order they happened and at or above the request's log level
+(`X-Apprise-Log-Level`, default `LOG_LEVEL`); a JSON failure is
 `{"error":"One or more notifications could not be sent","details":[[level, time, message], ...]}`.
 With `Accept: text/html` the log is an HTML list (`<ul class="logs">`).
 
 ### Live progress
 
 `?stream=yes` or `Accept: text/event-stream` answers with server-sent
-events as the services finish: `log` events, `: heartbeat` comments every
-15 s while waiting and one final `result` event.
+events while sending: a `log` event per log line as it happens (the same
+lines as above), `: heartbeat` comments every 15 s while waiting and one
+final `result` event.
 
 ```text
 : connected

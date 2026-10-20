@@ -99,8 +99,15 @@ pub struct Job {
 }
 
 impl Job {
-    pub async fn run(&self) -> Report {
-        self.notifier.notify_with(&self.message, &self.filter, &self.vars).await
+    /// Send, with every log line of the call (the library's own and one per finished service) going to `on_log` as it happens.
+    pub async fn run(&self, on_log: Arc<dyn Fn(LogEntry) + Send + Sync>) -> Report {
+        let sink: crate::logging::Sink = {
+            let on_log = on_log.clone();
+            Arc::new(move |level, message| on_log(LogEntry::new(level_name(level), message, None)))
+        };
+        let on_entry = |entry: &mercurio::ReportEntry| entry_logs(entry).into_iter().for_each(|l| on_log(l));
+        let send = self.notifier.notify_with_progress(&self.message, &self.filter, &self.vars, &on_entry);
+        crate::logging::capture(sink, send).await
     }
 
     /// The 424 message for this kind of call.
@@ -114,8 +121,12 @@ impl Job {
 }
 
 pub async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<LogEntry>) {
-    let report = job.run().await;
-    let all = report_logs(&report);
+    let collected = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let report = {
+        let collected = collected.clone();
+        job.run(Arc::new(move |l| collected.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(l))).await
+    };
+    let all = std::mem::take(&mut *collected.lock().unwrap_or_else(std::sync::PoisonError::into_inner));
     let logs = filter_level(all.clone(), level);
     req.note(|ev| {
         ev.services = Some(report.entries.len());
@@ -128,6 +139,17 @@ pub async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<Log
         render(req, 424, &logs, Some(job.failure_message()))
     };
     (reply, report, all)
+}
+
+/// The name of a `tracing` level, as the logs show it.
+fn level_name(level: tracing::Level) -> &'static str {
+    match level {
+        tracing::Level::ERROR => "ERROR",
+        tracing::Level::WARN => "WARNING",
+        tracing::Level::INFO => "INFO",
+        tracing::Level::DEBUG => "DEBUG",
+        tracing::Level::TRACE => "TRACE",
+    }
 }
 
 /// Numeric log level of a level name (`TRACE` 5 ... `CRITICAL` 50).
@@ -204,16 +226,21 @@ pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: 
     };
     send(&tx, Event::default().comment("connected"));
     tokio::spawn(async move {
-        let on_entry = |entry: &mercurio::ReportEntry| {
-            for l in filter_level(entry_logs(entry), level) {
-                send(&tx, log_event(&l));
-            }
+        let collected = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let report = {
+            let (collected, tx) = (collected.clone(), tx.clone());
+            job.run(Arc::new(move |l: LogEntry| {
+                if level_value(l.level).unwrap_or(20) >= level {
+                    send(&tx, log_event(&l));
+                }
+                collected.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(l);
+            }))
+            .await
         };
-        let report = job.notifier.notify_with_progress(&job.message, &job.filter, &job.vars, &on_entry).await;
         let status = report.status().as_str().to_ascii_uppercase();
         send(&tx, sse("result", &json!({"status": status})));
         drop(tx);
-        let logs = report_logs(&report);
+        let logs = std::mem::take(&mut *collected.lock().unwrap_or_else(std::sync::PoisonError::into_inner));
         done(report, logs).await;
     });
     // The stream holds `slot` until the client has the last event.
