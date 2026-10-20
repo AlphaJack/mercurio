@@ -17,6 +17,11 @@ urls:
 
 {{#include ../generated/asset-keys.md}}
 
+`timezone` (or `tz`) sets the zone of the dates services write (e-mail
+`Date:`, syslog) for URLs without `?tz=`: an IANA name, any case, or the
+location alone (`paris`). An unknown zone is ignored with a warning
+(`Ignored invalid timezone "..."`).
+
 ## Keys without effect
 
 {{#include ../generated/asset-ignored.md}}

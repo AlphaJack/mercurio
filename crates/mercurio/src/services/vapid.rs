@@ -8,7 +8,6 @@
 //!
 //! - Both files are re-read on every send. *intentional*
 //! - Expired endpoints are never pruned from the subscription file (Apprise rewrites a writable one) and no starter file is written. *intentional*
-//! - Compressed `p256dh` points are rejected. *todo*
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -195,6 +194,16 @@ fn ring_rng() -> SystemRandom {
 }
 
 /// Check a point is on P-256 by running an ECDH against it.
+/// A SEC1 P-256 point in its 65-byte uncompressed form, which the RFC 8291 key derivation hashes: a 33-byte compressed one is expanded (as Apprise re-encodes it), anything else is kept for [`valid_p256_point`] to judge. `None` for a compressed point not on the curve.
+fn uncompressed(point: Vec<u8>) -> Option<Vec<u8>> {
+    if point.len() != 33 || !matches!(point[0], 2 | 3) {
+        return Some(point);
+    }
+    use p256::elliptic_curve::sec1::ToSec1Point;
+    let key = p256::PublicKey::from_sec1_bytes(&point).ok()?;
+    Some(key.to_sec1_point(false).as_bytes().to_vec())
+}
+
 fn valid_p256_point(point: &[u8]) -> bool {
     let rng = ring_rng();
     let Ok(eph) = EphemeralPrivateKey::generate(&ECDH_P256, &rng) else { return false };
@@ -206,7 +215,7 @@ fn load_subscription(content: &Value) -> Option<Subscription> {
     let endpoint = obj.get("endpoint")?.as_str()?.trim().to_string();
     let origin = webpush_origin(&endpoint)?;
     let keys = obj.get("keys")?.as_object()?;
-    let p256dh = b64_url_decode(keys.get("p256dh")?.as_str()?).filter(|k| !k.is_empty())?;
+    let p256dh = uncompressed(b64_url_decode(keys.get("p256dh")?.as_str()?).filter(|k| !k.is_empty())?)?;
     let auth = b64_url_decode(keys.get("auth")?.as_str()?).filter(|k| !k.is_empty())?;
     if !valid_p256_point(&p256dh) {
         return None;
@@ -661,6 +670,23 @@ mod tests {
         let fake = crate::testing::FakeTransport::new();
         fake.on_url("keys.example", crate::Response::new(404, Vec::new()));
         assert!(!crate::parse(url).unwrap().send(&crate::Message::new("b"), &fake, &crate::Asset::default()).is_success());
+    }
+
+
+    #[test]
+    fn compressed_p256dh_is_expanded() {
+        let full = b64d("BCj-fZwrJUTWDRmq8yO88_xKJkB9jMqiAUS2rbgK35U0SH76DdeqRu2Oaq7iYGqO4yw_tbdKKxWPfnMTj1wW3gg");
+        assert_eq!(full.len(), 65);
+        // SEC1 compression: 0x02 or 0x03 by the parity of y, then x.
+        let mut compressed = vec![2 + (full[64] & 1)];
+        compressed.extend_from_slice(&full[1..33]);
+        assert_eq!(uncompressed(compressed.clone()), Some(full.clone()));
+        let sub = json!({"endpoint": "https://push.example/x", "keys": {"p256dh": b64_url_nopad(&compressed), "auth": "5I3XwN-msGG8E7PQhSzs1Q"}});
+        assert_eq!(load_subscription(&sub).map(|s| s.public_key), Some(full));
+        // An x with no point on the curve is refused.
+        let mut off_curve = vec![2u8];
+        off_curve.extend_from_slice(&[0xff; 32]);
+        assert_eq!(uncompressed(off_curve), None);
     }
 
 }

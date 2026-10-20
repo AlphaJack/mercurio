@@ -75,6 +75,8 @@ pub struct Asset {
     pub storage_salt: Vec<u8>,
     /// When stores are written to [`Asset::storage_path`] (Apprise's `storage_mode`).
     pub storage_mode: StorageMode,
+    /// Zone for the dates services write (e-mail `Date:`, syslog) when a URL has no `?tz=`: an IANA name such as `Europe/Paris` (Apprise's asset `timezone`). `None`: the machine's zone.
+    pub timezone: Option<String>,
     /// `:shortcode:` emoji (Apprise's `interpret_emojis`): `None` (default) lets each URL turn them on with `?emojis=yes`; `Some(true)` turns them on unless a URL says `?emojis=no`; `Some(false)` turns them off for every URL.
     pub interpret_emojis: Option<bool>,
 }
@@ -156,6 +158,7 @@ impl Default for Asset {
             storage_idlen: DEFAULT_STORAGE_IDLEN,
             storage_salt: Vec::new(),
             storage_mode: StorageMode::Auto,
+            timezone: None,
             interpret_emojis: None,
         }
     }

@@ -47,6 +47,7 @@ md-5 = "0.11"
 salsa20 = { version = "0.11", optional = true, default-features = false }
 poly1305 = { version = "0.9", optional = true }
 curve25519-dalek = { version = "5", optional = true, default-features = false }
+p256 = { version = "0.14", optional = true, default-features = false, features = ["arithmetic"] }
 zeroize = { version = "1.8", optional = true }
 
 [dev-dependencies]
@@ -374,7 +375,7 @@ service-trigv = []
 service-twilio = []
 service-twist = []
 service-twitter = []
-service-vapid = []
+service-vapid = ["dep:p256"]
 service-viber = []
 service-voipms = []
 service-vonage = []
