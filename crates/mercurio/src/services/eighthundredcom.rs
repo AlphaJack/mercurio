@@ -70,7 +70,7 @@ impl Notify for Eight00com {
                 }))
             } else {
                 let mut form =
-                    Form::new().text("sender", &sender).text("recipient", &recipient).text("message", msg.body);
+                    Form::new(ctx.env().as_ref()).text("sender", &sender).text("recipient", &recipient).text("message", msg.body);
                 for a in msg.attachments {
                     form = form.part("media[]", Some(&a.name), Some(&a.mime), a.data.clone());
                 }

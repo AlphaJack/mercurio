@@ -1,33 +1,10 @@
-//! Hashing, MACs, randomness and encodings backed by `ring` (already linked for TLS), so services need no extra crates for common signatures.
+//! Hashing, MACs and encodings backed by `ring` (already linked for TLS), so services need no extra crates for common signatures.
 
 use base64::Engine;
-use ring::rand::SecureRandom;
 use ring::{digest, hmac};
 
-/// Fill `buf` from the system's secure random number generator.
-///
-/// # Panics
-///
-/// When the OS random source fails.
-#[expect(
-    clippy::expect_used,
-    reason = "keys, nonces and IVs from an unfilled buffer would be predictable; no caller can recover from a missing OS RNG"
-)]
-pub fn random_bytes(buf: &mut [u8]) {
-    ring::rand::SystemRandom::new().fill(buf).expect("system RNG available");
-}
-
-/// Random lowercase hex string of `n_bytes * 2` chars.
-pub fn random_hex(n_bytes: usize) -> String {
-    let mut b = vec![0u8; n_bytes];
-    random_bytes(&mut b);
-    hex(&b)
-}
-
-/// Random RFC 4122 version 4 UUID.
-pub fn uuid4() -> String {
-    let mut b = [0u8; 16];
-    random_bytes(&mut b);
+/// Format 16 random bytes as an RFC 4122 version 4 UUID (see [`crate::Env::uuid4`]).
+pub fn uuid_v4(mut b: [u8; 16]) -> String {
     b[6] = (b[6] & 0x0f) | 0x40;
     b[8] = (b[8] & 0x3f) | 0x80;
     let h = hex(&b);
@@ -108,7 +85,7 @@ mod tests {
 
     #[test]
     fn uuid() {
-        let u = uuid4();
+        let u = uuid_v4([0xab; 16]);
         assert!(crate::parse::is_uuid(&u), "{u}");
     }
 }

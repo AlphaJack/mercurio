@@ -15,7 +15,8 @@ use chacha20poly1305::{XChaCha20Poly1305, XNonce};
 use curve25519_dalek::montgomery::MontgomeryPoint;
 use serde_json::{Map, Value, json};
 
-use crate::crypto::{b64, b64_decode, b64_url_decode, hmac_sha256, random_bytes, sha256, sha512};
+use crate::env::Env;
+use crate::crypto::{b64, b64_decode, b64_url_decode, hmac_sha256, sha256, sha512};
 use crate::error::Error;
 use crate::http::{Request, Response};
 use crate::parse::{parse_bool, parse_list_unquoted, validate_nonblank};
@@ -249,17 +250,17 @@ fn derive_key(password: &str, salt: &str) -> Option<([u8; 32], String)> {
 }
 
 /// XChaCha20-Poly1305 with a random nonce: `nonce || ciphertext || tag`.
-fn seal(data: &[u8], key: &[u8]) -> Option<Vec<u8>> {
+fn seal(data: &[u8], key: &[u8], env: &dyn Env) -> Option<Vec<u8>> {
     let cipher = XChaCha20Poly1305::new_from_slice(key).ok()?;
     let mut nonce = [0u8; 24];
-    random_bytes(&mut nonce);
+    env.fill_random(&mut nonce);
     let mut out = nonce.to_vec();
     out.extend(cipher.encrypt(&XNonce::from(nonce), data).ok()?);
     Some(out)
 }
 
-fn encrypt_text(text: &str, key: &[u8]) -> Option<String> {
-    seal(text.as_bytes(), key).map(|s| b64(&s))
+fn encrypt_text(text: &str, key: &[u8], env: &dyn Env) -> Option<String> {
+    seal(text.as_bytes(), key, env).map(|s| b64(&s))
 }
 
 /// NaCl `crypto_box_open`: X25519, HSalsa20, then XSalsa20-Poly1305 over `tag || ciphertext`. `None` when the tag does not match.
@@ -337,6 +338,7 @@ struct Msg {
     /// (filename, content type, data)
     files: Vec<(String, String, Vec<u8>)>,
     app_id: String,
+    env: Arc<dyn Env>,
 }
 
 impl Inner {
@@ -516,7 +518,7 @@ impl Inner {
             let fail = || Plan::Fail(Error::Service("Simplepush encryption failed".into()));
             for (_, v) in fields.iter_mut() {
                 if !v.is_empty() {
-                    match encrypt_text(v, &key) {
+                    match encrypt_text(v, &key, msg.env.as_ref()) {
                         Some(e) => *v = e,
                         None => return fail(),
                     }
@@ -527,11 +529,11 @@ impl Inner {
                     return Plan::Fail(Error::Message(format!("the Simplepush {name} is too long once encrypted")));
                 }
             }
-            let Some(l) = links.iter().map(|l| encrypt_text(l, &key)).collect::<Option<Vec<_>>>() else {
+            let Some(l) = links.iter().map(|l| encrypt_text(l, &key, msg.env.as_ref())).collect::<Option<Vec<_>>>() else {
                 return fail();
             };
             links = l;
-            let Some(b) = blobs.iter().map(|b| seal(b, &key)).collect::<Option<Vec<_>>>() else { return fail() };
+            let Some(b) = blobs.iter().map(|b| seal(b, &key, msg.env.as_ref())).collect::<Option<Vec<_>>>() else { return fail() };
             blobs = b;
             payload.insert("encryption".into(), marker);
         }
@@ -649,6 +651,7 @@ impl Notify for SimplePush {
             markdown: msg.format == NotifyFormat::Markdown,
             files,
             app_id: ctx.app_id().to_string(),
+            env: ctx.env().clone(),
         });
         let mut targets: Vec<(Option<&'static str>, Option<String>)> = inner
             .topics
@@ -711,7 +714,7 @@ mod tests {
     #[test]
     fn seal_round_trip() {
         let key = [7u8; 32];
-        let sealed = seal("héllo".as_bytes(), &key).unwrap();
+        let sealed = seal("héllo".as_bytes(), &key, crate::testing::test_env()).unwrap();
         assert_eq!(sealed.len(), 24 + "héllo".len() + 16);
         let cipher = XChaCha20Poly1305::new_from_slice(&key).unwrap();
         let plain = cipher.decrypt(&XNonce::try_from(&sealed[..24]).unwrap(), &sealed[24..]).unwrap();

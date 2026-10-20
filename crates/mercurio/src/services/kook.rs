@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde_json::{Value, json};
 
+use crate::env::Env;
 use crate::error::Error;
 use crate::http::{Multipart, Request, Response};
 use crate::message::Attachment;
@@ -156,10 +157,11 @@ fn upload_url(res: Result<Response>) -> Checked<Value> {
     url.filter(json_has_value).ok_or_else(|| (Error::Service("Kook CDN upload returned no URL".into()), false))
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 struct State {
     has_error: AtomicBool,
     aborted: AtomicBool,
+    env: Arc<dyn Env>,
 }
 
 type Shared = Arc<State>;
@@ -212,7 +214,7 @@ fn attach_step(
 ) -> Plan {
     let Some(att) = atts.get(i) else { return Plan::Done };
     let name = if att.name.is_empty() { "attachment.dat" } else { att.name.as_str() };
-    let req = upload.clone().multipart(Multipart::new().file("file", name, att.mime.as_str(), att.data.clone()));
+    let req = upload.clone().multipart(Multipart::with_env(st.env.as_ref()).file("file", name, att.mime.as_str(), att.data.clone()));
     let kind = if att.mime.starts_with("image/") { TYPE_IMAGE } else { TYPE_FILE };
     Plan::http(req, move |res| match upload_url(res) {
         Err((e, _)) => Plan::Fail(e),
@@ -265,7 +267,8 @@ impl Notify for Kook {
         if self.channels.is_empty() && self.dm_users.is_empty() {
             return Plan::Fail(Error::Service("Kook: no targets specified".into()));
         }
-        let st: Shared = Arc::new(State::default());
+        let st: Shared =
+            Arc::new(State { has_error: AtomicBool::default(), aborted: AtomicBool::default(), env: ctx.env().clone() });
         let targets = self.endpoints();
         let mut plans: Vec<Plan> = targets
             .iter()

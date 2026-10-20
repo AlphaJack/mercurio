@@ -114,7 +114,7 @@ pub(super) fn setup(mut s: Session, k: K<()>) -> Plan {
     if s.e2ee.account.is_none() {
         s.e2ee.account = s.store.get("e2ee_account").filter(has_value).and_then(|v| OlmAccount::from_value(&v).ok());
         if s.e2ee.account.is_none() {
-            let acct = OlmAccount::new();
+            let acct = OlmAccount::new(s.env.as_ref());
             s.store.set("e2ee_account", acct.to_value(), CACHE_EXPIRY);
             s.e2ee.account = Some(acct);
         }
@@ -164,7 +164,7 @@ fn upload_keys(mut s: Session, k: K<bool>) -> Plan {
     let Some(acct) = s.e2ee.account.as_mut() else { return k(s, false) };
     let payload = json!({
         "device_keys": acct.device_keys_payload(&user_id, &device_id),
-        "fallback_keys": acct.fallback_keys_payload(&user_id, &device_id),
+        "fallback_keys": acct.fallback_keys_payload(&user_id, &device_id, s.env.as_ref()),
     });
     s.fetch(Fetch::post("/keys/upload", payload), move |mut s, r| {
         if !r.ok {
@@ -213,8 +213,8 @@ pub(super) fn room_encrypted(s: Session, room_id: String, k: K<Result<bool, Erro
 fn get_megolm(s: &Session, room_id: &str) -> (MegolmSession, bool) {
     let key = format!("e2ee_megolm_{room_id}");
     if let Some(v) = s.store.get(&key).filter(has_value)
-        && let Ok(sess) = MegolmSession::from_value(&v)
-        && !sess.should_rotate()
+        && let Ok(sess) = MegolmSession::from_value(&v, s.env.as_ref())
+        && !sess.should_rotate(s.env.as_ref())
     {
         return (sess, false);
     }
@@ -222,7 +222,7 @@ fn get_megolm(s: &Session, room_id: &str) -> (MegolmSession, bool) {
 }
 
 fn new_megolm(s: &Session, room_id: &str) -> MegolmSession {
-    let sess = MegolmSession::new();
+    let sess = MegolmSession::new(s.env.as_ref());
     s.store.set(&format!("e2ee_megolm_{room_id}"), sess.to_value(), CACHE_EXPIRY);
     s.store.clear(&[&shared_key(room_id)]);
     sess
@@ -593,7 +593,7 @@ fn build_key_shares(
                 skipped.entry(uid.clone()).or_default().insert(dev_id.clone(), their_ik.clone());
                 continue;
             };
-            let mut olm = match acct.create_outbound_session(their_ik, &otk) {
+            let mut olm = match acct.create_outbound_session(their_ik, &otk, s.env.as_ref()) {
                 Ok(o) => o,
                 Err(e) => {
                     log::debug!("Matrix E2EE: failed to build Olm session for {uid} / {dev_id}: {e}");
@@ -636,7 +636,7 @@ fn send_attachment(
     k: K<(MegolmSession, Option<&'static str>)>,
 ) -> Plan {
     let att = s.msg.attachments[idx].clone();
-    let (ciphertext, mut file_info) = super::e2ee::encrypt_attachment(&att.data);
+    let (ciphertext, mut file_info) = super::e2ee::encrypt_attachment(&att.data, s.env.as_ref());
     s.with_base(move |s, base| {
         let Ok(base) = base else { return k(s, (session, Some("upload"))) };
         let name = if att.name.is_empty() { "file".to_string() } else { att.name.clone() };

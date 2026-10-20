@@ -1,14 +1,4 @@
-//! Unix time and the UTC date formats services send (RFC 3339, RFC 2822, AWS and syslog stamps), without a date crate.
-
-/// Unix time in seconds.
-pub fn unix_time() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
-}
-
-/// Unix time in milliseconds.
-pub fn unix_time_ms() -> u128 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0)
-}
+//! The UTC date formats services send (RFC 3339, RFC 2822, AWS and syslog stamps), without a date crate.
 
 const SECS_PER_DAY: u64 = 86_400;
 /// Days in a 400-year Gregorian cycle.

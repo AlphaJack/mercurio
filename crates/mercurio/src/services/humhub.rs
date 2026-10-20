@@ -114,6 +114,7 @@ impl HumHub {
         let upload = self.auth(ctx.post(String::new()));
         let memo = ctx.memo.clone();
         let container = id.to_string();
+        let env = ctx.env().clone();
         // Upload the attachments the post has not received yet.
         let uploads = move |memo: Memo, pid: Option<String>| {
             let Some(pid) = pid else {
@@ -127,7 +128,7 @@ impl HumHub {
                 }
                 let mut req = upload.clone();
                 req.url = url.clone();
-                let req = req.multipart(Multipart::new().file("files[]", a.name.clone(), "", a.data));
+                let req = req.multipart(Multipart::with_env(env.as_ref()).file("files[]", a.name.clone(), "", a.data));
                 let memo = memo.clone();
                 Some(Plan::send_then(req, move |r| match expect_200(&r) {
                     Ok(()) => {

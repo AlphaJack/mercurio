@@ -12,6 +12,7 @@ use super::_ratelimit::{RateLimit, Reset};
 
 use serde_json::{Map, Value, json};
 
+use crate::env::Env;
 use crate::http::{Method, Multipart, Request, Response};
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -386,6 +387,7 @@ struct Upload {
 struct Job {
     cfg: Arc<Config>,
     ua: String,
+    env: Arc<dyn Env>,
     body: String,
     format: NotifyFormat,
     uploads: Vec<Upload>,
@@ -407,7 +409,7 @@ impl Notify for Mastodon {
             })
             .map(|a| Upload { name: a.name.clone(), mime: a.mime.clone(), data: a.data.clone() })
             .collect();
-        let job = Job { cfg: self.0.clone(), ua: ctx.app_id().to_string(), body, format: msg.format, uploads };
+        let job = Job { cfg: self.0.clone(), ua: ctx.app_id().to_string(), env: ctx.env().clone(), body, format: msg.format, uploads };
 
         if self.0.visibility == "direct" && self.0.targets.is_empty() {
             let req = self
@@ -415,7 +417,8 @@ impl Notify for Mastodon {
                 .request(Method::Get, "/api/v1/accounts/verify_credentials", &job.ua)
                 .header("Content-Type", "application/json")
                 .body(b"null".to_vec(), None);
-            return self.0.rate.send(req, OK, move |res| match outcome(res) {
+            let env = job.env.clone();
+            return self.0.rate.send(req, OK, &env, move |res| match outcome(res) {
                 Err((e, _)) => Plan::Fail(e),
                 Ok(v) => match v.get("username").zip(v.get("id")) {
                     Some((Value::String(user), _)) => {
@@ -462,7 +465,7 @@ impl Job {
         let Some(att) = rest.next() else {
             return self.statuses(prefix, done);
         };
-        let form = Multipart::new().text("description", att.name.clone()).file(
+        let form = Multipart::with_env(self.env.as_ref()).text("description", att.name.clone()).file(
             "file",
             att.name.clone(),
             "application/octet-stream",
@@ -470,7 +473,8 @@ impl Job {
         );
         let req = self.cfg.request(Method::Post, "/api/v1/media", &self.ua).multipart(form);
         let rate = self.cfg.rate.clone();
-        rate.send(req, OK, move |res| match outcome(res) {
+        let env = self.env.clone();
+        rate.send(req, OK, &env, move |res| match outcome(res) {
             Err((e, _)) => Plan::Fail(e),
             Ok(v) => {
                 if let Some(id) = v.as_object().and_then(|o| o.get("id")).filter(|id| json_has_value(id)) {
@@ -554,7 +558,7 @@ impl Job {
                 .request(Method::Post, "/api/v1/statuses", &self.ua)
                 .header("Content-Type", "application/json")
                 .body(serde_json::to_vec(&Value::Object(p)).unwrap_or_default(), None);
-            let post = cfg.rate.send(req, OK, |res| match outcome(res) {
+            let post = cfg.rate.send(req, OK, &self.env, |res| match outcome(res) {
                 Ok(_) => Plan::Done,
                 Err((e, _)) => Plan::Fail(e),
             });
@@ -580,7 +584,7 @@ mod tests {
 
     #[test]
     fn rate_limit_is_kept_between_sends() {
-        let reset = crate::time::iso8601_utc(crate::time::unix_time() + 60);
+        let reset = crate::time::iso8601_utc(super::super::_ratelimit::NOW + 60);
         let spent = Response::new(200, b"{}".to_vec())
             .with_header("X-RateLimit-Remaining", "0")
             .with_header("X-RateLimit-Reset", reset);

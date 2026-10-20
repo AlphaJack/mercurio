@@ -1,6 +1,6 @@
 //! Form webhook (`form://`, `forms://`): posts the notification as form fields (or multipart with attachments) to any HTTP endpoint.
 
-use crate::http::{Method, Multipart};
+use crate::http::Method;
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::services::_webhook::{double_unquoted, endpoint, parse_method};
 use crate::url::ParsedUrl;
@@ -129,7 +129,7 @@ impl Notify for Form {
             if msg.attachments.is_empty() {
                 req = req.form(&payload);
             } else {
-                let mut form = Multipart::new();
+                let mut form = ctx.multipart();
                 for (k, v) in &payload {
                     form = form.text(k, v);
                 }

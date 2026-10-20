@@ -10,6 +10,7 @@ use super::e2ee::{XKey, b64dec, b64enc, canonical_json, hkdf_sha256, hmac_sha256
 use super::e2ee_flow::binding_key;
 use super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value};
 use crate::Plan;
+use crate::env::Env;
 
 pub const EVENT_REQUEST: &str = "m.key.verification.request";
 pub const EVENT_READY: &str = "m.key.verification.ready";
@@ -44,14 +45,6 @@ fn sync_filter() -> String {
 
 fn valid_id(v: Option<&Value>) -> Option<String> {
     v.and_then(Value::as_str).filter(|s| !s.is_empty() && s.chars().count() <= MAX_ID_LEN).map(str::to_string)
-}
-
-fn now_ms() -> i64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
-}
-
-fn now_secs() -> f64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
 }
 
 /// `x` is listed in `value`: an array item, a substring or an object key.
@@ -115,8 +108,15 @@ pub fn decimal_from_bytes(b: &[u8; 5]) -> (u16, u16, u16) {
 }
 
 impl Sas {
-    pub fn new(own_user: &str, own_device: &str, peer_user: &str, peer_device: &str, start: &Value) -> SasResult<Self> {
-        Self::with_key(own_user, own_device, peer_user, peer_device, start, XKey::generate())
+    pub fn new(
+        own_user: &str,
+        own_device: &str,
+        peer_user: &str,
+        peer_device: &str,
+        start: &Value,
+        env: &dyn Env,
+    ) -> SasResult<Self> {
+        Self::with_key(own_user, own_device, peer_user, peer_device, start, XKey::generate(env))
     }
 
     pub fn with_key(
@@ -336,7 +336,7 @@ pub(super) fn refresh_verified_state(s: &Session) -> bool {
     }
     let last =
         s.store.get("e2ee_autoverify_refreshed_at").and_then(|v| v.as_f64()).filter(|f| f.is_finite()).unwrap_or(0.0);
-    if now_secs() - last < REFRESH_INTERVAL {
+    if s.env.unix_time_f64() - last < REFRESH_INTERVAL {
         return true;
     }
     let ok = s.store.set("device_id", json!(s.device_id), CACHE_EXPIRY)
@@ -344,7 +344,7 @@ pub(super) fn refresh_verified_state(s: &Session) -> bool {
         && s.store.set("e2ee_device_binding", binding.clone(), CACHE_EXPIRY)
         && s.store.set("e2ee_verified_binding", binding, CACHE_EXPIRY);
     if ok {
-        s.store.set("e2ee_autoverify_refreshed_at", json!(now_secs()), CACHE_EXPIRY);
+        s.store.set("e2ee_autoverify_refreshed_at", json!(s.env.unix_time_f64()), CACHE_EXPIRY);
     }
     ok
 }
@@ -554,7 +554,7 @@ fn handle_event(s: Session, mut v: Verifier, event: Value, k: VK) -> Plan {
 }
 
 fn handle_request(s: Session, v: Verifier, sender: String, content: Value, k: VK) -> Plan {
-    let now = now_ms();
+    let now = s.env.unix_time_ms() as i64;
     let ts = content
         .get("timestamp")
         .and_then(|t| if t.is_boolean() { Some(i64::from(t.as_bool() == Some(true))) } else { t.as_i64() });
@@ -636,7 +636,7 @@ fn handle_start(s: Session, mut v: Verifier, sender: String, content: Value, k: 
     }
     let own_user = s.user_id.clone().unwrap_or_default();
     let own_device = s.device_id.clone().unwrap_or_default();
-    let made = Sas::new(&own_user, &own_device, &sender, &active.device_id, &content)
+    let made = Sas::new(&own_user, &own_device, &sender, &active.device_id, &content, s.env.as_ref())
         .and_then(|mut sas| sas.accept_content().map(|a| (sas, a)));
     let Ok((sas, accept)) = made else {
         return fail(s, v, "m.unknown_method", "Unsupported SAS verification parameters", k);
@@ -712,7 +712,7 @@ fn send_event(
     best_effort: bool,
     k: VB,
 ) -> Plan {
-    let path = format!("/sendToDevice/{event_type}/{}", crate::crypto::uuid4().replace('-', ""));
+    let path = format!("/sendToDevice/{event_type}/{}", s.env.uuid4().replace('-', ""));
     let f = Fetch::put(path, json!({"messages": {user_id: {device_id: content}}}));
     let Some(f) = bounded(&v, f, None, best_effort) else { return k(s, v, false) };
     s.fetch(f, move |s, r| k(s, v, r.ok))
@@ -787,7 +787,7 @@ mod tests {
     fn responder_roundtrip() {
         let (user, own_dev, peer_dev, txn) = ("@u:h", "MERCURIO", "ELEMENT", "sas-transaction");
         let st = start(peer_dev);
-        let mut sas = Sas::new(user, own_dev, user, peer_dev, &st).unwrap();
+        let mut sas = Sas::new(user, own_dev, user, peer_dev, &st, crate::testing::test_env()).unwrap();
         let accept = sas.accept_content().unwrap();
         let mut data = sas.public_key.as_bytes().to_vec();
         data.extend_from_slice(canonical_json(&st).as_bytes());
@@ -795,7 +795,7 @@ mod tests {
         assert_eq!(accept["short_authentication_string"], json!(["decimal"]));
         assert!(sas.accept_content().is_err(), "accept twice");
 
-        let peer = XKey::generate();
+        let peer = XKey::generate(crate::testing::test_env());
         sas.receive_key(&json!(b64enc(&peer.public()))).unwrap();
         assert_eq!(sas.key_content().unwrap()["key"], sas.public_key);
         let shared = peer.exchange(&b64dec(&sas.public_key).unwrap()).unwrap();
@@ -813,7 +813,7 @@ mod tests {
             let info = format!("MATRIX_KEY_VERIFICATION_MAC{user}{peer_dev}{user}{own_dev}{txn}{key_id}");
             b64enc(&hmac_sha256(&hkdf_sha256(&shared, 32, None, info.as_bytes()), value.as_bytes()))
         };
-        let own = super::super::e2ee::OlmAccount::new();
+        let own = super::super::e2ee::OlmAccount::new(crate::testing::test_env());
         let mac = sas.mac_content(&own.signing_key()).unwrap();
         assert!(mac["mac"].get("ed25519:MERCURIO").is_some());
         // Our MAC verifies with the peer-side derivation (sender = us).
@@ -822,7 +822,7 @@ mod tests {
             b64enc(&hmac_sha256(&hkdf_sha256(&shared, 32, None, info.as_bytes()), own.signing_key().as_bytes()));
         assert_eq!(mac["mac"]["ed25519:MERCURIO"], expect);
 
-        let peer_acct = super::super::e2ee::OlmAccount::new();
+        let peer_acct = super::super::e2ee::OlmAccount::new(crate::testing::test_env());
         let kid = format!("ed25519:{peer_dev}");
         let content = json!({
             "transaction_id": txn,
@@ -853,9 +853,9 @@ mod tests {
     #[test]
     fn start_validation() {
         let ok = start("ELEMENT");
-        assert!(Sas::new("@u:h", "A", "@u:h", "ELEMENT", &ok).is_ok());
-        assert!(Sas::new("@u:h", "A", "@u:h", "", &ok).is_err());
-        assert!(Sas::new("@u:h", "A", "@u:h", "OTHER", &ok).is_err());
+        assert!(Sas::new("@u:h", "A", "@u:h", "ELEMENT", &ok, crate::testing::test_env()).is_ok());
+        assert!(Sas::new("@u:h", "A", "@u:h", "", &ok, crate::testing::test_env()).is_err());
+        assert!(Sas::new("@u:h", "A", "@u:h", "OTHER", &ok, crate::testing::test_env()).is_err());
         for (field, bad) in [
             ("method", json!("m.reciprocate.v1")),
             ("key_agreement_protocols", json!(["curve25519"])),
@@ -866,13 +866,13 @@ mod tests {
         ] {
             let mut st = ok.clone();
             st[field] = bad;
-            assert!(Sas::new("@u:h", "A", "@u:h", "ELEMENT", &st).is_err(), "{field}");
+            assert!(Sas::new("@u:h", "A", "@u:h", "ELEMENT", &st, crate::testing::test_env()).is_err(), "{field}");
         }
     }
 
     #[test]
     fn state_guards_and_limits() {
-        let mut sas = Sas::new("@u:h", "A", "@u:h", "ELEMENT", &start("ELEMENT")).unwrap();
+        let mut sas = Sas::new("@u:h", "A", "@u:h", "ELEMENT", &start("ELEMENT"), crate::testing::test_env()).unwrap();
         assert!(sas.receive_key(&json!("x")).is_err(), "key before accept");
         assert!(sas.key_content().is_err());
         assert!(sas.decimal_sas().is_err());
@@ -881,7 +881,7 @@ mod tests {
         assert!(sas.receive_key(&json!("")).is_err());
         assert!(sas.receive_key(&json!("A".repeat(600))).is_err());
         assert!(sas.receive_key(&json!(b64enc(&[0u8; 32]))).is_err(), "low-order key");
-        let peer = XKey::generate();
+        let peer = XKey::generate(crate::testing::test_env());
         sas.receive_key(&json!(b64enc(&peer.public()))).unwrap();
         sas.mac_content("k").unwrap();
         let too_many: Map<String, Value> = (0..11).map(|i| (format!("ed25519:{i}"), json!("m"))).collect();

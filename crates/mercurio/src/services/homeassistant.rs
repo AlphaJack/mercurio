@@ -193,7 +193,7 @@ impl Notify for HomeAssistant {
         let payload = json!({"title": msg.title, "message": msg.body});
         let Some(targets) = &self.targets else {
             let mut payload = payload;
-            let nid = self.nid.clone().unwrap_or_else(crate::crypto::uuid4);
+            let nid = self.nid.clone().unwrap_or_else(|| ctx.env().uuid4());
             payload["notification_id"] = json!(nid);
             let url = format!("{}/api/services/persistent_notification/create", self.base);
             return self.post(url, &payload, ctx);

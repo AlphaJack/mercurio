@@ -1,5 +1,6 @@
 //! RFC 5322 / MIME message building: quoted-printable and base64 bodies, RFC 2047 encoded words, multipart trees. CRLF line endings throughout.
 
+use crate::env::Env;
 use crate::crypto;
 
 /// Longest line in an encoded body or header (RFC 2045), the `=` of a quoted-printable soft break included.
@@ -167,12 +168,12 @@ fn filename_param(name: &str) -> String {
     format!("filename*=utf-8''{enc}")
 }
 
-fn boundary() -> String {
-    format!("=============mercurio{}==", crypto::random_hex(12))
+fn boundary(env: &dyn Env) -> String {
+    format!("=============mercurio{}==", env.random_hex(12))
 }
 
 /// Serialise a message: `headers` first, then the MIME tree. CRLF everywhere.
-pub fn render(headers: &[(String, String)], body: &Part) -> String {
+pub fn render(headers: &[(String, String)], body: &Part, env: &dyn Env) -> String {
     let mut out = String::new();
     for (k, v) in headers {
         out.push_str(k);
@@ -181,11 +182,11 @@ pub fn render(headers: &[(String, String)], body: &Part) -> String {
         out.push_str(CRLF);
     }
     out.push_str("MIME-Version: 1.0\r\n");
-    render_part(body, &mut out);
+    render_part(body, &mut out, env);
     out
 }
 
-fn render_part(part: &Part, out: &mut String) {
+fn render_part(part: &Part, out: &mut String, env: &dyn Env) {
     match part {
         Part::Leaf { headers, content } => {
             for (k, v) in headers {
@@ -198,11 +199,11 @@ fn render_part(part: &Part, out: &mut String) {
             out.push_str(content);
         }
         Part::Multi { subtype, parts } => {
-            let b = boundary();
+            let b = boundary(env);
             out.push_str(&format!("Content-Type: multipart/{subtype}; boundary=\"{b}\"\r\n\r\n"));
             for p in parts {
                 out.push_str(&format!("--{b}\r\n"));
-                render_part(p, out);
+                render_part(p, out, env);
                 out.push_str(CRLF);
             }
             out.push_str(&format!("--{b}--"));

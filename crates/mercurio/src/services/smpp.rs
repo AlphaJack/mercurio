@@ -13,7 +13,6 @@
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
-use crate::crypto;
 use crate::error::{Error, Result};
 use crate::parse::{is_phone_no, parse_phone_no, parse_phone_no_unquoted};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -118,11 +117,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 impl Notify for Smpp {
-    fn plan(&self, msg: &Prepared<'_>, _ctx: &Context<'_>) -> Plan {
+    fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         if self.targets.is_empty() {
             return Plan::Fail(Error::Message("there were no SMPP targets to notify".into()));
         }
-        let (parts, coding, esm) = match make_parts(msg.body, crypto_ref()) {
+        let (parts, coding, esm) = match make_parts(msg.body, crypto_ref(ctx.env().as_ref())) {
             Ok(p) => p,
             Err(e) => return Plan::Fail(e),
         };
@@ -141,9 +140,9 @@ impl Notify for Smpp {
 
 }
 
-fn crypto_ref() -> u8 {
+fn crypto_ref(env: &dyn crate::Env) -> u8 {
     let mut b = [0u8; 1];
-    crypto::random_bytes(&mut b);
+    env.fill_random(&mut b);
     b[0]
 }
 

@@ -14,6 +14,8 @@ use ring::signature::{ED25519, Ed25519KeyPair, KeyPair, UnparsedPublicKey};
 use serde_json::{Map, Value, json};
 use zeroize::{Zeroize, Zeroizing};
 
+use crate::env::Env;
+
 /// Rotate the Megolm session after this many messages.
 pub const MEGOLM_ROTATION_MSGS: u32 = 100;
 /// Rotate the Megolm session after this many seconds (7 days).
@@ -151,9 +153,9 @@ pub fn aes_ctr(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Vec<u8> {
     out
 }
 
-pub fn random32() -> [u8; 32] {
+pub fn random32(env: &dyn Env) -> [u8; 32] {
     let mut b = [0u8; 32];
-    crate::crypto::random_bytes(&mut b);
+    env.fill_random(&mut b);
     b
 }
 
@@ -249,8 +251,8 @@ impl Drop for SigningKey {
 impl SigningKey {
     // Ring rejects only seeds whose length is not 32 bytes; `random32()` is `[u8; 32]`.
     #[expect(clippy::expect_used, reason = "ring rejects only seeds whose length is not 32 bytes")]
-    pub fn generate() -> Self {
-        Self::from_seed(random32()).expect("valid seed")
+    pub fn generate(env: &dyn Env) -> Self {
+        Self::from_seed(random32(env)).expect("valid seed")
     }
 
     pub fn from_seed(seed: [u8; 32]) -> CResult<Self> {
@@ -301,8 +303,8 @@ impl std::fmt::Debug for XKey {
 }
 
 impl XKey {
-    pub fn generate() -> Self {
-        XKey(random32())
+    pub fn generate(env: &dyn Env) -> Self {
+        XKey(random32(env))
     }
 
     #[cfg(test)]
@@ -391,10 +393,10 @@ pub fn verify_signed_otk(otk: &Value, user_id: &str, device_id: &str, ed25519_pu
 }
 
 /// Encrypt attachment bytes (Matrix `EncryptedFile` v2, AES-256-CTR).
-pub fn encrypt_attachment(data: &[u8]) -> (Vec<u8>, Value) {
-    let key = Zeroizing::new(random32());
+pub fn encrypt_attachment(data: &[u8], env: &dyn Env) -> (Vec<u8>, Value) {
+    let key = Zeroizing::new(random32(env));
     let mut iv = [0u8; 16];
-    crate::crypto::random_bytes(&mut iv[..8]);
+    env.fill_random(&mut iv[..8]);
     encrypt_attachment_with(data, &key, &iv)
 }
 
@@ -435,15 +437,9 @@ impl Drop for OlmAccount {
     }
 }
 
-impl Default for OlmAccount {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl OlmAccount {
-    pub fn new() -> Self {
-        Self { ik: XKey::generate(), sk: SigningKey::generate(), fallback_otk: None }
+    pub fn new(env: &dyn Env) -> Self {
+        Self { ik: XKey::generate(env), sk: SigningKey::generate(env), fallback_otk: None }
     }
 
     #[cfg(test)]
@@ -505,7 +501,7 @@ impl OlmAccount {
     }
 
     /// Signed `fallback_keys` (creates the fallback key on first use).
-    pub fn fallback_keys_payload(&mut self, user_id: &str, device_id: &str) -> Value {
+    pub fn fallback_keys_payload(&mut self, user_id: &str, device_id: &str, env: &dyn Env) -> Value {
         let parsed = self.fallback_otk.as_ref().and_then(|f| {
             let id = f.get("id")?.as_str()?.to_string();
             let sk = XKey::from_b64(f.get("sk")?.as_str()?).ok()?;
@@ -514,8 +510,8 @@ impl OlmAccount {
         let (id, sk) = match parsed {
             Some(p) => p,
             None => {
-                let id = crate::crypto::uuid4().replace('-', "").get(..10).unwrap_or_default().to_string();
-                let sk = XKey::generate();
+                let id = env.uuid4().replace('-', "").get(..10).unwrap_or_default().to_string();
+                let sk = XKey::generate(env);
                 self.fallback_otk = Some(json!({"id": id, "sk": sk.to_b64()}));
                 (id, sk)
             }
@@ -524,8 +520,8 @@ impl OlmAccount {
     }
 
     /// Outbound Olm session (X3DH) to a device.
-    pub fn create_outbound_session(&self, their_ik_b64: &str, their_otk_b64: &str) -> CResult<OlmSession> {
-        self.create_outbound_session_with(their_ik_b64, their_otk_b64, XKey::generate())
+    pub fn create_outbound_session(&self, their_ik_b64: &str, their_otk_b64: &str, env: &dyn Env) -> CResult<OlmSession> {
+        self.create_outbound_session_with(their_ik_b64, their_otk_b64, XKey::generate(env))
     }
 
     pub fn create_outbound_session_with(
@@ -620,25 +616,16 @@ pub struct MegolmSession {
     pub created_at: f64,
 }
 
-fn now_secs() -> f64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
-}
-
 impl Drop for MegolmSession {
     fn drop(&mut self) {
         self.ratchet.zeroize();
     }
 }
 
-impl Default for MegolmSession {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl MegolmSession {
-    pub fn new() -> Self {
-        Self::from_parts([random32(), random32(), random32(), random32()], 0, SigningKey::generate(), now_secs())
+    pub fn new(env: &dyn Env) -> Self {
+        let ratchet = [random32(env), random32(env), random32(env), random32(env)];
+        Self::from_parts(ratchet, 0, SigningKey::generate(env), env.unix_time_f64())
     }
 
     pub fn from_parts(ratchet: [[u8; 32]; 4], counter: u32, sk: SigningKey, created_at: f64) -> Self {
@@ -676,8 +663,8 @@ impl MegolmSession {
         split_keys(&keys)
     }
 
-    pub fn should_rotate(&self) -> bool {
-        self.counter >= MEGOLM_ROTATION_MSGS || now_secs() - self.created_at >= MEGOLM_ROTATION_AGE
+    pub fn should_rotate(&self, env: &dyn Env) -> bool {
+        self.counter >= MEGOLM_ROTATION_MSGS || env.unix_time_f64() - self.created_at >= MEGOLM_ROTATION_AGE
     }
 
     /// Encrypt bytes; returns the base64 Megolm message.
@@ -725,7 +712,7 @@ impl MegolmSession {
         })
     }
 
-    pub fn from_value(v: &Value) -> CResult<Self> {
+    pub fn from_value(v: &Value, env: &dyn Env) -> CResult<Self> {
         if v.get("version").and_then(Value::as_u64) != Some(MATRIX_MEGOLM_STORE_VERSION) {
             return Err(CryptoError("incompatible Megolm session cache format"));
         }
@@ -741,7 +728,7 @@ impl MegolmSession {
         let counter = v.get("counter").and_then(Value::as_u64).ok_or(CryptoError("missing counter"))?;
         let counter = u32::try_from(counter).map_err(|_| CryptoError("counter out of range"))?;
         let sk = SigningKey::from_b64(v.get("sk").and_then(Value::as_str).ok_or(CryptoError("missing sk"))?)?;
-        let created_at = v.get("created_at").and_then(Value::as_f64).unwrap_or_else(now_secs);
+        let created_at = v.get("created_at").and_then(Value::as_f64).unwrap_or_else(|| env.unix_time_f64());
         Ok(Self::from_parts(*ratchet, counter, sk, created_at))
     }
 }
@@ -930,10 +917,10 @@ pub(crate) mod tests {
     /// Bob decrypts Alice's pre-key message (mirrors the upstream test).
     #[test]
     fn olm_roundtrip() {
-        let alice = OlmAccount::new();
-        let bob = OlmAccount::new();
-        let bob_otk = XKey::generate();
-        let mut session = alice.create_outbound_session(&bob.identity_key(), &b64enc(&bob_otk.public())).unwrap();
+        let alice = OlmAccount::new(crate::testing::test_env());
+        let bob = OlmAccount::new(crate::testing::test_env());
+        let bob_otk = XKey::generate(crate::testing::test_env());
+        let mut session = alice.create_outbound_session(&bob.identity_key(), &b64enc(&bob_otk.public()), crate::testing::test_env()).unwrap();
         let msg = session.encrypt(b"hello from Alice");
         assert_eq!(msg["type"], 0);
         let raw = b64dec(msg["body"].as_str().unwrap()).unwrap();
@@ -965,7 +952,7 @@ pub(crate) mod tests {
     /// Decrypt Megolm messages from the exported session key, as a receiving client would (signature, MAC, ratchet advance).
     #[test]
     fn megolm_roundtrip() {
-        let mut s = MegolmSession::new();
+        let mut s = MegolmSession::new(crate::testing::test_env());
         let key = b64dec(&s.session_key()).unwrap();
         assert_eq!(key.len(), 1 + 4 + 128 + 32 + 64);
         assert_eq!(key[0], 2);
@@ -976,7 +963,7 @@ pub(crate) mod tests {
         for (i, r) in ratchet.iter_mut().enumerate() {
             r.copy_from_slice(&key[5 + 32 * i..5 + 32 * (i + 1)]);
         }
-        let mut inbound = MegolmSession::from_parts(ratchet, 0, SigningKey::generate(), 0.0);
+        let mut inbound = MegolmSession::from_parts(ratchet, 0, SigningKey::generate(crate::testing::test_env()), 0.0);
         for n in 0..300u32 {
             let text = format!("message {n}");
             let ct = b64dec(&s.encrypt_bytes(text.as_bytes())).unwrap();
@@ -991,22 +978,22 @@ pub(crate) mod tests {
             inbound.advance();
         }
         assert_eq!(s.counter(), 300);
-        assert!(s.should_rotate());
-        let restored = MegolmSession::from_value(&s.to_value()).unwrap();
+        assert!(s.should_rotate(crate::testing::test_env()));
+        let restored = MegolmSession::from_value(&s.to_value(), crate::testing::test_env()).unwrap();
         assert_eq!(restored.session_key(), s.session_key());
-        assert!(MegolmSession::from_value(&json!({"version": 0})).is_err());
+        assert!(MegolmSession::from_value(&json!({"version": 0}), crate::testing::test_env()).is_err());
     }
 
     #[test]
     fn megolm_advance_matches_libolm_rules() {
         // R[h] for the highest changed part derives the lower ones from its original value.
-        let mut s = MegolmSession::from_parts([[1; 32], [2; 32], [3; 32], [4; 32]], 255, SigningKey::generate(), 0.0);
+        let mut s = MegolmSession::from_parts([[1; 32], [2; 32], [3; 32], [4; 32]], 255, SigningKey::generate(crate::testing::test_env()), 0.0);
         s.advance();
         assert_eq!(s.ratchet[2], hmac_sha256(&[3; 32], &[2]));
         assert_eq!(s.ratchet[3], hmac_sha256(&[3; 32], &[3]));
         assert_eq!(s.ratchet[1], [2; 32]);
         let mut s =
-            MegolmSession::from_parts([[1; 32], [2; 32], [3; 32], [4; 32]], (1 << 24) - 1, SigningKey::generate(), 0.0);
+            MegolmSession::from_parts([[1; 32], [2; 32], [3; 32], [4; 32]], (1 << 24) - 1, SigningKey::generate(crate::testing::test_env()), 0.0);
         s.advance();
         assert_eq!(s.ratchet[0], hmac_sha256(&[1; 32], &[0]));
         assert_eq!(s.ratchet[3], hmac_sha256(&[1; 32], &[3]));
@@ -1014,7 +1001,7 @@ pub(crate) mod tests {
 
     #[test]
     fn device_keys_sign_and_verify() {
-        let mut acct = OlmAccount::new();
+        let mut acct = OlmAccount::new(crate::testing::test_env());
         let dk = acct.device_keys_payload("@a:hs", "DEV");
         assert!(verify_device_keys(&dk, "@a:hs", "DEV"));
         assert!(!verify_device_keys(&dk, "@b:hs", "DEV"), "user binding");
@@ -1025,13 +1012,13 @@ pub(crate) mod tests {
         let mut with_unsigned = dk.clone();
         with_unsigned["unsigned"] = json!({"device_display_name": "x"});
         assert!(verify_device_keys(&with_unsigned, "@a:hs", "DEV"));
-        let fb = acct.fallback_keys_payload("@a:hs", "DEV");
+        let fb = acct.fallback_keys_payload("@a:hs", "DEV", crate::testing::test_env());
         let (kid, otk) = fb.as_object().unwrap().iter().next().unwrap();
         assert!(kid.starts_with("signed_curve25519:") && kid.len() == 28);
         assert!(verify_signed_otk(otk, "@a:hs", "DEV", &acct.signing_key()));
-        assert!(!verify_signed_otk(otk, "@a:hs", "DEV", &OlmAccount::new().signing_key()));
+        assert!(!verify_signed_otk(otk, "@a:hs", "DEV", &OlmAccount::new(crate::testing::test_env()).signing_key()));
         // The fallback key is stable once created and survives a round trip.
-        let again = OlmAccount::from_value(&acct.to_value()).unwrap().fallback_keys_payload("@a:hs", "DEV");
+        let again = OlmAccount::from_value(&acct.to_value()).unwrap().fallback_keys_payload("@a:hs", "DEV", crate::testing::test_env());
         assert_eq!(again[kid]["key"], otk["key"]);
         assert!(OlmAccount::from_value(&json!({"ik": "x"})).is_err());
     }
@@ -1049,7 +1036,7 @@ pub(crate) mod tests {
         assert_eq!(info["iv"], b64enc(&iv));
         assert_eq!(b64enc(&[0xfb; 16]), "+/v7+/v7+/v7+/v7+/v7+w");
         assert_eq!(info["hashes"]["sha256"], b64enc(&sha256(&ct)));
-        let (_, rand_info) = encrypt_attachment(b"x");
+        let (_, rand_info) = encrypt_attachment(b"x", crate::testing::test_env());
         let iv = b64dec(rand_info["iv"].as_str().unwrap()).unwrap();
         assert_eq!(&iv[8..], &[0u8; 8]);
     }

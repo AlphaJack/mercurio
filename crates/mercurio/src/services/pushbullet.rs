@@ -1,9 +1,11 @@
 //! Pushbullet (`pbul://`): pushes through the Pushbullet API.
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
+use crate::env::Env;
 use crate::error::Error;
 use crate::http::{Multipart, Request, Response};
 use crate::parse::{is_email, parse_list, validate_nonblank};
@@ -70,6 +72,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 struct Api {
     token: String,
     app_id: String,
+    env: Arc<dyn Env>,
 }
 
 impl Api {
@@ -86,7 +89,7 @@ impl Api {
         Request::post(url)
             .header("User-Agent", &self.app_id)
             .basic_auth(&self.token, Some(""))
-            .multipart(Multipart::new().file("file", name, "", data.to_vec()))
+            .multipart(Multipart::with_env(self.env.as_ref()).file("file", name, "", data.to_vec()))
     }
 }
 
@@ -152,7 +155,7 @@ fn upload_all(api: Api, mut pending: Vec<Upload>, mut done: Vec<Value>, finish: 
 
 impl Notify for PushBullet {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let api = Api { token: self.token.expose().to_string(), app_id: ctx.app_id().to_string() };
+        let api = Api { token: self.token.expose().to_string(), app_id: ctx.app_id().to_string(), env: ctx.env().clone() };
         let uploads: Vec<Upload> = msg
             .attachments
             .iter()

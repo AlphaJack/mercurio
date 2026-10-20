@@ -9,6 +9,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use crate::env::Env;
 use crate::util::scalar_text;
 use crate::error::Error;
 use crate::http::{Multipart, Request, Response};
@@ -209,9 +210,9 @@ fn normalize_base_uri(uri: &str) -> String {
 }
 
 /// Nonce: a random 64-bit number followed by the timestamp.
-fn nonce(timestamp: u64) -> String {
+fn nonce(timestamp: u64, env: &dyn Env) -> String {
     let mut b = [0u8; 8];
-    crate::crypto::random_bytes(&mut b);
+    env.fill_random(&mut b);
     format!("{}{}", u64::from_le_bytes(b), timestamp)
 }
 
@@ -226,21 +227,21 @@ struct Media {
 }
 
 impl Twitter {
-    fn sign(&self, req: Request) -> Request {
-        let ts = crate::time::unix_time();
+    fn sign(&self, req: Request, env: &dyn Env) -> Request {
+        let ts = env.unix_time();
         let auth = OAuth1 {
             consumer_key: self.ckey.expose(),
             consumer_secret: self.csecret.expose(),
             token: self.akey.expose(),
             token_secret: self.asecret.expose(),
         }
-        .header(req.method.as_str(), &req.url, &[], &nonce(ts), &ts.to_string());
+        .header(req.method.as_str(), &req.url, &[], &nonce(ts, env), &ts.to_string());
         req.header("Authorization", auth)
     }
 
-    fn rate_wait(&self) -> Option<Duration> {
+    fn rate_wait(&self, env: &dyn Env) -> Option<Duration> {
         let (remaining, reset) = *self.ratelimit.lock().unwrap_or_else(|e| e.into_inner());
-        let now = crate::time::unix_time_ms() as f64 / 1000.0;
+        let now = env.unix_time_ms() as f64 / 1000.0;
         (remaining == 0 && now < reset).then(|| Duration::from_secs_f64(reset - now + 0.5))
     }
 
@@ -257,11 +258,11 @@ impl Twitter {
     }
 
     /// Sign and send when execution reaches it, then hand the parsed JSON (or the error) to `then`.
-    fn fetch(self: &Arc<Self>, req: Request, then: Then) -> Plan {
-        let me = self.clone();
+    fn fetch(self: &Arc<Self>, req: Request, env: &Arc<dyn Env>, then: Then) -> Plan {
+        let (me, env) = (self.clone(), env.clone());
         Plan::defer(move || {
-            let wait = me.rate_wait();
-            let req = me.sign(req);
+            let wait = me.rate_wait(env.as_ref());
+            let req = me.sign(req, env.as_ref());
             let plan = Plan::http(req, move |res| match res {
                 Err(e) => then(Err(e)),
                 Ok(r) if !r.is_success() => then(Err(r.http_error())),
@@ -293,10 +294,15 @@ impl Twitter {
         let category = if self.mode == Mode::Tweet { "tweet_image" } else { "dm_image" };
         let req = Request::post(MEDIA_URL)
             .header("User-Agent", &ctx.ua)
-            .multipart(Multipart::new().text("media_category", category).file("media", a.name.clone(), "", a.data));
-        let me = self.clone();
+            .multipart(
+                Multipart::with_boundary(ctx.env.random_hex(16))
+                    .text("media_category", category)
+                    .file("media", a.name.clone(), "", a.data),
+            );
+        let (me, env) = (self.clone(), ctx.env.clone());
         self.fetch(
             req,
+            &env,
             Box::new(move |res| {
                 let content = match res {
                     Ok(c) => c,
@@ -347,7 +353,7 @@ impl Twitter {
         }
         Plan::all(payloads.into_iter().map(|p| {
             let req = Self::json_post(TWEET_URL, &ctx.ua, &p);
-            self.fetch(req, Box::new(|res| Plan::from_result(res.map(|_| ()))))
+            self.fetch(req, &ctx.env, Box::new(|res| Plan::from_result(res.map(|_| ()))))
         }))
     }
 
@@ -367,7 +373,7 @@ impl Twitter {
             }
         }
         let me = self.clone();
-        let ua = ctx.ua.clone();
+        let (ua, env) = (ctx.ua.clone(), ctx.env.clone());
         let deliver = Box::new(move |targets: Vec<(String, String)>| -> Plan {
             if targets.is_empty() {
                 return Plan::Fail(Error::service("failed to acquire user(s) to Direct Message via Twitter"));
@@ -377,7 +383,7 @@ impl Twitter {
                 for (name, id) in &targets {
                     let req = Self::json_post(&format!("{DM_URL}{id}/messages"), &ctx.ua, p);
                     plans.push(
-                        me.fetch(req, Box::new(|res| Plan::from_result(res.map(|_| ())))).target(format!("@{name}")),
+                        me.fetch(req, &ctx.env, Box::new(|res| Plan::from_result(res.map(|_| ())))).target(format!("@{name}")),
                     );
                 }
             }
@@ -388,6 +394,7 @@ impl Twitter {
             let req = Request::get(WHOAMI_URL).header("User-Agent", &ua);
             return self.fetch(
                 req,
+                &env,
                 Box::new(move |res| {
                     let found = res
                         .ok()
@@ -403,7 +410,7 @@ impl Twitter {
         }
         let names = parse_list(&targets);
         let batches: Vec<Vec<String>> = names.chunks(100).map(|c| c.to_vec()).collect();
-        self.lookup(batches, Vec::new(), ua, deliver)
+        self.lookup(batches, Vec::new(), ua, env, deliver)
     }
 
     /// `_user_lookup`: one GET per 100 names; failed batches are skipped.
@@ -412,6 +419,7 @@ impl Twitter {
         mut batches: Vec<Vec<String>>,
         mut found: Vec<(String, String)>,
         ua: String,
+        env: Arc<dyn Env>,
         deliver: Deliver,
     ) -> Plan {
         if batches.is_empty() {
@@ -424,6 +432,7 @@ impl Twitter {
         let me = self.clone();
         self.fetch(
             req,
+            &env.clone(),
             Box::new(move |res| {
                 if let Ok(Value::Object(c)) = res
                     && let Some(Value::Array(entries)) = c.get("data")
@@ -439,7 +448,7 @@ impl Twitter {
                         }
                     }
                 }
-                me.lookup(batches, found, ua, deliver)
+                me.lookup(batches, found, ua, env, deliver)
             }),
         )
     }
@@ -450,6 +459,7 @@ impl Twitter {
 struct Job {
     body: String,
     ua: String,
+    env: Arc<dyn Env>,
 }
 
 impl Notify for Arc<Twitter> {
@@ -459,7 +469,7 @@ impl Notify for Arc<Twitter> {
         }
         let images: Vec<Attachment> =
             msg.attachments.iter().filter(|a| a.mime.to_ascii_lowercase().starts_with("image/")).cloned().collect();
-        let job = Job { body: msg.body.to_string(), ua: ctx.app_id().to_string() };
+        let job = Job { body: msg.body.to_string(), ua: ctx.app_id().to_string(), env: ctx.env().clone() };
         self.upload(images, Vec::new(), job)
     }
 
@@ -519,6 +529,6 @@ mod tests {
     fn base_uri() {
         assert_eq!(normalize_base_uri("HTTPS://Api.X.com:443/2/a"), "https://api.x.com/2/a");
         assert_eq!(normalize_base_uri("http://h:8080"), "http://h:8080/");
-        assert!(nonce(5).ends_with('5'));
+        assert!(nonce(5, crate::testing::test_env()).ends_with('5'));
     }
 }

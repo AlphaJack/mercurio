@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
+use crate::env::Env;
 use crate::asset::ImageSize;
 use crate::error::Error;
 use crate::http::{Multipart, Request, Response};
@@ -282,6 +283,7 @@ struct Endpoint {
     url: String,
     user_agent: String,
     params: Option<String>,
+    env: Arc<dyn Env>,
 }
 
 enum Step {
@@ -296,10 +298,6 @@ struct RateLimit {
     reset: f64,
 }
 
-fn now_secs() -> f64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
-}
-
 fn build_request(ep: &Endpoint, step: &Step) -> Request {
     let mut req = Request::post(ep.url.clone()).header("User-Agent", ep.user_agent.clone());
     if let Some(t) = &ep.params {
@@ -310,7 +308,8 @@ fn build_request(ep: &Endpoint, step: &Step) -> Request {
             .header("Content-Type", "application/json; charset=utf-8")
             .body(serde_json::to_vec(p).unwrap_or_default(), None),
         Step::Files(p, files) => {
-            let mut form = Multipart::new().text("payload_json", serde_json::to_string(p).unwrap_or_default());
+            let mut form = Multipart::with_boundary(ep.env.random_hex(16))
+                .text("payload_json", serde_json::to_string(p).unwrap_or_default());
             for (i, a) in files.iter().enumerate() {
                 form = form.file(format!("files[{i}]"), a.name.clone(), a.mime.clone(), a.data.clone());
             }
@@ -333,7 +332,7 @@ fn run_steps(ep: Arc<Endpoint>, mut steps: VecDeque<Step>, rl: RateLimit, retrie
     let Some(step) = steps.pop_front() else { return Plan::Done };
     let mut pre = Vec::new();
     if rl.remaining <= 0.0 {
-        let now = now_secs();
+        let now = ep.env.unix_time_f64();
         if now < rl.reset {
             pre.push(Plan::Sleep(Duration::from_secs_f64(rl.reset - now + CLOCK_SKEW_SECS)));
         }
@@ -354,8 +353,8 @@ fn run_steps(ep: Arc<Endpoint>, mut steps: VecDeque<Step>, rl: RateLimit, retrie
             return run_steps(ep, steps, rl, retries - 1);
         }
         // Without `Retry-After`, Discord's bucket reset is the wait.
-        if r.status == 429 && r.retry_after().is_none() && rl.reset > now_secs() {
-            let retry_after = Duration::from_secs_f64(rl.reset - now_secs() + CLOCK_SKEW_SECS);
+        if r.status == 429 && r.retry_after().is_none() && rl.reset > ep.env.unix_time_f64() {
+            let retry_after = Duration::from_secs_f64(rl.reset - ep.env.unix_time_f64() + CLOCK_SKEW_SECS);
             return Plan::Fail(r.rate_limited_or_http(Some(retry_after)));
         }
         Plan::Fail(r.http_error())
@@ -578,6 +577,7 @@ impl Notify for Discord {
             url: format!("{}/{}/{}", self.notify_url, self.webhook_id.expose(), self.webhook_token.expose()),
             user_agent: ctx.app_id().to_string(),
             params: self.thread.clone(),
+            env: ctx.env().clone(),
         });
         run_steps(ep, steps, RateLimit { remaining: 1.0, reset: 0.0 }, 1)
     }

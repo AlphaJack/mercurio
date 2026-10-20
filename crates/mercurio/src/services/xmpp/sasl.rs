@@ -93,8 +93,8 @@ fn saslname(s: &str) -> String {
 }
 
 impl Scram {
-    pub fn new(mech: Mech, user: &str) -> Scram {
-        Scram::with_nonce(mech, user, &crypto::b64(&random24()))
+    pub fn new(mech: Mech, user: &str, env: &dyn crate::Env) -> Scram {
+        Scram::with_nonce(mech, user, &crypto::b64(&random24(env)))
     }
 
     pub fn with_nonce(mech: Mech, user: &str, nonce: &str) -> Scram {
@@ -163,9 +163,9 @@ impl Scram {
     }
 }
 
-fn random24() -> [u8; 24] {
+fn random24(env: &dyn crate::Env) -> [u8; 24] {
     let mut b = [0u8; 24];
-    crypto::random_bytes(&mut b);
+    env.fill_random(&mut b);
     b
 }
 

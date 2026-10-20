@@ -2,7 +2,6 @@
 
 use serde_json::{Map, Value, json};
 
-use crate::crypto::uuid4;
 use crate::parse::{parse_list, validate_nonblank, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{Pairs, ParsedUrl, unquote};
@@ -88,7 +87,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 impl Notify for PagerTree {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let mut payload = Map::new();
-        payload.insert("id".into(), json!(self.thirdparty.clone().unwrap_or_else(uuid4)));
+        payload.insert("id".into(), json!(self.thirdparty.clone().unwrap_or_else(|| ctx.env().uuid4())));
         payload.insert("event_type".into(), json!(self.action));
         if self.action == "create" {
             let title = if msg.title.is_empty() { ctx.app_desc() } else { msg.title };

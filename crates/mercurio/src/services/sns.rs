@@ -5,6 +5,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::env::Env;
 use crate::error::Error;
 use crate::http::Request;
 use crate::parse::{is_phone_no, parse_list, validate_nonblank, validate_regex};
@@ -151,7 +152,7 @@ impl Sns {
     }
 
     /// A signed `POST` of `payload`, built when execution reaches it.
-    fn post(self: &Arc<Self>, payload: Vec<(&'static str, String)>, user_agent: String) -> Request {
+    fn post(self: &Arc<Self>, payload: Vec<(&'static str, String)>, user_agent: String, env: &dyn Env) -> Request {
         let body = form_urlencode(payload.iter());
         let host = self.host();
         let signer = AwsSigner {
@@ -162,7 +163,7 @@ impl Sns {
             host: &host,
             session_token: self.session_token.as_ref().map(Secret::expose),
         };
-        let headers = signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, crate::time::unix_time());
+        let headers = signer.sign_post(&body, AWS_FORM_CONTENT_TYPE, env.unix_time());
         let mut req = Request::post(format!("https://{host}/")).header("User-Agent", user_agent);
         for (k, v) in headers {
             req = req.header(k, v);
@@ -203,10 +204,10 @@ impl Notify for Arc<Sns> {
                 ("Version", "2010-03-31".to_string()),
                 ("PhoneNumber", no.clone()),
             ];
-            let (me, ua) = (self.clone(), ua.clone());
+            let (me, ua, env) = (self.clone(), ua.clone(), ctx.env().clone());
             plans.push(
                 Plan::defer(move || {
-                    Plan::http(me.post(payload, ua), |res| match aws_check(res) {
+                    Plan::http(me.post(payload, ua, env.as_ref()), |res| match aws_check(res) {
                         Ok(_) => Plan::Done,
                         Err(e) => Plan::Fail(e),
                     })
@@ -222,10 +223,10 @@ impl Notify for Arc<Sns> {
                 ("Version", "2010-03-31".to_string()),
                 ("Name", topic.clone()),
             ];
-            let (me, ua) = (self.clone(), ua.clone());
+            let (me, ua, env) = (self.clone(), ua.clone(), ctx.env().clone());
             plans.push(
                 Plan::defer(move || {
-                    let req = me.post(payload, ua.clone());
+                    let req = me.post(payload, ua.clone(), env.as_ref());
                     Plan::http(req, move |res| {
                         let r = match aws_check(res) {
                             Ok(r) => r,
@@ -247,7 +248,7 @@ impl Notify for Arc<Sns> {
                             payload.push(("Subject", s));
                         }
                         Plan::defer(move || {
-                            Plan::http(me.post(payload, ua), |res| match aws_check(res) {
+                            Plan::http(me.post(payload, ua, env.as_ref()), |res| match aws_check(res) {
                                 Ok(_) => Plan::Done,
                                 Err(e) => Plan::Fail(e),
                             })

@@ -14,6 +14,7 @@ use super::_ratelimit::{RateLimit, Reset};
 
 use serde_json::Value;
 
+use crate::env::Env;
 use crate::error::Error;
 use crate::http::{Request, Response};
 use crate::parse::{parse_list, validate_nonblank, validate_regex};
@@ -71,6 +72,8 @@ struct Creds {
     user_agent: String,
     /// The request budget, shared by every send of this URL.
     rate: Arc<RateLimit>,
+    /// The clock and random source (set per send).
+    env: Arc<dyn Env>,
 }
 
 const TOKEN_KEY: &str = "access_token";
@@ -153,6 +156,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             store: None,
             user_agent: String::new(),
             rate: RateLimit::new(Reset::SecondsLeft, CLOCK_SKEW),
+            env: parse_time_env(),
         }),
         subreddits,
         kind,
@@ -204,6 +208,12 @@ type Submits = Vec<(String, Vec<(String, String)>)>;
 
 type Next = Box<dyn FnOnce(Fetched, Option<String>) -> Plan + Send>;
 
+/// A placeholder until the first send sets the transport's [`Env`] (as `store` and `user_agent`).
+#[expect(clippy::disallowed_methods, reason = "replaced by the transport's Env on every send")]
+fn parse_time_env() -> Arc<dyn Env> {
+    crate::env::system().clone()
+}
+
 /// Submit or log in: the URL and auth depend on whether a token is held.
 fn fetch(creds: Arc<Creds>, token: Option<String>, payload: Vec<(String, String)>, next: Next) -> Plan {
     let req = match &token {
@@ -211,21 +221,21 @@ fn fetch(creds: Arc<Creds>, token: Option<String>, payload: Vec<(String, String)
         None => form_request(AUTH_URL, &payload, &creds.user_agent)
             .basic_auth(creds.client_id.expose(), Some(creds.client_secret.expose())),
     };
-    let rate = creds.rate.clone();
-    rate.send(req, &[200], move |res| {
+    let (rate, env) = (creds.rate.clone(), creds.env.clone());
+    rate.send(req, &[200], &env, move |res| {
         let r = match res {
             Ok(r) => r,
             Err(e) => return next(Fetched::Fail(e), token),
         };
         if r.status != 200 && token.is_some() {
             // Countermeasure: log in again and retry once.
-            let (ua, rate) = (creds.user_agent.clone(), creds.rate.clone());
+            let (ua, rate, env) = (creds.user_agent.clone(), creds.rate.clone(), creds.env.clone());
             return login(
                 creds,
                 Box::new(move |res, new_token| match (res, new_token) {
                     (Fetched::Ok(_), Some(t)) => {
                         let req = form_request(SUBMIT_URL, &payload, &ua).bearer(&t);
-                        rate.send(req, &[200], move |res| match res {
+                        rate.send(req, &[200], &env, move |res| match res {
                             Ok(r) => next(process(&r), Some(t)),
                             Err(e) => next(Fetched::Fail(e), Some(t)),
                         })
@@ -359,6 +369,7 @@ impl Notify for Reddit {
         let creds = Arc::new(Creds {
             store: Some(ctx.store()),
             user_agent: ctx.app_id().to_string(),
+            env: ctx.env().clone(),
             ..(*self.creds).clone()
         });
         if let Some(token) = ctx.store.get_str(TOKEN_KEY).filter(|t| !t.is_empty()) {

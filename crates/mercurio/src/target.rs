@@ -336,7 +336,8 @@ impl Target {
         let started = Instant::now();
         let store = self.store(asset);
         let memo = if retry > 0 { Memo::enabled() } else { Memo::disabled() };
-        let ctx = Context::new(asset, store, &memo);
+        let env = transport.env();
+        let ctx = Context::new(asset, store, &memo).with_env(&env);
         let stores = self.stores(&ctx);
         for s in &stores {
             run_files(s.clone().load(), transport).await;
@@ -428,7 +429,8 @@ impl Target {
     pub async fn close_async(&self, transport: &dyn AsyncTransport, asset: &Asset) -> Option<Delivery> {
         let store = self.storage.store.get()?;
         let memo = Memo::disabled();
-        let ctx = Context::new(asset, store, &memo);
+        let env = transport.env();
+        let ctx = Context::new(asset, store, &memo).with_env(&env);
         let plan = self.service.close(&ctx)?;
         let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(self.stores(&ctx));
         let ok = ex.run(plan).await;

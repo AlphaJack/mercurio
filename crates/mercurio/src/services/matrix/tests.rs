@@ -36,8 +36,15 @@ fn body(r: &Request) -> Value {
     serde_json::from_slice(&r.body).unwrap_or(Value::Null)
 }
 
+/// Wall-clock milliseconds: the sessions under test run on the system [`crate::Env`] of their `FakeTransport`, which drops stale verification requests.
+#[expect(clippy::disallowed_methods, reason = "the sessions under test run on the system clock")]
+fn now_ms() -> i64 {
+    crate::env::system().unix_time_ms() as i64
+}
+
+#[expect(clippy::disallowed_methods, reason = "temporary directories need names unique across runs")]
 fn temp_path(tag: &str) -> std::path::PathBuf {
-    std::env::temp_dir().join(format!("mercurio-matrix-{tag}-{}", crate::crypto::random_hex(6)))
+    std::env::temp_dir().join(format!("mercurio-matrix-{tag}-{}", crate::env::system().random_hex(6)))
 }
 
 #[test]
@@ -283,7 +290,13 @@ fn send_without_home_server(rooms: &[&str], users: &[&str], fake: &FakeTransport
         color: String::new(),
     };
     let store = crate::store::PersistentStore::memory().shared();
-    let plan = super::server::plan(std::sync::Arc::new(cfg), msg, store.clone(), crate::store::Memo::disabled());
+    let plan = super::server::plan(
+        std::sync::Arc::new(cfg),
+        msg,
+        store.clone(),
+        crate::store::Memo::disabled(),
+        crate::Transport::env(fake),
+    );
     (crate::plan::execute(plan, fake, crate::plan::ExecOptions::default()), store)
 }
 
@@ -440,10 +453,10 @@ mod e2ee {
         fn new(autoverify: bool) -> Self {
             Homeserver {
                 peer: Peer {
-                    bob: OlmAccount::new(),
-                    bob_otk: XKey::generate(),
-                    element: OlmAccount::new(),
-                    element_sas_key: XKey::generate(),
+                    bob: OlmAccount::new(crate::testing::test_env()),
+                    bob_otk: XKey::generate(crate::testing::test_env()),
+                    element: OlmAccount::new(crate::testing::test_env()),
+                    element_sas_key: XKey::generate(crate::testing::test_env()),
                 },
                 world: Mutex::new(World::default()),
                 autoverify,
@@ -498,7 +511,7 @@ mod e2ee {
             let (body, _mac) = signed.split_at(signed.len() - 8);
             let f = pb_fields(&body[1..]);
             let index = f[&1].1 as u32;
-            let mut inbound = MegolmSession::from_parts(ratchet, 0, SigningKey::generate(), 0.0);
+            let mut inbound = MegolmSession::from_parts(ratchet, 0, SigningKey::generate(crate::testing::test_env()), 0.0);
             for _ in 0..index {
                 inbound.encrypt_bytes(b"");
             }
@@ -596,7 +609,7 @@ mod e2ee {
                         0 => vec![ev(
                             "m.key.verification.request",
                             json!({"from_device": "ELEMENT", "transaction_id": "sas-1", "methods": ["m.sas.v1"],
-                                   "timestamp": crate::time::unix_time_ms() as i64}),
+                                   "timestamp": now_ms()}),
                         )],
                         2 => vec![ev("m.key.verification.start", start_content())],
                         4 => vec![ev(
@@ -853,7 +866,7 @@ mod e2ee {
 
     impl Dev {
         fn new(user: &'static str, id: &'static str) -> Self {
-            Dev { user, id, acct: OlmAccount::new() }
+            Dev { user, id, acct: OlmAccount::new(crate::testing::test_env()) }
         }
     }
 
@@ -869,7 +882,7 @@ mod e2ee {
             joined.insert(d.user.into(), json!({}));
             let user_keys = keys.entry(d.user).or_insert_with(|| json!({}));
             user_keys[d.id] = d.acct.device_keys_payload(d.user, d.id);
-            let mut otk = json!({"key": b64enc(&XKey::generate().public())});
+            let mut otk = json!({"key": b64enc(&XKey::generate(crate::testing::test_env()).public())});
             let sig = d.acct.sign(canonical_json(&otk).as_bytes());
             otk["signatures"] = json!({d.user: {format!("ed25519:{}", d.id): sig}});
             let user_otks = otks.entry(d.user).or_insert_with(|| json!({}));

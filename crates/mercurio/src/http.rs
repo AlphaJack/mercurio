@@ -367,8 +367,9 @@ impl Response {
     }
 
     /// The `Retry-After` header as a wait from now.
+    #[expect(clippy::disallowed_methods, reason = "a wait on the real clock, not request content")]
     pub fn retry_after(&self) -> Option<std::time::Duration> {
-        crate::error::parse_retry_after(self.header("retry-after")?, std::time::SystemTime::now())
+        crate::error::parse_retry_after(self.header("retry-after")?, crate::env::system().now())
     }
 
     /// Convert a non-2xx status into an error (see [`Response::http_error`]).
@@ -398,17 +399,26 @@ struct Part {
 }
 
 impl Default for Multipart {
+    #[expect(clippy::disallowed_methods, reason = "for callers outside a send")]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl Multipart {
-    /// Empty form with a random boundary.
+    /// Empty form with a random boundary from the system generator. Services use [`crate::Context::multipart`].
+    #[expect(clippy::disallowed_methods, reason = "for callers outside a send")]
     pub fn new() -> Self {
-        let mut b = [0u8; 16];
-        crate::crypto::random_bytes(&mut b);
-        let boundary = b.iter().map(|x| format!("{x:02x}")).collect::<String>();
+        Self::with_env(crate::env::system().as_ref())
+    }
+
+    /// Empty form with a random boundary from `env`.
+    pub fn with_env(env: &dyn crate::Env) -> Self {
+        Self::with_boundary(env.random_hex(16))
+    }
+
+    /// Empty form with `boundary`.
+    pub fn with_boundary(boundary: String) -> Self {
         Self { boundary, parts: Vec::new() }
     }
 

@@ -6,8 +6,9 @@ use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes128Gcm, Aes256Gcm, AesGcm, Nonce};
 use serde_json::{Value, json};
 
+use crate::env::Env;
 use crate::asset::ImageSize;
-use crate::crypto::{b64, b64_url_nopad, random_bytes};
+use crate::crypto::{b64, b64_url_nopad};
 use crate::error::Error;
 use crate::parse::{parse_list, parse_list_unquoted};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
@@ -211,9 +212,9 @@ fn compact_json(pairs: &[(&str, Value)]) -> String {
 }
 
 /// Encrypt one payload; returns `(base64 ciphertext, iv)`.
-fn encrypt_payload(key: &[u8], pairs: &[(&str, Value)]) -> Option<(String, String)> {
+fn encrypt_payload(key: &[u8], pairs: &[(&str, Value)], env: &dyn Env) -> Option<(String, String)> {
     let mut raw = [0u8; 9];
-    random_bytes(&mut raw);
+    env.fill_random(&mut raw);
     let iv = b64_url_nopad(&raw);
     let ct = aes_gcm_encrypt(key, iv.as_bytes(), compact_json(pairs).as_bytes())?;
     Some((b64(&ct), iv))
@@ -262,7 +263,7 @@ impl Notify for Bark {
 
         Plan::all(self.targets.iter().map(|target| {
             let payload = match &self.key {
-                Some(key) => match encrypt_payload(key.expose().as_bytes(), &pairs) {
+                Some(key) => match encrypt_payload(key.expose().as_bytes(), &pairs, ctx.env().as_ref()) {
                     Some((ciphertext, iv)) => json!({"device_key": target, "ciphertext": ciphertext, "iv": iv}),
                     None => return Plan::Fail(Error::Service("failed to encrypt Bark notification".into())),
                 },
@@ -299,7 +300,7 @@ mod tests {
     fn round_trip_all_key_sizes() {
         let pairs = vec![("title", json!("t")), ("body", json!("héllo \"x\"")), ("badge", json!(3))];
         for key in ["0123456789abcdef", "0123456789abcdef01234567", "0123456789abcdef0123456789abcdef"] {
-            let (ct, iv) = encrypt_payload(key.as_bytes(), &pairs).unwrap();
+            let (ct, iv) = encrypt_payload(key.as_bytes(), &pairs, crate::testing::test_env()).unwrap();
             assert_eq!(iv.len(), 12);
             let plain =
                 aes_gcm_decrypt(key.as_bytes(), iv.as_bytes(), &crate::crypto::b64_decode(&ct).unwrap()).unwrap();

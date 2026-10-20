@@ -281,10 +281,10 @@ fn ack_failed(version: Version, p: &Packet) -> bool {
 }
 
 /// Random client id for MQTT 3.1 (22 base62 characters).
-fn random_client_id() -> String {
+fn random_client_id(env: &dyn crate::Env) -> String {
     const ALPHABET: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     let mut buf = [0u8; 22];
-    crate::crypto::random_bytes(&mut buf);
+    env.fill_random(&mut buf);
     buf.iter().map(|b| ALPHABET[(*b as usize) % ALPHABET.len()] as char).collect()
 }
 
@@ -337,13 +337,13 @@ async fn run_session(s: Session, conn: &mut dyn AsyncConn) -> Result<()> {
 }
 
 impl Notify for Mqtt {
-    fn plan(&self, msg: &Prepared<'_>, _ctx: &Context<'_>) -> Plan {
+    fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         if self.topics.is_empty() {
             return Plan::Fail(Error::Message("there were no MQTT topics to notify".into()));
         }
         let client_id = match &self.client_id {
             Some(c) if !c.is_empty() => c.clone(),
-            _ if self.version == Version::V31 => random_client_id(),
+            _ if self.version == Version::V31 => random_client_id(ctx.env().as_ref()),
             _ => String::new(),
         };
         let topics: Vec<String> = self.topics.clone();
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn client_id_shape() {
-        let id = random_client_id();
+        let id = random_client_id(crate::testing::test_env());
         assert_eq!(id.len(), 22);
         assert!(id.chars().all(|c| c.is_ascii_alphanumeric()));
     }

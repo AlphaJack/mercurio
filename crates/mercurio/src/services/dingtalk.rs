@@ -3,7 +3,6 @@
 use serde_json::json;
 
 use crate::crypto::{b64, hmac_sha256};
-use crate::time::unix_time_ms;
 use crate::parse::{parse_list, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
@@ -119,7 +118,7 @@ impl Notify for DingTalk {
             .post(format!("https://oapi.dingtalk.com/robot/send?access_token={}", self.token.expose()))
             .json(&payload);
         if let Some(secret) = &self.secret {
-            let timestamp = unix_time_ms().to_string();
+            let timestamp = ctx.env().unix_time_ms().to_string();
             let signature = signature(secret.expose(), &timestamp);
             req = req.query(&[("timestamp", timestamp.as_str()), ("sign", signature.as_str())]);
         }

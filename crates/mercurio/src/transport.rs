@@ -8,6 +8,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::env::Env;
 use crate::error::{Error, Result};
 use crate::http::{DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, Request, Response};
 
@@ -48,6 +49,12 @@ pub trait Transport: Send + Sync {
     fn sleep(&self, d: Duration) {
         std::thread::sleep(d);
     }
+
+    /// The clock and random source services plan with. Default: [`crate::SystemEnv`].
+    #[expect(clippy::disallowed_methods, reason = "the default Env")]
+    fn env(&self) -> Arc<dyn Env> {
+        crate::env::system().clone()
+    }
 }
 
 impl<T: Transport + ?Sized> Transport for &T {
@@ -69,6 +76,9 @@ impl<T: Transport + ?Sized> Transport for &T {
     fn sleep(&self, d: Duration) {
         (**self).sleep(d)
     }
+    fn env(&self) -> Arc<dyn Env> {
+        (**self).env()
+    }
 }
 
 impl<T: Transport + ?Sized> Transport for Arc<T> {
@@ -89,6 +99,9 @@ impl<T: Transport + ?Sized> Transport for Arc<T> {
     }
     fn sleep(&self, d: Duration) {
         (**self).sleep(d)
+    }
+    fn env(&self) -> Arc<dyn Env> {
+        (**self).env()
     }
 }
 
@@ -137,6 +150,12 @@ pub trait AsyncTransport: Send + Sync {
 
     /// Wait for `d` (throttling, retry waits).
     fn sleep(&self, d: Duration) -> BoxFuture<'_, ()>;
+
+    /// The clock and random source services plan with. Default: [`crate::SystemEnv`].
+    #[expect(clippy::disallowed_methods, reason = "the default Env")]
+    fn env(&self) -> Arc<dyn Env> {
+        crate::env::system().clone()
+    }
 }
 
 /// A connected byte stream, read and written asynchronously. I/O errors stay [`io::Error`]s, so each protocol classifies them as before.
@@ -192,6 +211,9 @@ impl<T: Transport> AsyncTransport for Blocking<T> {
     fn sleep(&self, d: Duration) -> BoxFuture<'_, ()> {
         self.0.sleep(d);
         Box::pin(ready(()))
+    }
+    fn env(&self) -> Arc<dyn Env> {
+        self.0.env()
     }
 }
 
@@ -518,9 +540,10 @@ pub(crate) const PRIVATE_FILE_MODE: u32 = 0o600;
 pub(crate) const PRIVATE_DIR_MODE: u32 = 0o700;
 
 /// The staging directory of `path` and a fresh file name in it.
+#[expect(clippy::disallowed_methods, reason = "transports name their temporary files")]
 pub(crate) fn staging(path: &Path) -> (PathBuf, PathBuf) {
     let dir = path.parent().unwrap_or(Path::new(".")).join(crate::store::STAGING_DIR);
-    let file = dir.join(format!(".{}-{}.tmp", std::process::id(), crate::crypto::random_hex(6)));
+    let file = dir.join(format!(".{}-{}.tmp", std::process::id(), crate::env::system().random_hex(6)));
     (dir, file)
 }
 
@@ -554,7 +577,7 @@ mod tests {
 
     #[test]
     fn write_atomic_is_private_and_stages_in_tmp() {
-        let dir = std::env::temp_dir().join(format!("mercurio-transport-{}", crate::crypto::random_hex(6)));
+        let dir = std::env::temp_dir().join(format!("mercurio-transport-{}", crate::env::system().random_hex(6)));
         let path = dir.join("ns").join("key.pem");
         let op = FileOp::WriteAtomic { path: path.clone(), data: b"k".to_vec(), private: true };
         assert_eq!(std_file(&op).unwrap(), FileOutput::Done);

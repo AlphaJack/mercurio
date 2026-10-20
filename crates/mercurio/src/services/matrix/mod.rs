@@ -409,7 +409,7 @@ impl Matrix {
         })
     }
 
-    fn webhook_payload(&self, msg: &Msg) -> Result<Value> {
+    fn webhook_payload(&self, msg: &Msg, env: &dyn crate::Env) -> Result<Value> {
         Ok(match self.cfg.mode {
             Mode::Slack => {
                 let fix = |s: &str| -> Result<String> {
@@ -418,10 +418,7 @@ impl Matrix {
                     }
                     Ok(s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;"))
                 };
-                let ts = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_secs_f64())
-                    .unwrap_or(0.0);
+                let ts = env.unix_time_f64();
                 json!({
                     "username": self.display_name(msg),
                     "mrkdwn": msg.format == NotifyFormat::Markdown,
@@ -460,9 +457,9 @@ impl Matrix {
         })
     }
 
-    fn webhook_plan(&self, msg: &Msg) -> Plan {
+    fn webhook_plan(&self, msg: &Msg, env: &dyn crate::Env) -> Plan {
         let url = self.webhook_url();
-        let payload = match self.webhook_payload(msg) {
+        let payload = match self.webhook_payload(msg, env) {
             Ok(p) => p,
             Err(e) => return Plan::Fail(e),
         };
@@ -517,9 +514,9 @@ impl Notify for Matrix {
             color: ctx.asset.color(m.kind).to_string(),
         };
         if cfg.mode != Mode::Off {
-            return self.webhook_plan(&msg);
+            return self.webhook_plan(&msg, ctx.env().as_ref());
         }
-        server::plan(cfg.clone(), msg, self.store(ctx), ctx.memo.clone())
+        server::plan(cfg.clone(), msg, self.store(ctx), ctx.memo.clone(), ctx.env().clone())
     }
 
     fn close(&self, ctx: &Context<'_>) -> Option<Plan> {
@@ -538,7 +535,7 @@ impl Notify for Matrix {
             app_desc: ctx.app_desc().to_string(),
             color: String::new(),
         };
-        server::close(self.cfg.clone(), msg, self.store(ctx))
+        server::close(self.cfg.clone(), msg, self.store(ctx), ctx.env().clone())
     }
 
     fn url_identifier(&self) -> UrlIdentifier {

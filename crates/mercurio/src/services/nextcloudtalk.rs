@@ -4,7 +4,7 @@
 
 use serde_json::json;
 
-use crate::crypto::{hex, hmac_sha256, random_hex};
+use crate::crypto::{hex, hmac_sha256};
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -106,7 +106,7 @@ impl Notify for NextcloudTalk {
                 .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())));
             match &self.secret {
                 Some(secret) => {
-                    let random = random_hex(32);
+                    let random = ctx.env().random_hex(32);
                     let sig = hex(&hmac_sha256(secret.expose().as_bytes(), format!("{random}{message}").as_bytes()));
                     req = req
                         .set_header("X-Nextcloud-Talk-Bot-Random", random)
@@ -129,6 +129,5 @@ mod tests {
         // HMAC-SHA256 with key "secret" over "abc" + "hello", hex-encoded.
         let sig = hex(&hmac_sha256(b"secret", b"abchello"));
         assert_eq!(sig, "6b845e7932547a86c42b79e9c3e42fdad359332333973361704ced054df7e539");
-        assert_eq!(random_hex(32).len(), 64);
     }
 }

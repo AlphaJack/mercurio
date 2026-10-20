@@ -15,6 +15,9 @@ mod protocol;
 use std::time::Duration;
 
 use self::protocol::{IrcMessage, join_error, normalise_channel, parse_line, register_error};
+use std::sync::Arc;
+
+use crate::env::Env;
 use crate::error::Error;
 use crate::net::LineConn;
 use crate::parse::{parse_list, parse_list_unquoted};
@@ -177,11 +180,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 /// Random nickname from `prefix`; after a collision the last character is the collision count.
-fn nick_generation(prefix: &str, length: usize, collision: u32) -> String {
+fn nick_generation(prefix: &str, length: usize, collision: u32, env: &dyn Env) -> String {
     const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789_";
     let base: String = prefix.chars().take(length.saturating_sub(3)).collect::<String>().trim().to_lowercase();
     let mut raw = vec![0u8; length.max(1)];
-    crate::crypto::random_bytes(&mut raw);
+    env.fill_random(&mut raw);
     let suffix: String = raw.iter().map(|b| CHARSET[*b as usize % CHARSET.len()] as char).collect();
     let mut nick = format!("{base}{suffix}");
     if collision > 0 {
@@ -207,6 +210,7 @@ struct Client<'a> {
     lc: LineConn<'a>,
     prefix: String,
     collisions: u32,
+    env: Arc<dyn Env>,
 }
 
 impl Client<'_> {
@@ -231,7 +235,7 @@ impl Client<'_> {
                 return Err(Error::Service("IRC nickname is already in use".into()));
             }
             self.collisions += 1;
-            let nick = nick_generation(&self.prefix, NICK_MAX_LENGTH, self.collisions);
+            let nick = nick_generation(&self.prefix, NICK_MAX_LENGTH, self.collisions, self.env.as_ref());
             self.send(&format!("NICK {nick}")).await?;
             return Ok(true);
         }
@@ -306,8 +310,8 @@ impl Client<'_> {
     }
 }
 
-async fn run(s: Session, conn: &mut dyn AsyncConn) -> Result<()> {
-    let mut c = Client { lc: LineConn::new(conn), prefix: s.prefix.clone(), collisions: 0 };
+async fn run(s: Session, conn: &mut dyn AsyncConn, env: Arc<dyn Env>) -> Result<()> {
+    let mut c = Client { lc: LineConn::new(conn), prefix: s.prefix.clone(), collisions: 0, env };
     c.register(&s).await?;
     if let Some(pw) = &s.identify {
         c.send(&format!("PRIVMSG NickServ :IDENTIFY {pw}")).await?;
@@ -334,7 +338,7 @@ impl Notify for Irc {
             return Plan::Fail(Error::Message("no IRC targets specified".into()));
         }
         let nickname = if self.nickname.is_empty() {
-            nick_generation(ctx.app_id(), NICK_MAX_LENGTH, 0)
+            nick_generation(ctx.app_id(), NICK_MAX_LENGTH, 0, ctx.env().as_ref())
         } else {
             self.nickname.clone()
         };
@@ -374,7 +378,7 @@ impl Notify for Irc {
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.secure);
         ep.read_timeout = REGISTER_TIMEOUT;
-        Plan::socket(ep, move |conn, _| Box::pin(run(session, conn)))
+        Plan::socket(ep, move |conn, transport| Box::pin(run(session, conn, transport.env())))
     }
 
 }
@@ -385,10 +389,10 @@ mod tests {
 
     #[test]
     fn generated_nicks() {
-        let n = nick_generation("Mercurio", 9, 0);
+        let n = nick_generation("Mercurio", 9, 0, crate::testing::test_env());
         assert_eq!(n.len(), 9);
         assert!(n.starts_with("mercur"));
-        let c = nick_generation("Mercurio", 9, 2);
+        let c = nick_generation("Mercurio", 9, 2, crate::testing::test_env());
         assert_eq!(c.len(), 9);
         assert!(c.ends_with('2'));
     }

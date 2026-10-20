@@ -8,7 +8,6 @@ use std::time::Duration;
 
 use super::_email_api::{attachment_name, copy_list, email_pairs, unquoted_pairs};
 use super::_mail::mime::formataddr;
-use crate::http::Multipart;
 use crate::parse::{is_email, validate_nonblank};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -200,7 +199,7 @@ impl Notify for Mailgun {
             if msg.attachments.is_empty() {
                 req = req.form(&payload);
             } else {
-                let mut form = Multipart::new();
+                let mut form = ctx.multipart();
                 for (k, v) in &payload {
                     form = form.text(k, v);
                 }

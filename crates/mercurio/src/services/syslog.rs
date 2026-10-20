@@ -84,8 +84,9 @@ impl Notify for Syslog {
         let pid = std::process::id();
         let log_pid = self.log_pid;
         let log_perror = self.log_perror;
+        let env = ctx.env().clone();
         Plan::defer(move || {
-            let line = format_line(pri, crate::time::unix_time(), &ident, log_pid.then_some(pid), &body);
+            let line = format_line(pri, env.unix_time(), &ident, log_pid.then_some(pid), &body);
             if log_perror {
                 let tag = if log_pid { format!("{ident}[{pid}]") } else { ident.clone() };
                 eprintln!("{tag}: {body}");
