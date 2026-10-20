@@ -220,42 +220,20 @@ fn after_help() -> String {
     out
 }
 
-/// What to run, from the command word (no word: send a notification).
-#[derive(Default)]
+/// What to run, from the command word, with what only that command uses.
 enum Command {
-    #[default]
-    Notify,
+    /// Send a notification (no command word, or `send`).
+    Notify { urls: Vec<String> },
     Services,
-    Check,
+    Check { urls: Vec<String> },
     Serve(Box<serve::ServeArgs>),
     Healthcheck,
-    Storage,
+    /// `storage [ACTION] [UID|URL...]`.
+    Storage { args: Vec<String> },
 }
 
-#[derive(Default)]
-struct Args {
-    command: Command,
-    urls: Vec<String>,
-    body: Option<String>,
-    title: Option<String>,
-    kind: NotifyType,
-    format: Option<NotifyFormat>,
-    attach: Vec<String>,
-    tags: Vec<String>,
-    configs: Vec<String>,
-    template_vars: Vec<String>,
-    recursion: Option<u32>,
-    escapes: bool,
-    dry_run: bool,
-    sequential: bool,
-    verbose: u8,
-    json: bool,
-    bind: Option<String>,
-    storage_path: Option<String>,
-    storage_prune_days: Option<i64>,
-}
-
-fn parse_args() -> Args {
+/// The command and the options every command shares.
+fn parse_args() -> (Command, Opts) {
     use clap::{CommandFactory, FromArgMatches};
     // Multi-letter short options are rewritten to their long forms.
     let raw = std::env::args().map(|s| match s.as_str() {
@@ -266,47 +244,28 @@ fn parse_args() -> Args {
     });
     let matches = Cli::command().after_help(after_help()).get_matches_from(raw);
     let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
-    let o = cli.opts;
-    let mut a = Args {
-        command: Command::Notify,
-        urls: cli.urls,
-        body: o.body,
-        title: o.title,
-        kind: o.notification_type,
-        format: o.input_format,
-        attach: o.attach,
-        tags: o.tag,
-        configs: o.config,
-        template_vars: o.template_var,
-        recursion: Some(o.recursion_depth),
-        escapes: o.interpret_escapes,
-        dry_run: o.dry_run,
-        sequential: o.disable_async,
-        verbose: o.verbose,
-        json: o.json,
-        bind: Some(o.bind),
-        storage_path: Some(o.storage_path),
-        storage_prune_days: Some(o.storage_prune_days),
-    };
-    match cli.command {
-        Some(Cmd::Services) => a.command = Command::Services,
-        Some(Cmd::Check { urls }) => {
-            a.command = Command::Check;
-            a.urls.extend(urls);
+    // URLs may come before the command word, after it, or both.
+    let mut urls = cli.urls;
+    let command = match cli.command {
+        _ if cli.opts.details => Command::Services,
+        Some(Cmd::Services) => Command::Services,
+        Some(Cmd::Check { urls: more }) => {
+            urls.extend(more);
+            Command::Check { urls }
         }
-        Some(Cmd::Serve { healthcheck: true, .. }) => a.command = Command::Healthcheck,
-        Some(Cmd::Serve { healthcheck: false, settings }) => a.command = Command::Serve(settings),
+        Some(Cmd::Serve { healthcheck: true, .. }) => Command::Healthcheck,
+        Some(Cmd::Serve { healthcheck: false, settings }) => Command::Serve(settings),
         Some(Cmd::Storage { args }) => {
-            a.command = Command::Storage;
-            a.urls.extend(args);
+            urls.extend(args);
+            Command::Storage { args: urls }
         }
-        Some(Cmd::Send { urls }) => a.urls.extend(urls),
-        None => {}
-    }
-    if o.details {
-        a.command = Command::Services;
-    }
-    a
+        Some(Cmd::Send { urls: more }) => {
+            urls.extend(more);
+            Command::Notify { urls }
+        }
+        None => Command::Notify { urls },
+    };
+    (command, cli.opts)
 }
 
 fn unescape(s: &str) -> String {
@@ -402,15 +361,15 @@ enum Source {
     Configs(Vec<String>),
 }
 
-fn source(args: &Args) -> Source {
-    if !args.urls.is_empty() {
-        if !args.configs.is_empty() {
+fn source(urls: &[String], o: &Opts) -> Source {
+    if !urls.is_empty() {
+        if !o.config.is_empty() {
             log::warn!("You defined both URLs and a --config (-c) entry; Only the URLs will be referenced.");
         }
-        return Source::Urls(args.urls.clone());
+        return Source::Urls(urls.to_vec());
     }
-    if !args.configs.is_empty() {
-        return Source::Configs(args.configs.clone());
+    if !o.config.is_empty() {
+        return Source::Configs(o.config.clone());
     }
     let env = env_urls();
     if !env.is_empty() {
@@ -420,14 +379,18 @@ fn source(args: &Args) -> Source {
 }
 
 /// Load every service; returns the notifier, the number of sources that failed and the tag filter to apply.
-async fn build(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<(AsyncMercurio, usize, TagFilter), u8> {
-    let opts = ConfigOptions { recursion: args.recursion.unwrap_or(DEFAULT_RECURSION), ..ConfigOptions::default() };
-    let mut m = AsyncMercurio::with_transport(transport).config_options(opts).asset(storage_asset(args)?.0);
-    if args.sequential {
+async fn build(
+    urls: &[String],
+    o: &Opts,
+    transport: Arc<dyn AsyncTransport>,
+) -> Result<(AsyncMercurio, usize, TagFilter), u8> {
+    let opts = ConfigOptions { recursion: o.recursion_depth, ..ConfigOptions::default() };
+    let mut m = AsyncMercurio::with_transport(transport).config_options(opts).asset(storage_asset(o).0);
+    if o.disable_async {
         m = m.sequential();
     }
     let mut bad = 0;
-    let filter = match source(args) {
+    let filter = match source(urls, o) {
         Source::Urls(urls) => {
             for url in &urls {
                 if let Err(e) = m.add(url) {
@@ -436,7 +399,7 @@ async fn build(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<(Async
                 }
             }
             // --tag also applies to URLs given directly, through their `?tag=` values.
-            if args.tags.is_empty() { TagFilter::all() } else { TagFilter::from_cli(&args.tags) }
+            if o.tag.is_empty() { TagFilter::all() } else { TagFilter::from_cli(&o.tag) }
         }
         Source::Configs(paths) => {
             for path in &paths {
@@ -450,7 +413,7 @@ async fn build(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<(Async
                 }
             }
             // Without --tag only untagged services are notified.
-            TagFilter::from_cli(&args.tags)
+            TagFilter::from_cli(&o.tag)
         }
     };
     if m.is_empty() {
@@ -467,9 +430,9 @@ async fn build(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<(Async
 }
 
 /// `-tv NAME=VALUE` entries (exit 2 on a malformed or repeated name).
-fn template_vars(args: &Args) -> Result<TemplateVars, u8> {
+fn template_vars(o: &Opts) -> Result<TemplateVars, u8> {
     let mut vars = TemplateVars::new();
-    for entry in &args.template_vars {
+    for entry in &o.template_var {
         let (name, value) = match entry.split_once('=') {
             Some((n, v)) if mercurio::__private::valid_name(n.trim()) => (n.trim(), v),
             other => {
@@ -523,11 +486,9 @@ fn print_dry_run(m: &AsyncMercurio, filter: &TagFilter, vars: &TemplateVars) {
 }
 
 /// The asset carrying the storage options, plus the prune age in days.
-fn storage_asset(args: &Args) -> Result<(Asset, i64), u8> {
-    let days = args.storage_prune_days.unwrap_or(DEFAULT_PRUNE_DAYS);
-    let path = args.storage_path.clone().filter(|p| !p.trim().is_empty());
-    let path = path.unwrap_or_else(|| DEFAULT_STORAGE_PATH.to_string());
-    Ok((Asset::default().with_storage(expand_path(path.trim())), days))
+fn storage_asset(o: &Opts) -> (Asset, i64) {
+    let path = if o.storage_path.trim().is_empty() { DEFAULT_STORAGE_PATH } else { &o.storage_path };
+    (Asset::default().with_storage(expand_path(path.trim())), o.storage_prune_days)
 }
 
 /// Human-readable size: `1.50KB`, `2.00MB`, ...
@@ -545,14 +506,15 @@ fn bytes_to_str(n: u64) -> String {
 }
 
 /// `mercurio storage [list|prune|clear] [UID-prefix...|URL...]`: URL ids of the configured services next to what is on disk (list); removal of old (prune) or all (clear) cached files.
-async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<u8, u8> {
+async fn cmd_storage(args: &[String], o: &Opts) -> Result<u8, u8> {
     const ACTIONS: [&str; 3] = ["list", "prune", "clear"];
-    let (asset, mut days) = storage_asset(args)?;
+    let transport: Arc<dyn AsyncTransport> = Arc::new(TokioTransport::new());
+    let (asset, mut days) = storage_asset(o);
     if days < 0 {
         errln!("error: the --storage-prune-days (-SPD) value can not be lower than zero (0).");
         return Err(exit::USAGE);
     }
-    let mut rest = args.urls.clone();
+    let mut rest = args.to_vec();
     let mut action = "list";
     if let Some(first) = rest.first() {
         let found = if first == "clean" {
@@ -570,17 +532,12 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
     let had_url_filters = !url_filters.is_empty();
 
     // The services whose URL ids are cross-referenced.
-    let mut load = Args { urls: url_filters, ..Args::default() };
-    load.configs = args.configs.clone();
-    load.tags = args.tags.clone();
-    load.recursion = args.recursion;
-    load.storage_path = args.storage_path.clone();
-    let has_source = match source(&load) {
+    let has_source = match source(&url_filters, o) {
         Source::Urls(u) => !u.is_empty(),
         Source::Configs(c) => !c.is_empty(),
     };
     let mut uids: Vec<(String, Vec<&mercurio::Target>)> = Vec::new();
-    let loaded = if has_source { build(&load, transport).await.ok() } else { None };
+    let loaded = if has_source { build(&url_filters, o, transport).await.ok() } else { None };
     let vars = TemplateVars::new();
     let selection = loaded.as_ref().map(|(m, _, filter)| m.select(filter, &vars));
     for t in selection.iter().flat_map(|s| s.targets.iter().copied()) {
@@ -611,7 +568,7 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
                     r.1 = size;
                     r.2 = "active";
                 }
-                None if args.tags.is_empty() => rows.push((id, size, "stale", Vec::new())),
+                None if o.tag.is_empty() => rows.push((id, size, "stale", Vec::new())),
                 None => {}
             }
         }
@@ -631,7 +588,7 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
     if action == "clear" {
         days = 0;
     }
-    let ns: Vec<String> = if had_url_filters || !args.tags.is_empty() {
+    let ns: Vec<String> = if had_url_filters || !o.tag.is_empty() {
         let ns: Vec<String> = uids.iter().map(|(u, _)| u.clone()).chain(uid_filters.iter().cloned()).collect();
         if ns.is_empty() {
             return Ok(exit::OK);
@@ -641,10 +598,10 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
         uid_filters
     };
     let age = std::time::Duration::from_secs(days as u64 * 86400);
-    let results = storage::prune(&base, &ns, age, !args.dry_run).await;
+    let results = storage::prune(&base, &ns, age, !o.dry_run).await;
     for (uid, files) in results {
         for f in files {
-            let what = if args.dry_run {
+            let what = if o.dry_run {
                 "would remove"
             } else if f.removed {
                 "removed"
@@ -657,59 +614,62 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
     Ok(exit::OK)
 }
 
-fn run() -> Result<u8, u8> {
-    let args = parse_args();
-    logging::init(args.verbose, matches!(args.command, Command::Serve(_)));
-    match &args.command {
-        Command::Services => {
-            return Ok(if cmd_services(args.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE });
-        }
-        Command::Serve(settings) => {
-            let bind = args.bind.clone().unwrap_or_else(|| "127.0.0.1:8000".into());
-            let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(|e| {
-                errln!("error: {e}");
-                exit::FAILURE
-            })?;
-            return runtime.block_on(serve::run(&bind, settings)).map(|()| exit::OK).map_err(|e| {
-                errln!("error: {e}");
-                exit::FAILURE
-            });
-        }
-        Command::Healthcheck => {
-            let bind = args.bind.clone().unwrap_or_else(|| "127.0.0.1:8000".into());
-            return serve::healthcheck(&bind).map(|()| exit::OK).map_err(|e| {
-                errln!("unhealthy: {e}");
-                exit::FAILURE
-            });
-        }
-        Command::Notify | Command::Check | Command::Storage => {}
-    }
+/// Run the command; the exit code.
+fn run() -> u8 {
+    let (command, o) = parse_args();
+    logging::init(o.verbose, matches!(command, Command::Serve(_)));
+    let code = match command {
+        Command::Services => Ok(if cmd_services(o.json) == ExitCode::SUCCESS { exit::OK } else { exit::FAILURE }),
+        Command::Serve(settings) => cmd_serve(&o.bind, &settings),
+        Command::Healthcheck => serve::healthcheck(&o.bind).map(|()| exit::OK).map_err(|e| {
+            errln!("unhealthy: {e}");
+            exit::FAILURE
+        }),
+        Command::Check { urls } => on_current_thread(cmd_check(&urls, &o)),
+        Command::Storage { args } => on_current_thread(cmd_storage(&args, &o)),
+        Command::Notify { urls } => on_current_thread(cmd_notify(&urls, &o)),
+    };
+    // `Err` is an early exit; its code is the result all the same.
+    code.unwrap_or_else(|c| c)
+}
+
+fn cmd_serve(bind: &str, settings: &serve::ServeArgs) -> Result<u8, u8> {
+    let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(|e| {
+        errln!("error: {e}");
+        exit::FAILURE
+    })?;
+    runtime.block_on(serve::run(bind, settings)).map(|()| exit::OK).map_err(|e| {
+        errln!("error: {e}");
+        exit::FAILURE
+    })
+}
+
+/// Run a command on a single-threaded runtime.
+fn on_current_thread(command: impl std::future::Future<Output = Result<u8, u8>>) -> Result<u8, u8> {
     let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| {
         errln!("error: {e}");
         exit::FAILURE
     })?;
-    runtime.block_on(run_async(args))
+    runtime.block_on(command)
 }
 
-async fn run_async(args: Args) -> Result<u8, u8> {
-    let transport: Arc<dyn AsyncTransport> = Arc::new(TokioTransport::new());
-    match args.command {
-        Command::Storage => return cmd_storage(&args, transport).await,
-        Command::Check => {
-            let (mercurio, bad, _) = build(&args, transport).await?;
-            for t in mercurio.targets() {
-                outln!("ok   {}", t.label());
-            }
-            for p in mercurio.pending() {
-                outln!("ok   {} (template: {})", p.label(), p.template_names().join(", "));
-            }
-            return Ok(if bad == 0 { exit::OK } else { exit::FAILURE });
-        }
-        Command::Notify | Command::Services | Command::Serve(_) | Command::Healthcheck => {}
+/// `check`: load every URL and configuration, send nothing.
+async fn cmd_check(urls: &[String], o: &Opts) -> Result<u8, u8> {
+    let (mercurio, bad, _) = build(urls, o, Arc::new(TokioTransport::new())).await?;
+    for t in mercurio.targets() {
+        outln!("ok   {}", t.label());
     }
+    for p in mercurio.pending() {
+        outln!("ok   {} (template: {})", p.label(), p.template_names().join(", "));
+    }
+    Ok(if bad == 0 { exit::OK } else { exit::FAILURE })
+}
 
-    let vars = template_vars(&args)?;
-    let (mut selected, bad, filter) = build(&args, transport.clone()).await?;
+/// Send the notification (or show it with `-d`).
+async fn cmd_notify(urls: &[String], o: &Opts) -> Result<u8, u8> {
+    let transport: Arc<dyn AsyncTransport> = Arc::new(TokioTransport::new());
+    let vars = template_vars(o)?;
+    let (mut selected, bad, filter) = build(urls, o, transport.clone()).await?;
     if bad > 0 {
         errln!("error: {bad} invalid URL or configuration source; nothing was sent");
         return Err(exit::USAGE);
@@ -719,12 +679,12 @@ async fn run_async(args: Args) -> Result<u8, u8> {
         return Err(exit::NO_MATCH);
     }
 
-    if args.dry_run {
+    if o.dry_run {
         print_dry_run(&selected, &filter, &vars);
         return Ok(exit::OK);
     }
 
-    let mut body = match &args.body {
+    let mut body = match &o.body {
         Some(b) => b.clone(),
         None => {
             let mut s = String::new();
@@ -735,14 +695,14 @@ async fn run_async(args: Args) -> Result<u8, u8> {
             s
         }
     };
-    let mut title = args.title.clone().unwrap_or_default();
-    if args.escapes {
+    let mut title = o.title.clone().unwrap_or_default();
+    if o.interpret_escapes {
         body = unescape(&body);
         title = unescape(&title);
     }
-    let mut msg = Message::new(body).title(title).kind(args.kind);
-    msg.format = args.format;
-    for spec in &args.attach {
+    let mut msg = Message::new(body).title(title).kind(o.notification_type);
+    msg.format = o.input_format;
+    for spec in &o.attach {
         match load_attachment(spec, transport.as_ref()).await {
             Ok(a) => msg.attachments.push(a),
             Err(e) => {
@@ -771,7 +731,5 @@ async fn run_async(args: Args) -> Result<u8, u8> {
 }
 
 fn main() -> ExitCode {
-    match run() {
-        Ok(code) | Err(code) => ExitCode::from(code),
-    }
+    ExitCode::from(run())
 }
