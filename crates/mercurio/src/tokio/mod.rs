@@ -14,7 +14,7 @@ use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
 use crate::error::{Error, Result};
-use crate::http::{MAX_BODY, MAX_REDIRECTS, Method, Request, Response};
+use crate::http::{MAX_REDIRECTS, Method, Request, Response};
 use crate::transport::{
     AsyncConn, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, DatagramTarget, Endpoint, FileOp,
     FileOutput, file_meta, staging, unbound_addr,
@@ -100,12 +100,11 @@ impl TokioTransport {
             .map(|(k, v)| (k.as_str().to_string(), String::from_utf8_lossy(v.as_bytes()).into_owned()))
             .collect();
         let mut body = Vec::new();
+        let limit = if req.max_body == 0 { u64::MAX } else { req.max_body };
         if req.method != Method::Head {
             while let Some(chunk) = res.chunk().await.map_err(|e| map_error(e, true))? {
-                if (body.len() + chunk.len()) as u64 > MAX_BODY {
-                    return Err(Error::Transport(format!(
-                        "the response body is larger than request limit: {MAX_BODY}"
-                    )));
+                if (body.len() + chunk.len()) as u64 > limit {
+                    return Err(crate::http::body_too_large(req.max_body));
                 }
                 body.extend_from_slice(&chunk);
             }
@@ -368,16 +367,15 @@ mod tests {
         let err = t.http(&slow).await.unwrap_err();
         assert_eq!(err, Error::Unconfirmed("timed out (receive response)".into()));
 
-        let big =
-            format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", MAX_BODY + 1).into_bytes();
+        // The default limit, then a request's own, smaller one, both while reading.
+        let max = crate::MAX_BODY;
+        let big = format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", max + 1).into_bytes();
         let mut answer = big;
-        answer.resize(answer.len() + MAX_BODY as usize + 1, b'x');
+        answer.resize(answer.len() + max as usize + 1, b'x');
+        let port = serve(vec![Some(answer.clone())]).await;
+        assert_eq!(t.http(&get(port, "/")).await.unwrap_err(), crate::body_too_large(max));
         let port = serve(vec![Some(answer)]).await;
-        let err = t.http(&get(port, "/")).await.unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            Error::Transport(format!("the response body is larger than request limit: {MAX_BODY}")).to_string()
-        );
+        assert_eq!(t.http(&get(port, "/").max_body(1024)).await.unwrap_err(), crate::body_too_large(1024));
     }
 
     #[tokio::test]

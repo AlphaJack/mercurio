@@ -73,8 +73,13 @@ pub const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(30);
 /// Redirects followed before the last 3xx response is returned as is.
 pub(crate) const MAX_REDIRECTS: u32 = 10;
 
-/// Response bodies larger than this fail (as a transport error).
-pub(crate) const MAX_BODY: u64 = 16 * 1024 * 1024;
+/// [`Request::max_body`] by default: response bodies larger than this fail (as a transport error).
+pub const MAX_BODY: u64 = 16 * 1024 * 1024;
+
+/// The error of a response body longer than `limit` ([`Request::max_body`]); every transport returns this one.
+pub fn body_too_large(limit: u64) -> crate::Error {
+    crate::Error::Transport(format!("the response body is larger than request limit: {limit}"))
+}
 
 /// An outgoing HTTP request.
 #[derive(Clone, PartialEq, Eq)]
@@ -95,6 +100,8 @@ pub struct Request {
     pub verify_tls: bool,
     /// Follow HTTP redirects.
     pub follow_redirects: bool,
+    /// Largest response body read, in bytes: a longer one fails with [`body_too_large`] while it is read, not after. [`MAX_BODY`] by default; 0 reads any size. A custom [`crate::Transport`] should honour it.
+    pub max_body: u64,
 }
 
 impl fmt::Debug for Request {
@@ -122,7 +129,14 @@ impl Request {
             read_timeout: DEFAULT_READ_TIMEOUT,
             verify_tls: true,
             follow_redirects: true,
+            max_body: MAX_BODY,
         }
+    }
+
+    /// Read at most `bytes` of the response body (see [`Request::max_body`]; 0 reads any size).
+    pub fn max_body(mut self, bytes: u64) -> Self {
+        self.max_body = bytes;
+        self
     }
 
     /// A `GET` request.

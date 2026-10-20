@@ -9,7 +9,7 @@ use std::time::Duration;
 use rustls::{ClientConnection, StreamOwned};
 
 use crate::error::{Error, Result};
-use crate::http::{MAX_BODY, MAX_REDIRECTS, Method, Request, Response};
+use crate::http::{MAX_REDIRECTS, Method, Request, Response};
 use crate::net::{server_name, tls_config};
 use crate::transport::{Command, CommandOutput, Conn, Datagram, DatagramTarget, Endpoint, Transport, unbound_addr};
 
@@ -96,7 +96,14 @@ impl Transport for BlockingTransport {
         let body = if req.method == Method::Head {
             Vec::new()
         } else {
-            res.body_mut().with_config().limit(MAX_BODY).read_to_vec().map_err(map_ureq_error)?
+            let limit = if req.max_body == 0 { u64::MAX } else { req.max_body };
+            res.body_mut().with_config().limit(limit).read_to_vec().map_err(|e| {
+                if matches!(e, ureq::Error::BodyExceedsLimit(_)) {
+                    crate::http::body_too_large(req.max_body)
+                } else {
+                    map_ureq_error(e)
+                }
+            })?
         };
         Ok(Response { status, headers, body })
     }

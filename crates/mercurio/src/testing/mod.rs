@@ -247,13 +247,20 @@ impl Transport for FakeTransport {
     fn http(&self, req: &Request) -> Result<Response> {
         let mut s = self.lock();
         s.requests.push(req.clone());
-        if let Some((_, res)) = s.rules.iter().find(|(pred, _)| pred(req)) {
-            return res.clone();
+        let res = if let Some((_, res)) = s.rules.iter().find(|(pred, _)| pred(req)) {
+            res.clone()
+        } else if let Some(res) = s.queue.pop_front() {
+            res
+        } else {
+            Ok(s.default.clone())
+        };
+        // As the real transports: a body over the request's limit fails.
+        match res {
+            Ok(r) if req.max_body > 0 && r.body.len() as u64 > req.max_body => {
+                Err(crate::http::body_too_large(req.max_body))
+            }
+            other => other,
         }
-        if let Some(res) = s.queue.pop_front() {
-            return res;
-        }
-        Ok(s.default.clone())
     }
 
     fn connect(&self, ep: &Endpoint) -> Result<Box<dyn Conn>> {

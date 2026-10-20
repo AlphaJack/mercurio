@@ -168,7 +168,8 @@ on its page (see the [service list](services/index.md)), taken from the
 - **`?+Header=`** on an attachment URL. Apprise sends it as a header and a
   query parameter -> mercurio only as a header. *intentional*
 - **Downloads.** Apprise streams to a temporary file and stops early ->
-  mercurio buffers the body, then checks the size. *todo*
+  mercurio reads into memory and also stops once the body passes
+  `attachment_max_size`. *intentional*
 - **Split messages.** Apprise plugins can pick the piece that carries the
   attachments (`_attachment_send_index`) -> mercurio always sends them with
   the first piece. *intentional*
