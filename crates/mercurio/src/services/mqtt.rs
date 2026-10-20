@@ -11,11 +11,11 @@
 
 use std::time::Duration;
 
-use super::_sockets::{read_exact, send};
 use crate::error::Error;
+use crate::machine::{Input, Output, Protocol};
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::transport::{AsyncConn, Endpoint};
+use crate::transport::Endpoint;
 use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
@@ -225,41 +225,22 @@ pub struct Packet {
     pub body: Vec<u8>,
 }
 
-async fn read_packet(conn: &mut dyn AsyncConn) -> Result<Packet> {
-    let mut head = [0u8; 1];
-    read_exact(conn, &mut head).await?;
-    let mut len_bytes = Vec::new();
-    loop {
-        let mut b = [0u8; 1];
-        read_exact(conn, &mut b).await?;
-        len_bytes.push(b[0]);
-        if b[0] & 0x80 == 0 {
-            break;
-        }
+/// The next complete packet in `buf`, removed from it; `Ok(None)` until one has fully arrived.
+fn take_packet(buf: &mut Vec<u8>) -> Result<Option<Packet>> {
+    let Some(&head) = buf.first() else { return Ok(None) };
+    let len_bytes = &buf[1..buf.len().min(5)];
+    let Some((len, used)) = decode_varint(len_bytes) else {
         if len_bytes.len() == 4 {
             return Err(Error::transport("MQTT: malformed remaining length"));
         }
+        return Ok(None);
+    };
+    if buf.len() < 1 + used + len {
+        return Ok(None);
     }
-    let (len, _) = decode_varint(&len_bytes).ok_or_else(|| Error::transport("MQTT: malformed remaining length"))?;
-    let mut body = vec![0u8; len];
-    read_exact(conn, &mut body).await?;
-    Ok(Packet { kind: head[0] >> 4, flags: head[0] & 0x0f, body })
-}
-
-/// Read packets until one of `kind` arrives (others, e.g. PINGRESP, are skipped).
-async fn expect_packet(conn: &mut dyn AsyncConn, kind: u8, packet_id: Option<u16>) -> Result<Packet> {
-    loop {
-        let p = read_packet(conn).await?;
-        if p.kind != kind {
-            continue;
-        }
-        if let Some(id) = packet_id
-            && (p.body.len() < 2 || u16::from_be_bytes([p.body[0], p.body[1]]) != id)
-        {
-            continue;
-        }
-        return Ok(p);
-    }
+    let body = buf[1 + used..1 + used + len].to_vec();
+    buf.drain(..1 + used + len);
+    Ok(Some(Packet { kind: head >> 4, flags: head & 0x0f, body }))
 }
 
 fn connack_error(version: Version, code: u8) -> String {
@@ -300,40 +281,136 @@ struct Session {
     retain: bool,
 }
 
-async fn run_session(s: Session, conn: &mut dyn AsyncConn) -> Result<()> {
-    let connect = connect_packet(s.version, &s.client_id, s.clean, KEEPALIVE, s.user.as_deref(), s.password.as_deref());
-    send(conn, &connect).await?;
-    let ack = expect_packet(conn, 2, None).await?;
-    let code_at = 1;
-    let code = ack.body.get(code_at).copied().unwrap_or(0xff);
-    if code != 0 {
-        return Err(Error::Service(connack_error(s.version, code)));
+/// What a session waits for; packets of other kinds (or for other packet ids) are skipped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    Connack,
+    /// QoS 1: the PUBACK of `topics[topic]`.
+    Puback { topic: usize },
+    /// QoS 2: the PUBREC of `topics[topic]`.
+    Pubrec { topic: usize },
+    /// QoS 2: the PUBCOMP of `topics[topic]`.
+    Pubcomp { topic: usize },
+    /// DISCONNECT is queued; whether it goes out does not matter.
+    Disconnecting,
+    Done,
+}
+
+/// An MQTT session as a sans-IO state machine.
+struct Client {
+    s: Session,
+    state: State,
+    rx: Vec<u8>,
+    out: Vec<u8>,
+    packet_id: u16,
+    result: Option<Result<()>>,
+}
+
+impl Client {
+    fn new(s: Session) -> Self {
+        let out = connect_packet(s.version, &s.client_id, s.clean, KEEPALIVE, s.user.as_deref(), s.password.as_deref());
+        Client { s, state: State::Connack, rx: Vec::new(), out, packet_id: 0, result: None }
     }
-    let mut packet_id: u16 = 0;
-    for topic in &s.topics {
-        packet_id = packet_id.checked_add(1).unwrap_or(1);
-        send(conn, &publish_packet(s.version, topic, &s.payload, s.qos, s.retain, packet_id)).await?;
-        match s.qos {
-            1 => {
-                let p = expect_packet(conn, 4, Some(packet_id)).await?;
-                if ack_failed(s.version, &p) {
-                    return Err(Error::Service(format!("MQTT broker rejected the message for {topic}")));
-                }
-            }
-            2 => {
-                let p = expect_packet(conn, 5, Some(packet_id)).await?;
-                if ack_failed(s.version, &p) {
-                    return Err(Error::Service(format!("MQTT broker rejected the message for {topic}")));
-                }
-                send(conn, &packet(0x62, &packet_id.to_be_bytes())).await?;
-                expect_packet(conn, 7, Some(packet_id)).await?;
-            }
-            _ => {}
+
+    fn fail(&mut self, err: Error) {
+        self.result.get_or_insert(Err(err));
+        self.state = State::Done;
+    }
+
+    /// Publish `topics[topic]` and wait for its acknowledgement, or disconnect after the last one.
+    fn publish(&mut self, topic: usize) {
+        let Some(t) = self.s.topics.get(topic) else {
+            self.out.extend_from_slice(&[0xe0, 0x00]);
+            self.state = State::Disconnecting;
+            return;
+        };
+        self.packet_id = self.packet_id.checked_add(1).unwrap_or(1);
+        let p = publish_packet(self.s.version, t, &self.s.payload, self.s.qos, self.s.retain, self.packet_id);
+        self.out.extend_from_slice(&p);
+        match self.s.qos {
+            1 => self.state = State::Puback { topic },
+            2 => self.state = State::Pubrec { topic },
+            _ => self.publish(topic + 1),
         }
     }
-    // Best effort: the messages are already delivered.
-    send(conn, &[0xe0, 0x00]).await.ok();
-    Ok(())
+
+    /// The packet this state waits for (kind, and whether it must carry the current packet id).
+    fn wanted(&self) -> Option<(u8, bool)> {
+        match self.state {
+            State::Connack => Some((2, false)),
+            State::Puback { .. } => Some((4, true)),
+            State::Pubrec { .. } => Some((5, true)),
+            State::Pubcomp { .. } => Some((7, true)),
+            State::Disconnecting | State::Done => None,
+        }
+    }
+
+    fn on_packet(&mut self, p: &Packet) {
+        let Some((kind, with_id)) = self.wanted() else { return };
+        if p.kind != kind || (with_id && (p.body.len() < 2 || u16::from_be_bytes([p.body[0], p.body[1]]) != self.packet_id)) {
+            return;
+        }
+        let rejected = |me: &Self, topic: usize| {
+            Error::Service(format!("MQTT broker rejected the message for {}", me.s.topics[topic]))
+        };
+        match self.state {
+            State::Connack => {
+                let code = p.body.get(1).copied().unwrap_or(0xff);
+                if code != 0 {
+                    return self.fail(Error::Service(connack_error(self.s.version, code)));
+                }
+                self.publish(0);
+            }
+            State::Puback { topic } if ack_failed(self.s.version, p) => self.fail(rejected(self, topic)),
+            State::Puback { topic } | State::Pubcomp { topic } => self.publish(topic + 1),
+            State::Pubrec { topic } if ack_failed(self.s.version, p) => self.fail(rejected(self, topic)),
+            State::Pubrec { topic } => {
+                self.out.extend_from_slice(&packet(0x62, &self.packet_id.to_be_bytes()));
+                self.state = State::Pubcomp { topic };
+            }
+            State::Disconnecting | State::Done => {}
+        }
+    }
+}
+
+impl Protocol for Client {
+    fn next(&mut self) -> Output {
+        if !self.out.is_empty() {
+            return Output::Write(std::mem::take(&mut self.out));
+        }
+        match self.state {
+            State::Disconnecting | State::Done => {
+                self.state = State::Done;
+                Output::Done(self.result.take().unwrap_or(Ok(())))
+            }
+            State::Connack | State::Puback { .. } | State::Pubrec { .. } | State::Pubcomp { .. } => Output::Read,
+        }
+    }
+
+    fn input(&mut self, input: Input<'_>) {
+        match input {
+            Input::Data([]) => self.fail(Error::transport("connection closed")),
+            Input::Data(data) => {
+                self.rx.extend_from_slice(data);
+                while self.wanted().is_some() {
+                    match take_packet(&mut self.rx) {
+                        Ok(Some(p)) => self.on_packet(&p),
+                        Ok(None) => break,
+                        Err(e) => self.fail(e),
+                    }
+                }
+            }
+            Input::ReadError(e) => self.fail(Error::transport(e)),
+            // Best effort: once DISCONNECT is due, the messages are already delivered.
+            Input::WriteError(_) if self.state == State::Disconnecting => self.state = State::Done,
+            Input::WriteError(e) => self.fail(Error::transport(e)),
+            Input::Tls(r) => {
+                if let Err(e) = r {
+                    self.fail(e);
+                }
+            }
+        }
+    }
 }
 
 impl Notify for Mqtt {
@@ -359,7 +436,7 @@ impl Notify for Mqtt {
             retain: self.retain,
         };
         let ep = Endpoint::new(self.host.clone(), self.port, self.secure);
-        Plan::socket(ep, move |conn, _| Box::pin(run_session(session, conn)))
+        Plan::socket(ep, move |conn, _| Box::pin(crate::machine::drive(Client::new(session), conn)))
     }
 
 }
@@ -415,6 +492,50 @@ mod tests {
         );
         assert_eq!(publish_packet(Version::V311, "t", b"x", 1, true, 258), vec![0x33, 6, 0, 1, b't', 1, 2, b'x']);
         assert_eq!(publish_packet(Version::V5, "t", b"x", 2, false, 1), vec![0x34, 7, 0, 1, b't', 0, 1, 0, b'x']);
+    }
+
+    /// QoS 2 for two topics, with the broker's replies arriving one byte at a time.
+    #[test]
+    fn session_is_driven_by_bytes_alone() {
+        let s = Session {
+            version: Version::V311,
+            client_id: String::new(),
+            clean: true,
+            user: None,
+            password: None,
+            topics: vec!["a".into(), "b".into()],
+            payload: b"x".to_vec(),
+            qos: 2,
+            retain: false,
+        };
+        let mut c = Client::new(s);
+        let mut kinds = Vec::new();
+        let mut pending: Vec<u8> = Vec::new();
+        let res = loop {
+            match c.next() {
+                Output::Write(data) => {
+                    let mut buf = data;
+                    while let Some(p) = take_packet(&mut buf).unwrap() {
+                        kinds.push(p.kind);
+                        match p.kind {
+                            1 => pending.extend_from_slice(&[0x20, 2, 0, 0]),
+                            3 => pending.extend_from_slice(&[0x50, 2, p.body[3], p.body[4]]),
+                            6 => pending.extend_from_slice(&[0x70, 2, p.body[0], p.body[1]]),
+                            _ => {}
+                        }
+                    }
+                }
+                Output::Read => {
+                    let b = pending.remove(0);
+                    c.input(Input::Data(&[b]));
+                }
+                Output::StartTls => c.input(Input::Tls(Ok(()))),
+                Output::Done(r) => break r,
+            }
+        };
+        res.unwrap();
+        // CONNECT, PUBLISH, PUBREL, PUBLISH, PUBREL, DISCONNECT
+        assert_eq!(kinds, [1, 3, 6, 3, 6, 14]);
     }
 
     #[test]

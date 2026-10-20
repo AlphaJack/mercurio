@@ -1,4 +1,4 @@
-//! Helpers shared by the raw protocol services: syslog facilities and levels; a small reader for socket sessions.
+//! Helpers shared by the raw protocol services: syslog facilities and levels; a small writer for socket sessions.
 
 use crate::NotifyType;
 use crate::error::{Error, Result};
@@ -57,19 +57,6 @@ pub fn syslog_level(kind: NotifyType) -> u32 {
 pub async fn send(conn: &mut dyn AsyncConn, data: &[u8]) -> Result<()> {
     conn.write_all(data).await.map_err(Error::transport)?;
     conn.flush().await.map_err(Error::transport)
-}
-
-/// Read exactly `buf.len()` bytes; a closed stream is a transport error.
-pub async fn read_exact(conn: &mut dyn AsyncConn, buf: &mut [u8]) -> Result<()> {
-    let mut filled = 0;
-    while filled < buf.len() {
-        let n = conn.read(&mut buf[filled..]).await.map_err(Error::transport)?;
-        if n == 0 {
-            return Err(Error::transport("connection closed"));
-        }
-        filled += n;
-    }
-    Ok(())
 }
 
 #[cfg(test)]
