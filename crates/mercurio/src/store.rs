@@ -460,6 +460,19 @@ mod tests {
     }
 
     #[test]
+    fn checksums_survive_a_json_round_trip() {
+        let fake = FakeTransport::new();
+        let s = disk(&fake, "ns");
+        let keys: Vec<String> = (0..2000).map(|i| format!("k{i}")).collect();
+        for (i, k) in keys.iter().enumerate() {
+            let secs = 3600.0 + f64::from(u32::try_from(i).unwrap()) * 0.123_456_789;
+            s.set(k, json!(secs), Some(Duration::from_secs_f64(secs)));
+        }
+        run_files(s.flush(), &fake);
+        assert_eq!(disk(&fake, "ns").keys().len(), keys.len());
+    }
+
+    #[test]
     fn invalid_namespace_uses_memory() {
         let s = PersistentStore::new(Some(Path::new("/data")), "../x");
         assert!(s.path().is_none());
