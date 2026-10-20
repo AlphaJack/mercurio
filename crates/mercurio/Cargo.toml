@@ -404,3 +404,7 @@ harness = false
 [[bench]]
 name = "mqtt"
 harness = false
+
+[[bench]]
+name = "smpp"
+harness = false
