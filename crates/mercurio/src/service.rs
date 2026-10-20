@@ -450,9 +450,12 @@ impl<'a> Context<'a> {
         Self { tz, ..self }
     }
 
-    /// The zone for dates a service writes: the URL's `?tz=`, else the machine's, as Apprise.
+    /// The zone for dates a service writes: the URL's `?tz=`, else [`Asset::timezone`], else the machine's, as Apprise.
     pub(crate) fn time_zone(&self) -> jiff::tz::TimeZone {
-        self.tz.cloned().unwrap_or_else(crate::time::local_zone)
+        self.tz
+            .cloned()
+            .or_else(|| self.asset.timezone.as_deref().and_then(crate::time::zone))
+            .unwrap_or_else(crate::time::local_zone)
     }
 
     /// This context with the results of [`Notify::files`].

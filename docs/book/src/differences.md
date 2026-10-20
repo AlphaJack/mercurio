@@ -37,8 +37,8 @@ on its page (see the [service list](services/index.md)), taken from the
   channels). *intentional*
 - **`?tz=`.** Validated as in Apprise (the UTC family, any case, or the
   location alone such as `paris`; an unknown zone rejects the URL). E-mail
-  `Date:` and syslog timestamps use it, else the machine's zone. A YAML
-  `asset:` `timezone` is still ignored. *todo* (asset zone)
+  `Date:` and syslog timestamps use it, else a YAML `asset:` `timezone`
+  (or `tz`), else the machine's zone. *intentional*
 - **`?optional=`.** Parsed by both; no effect in mercurio. *intentional*
 - **Overflow.** Apprise lets each plugin tune overflow (`overflow_*`
   attributes), numbers split pieces (`[01/03]`) and may repeat the title ->
