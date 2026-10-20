@@ -223,13 +223,19 @@ fn after_help() -> String {
 /// What to run, from the command word, with what only that command uses.
 enum Command {
     /// Send a notification (no command word, or `send`).
-    Notify { urls: Vec<String> },
+    Notify {
+        urls: Vec<String>,
+    },
     Services,
-    Check { urls: Vec<String> },
+    Check {
+        urls: Vec<String>,
+    },
     Serve(Box<serve::ServeArgs>),
     Healthcheck,
     /// `storage [ACTION] [UID|URL...]`.
-    Storage { args: Vec<String> },
+    Storage {
+        args: Vec<String>,
+    },
 }
 
 /// The command and the options every command shares.
