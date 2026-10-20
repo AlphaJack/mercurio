@@ -2,6 +2,7 @@ use super::fold::fold_url;
 use super::template::TemplateVars;
 use super::yaml::Yaml;
 use super::*;
+use crate::Asset;
 use crate::testing::FakeTransport;
 
 fn load(text: &str) -> Config {
@@ -73,4 +74,26 @@ fn fold() {
     let u = fold_url(Some("json://old@localhost:8080/p?a=1"), "json", &t, &mut w);
     assert_eq!(u, "json://me@localhost:8080/p?a=1&+X-H=a%20b&verify=no");
     assert_eq!(w.len(), 1);
+}
+
+#[test]
+fn asset_timezone() {
+    let load = |yaml: &str| Config::from_text(yaml, None, &FakeTransport::new(), &ConfigOptions::default()).unwrap();
+    let zone = |cfg: &Config| cfg.asset_for(&Asset::default()).timezone;
+    // A location alone, cleaned of other characters, as Apprise.
+    let cfg = load("version: 1\nasset:\n  timezone: ' paris!'\nurls:\n  - json://localhost\n");
+    assert_eq!(zone(&cfg).as_deref(), Some("Europe/Paris"));
+    let cfg = load("version: 1\nasset:\n  tz: UTC\nurls:\n  - json://localhost\n");
+    assert_eq!(zone(&cfg).as_deref(), Some("UTC"));
+    let cfg = load("version: 1\nasset:\n  timezone: Mars/Olympus\nurls:\n  - json://localhost\n");
+    assert_eq!(zone(&cfg), None);
+    assert!(cfg.warnings.iter().any(|w| w == "Ignored invalid timezone \"Mars/Olympus\""), "{:?}", cfg.warnings);
+
+    // The URL's ?tz= wins over the asset's, which wins over the machine's.
+    let (store, memo) = (crate::store::PersistentStore::memory().shared(), crate::store::Memo::disabled());
+    let paris = Asset { timezone: Some("Europe/Paris".into()), ..Asset::default() };
+    let ctx = crate::Context::new(&paris, &store, &memo);
+    assert_eq!(ctx.time_zone().iana_name(), Some("Europe/Paris"));
+    let tokyo = crate::time::zone("Asia/Tokyo").unwrap();
+    assert_eq!(ctx.with_tz(Some(&tokyo)).time_zone().iana_name(), Some("Asia/Tokyo"));
 }
