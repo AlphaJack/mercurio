@@ -47,10 +47,12 @@ mercurio = { path = ".", default-features = false, features = ["testing"] }
 insta = { version = "1.49.0", features = ["yaml"] }
 
 [features]
+# Every service.
 default = ["all-services"]
+# Every `service-*` feature.
 all-services = [
-  "service-africas-talking",
-  "service-apprise-api",
+  "service-africastalking",
+  "service-appriseapi",
   "service-aprs",
   "service-bark",
   "service-blink1",
@@ -63,9 +65,6 @@ all-services = [
   "service-clickatell",
   "service-clicksend",
   "service-courier",
-  "service-custom-form",
-  "service-custom-json",
-  "service-custom-xml",
   "service-d7networks",
   "service-dapnet",
   "service-dbus",
@@ -73,7 +72,7 @@ all-services = [
   "service-dingtalk",
   "service-discord",
   "service-dot",
-  "service-eight00com",
+  "service-eighthundredcom",
   "service-email",
   "service-emby",
   "service-enigma2",
@@ -85,15 +84,16 @@ all-services = [
   "service-flock",
   "service-flowtriq",
   "service-fluxer",
+  "service-form",
   "service-fortysixelks",
   "service-freemobile",
   "service-glib",
   "service-gnome",
   "service-goalert",
-  "service-google-chat",
+  "service-googlechat",
   "service-gotify",
   "service-groupme",
-  "service-home-assistant",
+  "service-homeassistant",
   "service-httpsms",
   "service-humhub",
   "service-ifttt",
@@ -101,6 +101,7 @@ all-services = [
   "service-jellyfin",
   "service-jira",
   "service-join",
+  "service-json",
   "service-kavenegar",
   "service-knock",
   "service-kodi",
@@ -115,6 +116,7 @@ all-services = [
   "service-mailgun",
   "service-mastodon",
   "service-matrix",
+  "service-matrix-e2ee",
   "service-mattermost",
   "service-messagebird",
   "service-misskey",
@@ -130,8 +132,8 @@ all-services = [
   "service-ntfy",
   "service-octopush",
   "service-office365",
-  "service-one-signal",
   "service-onebot",
+  "service-onesignal",
   "service-pagerduty",
   "service-pagertree",
   "service-parseplatform",
@@ -163,7 +165,7 @@ all-services = [
   "service-ses",
   "service-seven",
   "service-sfr",
-  "service-signal-api",
+  "service-signalapi",
   "service-signalgrid",
   "service-signl4",
   "service-simplepush",
@@ -204,17 +206,18 @@ all-services = [
   "service-workflows",
   "service-wpush",
   "service-wxpusher",
+  "service-xml",
   "service-xmpp",
   "service-youlmk",
   "service-zoom",
   "service-zulip",
-  "service-matrix-e2ee",
 ]
 
+# Compile the fixture runner (`testing::fixtures`); `testing::FakeTransport` is always available.
 testing = []
 
-service-africas-talking = []
-service-apprise-api = []
+service-africastalking = []
+service-appriseapi = []
 service-aprs = []
 service-bark = ["dep:aes-gcm"]
 service-blink1 = []
@@ -227,9 +230,6 @@ service-chanify = []
 service-clickatell = []
 service-clicksend = []
 service-courier = []
-service-custom-form = []
-service-custom-json = []
-service-custom-xml = []
 service-d7networks = []
 service-dapnet = []
 service-dbus = []
@@ -237,7 +237,7 @@ service-deltachat = []
 service-dingtalk = []
 service-discord = []
 service-dot = []
-service-eight00com = []
+service-eighthundredcom = []
 service-email = []
 service-emby = []
 service-enigma2 = []
@@ -249,15 +249,16 @@ service-file = []
 service-flock = []
 service-flowtriq = []
 service-fluxer = []
+service-form = []
 service-fortysixelks = []
 service-freemobile = []
 service-glib = []
 service-gnome = []
 service-goalert = []
-service-google-chat = []
+service-googlechat = []
 service-gotify = []
 service-groupme = []
-service-home-assistant = []
+service-homeassistant = []
 service-httpsms = []
 service-humhub = []
 service-ifttt = []
@@ -265,6 +266,7 @@ service-irc = []
 service-jellyfin = []
 service-jira = []
 service-join = []
+service-json = []
 service-kavenegar = []
 service-knock = []
 service-kodi = []
@@ -279,6 +281,7 @@ service-mailersend = []
 service-mailgun = []
 service-mastodon = []
 service-matrix = []
+# Matrix end-to-end encrypted rooms (extra cryptography crates).
 service-matrix-e2ee = ["service-matrix", "dep:aes", "dep:curve25519-dalek", "dep:zeroize"]
 service-mattermost = []
 service-messagebird = []
@@ -295,8 +298,8 @@ service-novu = []
 service-ntfy = []
 service-octopush = []
 service-office365 = []
-service-one-signal = []
 service-onebot = []
+service-onesignal = []
 service-pagerduty = []
 service-pagertree = []
 service-parseplatform = []
@@ -328,7 +331,7 @@ service-serwersms = []
 service-ses = []
 service-seven = []
 service-sfr = []
-service-signal-api = []
+service-signalapi = []
 service-signalgrid = []
 service-signl4 = []
 service-simplepush = ["dep:argon2", "dep:chacha20poly1305", "dep:curve25519-dalek", "dep:poly1305", "dep:salsa20"]
@@ -369,6 +372,7 @@ service-windows = []
 service-workflows = []
 service-wpush = []
 service-wxpusher = []
+service-xml = []
 service-xmpp = []
 service-youlmk = []
 service-zoom = []

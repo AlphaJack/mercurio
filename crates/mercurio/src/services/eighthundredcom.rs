@@ -9,7 +9,7 @@ use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "eight00com",
+    id: "eighthundredcom",
     name: "800.com",
     schemes: &["eight00com"],
     service_url: "https://www.800.com",

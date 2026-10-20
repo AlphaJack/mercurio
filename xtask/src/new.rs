@@ -7,11 +7,10 @@ const FIXTURE: &str = include_str!("../templates/acme.json");
 
 /// Writes `src/services/<id>.rs` and `tests/fixtures/services/<id>.json`, and adds the service's feature to `Cargo.toml`.
 pub fn scaffold(root: &Path, id: &str) -> Result<(), String> {
-    if id.is_empty()
-        || !id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
-        || id.starts_with('_')
+    if !id.starts_with(|c: char| c.is_ascii_lowercase())
+        || !id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
     {
-        return Err(format!("{id:?}: use lowercase letters, digits and `_`, not starting with `_`"));
+        return Err(format!("{id:?}: use the brand name in lowercase letters and digits, without separators"));
     }
     let name = {
         let mut c = id.chars();
@@ -45,16 +44,15 @@ pub fn scaffold(root: &Path, id: &str) -> Result<(), String> {
 
 /// Adds `service-<id>` to `all-services` and to the per-service features, each in sorted order (the names `build.rs` checks).
 fn add_feature(manifest: &Path, id: &str) -> Result<(), String> {
-    let feature = format!("service-{}", id.replace('_', "-"));
+    let feature = format!("service-{id}");
     let text = std::fs::read_to_string(manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
     let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();
     let start = lines.iter().position(|l| l.starts_with("all-services = [")).ok_or("Cargo.toml: no `all-services`")?;
     let end = start + lines[start..].iter().position(|l| l == "]").ok_or("Cargo.toml: unterminated `all-services`")?;
     insert_sorted(&mut lines, start + 1..end, format!("  \"{feature}\","));
-    let section =
-        lines.iter().position(|l| l.starts_with("# One per service")).ok_or("Cargo.toml: no per-service features")?;
-    let decls = section + 1..lines.len();
-    insert_sorted(&mut lines, decls, format!("{feature} = []"));
+    // The per-service declarations follow the `all-services` list.
+    let len = lines.len();
+    insert_sorted(&mut lines, end + 1..len, format!("{feature} = []"));
     std::fs::write(manifest, lines.join("\n") + "\n").map_err(|e| format!("{}: {e}", manifest.display()))?;
     eprintln!("added `{feature}` to crates/mercurio/Cargo.toml");
     Ok(())

@@ -13,7 +13,7 @@ use crate::util::{json_text, parse_int};
 use crate::{Error, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "africas_talking",
+    id: "africastalking",
     name: "Africas Talking",
     schemes: &["atalk"],
     service_url: "https://africastalking.com/",

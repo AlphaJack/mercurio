@@ -10,7 +10,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "signal_api",
+    id: "signalapi",
     name: "Signal API",
     schemes: &["signal", "signals"],
     service_url: "https://bbernhard.github.io/signal-cli-rest-api/",

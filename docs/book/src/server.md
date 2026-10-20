@@ -150,7 +150,7 @@ events as the services finish: `log` events, `: heartbeat` comments every
 : connected
 
 event: log
-data: {"asctime":"2026-10-17 12:00:00,000","level":"INFO","message":"Sent json:// (JSON) notification.","service":"custom_json"}
+data: {"asctime":"2026-10-17 12:00:00,000","level":"INFO","message":"Sent json:// (JSON) notification.","service":"json"}
 
 event: result
 data: {"status":"SUCCESS"}

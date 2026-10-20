@@ -13,7 +13,7 @@ use crate::url::{ParsedUrl, quote, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "apprise_api",
+    id: "appriseapi",
     name: "Apprise API",
     schemes: &["apprise", "apprises"],
     service_url: "https://github.com/caronc/apprise-api",

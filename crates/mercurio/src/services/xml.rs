@@ -9,7 +9,7 @@ use crate::util::escape_html;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "custom_xml",
+    id: "xml",
     name: "XML",
     schemes: &["xml", "xmls"],
     parse,

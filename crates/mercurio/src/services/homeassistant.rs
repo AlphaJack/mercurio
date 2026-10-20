@@ -10,7 +10,7 @@ use crate::url::{ParsedUrl, split_path, unquote};
 use crate::{Error, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "home_assistant",
+    id: "homeassistant",
     name: "HomeAssistant",
     schemes: &["hassio", "hassios"],
     service_url: "https://www.home-assistant.io/",

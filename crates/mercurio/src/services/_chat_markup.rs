@@ -1,4 +1,4 @@
-//! The `<url|label>` chat markup shared by `slack` and `google_chat`.
+//! The `<url|label>` chat markup shared by `slack` and `googlechat`.
 
 use crate::convert::markup::{self, Markup};
 
