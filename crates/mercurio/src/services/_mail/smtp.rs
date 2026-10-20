@@ -1,4 +1,4 @@
-//! A small blocking SMTP client (RFC 5321) for [`crate::Plan::socket`]: EHLO/HELO, STARTTLS (RFC 3207), AUTH CRAM-MD5 (RFC 2195) / PLAIN / LOGIN (RFC 4954), MAIL/RCPT/DATA with dot-stuffing, QUIT.
+//! A small async SMTP client (RFC 5321) for [`crate::Plan::socket`]: EHLO/HELO, STARTTLS (RFC 3207), AUTH CRAM-MD5 (RFC 2195) / PLAIN / LOGIN (RFC 4954), MAIL/RCPT/DATA with dot-stuffing, QUIT.
 
 use md5::{Digest, Md5};
 

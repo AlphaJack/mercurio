@@ -53,8 +53,9 @@ on its page (see the [service list](services/index.md)), taken from the
   reply, Home Assistant `svc:a,b,c` lists and `storage prune` deleting
   Apprise's `*.psdata` files.
   *intentional*
-- **Not available.** `async_notify` (the library is blocking), pickling a
-  loaded notifier, internationalised messages (`i18n`). *intentional*
+- **Not available.** Pickling a loaded notifier, internationalised
+  messages (`i18n`). *intentional* Apprise's `async_notify` is
+  `AsyncMercurio::notify`.
 
 ## CLI
 
@@ -203,8 +204,6 @@ on its page (see the [service list](services/index.md)), taken from the
 
 ## Later
 
-- Async server (tokio) only if thousands of concurrent requests are
-  needed; today 64 connections, one thread each.
 - Alertmanager / Grafana webhook receiver mode (fan-out to URLs).
 - Upload the notify-type image instead of sending its URL (`image=yes`,
   Telegram).
