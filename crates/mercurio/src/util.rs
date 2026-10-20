@@ -14,19 +14,26 @@ pub fn html_escape_attr(s: &str) -> String {
 
 /// Escape `&`, `<`, `>`, quotes; optionally turn newlines into `<br/>` (`convert_new_lines`) and spaces and tabs into `&nbsp;` / `&emsp;` (`whitespace`).
 pub fn escape_html(s: &str, convert_new_lines: bool, whitespace: bool) -> String {
-    let mut out = s
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('\'', "&apos;")
-        .replace('"', "&quot;");
-    if whitespace {
-        out = out.replace('\t', "&emsp;").replace(' ', "&nbsp;");
-    }
-    if convert_new_lines {
-        out = out.replace('\n', "<br/>");
-    }
+    let mut out = String::with_capacity(s.len() + s.len() / 8);
+    escape_html_into(&mut out, s, convert_new_lines, whitespace);
     out
+}
+
+/// [`escape_html`] appended to `out` in one pass, with no copy of `s` per replacement.
+pub fn escape_html_into(out: &mut String, s: &str, convert_new_lines: bool, whitespace: bool) {
+    for c in s.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '\'' => out.push_str("&apos;"),
+            '"' => out.push_str("&quot;"),
+            '\t' if whitespace => out.push_str("&emsp;"),
+            ' ' if whitespace => out.push_str("&nbsp;"),
+            '\n' if convert_new_lines => out.push_str("<br/>"),
+            other => out.push(other),
+        }
+    }
 }
 
 /// XML text escaping (`&`, `<`, `>`).
@@ -115,4 +122,35 @@ pub fn replace_all(
 /// Query pairs with keys and values percent-decoded.
 pub fn unquoted_pairs(p: &crate::url::Pairs) -> Vec<(String, String)> {
     p.iter().map(|(k, v)| (crate::url::unquote(k), crate::url::unquote(v))).collect()
+}
+
+#[cfg(test)]
+mod escape_tests {
+    use super::*;
+
+    /// What `escape_html` did before it wrote in one pass: a replacement per character class.
+    fn chained(s: &str, new_lines: bool, whitespace: bool) -> String {
+        let mut out = s
+            .replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('\'', "&apos;")
+            .replace('"', "&quot;");
+        if whitespace {
+            out = out.replace('\t', "&emsp;").replace(' ', "&nbsp;");
+        }
+        if new_lines {
+            out = out.replace('\n', "<br/>");
+        }
+        out
+    }
+
+    #[test]
+    fn one_pass_matches_the_chained_replacements() {
+        for s in ["", "plain", "a & b < c > d 'e' \"f\"\n\tg  h", "&amp; already", "ünï\u{1F680}<b>\r\n</b>"] {
+            for (nl, ws) in [(false, false), (true, false), (false, true), (true, true)] {
+                assert_eq!(escape_html(s, nl, ws), chained(s, nl, ws), "{s:?} {nl} {ws}");
+            }
+        }
+    }
 }

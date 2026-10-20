@@ -66,7 +66,7 @@ impl Notify for Json {
             .header("Content-Type", "application/json")
             .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())))
             .query(&self.params)
-            .body(super::_json::encode(super::_json::object(msg), &self.payload), None);
+            .body(super::_json::encode(super::_json::object(msg), &self.payload, msg.body), None);
         req = req.basic_auth_opt(self.user.as_deref(), self.password.as_ref().map(Secret::expose));
         Plan::send(req)
     }

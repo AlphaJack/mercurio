@@ -642,7 +642,9 @@ where
     K: AsRef<str> + 'a,
     V: AsRef<str> + 'a,
 {
-    let mut out = String::new();
+    let pairs: Vec<&(K, V)> = pairs.into_iter().collect();
+    // Sized for text that needs no escaping, so a large body does not regrow the buffer by doubling.
+    let mut out = String::with_capacity(pairs.iter().map(|(k, v)| k.as_ref().len() + v.as_ref().len() + 2).sum());
     for (k, v) in pairs {
         if !out.is_empty() {
             out.push('&');
