@@ -13,6 +13,30 @@ changelog_include = ["mercurio"]
 
 # Setting commit_parsers replaces release-plz's defaults, so they are restated below the skip rule.
 [changelog]
+# One heading per type, then unscoped commits, then one subheading per scope; breaking changes first.
+body = """
+## [{{ version }}]{%- if release_link -%}({{ release_link }}){% endif %} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{%- set_global unscoped = [] %}{% for c in commits %}{% if not c.scope %}{% set_global unscoped = unscoped | concat(with=c) %}{% endif %}{% endfor %}
+{%- if unscoped %}
+{{ self::list(commits=unscoped) }}
+{%- endif %}
+{%- for scope, scoped in commits | group_by(attribute="scope") %}
+
+#### {{ scope | upper_first }}
+{{ self::list(commits=scoped) }}
+{%- endfor %}
+{% endfor %}
+{%- macro list(commits) -%}
+{%- for c in commits | filter(attribute="breaking", value=true) %}
+- **breaking**: {{ c.message }}
+{%- endfor %}
+{%- for c in commits | filter(attribute="breaking", value=false) %}
+- {{ c.message }}
+{%- endfor %}
+{%- endmacro -%}
+"""
 commit_parsers = [
     # The release PR bumps the version, so release-plz counts it as a change in the next release.
     { message = "^chore: release", skip = true },
