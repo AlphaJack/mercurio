@@ -34,9 +34,10 @@ on its page (see the [service list](services/index.md)), taken from the
   `json://`, `xml://` and `form://` request another path (Apprise issue
   #1799). Keeping it encoded for every service would also change xmpp
   JIDs and signalgrid channels. *todo*
-- **`?tz=`.** Apprise validates the name against a time zone database ->
-  mercurio passes it to the services that read it without validating;
-  e-mail `Date:` and syslog timestamps are UTC. *todo*
+- **`?tz=`.** Validated as in Apprise (the UTC family, any case, or the
+  location alone such as `paris`; an unknown zone rejects the URL). E-mail
+  `Date:` and syslog timestamps use it, else the machine's zone. A YAML
+  `asset:` `timezone` is still ignored. *todo* (asset zone)
 - **`?optional=`.** Parsed by both; no effect in mercurio. *intentional*
 - **Overflow.** Apprise lets each plugin tune overflow (`overflow_*`
   attributes), numbers split pieces (`[01/03]`) and may repeat the title ->
@@ -74,8 +75,7 @@ on its page (see the [service list](services/index.md)), taken from the
 - **No services** (nothing given, nothing configured) exits with 2.
   *intentional*
 - **Not implemented:** `-P/--plugin-path` (register custom services from
-  Rust), `-T/--theme`, `-D/--debug` (use `-vvv`). *todo* for `-T`;
-  *intentional* for the rest.
+  Rust), `-D/--debug` (use `-vvv`). *intentional*
 - **`-d`** does not print storage URL ids; use `mercurio storage`.
   *intentional*
 - **`check`, `serve`, `services`** are mercurio subcommands. *intentional*

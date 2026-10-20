@@ -129,6 +129,9 @@ struct Opts {
     /// Turn `\n`, `\r`, `\t` and `\\` in the title and body into the characters
     #[arg(short = 'e', long, global = true)]
     interpret_escapes: bool,
+    /// Image theme, the `{THEME}` of image URLs
+    #[arg(short = 'T', long, global = true, value_name = "THEME", default_value = "default")]
+    theme: String,
     /// Replace `:shortcode:` emoji in the title and body (a URL's `?emojis=no` still wins)
     #[arg(short = 'j', long, global = true)]
     interpret_emojis: bool,
@@ -510,6 +513,7 @@ fn storage_asset(o: &Opts) -> (Asset, i64) {
         // `run` has checked the mode.
         storage_mode: StorageMode::parse(&o.storage_mode).unwrap_or_default(),
         interpret_emojis: o.interpret_emojis.then_some(true),
+        theme: o.theme.clone(),
         ..Asset::default()
     };
     (asset.with_storage(expand_path(path.trim())), o.storage_prune_days)

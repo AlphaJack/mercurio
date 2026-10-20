@@ -417,13 +417,15 @@ pub struct Context<'a> {
     files: &'a [(FileOp, Result<FileOutput>)],
     /// The clock and random source of this send.
     env: &'a Arc<dyn Env>,
+    /// The URL's `?tz=`.
+    tz: Option<&'a jiff::tz::TimeZone>,
 }
 
 impl<'a> Context<'a> {
     /// A context over `asset`, `store` and `memo`, on the [`SystemEnv`](crate::SystemEnv).
     #[expect(clippy::disallowed_methods, reason = "the default Env")]
     pub fn new(asset: &'a Asset, store: &'a StoreRef, memo: &'a Memo) -> Self {
-        Self { asset, store, memo, files: &[], env: crate::env::system() }
+        Self { asset, store, memo, files: &[], env: crate::env::system(), tz: None }
     }
 
     /// This context on another clock and random source (the transport's, see [`crate::Transport::env`]).
@@ -439,6 +441,16 @@ impl<'a> Context<'a> {
     /// An empty `multipart/form-data` body with a boundary from [`Context::env`].
     pub fn multipart(&self) -> Multipart {
         Multipart::with_env(self.env.as_ref())
+    }
+
+    /// This context with the URL's time zone.
+    pub(crate) fn with_tz(self, tz: Option<&'a jiff::tz::TimeZone>) -> Self {
+        Self { tz, ..self }
+    }
+
+    /// The zone for dates a service writes: the URL's `?tz=`, else the machine's, as Apprise.
+    pub(crate) fn time_zone(&self) -> jiff::tz::TimeZone {
+        self.tz.cloned().unwrap_or_else(crate::time::local_zone)
     }
 
     /// This context with the results of [`Notify::files`].
