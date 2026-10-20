@@ -594,6 +594,30 @@ fn library_log_lines_are_returned_per_request() {
     rxb.recv().unwrap();
 }
 
+#[cfg(unix)]
+#[test]
+fn json_log_format_writes_one_object_per_line() {
+    let dir = tmpdir("json-logs");
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_mercurio"));
+    cmd.args(["serve", "--bind", "127.0.0.1:0"]).env("APPRISE_CONFIG_DIR", &dir).env("LOG_FORMAT", "json");
+    let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+    let mut line = String::new();
+    BufReader::new(child.stdout.take().unwrap()).read_line(&mut line).unwrap();
+    let addr = line.trim().rsplit("http://").next().unwrap().to_string();
+    // `/status` is not logged as a request; a refused notification is.
+    assert_eq!(http(&addr, "POST", "/notify", "application/json", "{}").0, 400);
+    // A graceful stop, so the request's log line is written.
+    assert!(Command::new("kill").args(["-TERM", &child.id().to_string()]).status().unwrap().success());
+    let mut err = String::new();
+    child.stderr.take().unwrap().read_to_string(&mut err).unwrap();
+    child.wait().unwrap();
+    let events: Vec<serde_json::Value> =
+        err.lines().map(|l| serde_json::from_str(l).unwrap_or_else(|e| panic!("{e}: {l}"))).collect();
+    let request = events.iter().find(|e| e["target"] == "request").unwrap_or_else(|| panic!("{err}"));
+    assert_eq!((request["method"].as_str(), request["route"].as_str()), (Some("POST"), Some("/notify")));
+    assert_eq!(request["status"], 400);
+}
+
 /// Send raw bytes, half-close and return everything the server wrote.
 fn raw(addr: &str, bytes: &[u8]) -> String {
     let mut s = TcpStream::connect(addr).unwrap();

@@ -51,6 +51,13 @@ line. A `/status` or `/metrics` request that succeeds (the container's
 health check, a metrics scrape) is not logged. `-v` adds warnings, `-vv`
 everything at INFO, `-vvv` debug output.
 
+`--log-format json` (`LOG_FORMAT=json`) writes one JSON object per line
+instead, with the same fields as keys, for log collectors:
+
+```json
+{"timestamp":"2026-10-20T13:53:41.630353Z","level":"INFO","method":"POST","route":"/notify/{key}","status":424,"duration_ms":"35.555","remote":"127.0.0.1","key":"k1","services":2,"failed":1,"error":"One or more notification could not be sent","target":"request"}
+```
+
 ## Endpoints
 
 ```text

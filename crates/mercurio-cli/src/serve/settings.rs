@@ -92,6 +92,9 @@ pub(crate) struct ServeArgs {
     /// Default detail of returned logs
     #[arg(long, env = "LOG_LEVEL", default_value = "INFO", value_name = "LEVEL")]
     log_level: String,
+    /// Server log on stderr: `text`, or `json` for one JSON object per line
+    #[arg(long, env = "LOG_FORMAT", default_value = "text", value_name = "FORMAT", value_parser = ["text", "json"])]
+    log_format: String,
     /// `no` stops following HTTP redirects for URLs without `?redirect=`
     #[arg(long, env = "APPRISE_HTTP_REDIRECTS", default_value = "yes", value_name = "YES|NO")]
     http_redirects: String,
@@ -113,6 +116,13 @@ pub(crate) struct ServeArgs {
     /// Realm shown in login prompts
     #[arg(long, env = "APPRISE_BASIC_AUTH_REALM", default_value = "Mercurio API", value_name = "REALM")]
     basic_auth_realm: String,
+}
+
+impl ServeArgs {
+    /// `--log-format json`.
+    pub(crate) fn json_logs(&self) -> bool {
+        self.log_format == "json"
+    }
 }
 fn int(name: &str, raw: &str, min: i64, max: i64) -> Result<i64, String> {
     let v: i64 = raw.trim().parse().map_err(|_| format!("{name} must be a whole number"))?;
