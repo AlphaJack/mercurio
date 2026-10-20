@@ -64,7 +64,7 @@ const BUILTIN: &[Comparator] = &[
     super::stream::SYSLOG,
     super::stream::RSYSLOG,
     super::desktop::MACOSX,
-    super::desktop::GDBUS,
+    super::desktop::DBUS,
     super::desktop::GNOME,
     super::desktop::WINDOWS,
     super::desktop::BLINK1,

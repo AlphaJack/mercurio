@@ -203,10 +203,12 @@ fn tcp_connect(host: &str, port: u16, timeout: Duration) -> io::Result<TcpStream
 enum Inner {
     Plain(TcpStream),
     Tls(Box<StreamOwned<ClientConnection, TcpStream>>),
+    #[cfg(unix)]
+    Unix(std::os::unix::net::UnixStream),
     Swapping,
 }
 
-/// A TCP stream that can be upgraded to TLS in place.
+/// A TCP stream that can be upgraded to TLS in place, or a Unix stream socket.
 pub struct NetConn {
     inner: Inner,
     host: String,
@@ -215,6 +217,9 @@ pub struct NetConn {
 
 impl NetConn {
     pub fn connect(ep: &Endpoint) -> Result<Self> {
+        if let Some(path) = &ep.unix {
+            return Self::connect_unix(ep, path);
+        }
         let tcp = tcp_connect(&ep.host, ep.port, ep.connect_timeout)
             .map_err(|e| Error::transport(format!("{}:{}: {e}", ep.host, ep.port)))?;
         tcp.set_read_timeout(Some(ep.read_timeout)).ok();
@@ -225,12 +230,30 @@ impl NetConn {
         }
         Ok(c)
     }
+
+    #[cfg(unix)]
+    fn connect_unix(ep: &Endpoint, path: &str) -> Result<Self> {
+        let sock = crate::net::unix_connect(path).map_err(|e| Error::transport(format!("{}: {e}", ep.address())))?;
+        sock.set_read_timeout(Some(ep.read_timeout)).ok();
+        sock.set_write_timeout(Some(ep.read_timeout)).ok();
+        Ok(NetConn { inner: Inner::Unix(sock), host: String::new(), verify: ep.verify_tls })
+    }
+
+    #[cfg(not(unix))]
+    fn connect_unix(_: &Endpoint, _: &str) -> Result<Self> {
+        Err(Error::Unsupported("unix sockets".into()))
+    }
 }
 
 impl Conn for NetConn {
     fn start_tls(&mut self) -> Result<()> {
         let tcp = match std::mem::replace(&mut self.inner, Inner::Swapping) {
             Inner::Plain(t) => t,
+            #[cfg(unix)]
+            other @ Inner::Unix(_) => {
+                self.inner = other;
+                return Err(Error::transport("TLS over a Unix socket"));
+            }
             other @ (Inner::Tls(_) | Inner::Swapping) => {
                 self.inner = other;
                 return Err(Error::transport("connection already uses TLS"));
@@ -256,6 +279,8 @@ impl Read for NetConn {
         match &mut self.inner {
             Inner::Plain(t) => t.read(buf),
             Inner::Tls(s) => s.read(buf),
+            #[cfg(unix)]
+            Inner::Unix(u) => u.read(buf),
             Inner::Swapping => Err(io::Error::other("connection unavailable")),
         }
     }
@@ -266,6 +291,8 @@ impl Write for NetConn {
         match &mut self.inner {
             Inner::Plain(t) => t.write(buf),
             Inner::Tls(s) => s.write(buf),
+            #[cfg(unix)]
+            Inner::Unix(u) => u.write(buf),
             Inner::Swapping => Err(io::Error::other("connection unavailable")),
         }
     }
@@ -273,6 +300,8 @@ impl Write for NetConn {
         match &mut self.inner {
             Inner::Plain(t) => t.flush(),
             Inner::Tls(s) => s.flush(),
+            #[cfg(unix)]
+            Inner::Unix(u) => u.flush(),
             Inner::Swapping => Ok(()),
         }
     }

@@ -242,6 +242,8 @@ impl AsyncConn for Box<dyn Conn> {
 /// Where to open a stream.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Endpoint {
+    /// Unix stream socket path instead of `host:port` (D-Bus); a leading NUL names a Linux abstract socket. TLS does not apply.
+    pub unix: Option<String>,
     /// Host name or IP address.
     pub host: String,
     /// TCP port.
@@ -258,7 +260,10 @@ pub struct Endpoint {
 
 impl fmt::Debug for Endpoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Endpoint({}:{}, tls={})", self.host, self.port, self.tls)
+        match &self.unix {
+            Some(path) => write!(f, "Endpoint(unix:{})", path.escape_debug()),
+            None => write!(f, "Endpoint({}:{}, tls={})", self.host, self.port, self.tls),
+        }
     }
 }
 
@@ -266,12 +271,26 @@ impl Endpoint {
     /// `host:port`, certificate checked, default timeouts.
     pub fn new(host: impl Into<String>, port: u16, tls: bool) -> Self {
         Self {
+            unix: None,
             host: host.into(),
             port,
             tls,
             verify_tls: true,
             connect_timeout: DEFAULT_CONNECT_TIMEOUT,
             read_timeout: DEFAULT_READ_TIMEOUT,
+        }
+    }
+
+    /// A Unix stream socket (`path`, or a Linux abstract name after a leading NUL), default timeouts.
+    pub fn unix(path: impl Into<String>) -> Self {
+        Self { unix: Some(path.into()), ..Self::new("", 0, false) }
+    }
+
+    /// `host:port`, or the socket path: for error messages.
+    pub(crate) fn address(&self) -> String {
+        match &self.unix {
+            Some(path) => path.escape_debug().to_string(),
+            None => format!("{}:{}", self.host, self.port),
         }
     }
 }

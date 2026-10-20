@@ -414,4 +414,32 @@ mod tests {
             assert_eq!(t.command(&cmd).await.unwrap().stdout, b"in");
         }
     }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    #[expect(clippy::disallowed_methods, reason = "the test serves a real socket from a temporary directory")]
+    async fn unix_sockets() {
+        let dir = std::env::temp_dir().join(format!("mercurio-tokio-unix-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("echo.sock");
+        let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+        std::thread::spawn(move || {
+            use std::io::{Read, Write};
+            let (mut s, _) = listener.accept().unwrap();
+            let mut b = [0u8; 4];
+            s.read_exact(&mut b).unwrap();
+            s.write_all(&b).unwrap();
+        });
+        let t = TokioTransport::new();
+        let mut conn = t.connect(&Endpoint::unix(path.to_string_lossy())).await.unwrap();
+        conn.write_all(b"ping").await.unwrap();
+        let mut b = [0u8; 4];
+        conn.read_exact(&mut b).await.unwrap();
+        assert_eq!(&b, b"ping");
+        assert!(!conn.is_tls() && conn.start_tls().await.is_err());
+        let missing = dir.join("missing.sock").to_string_lossy().into_owned();
+        let err = t.connect(&Endpoint::unix(missing.clone())).await.err().unwrap();
+        assert!(matches!(&err, Error::Transport(m) if m.starts_with(&missing)), "{err}");
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 }

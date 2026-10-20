@@ -1,12 +1,12 @@
-//! [`Env`]: the wall clock and the randomness services read, supplied by the transport so plans can be reproduced.
+//! [`Env`]: the wall clock, the randomness and the environment variables services read, supplied by the transport so plans can be reproduced.
 
 use std::fmt;
 use std::sync::{Arc, LazyLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// The wall clock and the random source of a send.
+/// The wall clock, the random source and the environment variables of a send.
 ///
-/// Services never read the system clock or random generator themselves: they ask the [`crate::Context`] (`ctx.env()`), which gets its `Env` from [`crate::Transport::env`] / [`crate::AsyncTransport::env`]. The default is [`SystemEnv`]; a test or a deterministic replay returns its own (see [`crate::testing::FixedEnv`]).
+/// Services never read the system clock, random generator or environment themselves: they ask the [`crate::Context`] (`ctx.env()`), which gets its `Env` from [`crate::Transport::env`] / [`crate::AsyncTransport::env`]. The default is [`SystemEnv`]; a test or a deterministic replay returns its own (see [`crate::testing::FixedEnv`]).
 ///
 /// Only [`Env::now`] and [`Env::fill_random`] are required; the other methods derive from them.
 pub trait Env: Send + Sync + fmt::Debug {
@@ -15,6 +15,11 @@ pub trait Env: Send + Sync + fmt::Debug {
 
     /// Fill `buf` with random bytes. Keys, nonces and IVs come from here, so a real implementation must be cryptographically secure.
     fn fill_random(&self, buf: &mut [u8]);
+
+    /// An environment variable (`DBUS_SESSION_BUS_ADDRESS`, ...); `None` when unset or not Unicode. Default: the process environment.
+    fn var(&self, name: &str) -> Option<String> {
+        std::env::var(name).ok()
+    }
 
     /// Unix time in seconds.
     fn unix_time(&self) -> u64 {

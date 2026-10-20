@@ -1,7 +1,11 @@
 //! Helpers shared by desktop notifiers (dbus, glib, gnome, windows, macosx, blink1).
 
+use std::path::PathBuf;
+
+use super::_dbus::{Call, Hint, Notification, session_bus};
+use crate::env::Env;
 use crate::error::Error;
-use crate::transport::{Command, CommandOutput};
+use crate::transport::{Command, CommandOutput, FileOp, FileOutput};
 use crate::url::ParsedUrl;
 use crate::util::parse_int;
 use crate::{Plan, Result};
@@ -48,26 +52,7 @@ pub fn xy(u: &ParsedUrl, service: &'static crate::ServiceDef) -> Result<Option<(
     }
 }
 
-/// GVariant text-format string literal (`'...'`), as `gdbus call` parses it.
-pub fn gvariant_str(s: &str) -> String {
-    let mut out = String::with_capacity(s.len() + 2);
-    out.push('\'');
-    for c in s.chars() {
-        match c {
-            '\'' => out.push_str("\\'"),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if (c as u32) < 0x20 || c as u32 == 0x7f => out.push_str(&format!("\\u{:04x}", c as u32)),
-            c => out.push(c),
-        }
-    }
-    out.push('\'');
-    out
-}
-
-/// One `org.freedesktop.Notifications.Notify` call made with `gdbus`.
+/// One `org.freedesktop.Notifications.Notify` call on the session bus.
 #[derive(Debug, Clone)]
 pub struct DesktopNotify<'a> {
     pub app: &'a str,
@@ -77,35 +62,52 @@ pub struct DesktopNotify<'a> {
     pub body: &'a str,
     pub urgency: u8,
     pub xy: Option<(i64, i64)>,
-    pub timeout_ms: u32,
+    /// Milliseconds; `-1` lets the daemon decide.
+    pub timeout_ms: i32,
 }
 
-/// `gdbus call --session ... Notify app 0 '' title body [] hints timeout`.
-pub fn gdbus_notify(n: &DesktopNotify<'_>) -> Command {
-    let mut hints = format!("{{'urgency': <byte {}>", n.urgency);
+/// Write the bundled icon (unless it is already there), then call `Notify` (replaces-id `0`, no actions, `{urgency: byte, x: int32, y: int32}` hints) over a native D-Bus connection.
+pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
+    let ep = match session_bus(env) {
+        Ok(ep) => ep,
+        Err(e) => return Plan::Fail(e),
+    };
+    let mut hints = vec![("urgency", Hint::Byte(n.urgency))];
     if let Some((x, y)) = n.xy {
-        hints.push_str(&format!(", 'x': <int32 {x}>, 'y': <int32 {y}>"));
+        let (Ok(x), Ok(y)) = (i32::try_from(x), i32::try_from(y)) else {
+            return Plan::Fail(Error::Service("the x,y coordinates specified are out of range".into()));
+        };
+        hints.extend([("x", Hint::Int32(x)), ("y", Hint::Int32(y))]);
     }
-    hints.push('}');
-    let cmd = Command::new("gdbus").args([
-        "call".to_string(),
-        "--session".into(),
-        "--dest".into(),
-        "org.freedesktop.Notifications".into(),
-        "--object-path".into(),
-        "/org/freedesktop/Notifications".into(),
-        "--method".into(),
-        "org.freedesktop.Notifications.Notify".into(),
-        gvariant_str(n.app),
-        "0".into(),
-        gvariant_str(n.icon.map_or("", |i| i.path.as_str())),
-        gvariant_str(n.title),
-        gvariant_str(n.body),
-        "@as []".into(),
+    let call = Notification {
+        app: n.app.to_string(),
+        icon: n.icon.map_or_else(String::new, |i| i.path.clone()),
+        summary: n.title.to_string(),
+        body: n.body.to_string(),
         hints,
-        n.timeout_ms.to_string(),
-    ]);
-    with_icon(cmd, n.icon)
+        timeout: n.timeout_ms,
+    }
+    .call();
+    Plan::chain([
+        write_icon(n.icon),
+        Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(Call::new(call), conn, transport))),
+    ])
+}
+
+/// Write the bundled icon to its path unless it already holds it: what [`with_icon`] has the transport do for a command.
+fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
+    let Some((path, bytes)) = icon.and_then(|i| i.bundled.map(|b| (PathBuf::from(&i.path), b))) else {
+        return Plan::Done;
+    };
+    Plan::file(FileOp::Read { path: path.clone(), max: 0 }, move |read| {
+        if matches!(&read, Ok(FileOutput::Bytes(b)) if b.as_slice() == bytes) {
+            return Plan::Done;
+        }
+        Plan::file(FileOp::WriteAtomic { path, data: bytes.to_vec(), private: false }, |res| match res {
+            Ok(_) => Plan::Done,
+            Err(e) => Plan::Fail(e),
+        })
+    })
 }
 
 /// `cmd` plus the bundled icon file it reads, when the icon is the bundled one.
@@ -131,16 +133,5 @@ pub fn check_exit(what: &'static str, res: Result<CommandOutput>) -> Plan {
             }))
         }
         Err(e) => Plan::Fail(e),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn gvariant_strings_are_escaped() {
-        assert_eq!(gvariant_str("it's \\ a\nb"), "'it\\'s \\\\ a\\nb'");
-        assert_eq!(gvariant_str("\u{1}é"), "'\\u0001é'");
     }
 }

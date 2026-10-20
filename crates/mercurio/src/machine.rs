@@ -63,6 +63,11 @@ impl LineBuf {
         Some(String::from_utf8_lossy(&line).into_owned())
     }
 
+    /// Everything buffered after the last line (the first binary bytes once a protocol leaves its line phase).
+    pub fn take(&mut self) -> Vec<u8> {
+        std::mem::take(&mut self.0)
+    }
+
     /// Drop what is buffered (plaintext left over before a TLS upgrade).
     pub fn clear(&mut self) {
         self.0.clear();

@@ -12,7 +12,7 @@ basic:
   valid: true
 fails:
   errors:
-    - "service error: notify-send exited with status 1"
+    - "service error: D-Bus Notify failed: org.freedesktop.DBus.Error.Failed: scripted failure"
   ok: false
   valid: true
 failure_type:
