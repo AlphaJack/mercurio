@@ -79,7 +79,7 @@ const CACHE_MAX: usize = 4096;
 impl Default for Verifier {
     fn default() -> Self {
         let mut secret = [0u8; 32];
-        mercurio::crypto::random_bytes(&mut secret);
+        mercurio::__private::random_bytes(&mut secret);
         Verifier { secret, ok: Mutex::new(BTreeMap::new()) }
     }
 }
@@ -91,7 +91,7 @@ impl Verifier {
             material.extend_from_slice(&(v.len() as u64).to_be_bytes());
             material.extend_from_slice(v.as_bytes());
         }
-        let fp = mercurio::crypto::hmac_sha256(&self.secret, &material);
+        let fp = mercurio::__private::hmac_sha256(&self.secret, &material);
         let user_ok = rec_user.is_none_or(|u| u == user);
         if let Ok(mut cache) = self.ok.lock() {
             if cache.get(&fp).is_some_and(|t| t.elapsed() < CACHE_TTL) {

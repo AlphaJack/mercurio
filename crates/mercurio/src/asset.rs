@@ -4,14 +4,20 @@ use crate::message::{NotifyFormat, NotifyType};
 
 /// Image sizes services request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ImageSize {
+    /// 32×32 pixels.
     Xy32,
+    /// 72×72 pixels.
     Xy72,
+    /// 128×128 pixels.
     Xy128,
+    /// 256×256 pixels.
     Xy256,
 }
 
 impl ImageSize {
+    /// The size as written in image file names, e.g. `"72x72"`.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Xy32 => "32x32",
@@ -59,7 +65,7 @@ pub struct Asset {
     pub default_ascii: String,
     /// Input format assumed when a [`Message`](crate::Message) has none. `None` passes bodies through untouched.
     pub body_format: Option<NotifyFormat>,
-    /// Largest attachment [`crate::attachment`] loads, in bytes (0 = unlimited).
+    /// Largest attachment [`crate::AttachmentSet`] loads, in bytes (0 = unlimited).
     pub attachment_max_size: u64,
     /// Directory for persistent stores. `None` keeps every store in memory.
     pub storage_path: Option<PathBuf>,

@@ -3,8 +3,8 @@
 use std::time::SystemTime;
 
 use mercurio::TagFilter;
-use mercurio::config::{Config, ConfigFormat, ConfigService};
-use mercurio::plan::redact_url;
+use mercurio::redact_url;
+use mercurio::{Config, ConfigFormat, ConfigService};
 use serde_json::{Map, Value, json};
 
 use super::super::auth::Role;
@@ -100,7 +100,7 @@ impl Server {
                 Some(Value::Array(a)) => a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
                 _ => Vec::new(),
             };
-            let urls: Vec<String> = mercurio::parse::parse_urls(raw.iter().map(String::as_str), true)
+            let urls: Vec<String> = mercurio::__private::parse_urls(raw.iter().map(String::as_str), true)
                 .into_iter()
                 .filter(|u| mercurio::parse(u).is_ok_and(|t| self.s.services.enabled(t.service().id)))
                 .collect();
@@ -124,7 +124,7 @@ impl Server {
             };
             let mut stored = format.unwrap_or(ConfigFormat::Text);
             if !config.trim().is_empty() {
-                let Some(detected) = format.or_else(|| mercurio::config::detect_format(config)) else {
+                let Some(detected) = format.or_else(|| mercurio::__private::detect_format(config)) else {
                     return Reply::error(req, 400, "The configuration format could not be auto-detected");
                 };
                 stored = detected;
@@ -322,13 +322,13 @@ impl Server {
 
 /// A YAML document that would be discarded as a whole (syntax error, not a mapping or a broken `template:` section).
 fn yaml_refused(content: &str) -> bool {
-    use mercurio::config::yaml::{Yaml, parse};
+    use mercurio::__private::yaml::{Yaml, parse};
     match parse(content) {
         Err(_) => true,
         Ok(Yaml::Null) => false,
         Ok(doc) => {
             doc.as_map().is_none()
-                || doc.get("template").is_some_and(|t| mercurio::config::template::TemplateSchema::parse(t).is_err())
+                || doc.get("template").is_some_and(|t| mercurio::__private::TemplateSchema::parse(t).is_err())
         }
     }
 }
@@ -338,8 +338,8 @@ fn template_defaults(content: &str, format: ConfigFormat) -> std::collections::B
     if format != ConfigFormat::Yaml {
         return out;
     }
-    let Ok(doc) = mercurio::config::yaml::parse(content) else { return out };
-    if let Some(Ok(schema)) = doc.get("template").map(mercurio::config::template::TemplateSchema::parse) {
+    let Ok(doc) = mercurio::__private::yaml::parse(content) else { return out };
+    if let Some(Ok(schema)) = doc.get("template").map(mercurio::__private::TemplateSchema::parse) {
         for (name, default) in schema.variables {
             if let Some(d) = default {
                 out.insert(name, d);
@@ -354,6 +354,6 @@ fn url_query(url: &str) -> Vec<(String, String)> {
 /// `YYYY-MM-DDTHH:MM:SS` (UTC).
 fn iso_seconds(t: SystemTime) -> String {
     let secs = t.duration_since(SystemTime::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    let (y, mo, d, h, mi, s) = mercurio::time::utc_parts(secs);
+    let (y, mo, d, h, mi, s) = mercurio::__private::utc_parts(secs);
     format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}")
 }

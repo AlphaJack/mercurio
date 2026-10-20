@@ -361,7 +361,7 @@ async fn write_atomic(path: &Path, data: &[u8]) -> std::io::Result<()> {
     let dir = path.parent().unwrap_or(Path::new("."));
     fs::create_dir_all(dir).await?;
     let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-    let tmp = dir.join(format!(".{}.{}.tmp", name.trim_start_matches('.'), mercurio::crypto::random_hex(6)));
+    let tmp = dir.join(format!(".{}.{}.tmp", name.trim_start_matches('.'), mercurio::__private::random_hex(6)));
     let result = async {
         let mut f = fs::File::create(&tmp).await?;
         f.write_all(data).await?;

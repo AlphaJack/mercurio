@@ -32,7 +32,8 @@ use std::io::Read;
 use std::process::ExitCode;
 use std::sync::Arc;
 
-use mercurio::config::{ConfigOptions, default_paths, expand_path};
+use mercurio::__private::{default_paths, expand_path};
+use mercurio::ConfigOptions;
 use mercurio::{
     Asset, AsyncMercurio, AsyncTransport, Attachment, Message, NotifyFormat, NotifyType, TagFilter, TemplateVars,
     TokioTransport,
@@ -333,8 +334,7 @@ fn unescape(s: &str) -> String {
 
 /// A path, `file://`, `http(s)://` or `memory://` attachment (`mercurio::attachment`).
 async fn load_attachment(spec: &str, transport: &dyn AsyncTransport) -> Result<Attachment, String> {
-    let source =
-        mercurio::AttachSource::parse(spec).map_err(|e| format!("{}: {e}", mercurio::plan::redact_url(spec)))?;
+    let source = mercurio::AttachSource::parse(spec).map_err(|e| format!("{}: {e}", mercurio::redact_url(spec)))?;
     source.load_async(transport, &mercurio::Asset::default()).await.map_err(|e| e.to_string())
 }
 
@@ -381,7 +381,7 @@ fn cmd_services(json: bool) -> ExitCode {
 
 fn env_urls() -> Vec<String> {
     match std::env::var("APPRISE_URLS") {
-        Ok(v) if !v.trim().is_empty() => mercurio::parse::parse_urls([v.as_str()], true),
+        Ok(v) if !v.trim().is_empty() => mercurio::__private::parse_urls([v.as_str()], true),
         _ => Vec::new(),
     }
 }
@@ -431,7 +431,7 @@ async fn build(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<(Async
         Source::Urls(urls) => {
             for url in &urls {
                 if let Err(e) = m.add(url) {
-                    errln!("error: {}: {e}", mercurio::plan::redact_url(url));
+                    errln!("error: {}: {e}", mercurio::redact_url(url));
                     bad += 1;
                 }
             }
@@ -441,10 +441,10 @@ async fn build(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<(Async
         Source::Configs(paths) => {
             for path in &paths {
                 match m.add_config(path).await {
-                    Ok(0) => log::warn!("no services loaded from {}", mercurio::plan::redact_url(path)),
+                    Ok(0) => log::warn!("no services loaded from {}", mercurio::redact_url(path)),
                     Ok(_) => {}
                     Err(e) => {
-                        errln!("error: {}: {e}", mercurio::plan::redact_url(path));
+                        errln!("error: {}: {e}", mercurio::redact_url(path));
                         bad += 1;
                     }
                 }
@@ -471,7 +471,7 @@ fn template_vars(args: &Args) -> Result<TemplateVars, u8> {
     let mut vars = TemplateVars::new();
     for entry in &args.template_vars {
         let (name, value) = match entry.split_once('=') {
-            Some((n, v)) if mercurio::config::template::valid_name(n.trim()) => (n.trim(), v),
+            Some((n, v)) if mercurio::__private::valid_name(n.trim()) => (n.trim(), v),
             other => {
                 // Only the name is echoed: the value may be a secret.
                 let name = other.map(|(n, _)| n).unwrap_or(entry).trim();
@@ -501,12 +501,12 @@ fn print_dry_run(m: &AsyncMercurio, filter: &TagFilter, vars: &TemplateVars) {
     let mut n = 0;
     for t in sel.iter() {
         n += 1;
-        outln!("{n:4}. {}", mercurio::plan::redact_url(t.url()));
+        outln!("{n:4}. {}", mercurio::redact_url(t.url()));
         print_tags(t.tag_set());
     }
     for (p, _) in &sel.unresolved {
         n += 1;
-        outln!("{n:4}. {}", mercurio::plan::redact_url(&p.url()));
+        outln!("{n:4}. {}", mercurio::redact_url(&p.url()));
         outln!("{:>10}: - template; unresolved, would not send -", "uid");
         print_tags(&p.tags);
         let required = p.template_required();
@@ -621,7 +621,7 @@ async fn cmd_storage(args: &Args, transport: Arc<dyn AsyncTransport>) -> Result<
             }
             outln!("{:4}. {uid:<52} {:<8} {state}", idx + 1, bytes_to_str(*size));
             for t in targets {
-                outln!("{:>7} {}", "-", mercurio::plan::redact_url(t.url()));
+                outln!("{:>7} {}", "-", mercurio::redact_url(t.url()));
                 print_tags(t.tag_set());
             }
         }

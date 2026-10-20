@@ -73,8 +73,8 @@ fn auth_login_fallback() {
     let d = t.send(&Message::new("hi"), fake.as_ref(), &Asset::default());
     assert!(d.is_success(), "{d:?}");
     let log = log.lock().unwrap();
-    assert!(log.contains(&format!("AUTH LOGIN {}", mercurio::crypto::b64(b"bob"))), "{log:?}");
-    assert!(log.contains(&mercurio::crypto::b64(b"secret")));
+    assert!(log.contains(&format!("AUTH LOGIN {}", mercurio::__private::b64(b"bob"))), "{log:?}");
+    assert!(log.contains(&mercurio::__private::b64(b"secret")));
     assert!(log.iter().any(|l| l.starts_with("MAIL FROM:<bob@example.com>")));
 }
 

@@ -9,8 +9,7 @@ use crate::error::{Error, Result};
 use crate::http::{DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, Request, Response};
 use crate::store::StoreRef;
 use crate::transport::{
-    AsyncConn, AsyncTransport, Blocking, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp, FileOutput,
-    Transport,
+    AsyncConn, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp, FileOutput,
 };
 
 /// Continuation receiving the outcome of an HTTP request.
@@ -320,16 +319,15 @@ struct Runner<'a> {
     piece: usize,
 }
 
-/// Execute a plan to completion on a blocking transport.
-pub fn execute(plan: Plan, transport: &dyn Transport, opts: ExecOptions) -> Delivery {
-    pollster::block_on(execute_async(plan, &Blocking(transport), opts))
-}
-
-/// Execute a plan to completion.
-pub async fn execute_async(plan: Plan, transport: &dyn AsyncTransport, opts: ExecOptions) -> Delivery {
-    let mut ex = Executor::new(transport, opts);
-    let ok = ex.run(plan).await;
-    ex.finish(ok).await
+/// Execute a plan to completion on a blocking transport (unit tests of multi-step services).
+#[cfg(test)]
+pub(crate) fn execute(plan: Plan, transport: &dyn crate::transport::Transport, opts: ExecOptions) -> Delivery {
+    pollster::block_on(async {
+        let transport = crate::transport::Blocking(transport);
+        let mut ex = Executor::new(&transport, opts);
+        let ok = ex.run(plan).await;
+        ex.finish(ok).await
+    })
 }
 
 /// Runs several plans (the pieces of one message) on one transport, keeping the throttle between them and, optionally, a [`DeliveryTracker`] that skips targets an earlier attempt delivered.

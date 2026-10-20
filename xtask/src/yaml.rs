@@ -1,8 +1,8 @@
-//! The YAML configuration tables of the book from `mercurio::config::spec`.
+//! The YAML configuration tables of the book from `mercurio::__private::spec`.
 
 use std::path::Path;
 
-use mercurio::config::spec::{ASSET_KEYS, ASSET_SKIPPED, SETTINGS, TOP_LEVEL, asset_value};
+use mercurio::__private::spec::{ASSET_KEYS, ASSET_SKIPPED, SETTINGS, TOP_LEVEL, asset_value};
 
 /// Writes `docs/book/src/generated/yaml-top-level.md`, `yaml-settings.md`, `asset-keys.md` (keys with their `Asset::default()` value) and `asset-ignored.md` (keys accepted without effect).
 pub fn render(root: &Path) -> Result<(), String> {

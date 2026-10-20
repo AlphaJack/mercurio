@@ -14,7 +14,7 @@
 //! | anything else | (http) forwarded as query parameters |
 //!
 //! ```
-//! use mercurio::attachment::AttachmentSet;
+//! use mercurio::AttachmentSet;
 //! use mercurio::testing::FakeTransport;
 //! use mercurio::{Asset, Message, Response};
 //!

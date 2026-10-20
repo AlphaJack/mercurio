@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use mercurio::plan::redact_url;
+use mercurio::redact_url;
 use mercurio::{AsyncMercurio, Message, NotifyFormat, NotifyType, TagFilter};
 use serde_json::Value;
 
@@ -134,7 +134,7 @@ impl Server {
         };
         let asset = self.request_asset(req, self.s.stateless_storage, recursion);
         let mut m = AsyncMercurio::with_transport(self.transport.clone()).asset(asset.clone());
-        for u in mercurio::parse::parse_urls(urls.iter().map(String::as_str), true) {
+        for u in mercurio::__private::parse_urls(urls.iter().map(String::as_str), true) {
             match mercurio::parse(&u) {
                 Ok(t) if self.s.services.enabled(t.service().id) => {
                     m.push(t);

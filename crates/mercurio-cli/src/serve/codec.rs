@@ -308,13 +308,13 @@ pub fn password_hash(secret: &str) -> String {
     let salt: String = {
         const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         let mut raw = [0u8; 22];
-        mercurio::crypto::random_bytes(&mut raw);
+        mercurio::__private::random_bytes(&mut raw);
         raw.iter().map(|b| char::from(ALPHABET[usize::from(*b) % ALPHABET.len()])).collect()
     };
     let iterations = NonZeroU32::new(PBKDF2_ITERATIONS).unwrap_or(NonZeroU32::MIN);
     let mut out = [0u8; 32];
     ring::pbkdf2::derive(ring::pbkdf2::PBKDF2_HMAC_SHA256, iterations, salt.as_bytes(), secret.as_bytes(), &mut out);
-    format!("pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${}", mercurio::crypto::b64(&out))
+    format!("pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${}", mercurio::__private::b64(&out))
 }
 
 /// Check `secret` against a hash in the Django `pbkdf2_sha256$iter$salt$hash` format (`pbkdf2_sha1` is also read). Other algorithms are rejected.
@@ -330,7 +330,7 @@ pub fn password_check(secret: &str, encoded: &str) -> bool {
         _ => return false,
     };
     let (Some(iterations), Some(expected)) =
-        (iter.parse().ok().and_then(NonZeroU32::new), mercurio::crypto::b64_decode(hash))
+        (iter.parse().ok().and_then(NonZeroU32::new), mercurio::__private::b64_decode(hash))
     else {
         return false;
     };
@@ -361,7 +361,7 @@ mod tests {
         assert_eq!(gunzip(&fixed, usize::MAX).as_deref(), Some(text.as_bytes()));
 
         // A dynamic Huffman block: a 40-entry YAML file.
-        let dynamic = mercurio::crypto::b64_decode(DYNAMIC).unwrap_or_default();
+        let dynamic = mercurio::__private::b64_decode(DYNAMIC).unwrap_or_default();
         let mut yaml = String::from("version: 1\nurls:\n");
         for i in 0..40 {
             yaml.push_str(&format!(

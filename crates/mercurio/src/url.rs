@@ -597,13 +597,6 @@ pub fn quote(s: &str, safe: &str) -> String {
     out
 }
 
-/// [`quote`] with spaces as `+`.
-pub fn quote_plus(s: &str, safe: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    quote_into(&mut out, s, safe, true);
-    out
-}
-
 /// Append `s` percent-encoded to `out`; `plus` writes spaces as `+`.
 fn quote_into(out: &mut String, s: &str, safe: &str, plus: bool) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
@@ -737,7 +730,6 @@ mod tests {
     #[test]
     fn percent_encoding() {
         assert_eq!(quote("a b/c", "/"), "a%20b/c");
-        assert_eq!(quote_plus("a b&c", ""), "a+b%26c");
         assert_eq!(unquote("a%20b%zz"), "a b%zz");
         assert_eq!(unquote("%E2%82%ac%"), "€%");
         assert_eq!(unquote("%ff"), "\u{FFFD}");

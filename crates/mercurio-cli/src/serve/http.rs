@@ -5,7 +5,7 @@
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use mercurio::url::unquote_plus;
+use mercurio::__private::unquote_plus;
 use serde_json::{Value, json};
 
 /// Largest request body read.
@@ -167,7 +167,7 @@ pub fn basic_auth(header: &str) -> Option<(String, String)> {
     if !scheme.eq_ignore_ascii_case("basic ") {
         return None;
     }
-    let decoded = decode_header(&mercurio::crypto::b64_decode(value.trim())?);
+    let decoded = decode_header(&mercurio::__private::b64_decode(value.trim())?);
     let (user, pass) = decoded.split_once(':')?;
     Some((user.trim().to_string(), pass.to_string()))
 }
