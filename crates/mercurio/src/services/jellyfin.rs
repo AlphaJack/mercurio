@@ -1,4 +1,4 @@
-//! Jellyfin (`jellyfin://`, `jellyfins://`): messages to the active Jellyfin client sessions; same API and engine as Emby (`_emby.rs`).
+//! Jellyfin (`jellyfin://`, `jellyfins://`): messages to the active Jellyfin client sessions; same API and code as Emby.
 
 use crate::Result;
 use crate::service::{Notify, Param, ServiceDef};

@@ -85,7 +85,6 @@ See [HTTP server](server.md).
   the HTTP server. All of it applies to the library as well.
 - **Library**: using mercurio from Rust. The API reference is rustdoc
   ([api/mercurio](api/mercurio/index.html) in the published book).
-- **Services**: one page per service, generated from the code and the test
-  fixtures: URL formats, every query parameter with its default, examples
-  and known differences.
+- **Services**: one page per service: URL formats, every query parameter
+  with its default, examples and known differences.
 - **Reference**: [Differences](differences.md) from Apprise.

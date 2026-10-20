@@ -1,6 +1,6 @@
 //! AWS Simple Notification Service (`sns://`): SMS and topic messages through AWS SNS.
 //!
-//! Requests are signed with AWS Signature Version 4 when execution reaches them (see `_aws::AwsSigner`).
+//! Requests are signed with AWS Signature Version 4 when they are sent.
 
 use std::sync::Arc;
 use std::time::Duration;

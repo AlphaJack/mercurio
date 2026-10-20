@@ -38,7 +38,7 @@ greater than zero falls back to the default.
 mercurio -b "disk full" "ntfy://alerts?retry=3&wait=2"
 ```
 
-`retry` above 10 is capped and `wait` is clamped to 0–60 s. mercurio only
+`retry` above 10 is capped and `wait` is clamped to 0–20 s. mercurio only
 repeats an attempt when repeating cannot deliver the message twice. Every
 error has an `ErrorClass` (`mercurio::Error::class()`):
 

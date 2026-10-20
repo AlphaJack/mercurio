@@ -6,13 +6,13 @@
 //!
 //! Next to each entry: `.<name>.created` (creation time marker) and `.<name>.lock` (per-key login, JSON `{"access", "username", "digest"}`).
 
-use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use mercurio::ConfigFormat;
 use serde_json::{Value, json};
+use tokio::fs;
+use tokio::io::AsyncWriteExt;
 
 use super::codec;
 
@@ -120,16 +120,16 @@ impl ConfigStore {
     }
 
     /// The stored configuration: `Ok(None)` when there is none, `Err` when it could not be read.
-    pub fn get(&self, key: &str) -> Result<Option<(String, ConfigFormat)>, ()> {
+    pub async fn get(&self, key: &str) -> Result<Option<(String, ConfigFormat)>, ()> {
         if !self.enabled() {
             return Ok(None);
         }
         for fmt in [ConfigFormat::Text, ConfigFormat::Yaml] {
             let path = self.content_path(key, fmt);
-            if !path.is_file() {
+            if !is_file(&path).await {
                 continue;
             }
-            let raw = fs::read(&path).map_err(|_| ())?;
+            let raw = fs::read(&path).await.map_err(|_| ())?;
             let raw = if self.mode == Mode::Hash { codec::gunzip(&raw, MAX_READ).ok_or(())? } else { raw };
             return String::from_utf8(raw).map(|s| Some((s, fmt))).map_err(|_| ());
         }
@@ -137,27 +137,26 @@ impl ConfigStore {
     }
 
     /// Save `content` atomically, replacing the other format.
-    pub fn put(&self, key: &str, content: &str, fmt: ConfigFormat) -> bool {
+    pub async fn put(&self, key: &str, content: &str, fmt: ConfigFormat) -> bool {
         if !self.enabled() {
             return false;
         }
-        let created = self.created(key);
+        let created = self.created(key).await;
         let data = if self.mode == Mode::Hash { codec::gzip(content.as_bytes()) } else { content.as_bytes().to_vec() };
-        if write_atomic(&self.content_path(key, fmt), &data).is_err() {
+        if write_atomic(&self.content_path(key, fmt), &data).await.is_err() {
             log::error!("could not save the configuration for KEY: {key}");
             return false;
         }
         let other = if fmt == ConfigFormat::Text { ConfigFormat::Yaml } else { ConfigFormat::Text };
-        if remove(&self.content_path(key, other)) == Cleared::Failed {
-            remove(&self.content_path(key, fmt));
+        if remove(&self.content_path(key, other)).await == Cleared::Failed {
+            remove(&self.content_path(key, fmt)).await;
             return false;
         }
         let marker = self.marker(key, "created");
-        if !marker.exists()
-            && fs::File::create(&marker).is_ok()
+        if !fs::try_exists(&marker).await.unwrap_or(false)
+            && let Ok(f) = fs::File::create(&marker).await
             && let Some(t) = created
-            && let Ok(f) = fs::File::options().write(true).open(&marker)
-            && let Err(e) = f.set_modified(t)
+            && let Err(e) = f.into_std().await.set_modified(t)
         {
             log::debug!("could not keep the creation time of KEY {key}: {e}");
         }
@@ -165,54 +164,59 @@ impl ConfigStore {
     }
 
     /// Remove the configuration (both formats and the creation marker).
-    pub fn clear(&self, key: &str) -> Cleared {
+    pub async fn clear(&self, key: &str) -> Cleared {
         if !self.enabled() {
             return Cleared::Nothing;
         }
         let mut result = Cleared::Nothing;
         for fmt in [ConfigFormat::Text, ConfigFormat::Yaml] {
-            match remove(&self.content_path(key, fmt)) {
+            match remove(&self.content_path(key, fmt)).await {
                 Cleared::Removed if result != Cleared::Failed => result = Cleared::Removed,
                 Cleared::Failed => result = Cleared::Failed,
                 Cleared::Removed | Cleared::Nothing => {}
             }
         }
-        if result != Cleared::Failed && remove(&self.marker(key, "created")) == Cleared::Failed {
+        if result != Cleared::Failed && remove(&self.marker(key, "created")).await == Cleared::Failed {
             result = Cleared::Failed;
         }
         result
     }
 
     /// Creation time: the marker, else the oldest content file time.
-    fn created(&self, key: &str) -> Option<SystemTime> {
-        if let Ok(t) = fs::metadata(self.marker(key, "created")).and_then(|m| m.modified()) {
+    async fn created(&self, key: &str) -> Option<SystemTime> {
+        if let Ok(t) = fs::metadata(self.marker(key, "created")).await.and_then(|m| m.modified()) {
             return Some(t);
         }
-        [ConfigFormat::Text, ConfigFormat::Yaml]
-            .iter()
-            .filter_map(|f| fs::metadata(self.content_path(key, *f)).ok())
-            .filter_map(|m| m.modified().ok())
-            .min()
+        let mut oldest = None;
+        for f in [ConfigFormat::Text, ConfigFormat::Yaml] {
+            if let Ok(t) = fs::metadata(self.content_path(key, f)).await.and_then(|m| m.modified()) {
+                oldest = Some(oldest.map_or(t, |o: SystemTime| o.min(t)));
+            }
+        }
+        oldest
     }
 
     /// `(created, modified)` of the stored configuration.
-    pub fn file_times(&self, key: &str) -> Option<(SystemTime, SystemTime)> {
-        let modified = [ConfigFormat::Text, ConfigFormat::Yaml]
-            .iter()
-            .find_map(|f| fs::metadata(self.content_path(key, *f)).ok())?
-            .modified()
-            .ok()?;
-        Some((self.created(key).unwrap_or(modified), modified))
+    pub async fn file_times(&self, key: &str) -> Option<(SystemTime, SystemTime)> {
+        let mut found = None;
+        for f in [ConfigFormat::Text, ConfigFormat::Yaml] {
+            if let Ok(m) = fs::metadata(self.content_path(key, f)).await {
+                found = Some(m);
+                break;
+            }
+        }
+        let modified = found?.modified().ok()?;
+        Some((self.created(key).await.unwrap_or(modified), modified))
     }
 
     /// Stored keys (`simple` mode only), including keys holding only a login.
-    pub fn keys(&self) -> Vec<String> {
+    pub async fn keys(&self) -> Vec<String> {
         if self.mode != Mode::Simple {
             return Vec::new();
         }
         let mut keys = std::collections::BTreeSet::new();
-        let Ok(entries) = fs::read_dir(&self.root) else { return Vec::new() };
-        for e in entries.flatten() {
+        let Ok(mut entries) = fs::read_dir(&self.root).await else { return Vec::new() };
+        while let Ok(Some(e)) = entries.next_entry().await {
             let name = e.file_name().to_string_lossy().to_string();
             if let Some(hidden) = name.strip_prefix('.') {
                 if let Some(k) = hidden.strip_suffix(".lock").filter(|k| !k.is_empty()) {
@@ -220,7 +224,7 @@ impl ConfigStore {
                 }
                 continue;
             }
-            if e.path().is_file() {
+            if is_file(&e.path()).await {
                 let stem = Path::new(&name).file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or(name);
                 keys.insert(stem);
             }
@@ -229,8 +233,8 @@ impl ConfigStore {
     }
 
     /// Writable check used by `/status` (touches `<dir>/.tmp_hc`).
-    pub fn writable(&self) -> bool {
-        fs::create_dir_all(&self.root).is_ok() && fs::write(self.root.join(".tmp_hc"), b"").is_ok()
+    pub async fn writable(&self) -> bool {
+        writable(&self.root).await
     }
 
     fn lock_path(&self, key: &str) -> PathBuf {
@@ -238,8 +242,8 @@ impl ConfigStore {
     }
 
     /// The saved login: `Ok(None)` when there is none, `Err` when unreadable.
-    pub fn auth(&self, key: &str) -> Result<Option<AuthRecord>, ()> {
-        let text = match fs::read_to_string(self.lock_path(key)) {
+    pub async fn auth(&self, key: &str) -> Result<Option<AuthRecord>, ()> {
+        let text = match fs::read_to_string(self.lock_path(key)).await {
             Ok(t) => t,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(_) => return Err(()),
@@ -264,26 +268,26 @@ impl ConfigStore {
         Ok(Some(AuthRecord { access, username, digest }))
     }
 
-    pub fn write_auth(&self, key: &str, rec: &AuthRecord) -> bool {
+    pub async fn write_auth(&self, key: &str, rec: &AuthRecord) -> bool {
         let body = json!({"access": rec.access, "username": rec.username, "digest": rec.digest});
-        write_atomic(&self.lock_path(key), body.to_string().as_bytes()).is_ok()
+        write_atomic(&self.lock_path(key), body.to_string().as_bytes()).await.is_ok()
     }
 
-    pub fn clear_auth(&self, key: &str) -> Cleared {
-        remove(&self.lock_path(key))
+    pub async fn clear_auth(&self, key: &str) -> Cleared {
+        remove(&self.lock_path(key)).await
     }
 
     /// Refresh the login's age (a user cleared their configuration).
-    pub fn touch_auth(&self, key: &str) {
-        if let Ok(f) = fs::File::options().write(true).open(self.lock_path(key))
-            && let Err(e) = f.set_modified(SystemTime::now())
+    pub async fn touch_auth(&self, key: &str) {
+        if let Ok(f) = fs::OpenOptions::new().write(true).open(self.lock_path(key)).await
+            && let Err(e) = f.into_std().await.set_modified(SystemTime::now())
         {
             log::debug!("could not refresh the login age of KEY {key}: {e}");
         }
     }
 
     /// Move configuration, login and creation marker to a free key.
-    pub fn move_key(&self, from: &str, to: &str) -> Moved {
+    pub async fn move_key(&self, from: &str, to: &str) -> Moved {
         if !self.enabled() {
             return Moved::Failed;
         }
@@ -293,25 +297,39 @@ impl ConfigStore {
             (self.lock_path(from), self.lock_path(to)),
             (self.marker(from, "created"), self.marker(to, "created")),
         ];
-        let sources: Vec<&(PathBuf, PathBuf)> = pairs.iter().filter(|(s, _)| s.is_file()).collect();
+        let mut sources: Vec<&(PathBuf, PathBuf)> = Vec::new();
+        let mut taken = false;
+        for pair in &pairs {
+            if is_file(&pair.0).await {
+                sources.push(pair);
+            }
+            taken |= is_file(&pair.1).await;
+        }
         if !sources.iter().any(|(s, _)| !s.ends_with(".created") && !s.to_string_lossy().ends_with(".created")) {
             return Moved::NotFound;
         }
-        if pairs.iter().any(|(_, d)| d.is_file()) {
+        if taken {
             return Moved::Conflict;
         }
         let mut done: Vec<(&PathBuf, &PathBuf)> = Vec::new();
         for (src, dst) in sources {
-            let linked = dst.parent().is_some_and(|p| fs::create_dir_all(p).is_ok()) && fs::hard_link(src, dst).is_ok();
-            if !linked {
+            let parent_ok = match dst.parent() {
+                Some(p) => fs::create_dir_all(p).await.is_ok(),
+                None => false,
+            };
+            if !parent_ok || fs::hard_link(src, dst).await.is_err() {
                 for (s, d) in done {
-                    if fs::rename(d, s).is_err() {
+                    if fs::rename(d, s).await.is_err() {
                         log::error!("could not restore {}", s.display());
                     }
                 }
-                return if pairs.iter().any(|(_, d)| d.is_file()) { Moved::Conflict } else { Moved::Failed };
+                let mut taken = false;
+                for (_, d) in &pairs {
+                    taken |= is_file(d).await;
+                }
+                return if taken { Moved::Conflict } else { Moved::Failed };
             }
-            if let Err(e) = fs::remove_file(src) {
+            if let Err(e) = fs::remove_file(src).await {
                 log::warn!("could not remove {} after moving it: {e}", src.display());
             }
             done.push((src, dst));
@@ -320,8 +338,18 @@ impl ConfigStore {
     }
 }
 
-fn remove(path: &Path) -> Cleared {
-    match fs::remove_file(path) {
+/// `true` when `path` is a regular file.
+async fn is_file(path: &Path) -> bool {
+    fs::metadata(path).await.is_ok_and(|m| m.is_file())
+}
+
+/// Writable check used by `/status` (touches `<dir>/.tmp_hc`).
+pub async fn writable(dir: &Path) -> bool {
+    fs::create_dir_all(dir).await.is_ok() && fs::write(dir.join(".tmp_hc"), b"").await.is_ok()
+}
+
+async fn remove(path: &Path) -> Cleared {
+    match fs::remove_file(path).await {
         Ok(()) => Cleared::Removed,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Cleared::Nothing,
         Err(_) => Cleared::Failed,
@@ -329,18 +357,19 @@ fn remove(path: &Path) -> Cleared {
 }
 
 /// Write to a hidden temporary file beside `path`, then rename it into place.
-fn write_atomic(path: &Path, data: &[u8]) -> std::io::Result<()> {
+async fn write_atomic(path: &Path, data: &[u8]) -> std::io::Result<()> {
     let dir = path.parent().unwrap_or(Path::new("."));
-    fs::create_dir_all(dir)?;
+    fs::create_dir_all(dir).await?;
     let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
     let tmp = dir.join(format!(".{}.{}.tmp", name.trim_start_matches('.'), mercurio::crypto::random_hex(6)));
-    let result = (|| {
-        let mut f = fs::File::create(&tmp)?;
-        f.write_all(data)?;
-        f.sync_all()?;
-        fs::rename(&tmp, path)
-    })();
-    if result.is_err() && fs::remove_file(&tmp).is_err() {
+    let result = async {
+        let mut f = fs::File::create(&tmp).await?;
+        f.write_all(data).await?;
+        f.sync_all().await?;
+        fs::rename(&tmp, path).await
+    }
+    .await;
+    if result.is_err() && fs::remove_file(&tmp).await.is_err() {
         log::debug!("could not remove {}", tmp.display());
     }
     result
@@ -350,25 +379,25 @@ fn write_atomic(path: &Path, data: &[u8]) -> std::io::Result<()> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn hash_layout_is_salted_sha224_shards() {
+    #[tokio::test]
+    async fn hash_layout_is_salted_sha224_shards() {
         let dir = std::env::temp_dir().join(format!("mercurio-store-{}", std::process::id()));
         let store = ConfigStore::new(dir.clone(), Mode::Hash, "salt".into());
-        assert!(store.put("abc", "json://localhost", ConfigFormat::Text));
+        assert!(store.put("abc", "json://localhost", ConfigFormat::Text).await);
         // File name: sha224(salt + key), first two hex digits as a directory.
         let h = codec::sha224_hex(b"saltabc");
         let (sub, rest) = h.split_at(2);
         let file = dir.join(sub).join(format!("{rest}.text"));
-        let raw = fs::read(&file).unwrap_or_default();
+        let raw = std::fs::read(&file).unwrap_or_default();
         assert_eq!(codec::gunzip(&raw, 1024).as_deref(), Some(&b"json://localhost"[..]));
-        assert_eq!(store.get("abc"), Ok(Some(("json://localhost".into(), ConfigFormat::Text))));
-        assert!(store.put("abc", "urls: []", ConfigFormat::Yaml));
+        assert_eq!(store.get("abc").await, Ok(Some(("json://localhost".into(), ConfigFormat::Text))));
+        assert!(store.put("abc", "urls: []", ConfigFormat::Yaml).await);
         assert!(!file.exists());
-        assert_eq!(store.move_key("abc", "def"), Moved::Done);
-        assert_eq!(store.get("abc"), Ok(None));
-        assert_eq!(store.get("def").ok().flatten().map(|c| c.1), Some(ConfigFormat::Yaml));
-        assert_eq!(store.clear("def"), Cleared::Removed);
-        assert_eq!(store.clear("def"), Cleared::Nothing);
-        fs::remove_dir_all(dir).ok();
+        assert_eq!(store.move_key("abc", "def").await, Moved::Done);
+        assert_eq!(store.get("abc").await, Ok(None));
+        assert_eq!(store.get("def").await.ok().flatten().map(|c| c.1), Some(ConfigFormat::Yaml));
+        assert_eq!(store.clear("def").await, Cleared::Removed);
+        assert_eq!(store.clear("def").await, Cleared::Nothing);
+        std::fs::remove_dir_all(dir).ok();
     }
 }

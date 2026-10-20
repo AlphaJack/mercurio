@@ -333,7 +333,7 @@ fn storage_layouts_list_move_and_metrics() {
     let ct = [("Content-Type", "application/x-www-form-urlencoded")];
     let (code, head, _) = http_full(&s.addr, "POST", "/add/abc", &ct, "urls=json://localhost");
     assert_eq!(code, 200);
-    assert!(head.contains("X-Apprise-Config-Created"), "{head}");
+    assert!(head.to_ascii_lowercase().contains("x-apprise-config-created"), "{head}");
     let entries: Vec<String> =
         std::fs::read_dir(&dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().to_string()).collect();
     assert!(entries.iter().any(|e| e.len() == 2), "{entries:?}");
@@ -648,8 +648,16 @@ fn routes_match_the_router() {
 fn documented_fields_and_headers_are_read() {
     let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut code = std::fs::read_to_string(src.join("serve.rs")).unwrap();
-    for entry in std::fs::read_dir(src.join("serve")).unwrap() {
-        code.push_str(&std::fs::read_to_string(entry.unwrap().path()).unwrap());
+    let mut dirs = vec![src.join("serve")];
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                dirs.push(path);
+            } else {
+                code.push_str(&std::fs::read_to_string(path).unwrap());
+            }
+        }
     }
     let code = code.split("pub(crate) const ROUTES").next().unwrap().to_string()
         + code.split("pub(crate) fn help_tables").nth(1).unwrap();

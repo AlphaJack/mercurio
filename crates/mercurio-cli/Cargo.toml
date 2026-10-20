@@ -21,13 +21,16 @@ all-services = ["mercurio/all-services"]
 [dependencies]
 mercurio = { workspace = true, features = ["transport-tokio"] }
 tokio = { version = "1.54", default-features = false, features = ["rt-multi-thread", "fs", "net", "signal", "macros", "time", "sync"] }
-axum = { version = "0.8", default-features = false, features = ["tokio"] }
-tower = { version = "0.5", default-features = false, features = ["util"] }
+axum = { version = "0.8", default-features = false, features = ["tokio", "matched-path"] }
+tower = { version = "0.5", default-features = false, features = ["util", "limit", "load-shed"] }
+tower-http = { version = "0.7", default-features = false, features = ["timeout", "catch-panic", "normalize-path"] }
 hyper = { version = "1", features = ["server", "http1"] }
 hyper-util = { version = "0.1", features = ["tokio", "server-graceful"] }
 http-body-util = "0.1"
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
 log = "0.4"
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "tracing-log"] }
 serde_json = "1"
 ring = "0.17"
 clap = { version = "4.6.7", default-features = false, features = ["std", "derive", "env", "help", "usage", "error-context", "suggestions"] }

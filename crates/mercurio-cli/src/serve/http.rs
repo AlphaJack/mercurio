@@ -3,14 +3,14 @@
 //! Header values are read as UTF-8 (clients send UTF-8 titles in `X-Apprise-Title`). Values that are not valid UTF-8 are read as Latin-1.
 
 use std::net::SocketAddr;
-use std::sync::{Mutex, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError};
 
 use mercurio::url::unquote_plus;
 use serde_json::{Value, json};
 
 /// Largest request body read.
 pub const MAX_BODY: usize = 64 * 1024 * 1024;
-/// How long a client may take to send a request head (and how long an idle connection stays open), and then its body.
+/// How long a client may take to send a request head (and how long an idle connection stays open), and each piece of its body.
 pub const IO_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
 /// A value a handler sets on the request it is answering (`Send + Sync`, unlike `Cell`).
@@ -27,9 +27,30 @@ impl<T: Clone> Slot<T> {
     }
 }
 
+/// What one request did, beyond what its head and status say: handlers fill it in, `observe` logs it as one event.
+#[derive(Debug, Default)]
+pub struct RequestEvent {
+    /// The Config ID used.
+    pub key: Option<String>,
+    /// Services notified, and how many of them failed.
+    pub services: Option<usize>,
+    pub failed: Option<usize>,
+    /// The answer is a live stream; its results are not part of the event.
+    pub stream: bool,
+    /// The message of an error answer.
+    pub error: Option<String>,
+    /// What went wrong without failing the request (a skipped URL, an unreadable configuration).
+    pub detail: Vec<String>,
+}
+
+impl RequestEvent {
+    pub fn shared() -> Arc<Mutex<RequestEvent>> {
+        Arc::default()
+    }
+}
+
 pub struct Req {
     pub method: String,
-    pub path: String,
     pub query: Vec<(String, String)>,
     pub headers: Vec<(String, String)>,
     pub body: Vec<u8>,
@@ -38,35 +59,41 @@ pub struct Req {
     pub role: Slot<super::auth::Role>,
     /// A key whose valid login is disabled (answered with 403).
     pub disabled_key: Slot<Option<String>>,
+    /// The event `observe` logs for this request.
+    pub event: Arc<Mutex<RequestEvent>>,
 }
 
-/// The request as the handlers see it; a body over [`MAX_BODY`] gets 413, one that does not arrive within [`IO_TIMEOUT`] 408, one that can not be read 400.
-pub async fn read(request: axum::extract::Request, remote: SocketAddr) -> Result<Req, Reply> {
-    let (parts, body) = request.into_parts();
-    let Ok(body) = tokio::time::timeout(IO_TIMEOUT, axum::body::to_bytes(body, MAX_BODY)).await else {
-        return Err(Reply::text(408, "The request timed out"));
-    };
-    let body = match body {
-        Ok(b) => b.to_vec(),
-        Err(e) if std::error::Error::source(&e).is_some_and(|s| s.is::<http_body_util::LengthLimitError>()) => {
-            return Err(Reply::text(413, "The request body is too large"));
-        }
-        Err(e) => return Err(Reply::text(400, &format!("The request body could not be read: {e}"))),
-    };
-    Ok(Req {
-        method: parts.method.as_str().to_ascii_uppercase(),
-        path: unquote_plus(parts.uri.path()),
-        query: form_pairs(parts.uri.query().unwrap_or("")),
-        headers: parts.headers.iter().map(|(k, v)| (k.as_str().to_string(), decode_header(v.as_bytes()))).collect(),
-        body,
-        remote: remote.ip().to_string(),
-        role: Slot::default(),
-        disabled_key: Slot::default(),
-    })
+/// The request as the handlers see it, with the role [`super::router`]'s gate proved. The body limit is axum's `DefaultBodyLimit` (413 beyond); a body that can not be read gets axum's rejection, and the connection is closed.
+impl<S: Send + Sync> axum::extract::FromRequest<S> for Req {
+    type Rejection = Reply;
+
+    async fn from_request(request: axum::extract::Request, state: &S) -> Result<Req, Reply> {
+        let remote = request.extensions().get::<axum::extract::ConnectInfo<SocketAddr>>().map(|c| c.0.ip().to_string());
+        let role = request.extensions().get::<super::auth::Role>().copied().unwrap_or_default();
+        let event = request.extensions().get::<Arc<Mutex<RequestEvent>>>().cloned().unwrap_or_default();
+        let method = request.method().as_str().to_ascii_uppercase();
+        let query = form_pairs(request.uri().query().unwrap_or(""));
+        let headers =
+            request.headers().iter().map(|(k, v)| (k.as_str().to_string(), decode_header(v.as_bytes()))).collect();
+        let body = axum::body::Bytes::from_request(request, state).await.map_err(|rejection| {
+            let status = rejection.status().as_u16();
+            Reply::text(status, &rejection.body_text()).header("Connection", "close")
+        })?;
+        Ok(Req {
+            method,
+            query,
+            headers,
+            body: body.to_vec(),
+            remote: remote.unwrap_or_default(),
+            role: Slot(Mutex::new(role)),
+            disabled_key: Slot::default(),
+            event,
+        })
+    }
 }
 
 /// A header value: UTF-8 when valid, Latin-1 otherwise.
-fn decode_header(value: &[u8]) -> String {
+pub fn decode_header(value: &[u8]) -> String {
     match std::str::from_utf8(value) {
         Ok(s) => s.to_string(),
         Err(_) => value.iter().map(|&b| char::from(b)).collect(),
@@ -74,6 +101,11 @@ fn decode_header(value: &[u8]) -> String {
 }
 
 impl Req {
+    /// Add to the request's [`RequestEvent`].
+    pub fn note(&self, f: impl FnOnce(&mut RequestEvent)) {
+        f(&mut self.event.lock().unwrap_or_else(PoisonError::into_inner));
+    }
+
     /// A header value (first occurrence), trimmed.
     pub fn header(&self, name: &str) -> Option<&str> {
         self.headers.iter().find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v.trim())
@@ -104,11 +136,9 @@ impl Req {
         is_json_mime(&self.content_type())
     }
 
-    /// Either an `Accept` asking for JSON or a missing / wildcard `Accept` on a request with a JSON body.
+    /// See [`wants_json`].
     pub fn wants_json(&self) -> bool {
-        let accept = self.header("accept").unwrap_or("");
-        let accept_all = matches!(accept.trim(), "" | "*/*");
-        is_json_mime(accept) || (accept_all && self.json_payload())
+        wants_json(self.header("accept"), &self.content_type())
     }
 
     /// Accept (the request type when absent) prefers HTML: `text/html` or `text/*`.
@@ -120,15 +150,26 @@ impl Req {
 
     /// Basic Auth credentials; `None` when absent or malformed.
     pub fn basic_auth(&self) -> Option<(String, String)> {
-        let h = self.header("authorization")?;
-        let (scheme, value) = h.split_at_checked(6)?;
-        if !scheme.eq_ignore_ascii_case("basic ") {
-            return None;
-        }
-        let decoded = String::from_utf8(mercurio::crypto::b64_decode(value.trim())?).ok()?;
-        let (user, pass) = decoded.split_once(':')?;
-        Some((user.trim().to_string(), pass.to_string()))
+        basic_auth(self.header("authorization")?)
     }
+}
+
+/// Either an `Accept` asking for JSON or a missing / wildcard `Accept` on a request with a JSON body (`content_type`).
+pub fn wants_json(accept: Option<&str>, content_type: &str) -> bool {
+    let accept = accept.unwrap_or("");
+    let accept_all = matches!(accept.trim(), "" | "*/*");
+    is_json_mime(accept) || (accept_all && is_json_mime(content_type))
+}
+
+/// The credentials of an `Authorization: Basic` value, UTF-8 or else Latin-1 (OkHttp's default, used by Apprise Mobile); `None` when malformed.
+pub fn basic_auth(header: &str) -> Option<(String, String)> {
+    let (scheme, value) = header.trim().split_at_checked(6)?;
+    if !scheme.eq_ignore_ascii_case("basic ") {
+        return None;
+    }
+    let decoded = decode_header(&mercurio::crypto::b64_decode(value.trim())?);
+    let (user, pass) = decoded.split_once(':')?;
+    Some((user.trim().to_string(), pass.to_string()))
 }
 
 /// `(text|application)/(x-)?json` at the start of `s`.
@@ -158,8 +199,8 @@ pub fn parse_bool(value: Option<&str>, default: bool) -> bool {
 
 pub enum Body {
     Bytes(Vec<u8>),
-    /// Streamed (chunked on HTTP/1.1).
-    Stream(axum::body::Body),
+    /// A finished axum response (a live stream), sent as it is.
+    Response(Box<axum::response::Response>),
 }
 
 pub struct Reply {
@@ -193,11 +234,18 @@ impl Reply {
 
     /// `{"error": msg}` for JSON clients, text otherwise.
     pub fn error(req: &Req, status: u16, msg: &str) -> Reply {
-        if req.wants_json() { Reply::json(status, &json!({"error": msg})) } else { Reply::text(status, msg) }
+        req.note(|ev| ev.error = Some(msg.to_string()));
+        Reply::error_as(req.wants_json(), status, msg)
+    }
+
+    /// [`Reply::error`] as JSON when `json`.
+    pub fn error_as(json: bool, status: u16, msg: &str) -> Reply {
+        if json { Reply::json(status, &json!({"error": msg})) } else { Reply::text(status, msg) }
     }
 
     /// [`Reply::error`] naming the offending field.
     pub fn field_error(req: &Req, status: u16, msg: &str, field: &str) -> Reply {
+        req.note(|ev| ev.error = Some(format!("{field}: {msg}")));
         if req.wants_json() {
             Reply::json(status, &json!({"error": msg, "field": field}))
         } else {
@@ -211,14 +259,14 @@ impl Reply {
     }
 }
 
-impl Reply {
-    /// The axum response; a header that would not survive (a line break, an invalid name) is dropped.
-    pub fn into_response(self) -> axum::response::Response {
+/// A header that would not survive (a line break, an invalid name) is dropped.
+impl axum::response::IntoResponse for Reply {
+    fn into_response(self) -> axum::response::Response {
         use axum::http::{HeaderName, HeaderValue, header};
         let Reply { status, ctype, body, headers } = self;
         let body = match body {
             Body::Bytes(b) => axum::body::Body::from(b),
-            Body::Stream(s) => s,
+            Body::Response(r) => return *r,
         };
         let mut res = axum::response::Response::new(body);
         *res.status_mut() =

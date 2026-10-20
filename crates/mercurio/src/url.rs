@@ -425,7 +425,7 @@ pub static COMMON_PARAMS: &[Param] = &[
     Param::new("cto", "Connect timeout, in seconds").float().default("5"),
     Param::new("rto", "Read timeout, in seconds").float().default("30"),
     Param::new("retry", "Extra attempts after a retryable failure").int().range(0, 10).default("0"),
-    Param::new("wait", "Pause before each retry, in seconds").float().range(0, 60).default("0.5"),
+    Param::new("wait", "Pause before each retry, in seconds").float().range(0, 20).default("0.5"),
     Param::new("store", "Use the persistent store on disk").bool(true),
     Param::new("tag", "Tags for `--tag` filtering").list(", "),
     Param::new("tz", "Time zone name").note("passed to the services that use one, not validated"),

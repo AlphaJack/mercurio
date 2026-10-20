@@ -7,7 +7,7 @@ UI.
 
 ```sh
 mercurio serve                          # listens on 127.0.0.1:8000
-mercurio serve --bind 0.0.0.0:8000 -vv  # all interfaces, log each request
+mercurio serve --bind 0.0.0.0:8000 -v   # all interfaces, warnings too
 ```
 
 There is no TLS: bind to localhost or put a reverse proxy in front. Turn
@@ -31,9 +31,25 @@ optional path prefix (`https://example.com/files/`, `example.com/files/`),
 or `internal` for every address that is not public (loopback, private,
 link-local). `*` matches any run of characters, `?` one.
 
-Limits: request bodies up to 64 MiB (`413` beyond), 64 requests in progress
-(more get `503` with `Retry-After: 1`). On Linux, connections time out after
-30 s without activity.
+Limits: request bodies up to 64 MiB (`413` beyond), 512 requests in progress
+(more get `503` with `Retry-After: 1`). A request head, and each piece of a
+body, must arrive within 30 s.
+
+## Request log
+
+Every request is one line on stderr, with the fields that apply:
+
+```text
+2026-10-20T13:53:41.630353Z  INFO request: method="POST" route="/notify/{key}" status=424 duration_ms=35.555 remote=127.0.0.1 key="k1" apprise_id="chain-1" bytes_in=41 services=2 failed=1 error="One or more notification could not be sent" detail="skipped bogus://x/...: unsupported URL scheme: bogus://"
+```
+
+`route` is the matched path (absent for a `404`), `key` the Config ID
+used, `services` and `failed` count the services notified, `error` is the
+message of an error answer and `detail` lists problems that did not fail
+the request. A live stream logs `stream=true`; its results are not in the
+line. A `/status` or `/metrics` request that succeeds (the container's
+health check, a metrics scrape) is not logged. `-v` adds warnings, `-vv`
+everything at INFO, `-vvv` debug output.
 
 ## Endpoints
 

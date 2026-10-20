@@ -152,7 +152,7 @@
 //! # Ok::<(), mercurio::Error>(())
 //! ```
 //!
-//! [`register`] adds a full [`ServiceDef`] with its own URL parser, limits and [`Notify`] type, written like a built-in service (`crates/mercurio/src/services/gotify.rs` is a short one). Built-in services always win.
+//! [`register`] adds a full [`ServiceDef`] with its own URL parser, limits and [`Notify`] type, written like a built-in service. Built-in services always win.
 //!
 //! ## Configuration and tags
 //!
