@@ -435,6 +435,7 @@ fn default_url_identifier(p: &ParsedUrl) -> Vec<u8> {
 
 /// Overall outcome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Status {
     /// Everything was delivered.
     Success,

@@ -81,12 +81,6 @@ impl AsyncMercurio {
         Self::with_transport(Arc::new(crate::TokioTransport::new()))
     }
 
-    /// A notifier on [`crate::TokioTransport`] using `client` for HTTP (its TLS, proxy and pool settings).
-    #[cfg(feature = "transport-tokio")]
-    pub fn with_client(client: reqwest::Client) -> Self {
-        Self::with_transport(Arc::new(crate::TokioTransport::with_client(client)))
-    }
-
     /// A notifier using `transport` for all I/O.
     pub fn with_transport(transport: Arc<dyn AsyncTransport>) -> Self {
         Self { core: Core::default(), transport, sequential: false, closed: false }

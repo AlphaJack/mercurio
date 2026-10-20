@@ -43,6 +43,7 @@ pub type Session =
 /// assert!(matches!(plan, Plan::All(ref plans) if plans.len() == 2));
 /// ```
 #[must_use]
+#[non_exhaustive]
 pub enum Plan {
     /// Nothing (left) to do.
     Done,

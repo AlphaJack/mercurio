@@ -75,7 +75,8 @@ fn param(p: &Param, delim: &[&str]) -> Value {
     let kind = match p.kind {
         Kind::Choice => "choice:string",
         Kind::List => "list:string",
-        other @ (Kind::String | Kind::Int | Kind::Float | Kind::Bool | Kind::Email) => other.as_str(),
+        Kind::String | Kind::Int | Kind::Float | Kind::Bool | Kind::Email => p.kind.as_str(),
+        _ => p.kind.as_str(),
     };
     let mut m = Map::new();
     m.insert("name".into(), Value::from(if p.name.is_empty() { p.key } else { p.name }));
@@ -116,6 +117,7 @@ fn default(p: &Param) -> Value {
         Kind::Int => p.default.parse::<i64>().map(Value::from).unwrap_or_else(|_| p.default.into()),
         Kind::Float => p.default.parse::<f64>().map(Value::from).unwrap_or_else(|_| p.default.into()),
         Kind::String | Kind::Email | Kind::Choice | Kind::List => p.default.into(),
+        _ => p.default.into(),
     }
 }
 
