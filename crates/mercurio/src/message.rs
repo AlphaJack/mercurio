@@ -2,6 +2,7 @@ use std::fmt;
 
 /// Severity of a notification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum NotifyType {
     /// Informational (the default).
     #[default]
@@ -48,6 +49,7 @@ impl fmt::Display for NotifyType {
 
 /// Body markup.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum NotifyFormat {
     /// Plain text.
     #[default]
@@ -87,6 +89,7 @@ impl fmt::Display for NotifyFormat {
 
 /// What to do when a message exceeds a service's limits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum OverflowMode {
     /// Send as-is; the service decides.
     #[default]

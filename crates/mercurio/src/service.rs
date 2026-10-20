@@ -146,6 +146,7 @@ impl ServiceDef {
 
 /// Value type of a [`Param`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Kind {
     /// Free text.
     String,
@@ -529,6 +530,7 @@ pub trait Notify: Send + Sync + fmt::Debug {
 
 /// How a target identifies its URL for its persistent store namespace.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum UrlIdentifier {
     /// Hash the generic URL parts.
     Default,
