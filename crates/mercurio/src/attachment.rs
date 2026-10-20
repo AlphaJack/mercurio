@@ -424,7 +424,12 @@ impl AttachSource {
             let (connect, read) = (req.connect_timeout, req.read_timeout);
             req = req.timeouts(h.connect_timeout.unwrap_or(connect), h.read_timeout.unwrap_or(read));
         }
+        // Stop reading once the body passes the limit (Apprise streams to a file and stops early too).
+        let req = req.max_body(max);
         let res = transport.http(&req).await.map_err(|e| {
+            if max > 0 && e == crate::http::body_too_large(max) {
+                return self.too_large(max);
+            }
             if let Error::Transport(m) = e { Error::Transport(format!("attachment {}: {m}", self.label())) } else { e }
         })?;
         if res.status >= 400 {
@@ -770,6 +775,25 @@ mod tests {
         let fake = FakeTransport::new();
         fake.respond_with(Response::new(200, "x").with_header("Content-Length", "100"));
         assert!(AttachSource::parse("http://h/f.bin").unwrap().load(&fake, &asset).is_err());
+    }
+
+    #[test]
+    fn downloads_stop_at_the_attachment_limit() {
+        let source = AttachSource::parse("https://example.com/big.bin").unwrap();
+        // Larger than the 16 MiB every other response may have: loads, the request carries the attachment limit.
+        let fake = FakeTransport::new();
+        fake.respond(200, vec![b'x'; 20 * 1024 * 1024]);
+        let att = source.load(&fake, &Asset::default()).unwrap();
+        assert_eq!(att.data.len(), 20 * 1024 * 1024);
+        assert_eq!(fake.last_request().unwrap().max_body, Asset::default().attachment_max_size);
+        source.invalidate();
+        // Over the limit: the transport stops reading and the usual error comes back.
+        let fake = FakeTransport::new();
+        fake.respond(200, vec![b'x'; 2048]);
+        let small = Asset { attachment_max_size: 1024, ..Asset::default() };
+        let err = source.load(&fake, &small).unwrap_err().to_string();
+        assert!(err.contains("exceeds the maximum size (1KB)"), "{err}");
+        assert_eq!(fake.last_request().unwrap().max_body, 1024);
     }
 
     #[test]

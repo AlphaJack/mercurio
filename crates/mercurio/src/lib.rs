@@ -270,7 +270,7 @@ pub use env::{Env, SystemEnv};
 pub use error::{Error, ErrorClass, Result, ResultExt};
 #[doc(hidden)]
 pub use http::parse_multipart;
-pub use http::{Method, Multipart, Request, Response};
+pub use http::{MAX_BODY, Method, Multipart, Request, Response, body_too_large};
 pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode, Prepared};
 pub use notify::{Mercurio, Selection};
 pub use plan::{Delivery, Outcome, Plan, redact_url};
