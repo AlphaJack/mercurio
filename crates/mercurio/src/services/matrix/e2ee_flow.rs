@@ -90,7 +90,7 @@ fn merge(into: &mut DeviceSet, from: DeviceSet) {
 
 pub(super) fn restore(s: &mut Session) {
     if s.cfg.e2ee
-        && let Some(v) = s.store.get("e2ee_account").filter(has_value)
+        && let Some(v) = super::vault::get(s, "e2ee_account")
     {
         s.e2ee.account = OlmAccount::from_value(&v).ok();
     }
@@ -112,10 +112,10 @@ pub(super) fn binding_key(s: &Session) -> String {
 /// E2EE setup, plus the optional automatic verification.
 pub(super) fn setup(mut s: Session, k: K<()>) -> Plan {
     if s.e2ee.account.is_none() {
-        s.e2ee.account = s.store.get("e2ee_account").filter(has_value).and_then(|v| OlmAccount::from_value(&v).ok());
+        s.e2ee.account = super::vault::get(&s, "e2ee_account").and_then(|v| OlmAccount::from_value(&v).ok());
         if s.e2ee.account.is_none() {
             let acct = OlmAccount::new(s.env.as_ref());
-            s.store.set("e2ee_account", acct.to_value(), CACHE_EXPIRY);
+            super::vault::set(&s, "e2ee_account", acct.to_value());
             s.e2ee.account = Some(acct);
         }
     }
@@ -173,7 +173,7 @@ fn upload_keys(mut s: Session, k: K<bool>) -> Plan {
             return k(s, false);
         }
         if let Some(a) = &s.e2ee.account {
-            s.store.set("e2ee_account", a.to_value(), CACHE_EXPIRY);
+            super::vault::set(&s, "e2ee_account", a.to_value());
         }
         s.store.set("e2ee_keys_uploaded", json!(true), CACHE_EXPIRY);
         s.store.set("e2ee_device_binding", json!(binding_key(&s)), CACHE_EXPIRY);
@@ -212,7 +212,7 @@ pub(super) fn room_encrypted(s: Session, room_id: String, k: K<Result<bool, Erro
 /// The outbound session, rotated when due; `true` when it was just created (nobody holds its key yet).
 fn get_megolm(s: &Session, room_id: &str) -> (MegolmSession, bool) {
     let key = format!("e2ee_megolm_{room_id}");
-    if let Some(v) = s.store.get(&key).filter(has_value)
+    if let Some(v) = super::vault::get(s, &key)
         && let Ok(sess) = MegolmSession::from_value(&v, s.env.as_ref())
         && !sess.should_rotate(s.env.as_ref())
     {
@@ -223,13 +223,13 @@ fn get_megolm(s: &Session, room_id: &str) -> (MegolmSession, bool) {
 
 fn new_megolm(s: &Session, room_id: &str) -> MegolmSession {
     let sess = MegolmSession::new(s.env.as_ref());
-    s.store.set(&format!("e2ee_megolm_{room_id}"), sess.to_value(), CACHE_EXPIRY);
+    super::vault::set(s, &format!("e2ee_megolm_{room_id}"), sess.to_value());
     s.store.clear(&[&shared_key(room_id)]);
     sess
 }
 
 fn save_megolm(s: &Session, room_id: &str, sess: &MegolmSession) {
-    s.store.set(&format!("e2ee_megolm_{room_id}"), sess.to_value(), CACHE_EXPIRY);
+    super::vault::set(s, &format!("e2ee_megolm_{room_id}"), sess.to_value());
 }
 
 /// Encrypted delivery to one room: message, then attachments.

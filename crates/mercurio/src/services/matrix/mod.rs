@@ -18,7 +18,7 @@
 //! - **Failed state lookup or E2EE setup.** Apprise falls back to plaintext, while mercurio fails the room. *intentional*
 //! - **Room keys.** Apprise shares the Megolm key once per session, while mercurio re-shares it with new devices and rotates it when a member leaves. *intentional*
 //! - **Device verification.** Cross-signing is not checked; devices are trusted on first use. *todo*
-//! - **Stored state.** The pickled Olm/Megolm state in the store is plain, not encrypted at rest. *todo*
+//! - **Stored state.** Apprise stores the Olm account and Megolm sessions in plain text, while mercurio seals them with AES-256-GCM under a key derived from the URL's password or access token (never stored). After a password change the old state no longer opens and the device starts over with new keys. *intentional*
 
 mod server;
 pub mod sizing;
@@ -29,6 +29,8 @@ pub mod e2ee;
 mod e2ee_flow;
 #[cfg(feature = "service-matrix-e2ee")]
 mod sas;
+#[cfg(feature = "service-matrix-e2ee")]
+mod vault;
 
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};

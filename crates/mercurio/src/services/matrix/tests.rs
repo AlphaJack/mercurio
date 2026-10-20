@@ -255,14 +255,15 @@ fn split_message_shares_one_session() {
 }
 
 /// Runs one raw-token send with a config whose host is empty, so neither the URL nor the whoami answer (`user_id` without `:server`) yields a home server. Parsing never builds such a config; the session must still not invent one.
-fn send_without_home_server(rooms: &[&str], users: &[&str], fake: &FakeTransport) -> (crate::Delivery, crate::store::StoreRef) {
-    use super::{Config, Mode, Msg, Version};
-    let cfg = Config {
+/// A raw-token configuration with `password`, posting to `rooms` and `users`.
+fn bare_config(password: &str, rooms: &[&str], users: &[&str]) -> super::Config {
+    use super::{Config, Mode, Version};
+    Config {
         secure: false,
         host: String::new(),
         port: None,
         user: None,
-        password: Some(crate::service::Secret::new("rawtoken".to_string())),
+        password: Some(crate::service::Secret::new(password.to_string())),
         rooms: rooms.iter().map(|r| r.to_string()).collect(),
         users: users.iter().map(|u| u.to_string()).collect(),
         mode: Mode::Off,
@@ -276,8 +277,11 @@ fn send_without_home_server(rooms: &[&str], users: &[&str], fake: &FakeTransport
         autoverify: false,
         t2bot_token: None,
         keystore: None,
-    };
-    let msg = Msg {
+    }
+}
+
+fn bare_msg() -> super::Msg {
+    super::Msg {
         title: String::new(),
         body: "Mercurio Body".into(),
         kind: crate::message::NotifyType::Info,
@@ -288,7 +292,12 @@ fn send_without_home_server(rooms: &[&str], users: &[&str], fake: &FakeTransport
         app_id: "Mercurio".into(),
         app_desc: String::new(),
         color: String::new(),
-    };
+    }
+}
+
+fn send_without_home_server(rooms: &[&str], users: &[&str], fake: &FakeTransport) -> (crate::Delivery, crate::store::StoreRef) {
+    let cfg = bare_config("rawtoken", rooms, users);
+    let msg = bare_msg();
     let store = crate::store::PersistentStore::memory().shared();
     let plan = super::server::plan(
         std::sync::Arc::new(cfg),
@@ -331,6 +340,36 @@ fn dm_without_home_server_is_skipped() {
 mod e2ee {
     use std::collections::BTreeMap;
     use std::sync::Mutex;
+
+    /// A session over `store` whose URL secret is `password`.
+    fn vault_session(password: &str, store: crate::store::StoreRef) -> super::super::server::Session {
+        let cfg = std::sync::Arc::new(super::bare_config(password, &[], &[]));
+        super::super::server::Session::new(cfg, std::sync::Arc::new(super::bare_msg()), store, std::sync::Arc::new(crate::testing::FixedEnv::new(1_700_000_000)))
+    }
+
+    #[test]
+    fn vault_seals_opens_and_migrates() {
+        use super::super::vault;
+        let store = crate::store::PersistentStore::memory().shared();
+        let s = vault_session("pw", store.clone());
+        let secret = json!({"ed25519": "private-signing-key"});
+        assert!(vault::set(&s, "e2ee_account", secret.clone()));
+        let raw = store.get("e2ee_account").unwrap();
+        assert_eq!(raw["sealed"], 1);
+        assert!(!raw.to_string().contains("private-signing-key"), "{raw}");
+        assert_eq!(vault::get(&s, "e2ee_account"), Some(secret.clone()));
+        // The store key is bound in: a sealed value moved to another key does not open.
+        store.set("e2ee_megolm_!r", raw, None);
+        assert_eq!(vault::get(&s, "e2ee_megolm_!r"), None);
+        // A plain value from an older version is read, then sealed.
+        store.set("e2ee_megolm_!old", secret.clone(), None);
+        assert_eq!(vault::get(&s, "e2ee_megolm_!old"), Some(secret.clone()));
+        assert_eq!(store.get("e2ee_megolm_!old").unwrap()["sealed"], 1);
+        // Another password: the state does not open and is dropped.
+        let other = vault_session("changed", store.clone());
+        assert_eq!(vault::get(&other, "e2ee_account"), None);
+        assert_eq!(store.get("e2ee_account"), None);
+    }
 
     use serde_json::{Map, Value, json};
 

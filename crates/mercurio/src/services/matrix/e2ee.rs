@@ -2,7 +2,7 @@
 //!
 //! Primitives: Ed25519, HMAC-SHA-256 and SHA-256 from `ring`; X25519 from `curve25519-dalek` (ring's X25519 keys are ephemeral-only and cannot be persisted); AES-256 (CBC with PKCS#7, CTR) from `aes`; HKDF-SHA-256 on top of ring's HMAC.
 //!
-//! Private keys, chain/ratchet keys, X25519 shared secrets and HKDF outputs are wiped when dropped (`zeroize`); ring's expanded Ed25519 key pair and the AES key schedule are not. The pickled state in the store is plain.
+//! Private keys, chain/ratchet keys, X25519 shared secrets and HKDF outputs are wiped when dropped (`zeroize`); ring's expanded Ed25519 key pair and the AES key schedule are not. The pickled state is sealed in the store (see `vault`).
 //!
 //! References: <https://gitlab.matrix.org/matrix-org/olm/-/blob/master/docs/olm.md>, <https://gitlab.matrix.org/matrix-org/olm/-/blob/master/docs/megolm.md>, <https://spec.matrix.org/v1.11/client-server-api/#end-to-end-encryption>.
 
