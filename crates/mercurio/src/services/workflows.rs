@@ -1,10 +1,10 @@
 //! Power Automate / Workflows for MS Teams (`workflow://`, `workflows://`): Adaptive Card messages through a workflow webhook.
 //!
-//! `?template=` reads a local JSON file when the message is sent (remote templates are not fetched: delivery fails).
+//! `?template=` reads a local JSON file when the message is sent, or downloads an `http(s)://` one before the first send and keeps it.
 
 use serde_json::{Map, Value, json};
 
-use super::_chat::{TemplateSrc, apply_template_json, read_template, template_files, template_source};
+use super::_chat::{TemplateSrc, apply_template_json, read_template, template_fetches, template_files, template_source};
 use crate::asset::ImageSize;
 use crate::http::Request;
 use crate::parse::validate_regex;
@@ -229,6 +229,10 @@ impl Notify for Workflows {
         template_files(self.template.as_ref())
     }
 
+    fn fetches(&self, ctx: &Context<'_>) -> Vec<Request> {
+        template_fetches(ctx, self.template.as_ref(), MAX_TEMPLATE_SIZE)
+    }
+
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let image = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy32) } else { None };
         let payload = match &self.template {
@@ -301,4 +305,32 @@ mod tests {
         assert!(fake.requests().is_empty());
         std::fs::remove_dir_all(&dir).ok();
     }
+
+    #[test]
+    fn remote_template_is_downloaded_once() {
+        let url = "workflow://host/wf/sig?template=http://tpl.example/card.json&:custom=val";
+        let target = crate::parse(url).unwrap();
+        let fake = FakeTransport::new();
+        let card = r#"{"type": "message", "attachments": [{"contentType": "x", "text": "{{app_title}} {{custom}}"}]}"#;
+        fake.on_url("tpl.example", crate::Response::new(200, card.as_bytes().to_vec()));
+        fake.default_response(crate::Response::new(202, Vec::new()));
+        for _ in 0..2 {
+            let d = target.send(&Message::new("b").title("T"), &fake, &Asset::default());
+            assert!(d.is_success(), "{d:?}");
+        }
+        let reqs = fake.requests();
+        let downloads: Vec<_> = reqs.iter().filter(|r| r.url.contains("tpl.example")).collect();
+        assert_eq!(downloads.len(), 1, "kept after the first send");
+        assert_eq!(downloads[0].max_body, super::MAX_TEMPLATE_SIZE);
+        let posted: Vec<_> = reqs.iter().filter(|r| r.url.contains("host")).collect();
+        assert_eq!(posted.len(), 2);
+        assert!(String::from_utf8_lossy(&posted[1].body).contains("T val"), "{posted:?}");
+
+        // A template that cannot be downloaded fails the send.
+        let target = crate::parse(url).unwrap();
+        let fake = FakeTransport::new();
+        fake.on_url("tpl.example", crate::Response::new(404, Vec::new()));
+        assert!(!target.send(&Message::new("b"), &fake, &Asset::default()).is_success());
+    }
+
 }

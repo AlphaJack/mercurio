@@ -4,7 +4,6 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `?template=` only reads local files. *todo*
 
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -13,7 +12,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use super::_chat::{TemplateSrc, apply_template_json, read_template, template_files, template_source};
+use super::_chat::{TemplateSrc, apply_template_json, read_template, template_fetches, template_files, template_source};
 use crate::env::Env;
 use crate::asset::ImageSize;
 use crate::http::{Method, Multipart, Request, Response};
@@ -668,6 +667,10 @@ impl Notify for Slack {
 
     fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
         template_files(self.template.as_ref())
+    }
+
+    fn fetches(&self, ctx: &Context<'_>) -> Vec<Request> {
+        template_fetches(ctx, self.template.as_ref(), MAX_TEMPLATE_SIZE)
     }
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {

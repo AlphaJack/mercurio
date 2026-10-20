@@ -5,7 +5,6 @@
 //! # Differences with Apprise
 //!
 //! - `?image=yes` posts the notify-type image by URL instead of uploading Apprise's bundled PNG. *intentional*
-//! - Rich Message templates must be local files (`/path` or `file://`). *todo*
 //! - HTML that Apprise's parser rejects is sent unreduced. *intentional*
 
 use std::sync::Arc;
@@ -23,7 +22,7 @@ use crate::message::{Attachment, NotifyType};
 use crate::parse::{parse_bool, parse_list, validate_regex_fmt};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIdentifier};
 use crate::url::{ParsedUrl, parse_url_unverified, unquote};
-use super::_chat::apply_template_json;
+use super::_chat::{TemplateSrc, apply_template_json, load_template, template_fetches, template_files, template_source};
 use crate::util::{json_text, json_has_value, parse_int};
 use crate::{FileOp, NotifyFormat, Plan, Prepared, Result};
 
@@ -122,7 +121,7 @@ struct Telegram {
     topic: Option<i64>,
     content_before: bool,
     markdown_ver: &'static str,
-    template: Option<String>,
+    template: Option<TemplateSrc>,
     tokens: Vec<(String, String)>,
 }
 
@@ -209,7 +208,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     let template = match r.param_nonempty("template") {
         None => None,
-        Some(t) => Some(template_path(&unquote(t))?),
+        Some(t) => Some(template_source(&unquote(t)).ok_or_else(|| SERVICE.err("the Rich Message template could not be loaded"))?),
     };
 
     Ok(Box::new(Telegram {
@@ -228,16 +227,6 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }))
 }
 
-/// Local path of a Rich Message template (`/path` or `file://path`).
-fn template_path(t: &str) -> Result<String> {
-    if let Some(rest) = t.strip_prefix("file://") {
-        return Ok(unquote(rest.split('?').next().unwrap_or("")));
-    }
-    if crate::regex!(r"^[a-zA-Z0-9]+://").is_match(t) {
-        return Err(SERVICE.err("only local Rich Message templates are supported"));
-    }
-    Ok(t.to_string())
-}
 
 /// Telegram endpoint and field for an attachment's MIME type.
 fn mime_lookup(mime: &str) -> (&'static str, &'static str) {
@@ -746,7 +735,11 @@ impl Notify for Telegram {
     }
 
     fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
-        self.template.iter().flat_map(FileOp::local_file).collect()
+        template_files(self.template.as_ref())
+    }
+
+    fn fetches(&self, ctx: &Context<'_>) -> Vec<Request> {
+        template_fetches(ctx, self.template.as_ref(), TEMPLATE_MAX_BYTES)
     }
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
@@ -788,9 +781,7 @@ impl Notify for Telegram {
             app_url: ctx.app_url().to_string(),
             first_piece: msg.index == 0,
             template: match &self.template {
-                Some(path) => ctx
-                    .local_file(path, TEMPLATE_MAX_BYTES)
-                    .and_then(|b| String::from_utf8(b.to_vec()).map_err(|_| "could not be read")),
+                Some(src) => load_template(ctx, src, TEMPLATE_MAX_BYTES),
                 None => Err("could not be accessed"),
             },
         });
@@ -886,4 +877,23 @@ mod tests {
         assert!(!d.is_success());
         assert!(fake.requests().is_empty());
     }
+
+    #[test]
+    fn rich_template_from_url() {
+        let url = "tgram://123456789:abcdefg/12345?template=https://tpl.example/t.json";
+        let target = crate::parse(url).unwrap();
+        let fake = FakeTransport::new();
+        let tpl = r#"{"blocks":[{"type":"text","text":"{{app_title}}: {{ app_body }}"}]}"#;
+        fake.on_url("tpl.example", crate::Response::new(200, tpl.as_bytes().to_vec()));
+        for _ in 0..2 {
+            assert!(target.send(&Message::new("body").title("T"), &fake, &Asset::default()).is_success());
+        }
+        let reqs = fake.requests();
+        assert_eq!(reqs.iter().filter(|r| r.url.contains("tpl.example")).count(), 1);
+        let rich: Vec<_> = reqs.iter().filter(|r| r.url.ends_with("/sendRichMessage")).collect();
+        assert_eq!(rich.len(), 2);
+        let v: Value = serde_json::from_slice(&rich[0].body).unwrap();
+        assert_eq!(v["rich_message"]["blocks"][0]["text"], json!("T: body"));
+    }
+
 }

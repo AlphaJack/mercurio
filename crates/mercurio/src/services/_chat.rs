@@ -23,13 +23,13 @@ pub fn name_id_map(entries: &[Value], id_key: &str) -> Option<BTreeMap<String, V
     Some(out)
 }
 
-/// Where a `?template=` points: a local path or `file://` URL.
+/// Where a `?template=` points: a local path, a `file://` URL or an `http(s)://` URL.
 #[derive(Debug, Clone)]
 pub enum TemplateSrc {
     /// Local file (plain path or `file://`).
     File(String),
-    /// Remote template (`http://`, `https://`): not fetched by mercurio.
-    Remote,
+    /// Remote template, downloaded before the first send and kept for the life of the URL (as Apprise keeps an attachment).
+    Remote(String, std::sync::Arc<std::sync::Mutex<Option<String>>>),
 }
 
 /// Parse a template location; `None` for an unsupported scheme.
@@ -42,7 +42,7 @@ pub fn template_source(s: &str) -> Option<TemplateSrc> {
             let c = crate::regex!(r"(?i)^file://(?P<path>[^?]+)").captures(s)?;
             Some(TemplateSrc::File(crate::url::unquote(&c["path"])))
         }
-        Some("http" | "https") => Some(TemplateSrc::Remote),
+        Some("http" | "https") => Some(TemplateSrc::Remote(s.trim().to_string(), Default::default())),
         Some(_) => None,
     }
 }
@@ -55,10 +55,37 @@ pub fn template_files(src: Option<&TemplateSrc>) -> Vec<FileOp> {
     }
 }
 
-/// The template (at most `max` bytes) read by [`template_files`]; `None` when it is inaccessible.
+/// The download behind [`read_template`], for [`crate::Notify::fetches`]: none for a local or an already downloaded template.
+pub fn template_fetches(ctx: &Context<'_>, src: Option<&TemplateSrc>, max: u64) -> Vec<crate::http::Request> {
+    match src {
+        Some(TemplateSrc::Remote(url, kept)) if kept.lock().unwrap_or_else(std::sync::PoisonError::into_inner).is_none() => {
+            vec![crate::http::Request::get(url.clone()).header("User-Agent", ctx.app_id()).max_body(max)]
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// The template (at most `max` bytes) read by [`template_files`] or downloaded by [`template_fetches`]; `Err` says why it is inaccessible.
+pub fn load_template(ctx: &Context<'_>, src: &TemplateSrc, max: u64) -> std::result::Result<String, &'static str> {
+    match src {
+        TemplateSrc::File(path) => {
+            String::from_utf8(ctx.local_file(path, max)?.to_vec()).map_err(|_| "could not be read")
+        }
+        TemplateSrc::Remote(url, kept) => {
+            let mut kept = kept.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(text) = kept.as_ref() {
+                return Ok(text.clone());
+            }
+            let text = String::from_utf8(ctx.fetched(url)?.to_vec()).map_err(|_| "could not be read")?;
+            *kept = Some(text.clone());
+            Ok(text)
+        }
+    }
+}
+
+/// [`load_template`] without the reason.
 pub fn read_template(ctx: &Context<'_>, src: &TemplateSrc, max: u64) -> Option<String> {
-    let TemplateSrc::File(path) = src else { return None };
-    String::from_utf8(ctx.local_file(path, max).ok()?.to_vec()).ok()
+    load_template(ctx, src, max).ok()
 }
 
 /// Fill `{{ token }}` placeholders in a JSON template (values JSON-escaped). Keys match case-insensitively but are looked up exactly: a case mismatch returns `None`.
