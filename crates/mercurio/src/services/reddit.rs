@@ -5,10 +5,12 @@
 //! # Differences with Apprise
 //!
 //! - The token is dropped after `expires_in` (Apprise computes the expiry but never checks it). *intentional*
-//! - The `X-RateLimit-*` back-off is not ported. *todo*
+//! - `X-RateLimit-Reset` is read as the seconds left in the window, as Reddit documents it; Apprise reads it as a Unix time, so its back-off never waits. The budget is kept for the life of the URL, as in Apprise. *intentional*
 //! - After a failed submit Apprise retries with the previous bearer token (stale headers) -> mercurio retries with the fresh one. *intentional*
 
 use std::sync::Arc;
+
+use super::_ratelimit::{RateLimit, Reset};
 
 use serde_json::Value;
 
@@ -67,9 +69,13 @@ struct Creds {
     store: Option<StoreRef>,
     /// The app id (set per send).
     user_agent: String,
+    /// The request budget, shared by every send of this URL.
+    rate: Arc<RateLimit>,
 }
 
 const TOKEN_KEY: &str = "access_token";
+/// Added to every rate-limit wait (Apprise's `clock_skew`).
+const CLOCK_SKEW: std::time::Duration = std::time::Duration::from_secs(10);
 /// Access token lifetime, in seconds.
 const TOKEN_LIFETIME: f64 = 3600.0;
 
@@ -146,6 +152,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             client_secret: Secret::new(client_secret),
             store: None,
             user_agent: String::new(),
+            rate: RateLimit::new(Reset::SecondsLeft, CLOCK_SKEW),
         }),
         subreddits,
         kind,
@@ -204,20 +211,21 @@ fn fetch(creds: Arc<Creds>, token: Option<String>, payload: Vec<(String, String)
         None => form_request(AUTH_URL, &payload, &creds.user_agent)
             .basic_auth(creds.client_id.expose(), Some(creds.client_secret.expose())),
     };
-    Plan::http(req, move |res| {
+    let rate = creds.rate.clone();
+    rate.send(req, &[200], move |res| {
         let r = match res {
             Ok(r) => r,
             Err(e) => return next(Fetched::Fail(e), token),
         };
         if r.status != 200 && token.is_some() {
             // Countermeasure: log in again and retry once.
-            let ua = creds.user_agent.clone();
+            let (ua, rate) = (creds.user_agent.clone(), creds.rate.clone());
             return login(
                 creds,
                 Box::new(move |res, new_token| match (res, new_token) {
                     (Fetched::Ok(_), Some(t)) => {
                         let req = form_request(SUBMIT_URL, &payload, &ua).bearer(&t);
-                        Plan::http(req, move |res| match res {
+                        rate.send(req, &[200], move |res| match res {
                             Ok(r) => next(process(&r), Some(t)),
                             Err(e) => next(Fetched::Fail(e), Some(t)),
                         })
@@ -380,5 +388,21 @@ impl Notify for Reddit {
             c.user.as_str(),
             c.password.expose(),
         ])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn rate_limit_is_kept_between_sends() {
+        use crate::http::Response;
+        let login = Response::new(200, br#"{"access_token": "tok", "expires_in": 3600}"#.to_vec());
+        let ok = || Response::new(200, br#"{"json": {"errors": []}}"#.to_vec());
+        // `X-RateLimit-Reset` is the seconds left; the wait adds the 10 s clock skew.
+        let spent = ok().with_header("X-RateLimit-Remaining", "0").with_header("X-RateLimit-Reset", "30");
+        let url = "reddit://user:password@app-id/app-secret/mercurio";
+        let wait = super::super::_ratelimit::second_send_waits(url, vec![login, spent], ok());
+        assert!(wait > std::time::Duration::from_secs(38) && wait <= std::time::Duration::from_secs(40), "{wait:?}");
     }
 }

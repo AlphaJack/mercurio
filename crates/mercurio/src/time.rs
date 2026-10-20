@@ -58,9 +58,41 @@ pub fn rfc2822_utc(secs: u64) -> String {
     format!("{wd}, {d:02} {mon} {y:04} {h:02}:{mi:02}:{s:02} +0000")
 }
 
+/// Unix seconds of an RFC 3339 time (`2026-10-20T17:00:00.000Z`, `...+02:00`); `None` when it is not one.
+pub fn parse_rfc3339(s: &str) -> Option<f64> {
+    let c = crate::regex!(
+        r"^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2}):(\d{2})(\.\d+)?(?:([Zz])|([+-])(\d{2}):?(\d{2}))$"
+    )
+    .captures(s.trim())?;
+    let n = |i: usize| c.get(i).and_then(|m| m.as_str().parse::<i64>().ok());
+    let (month, day, hour, min, sec) = (n(2)?, n(3)?, n(4)?, n(5)?, n(6)?);
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) || hour > 23 || min > 59 || sec > 60 {
+        return None;
+    }
+    let frac = c.get(7).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
+    let offset = match c.get(9).map(|m| m.as_str()) {
+        Some(sign) => {
+            let o = n(10)? * 3600 + n(11)? * 60;
+            if sign == "-" { -o } else { o }
+        }
+        None => 0,
+    };
+    let secs = unix_secs(n(1)?, month, day) + hour * 3600 + min * 60 + sec - offset;
+    Some(secs as f64 + frac)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rfc3339() {
+        assert_eq!(parse_rfc3339("1970-01-01T00:00:00Z"), Some(0.0));
+        assert_eq!(parse_rfc3339("2026-10-16T12:00:00.500Z"), Some(1_792_152_000.5));
+        assert_eq!(parse_rfc3339("2026-10-16T14:00:00+02:00"), Some(1_792_152_000.0));
+        assert_eq!(parse_rfc3339("300"), None);
+        assert_eq!(parse_rfc3339("2026-13-01T00:00:00Z"), None);
+    }
 
     #[test]
     fn dates() {

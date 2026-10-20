@@ -47,7 +47,8 @@ on its page (see the [service list](services/index.md)), taken from the
   but the Pushover and Telegram reducers send it unreduced. *intentional*
 - **Upstream bugs.** Where Apprise's behaviour is clearly a bug mercurio
   does the correct thing; see the service entries for e-mail, IFTTT, IRC,
-  Plivo, PushWard, Remote Syslog, SMPP and Synology Chat. Also fixed without
+  Mastodon, Plivo, PushWard, Reddit, Remote Syslog, SMPP and Synology Chat.
+  Also fixed without
   an entry of their own: target order in Bark, ntfy and MQTT, LaMetric
   `sound=thunder`, Slack gov webhook query
   parameters, Mattermost webhook ports, Matrix `!id:None` room ids and
@@ -158,8 +159,8 @@ on its page (see the [service list](services/index.md)), taken from the
   *intentional*
 - **`${NAME}` template targets** are rebuilt per call, so their in-memory
   store does not outlive the call. *intentional*
-- **Rate-limit state** (Bluesky, Mastodon, Reddit, Twitter) is kept per
-  send, not across sends. *todo*
+- **Rate-limit state** (Bluesky, Mastodon, Reddit, Twitter) is kept for
+  the life of a URL, across sends, as in Apprise. *intentional*
 - **Remote stores.** Store I/O is local only. *intentional*
 
 ## Attachments
