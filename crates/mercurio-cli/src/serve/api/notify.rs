@@ -11,6 +11,9 @@ use super::super::http::{Reply, Req, parse_bool};
 use super::super::payload::{self, Content};
 use super::super::{DENIED, INVALID_KEY_HEADER, Server, filters, notify, store, valid_key};
 
+/// Lowest level of the lines sent to `APPRISE_WEBHOOK_URL`: INFO, so the library's DEBUG lines stay out.
+const WEBHOOK_LEVEL: u8 = 20;
+
 impl Server {
     pub(crate) async fn notify_route(&self, req: &Req, key: &str) -> Reply {
         if let Some(r) = self.stateful_disabled(req) {
@@ -189,6 +192,7 @@ impl Server {
                 Box::pin(async move {
                     metrics.notified(report.status().as_str());
                     if let Some(url) = webhook {
+                        let logs = notify::filter_level(logs, WEBHOOK_LEVEL);
                         filters::send_webhook(transport.as_ref(), &url, &remote, report.is_success(), &logs).await;
                     }
                 })
@@ -199,6 +203,7 @@ impl Server {
         let (reply, report, logs) = notify::deliver(req, &job, level).await;
         self.metrics.notified(report.status().as_str());
         if let Some(url) = &self.s.webhook {
+            let logs = notify::filter_level(logs, WEBHOOK_LEVEL);
             filters::send_webhook(self.transport.as_ref(), url, &req.remote, report.is_success(), &logs).await;
         }
         reply
