@@ -186,6 +186,31 @@ impl TagFilter {
         self.groups.iter().flatten().flatten().any(|t| Tag::parse(t).has_priority)
     }
 
+    /// The escalation chain and priority of a service with `tags` (Apprise's `_build_tag_chains`): the first single-tag alternative the service carries names its chain, at that tag's priority; anything else (AND groups, `always`) goes to the `""` chain at the most urgent priority among its tags that the filter names. A match-all or untagged filter has one chain at priority 0.
+    pub(crate) fn chain_of(&self, tags: &[Tag]) -> (String, u64) {
+        let Some(groups) = &self.groups else { return (String::new(), 0) };
+        if groups.iter().all(|g| g.iter().all(|t| Tag::parse(t).name == MATCH_ALL)) {
+            return (String::new(), 0);
+        }
+        for group in groups.iter().filter(|g| g.len() == 1) {
+            let name = Tag::parse(&group[0]).name;
+            if let Some(t) = tags.iter().find(|t| t.name == name) {
+                return (name, t.priority);
+            }
+        }
+        let named: Vec<String> = groups.iter().flatten().map(|t| Tag::parse(t).name).collect();
+        let priority = tags.iter().filter(|t| named.contains(&t.name)).map(|t| t.priority).min().unwrap_or(0);
+        (String::new(), priority)
+    }
+
+    /// The retry count of the first `tag:N` token that matches a service with `tags` (an exact `P:tag:N` also needs priority `P`), in the order the filter was written.
+    pub(crate) fn retry_for(&self, tags: &[Tag]) -> Option<u64> {
+        self.groups.iter().flatten().flatten().map(|t| Tag::parse(t)).filter(|ft| ft.retry.is_some()).find_map(|ft| {
+            let hit = tags.iter().any(|t| t.name == ft.name && (!ft.has_priority || t.priority == ft.priority));
+            if hit { ft.retry } else { None }
+        })
+    }
+
     /// `is_exclusive_match(logic, data)`.
     pub fn matches(&self, tags: &[Tag]) -> bool {
         let Some(groups) = &self.groups else { return tags.is_empty() };

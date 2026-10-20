@@ -10,7 +10,7 @@ use futures_util::future::join_all;
 use crate::config::template::TemplateVars;
 use crate::config::{Config, ConfigFormat, ConfigOptions, PendingTarget};
 use crate::error::{Error, Result};
-use crate::notify::{Core, Mercurio, SEND_PERMITS, Selection, lanes, throttle_wait};
+use crate::notify::{Core, Escalation, Mercurio, SEND_PERMITS, Selection, lanes, throttle_wait};
 use crate::report::{Report, ReportEntry};
 use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking};
@@ -205,7 +205,17 @@ impl AsyncMercurio {
         on_entry: &(dyn Fn(&ReportEntry) + Sync),
     ) -> Report {
         let sel = self.core.select(filter, vars);
-        let entries = self.send_all(msg, sel.iter().collect(), on_entry).await;
+        let targets: Vec<&Target> = sel.iter().collect();
+        let mut esc = Escalation::new(filter, &targets);
+        let mut sent = Vec::new();
+        while let Some(round) = esc.round() {
+            let entries = self.send_all(msg, round.iter().map(|&i| targets[i]).collect(), filter, on_entry).await;
+            let delivered: BTreeMap<usize, bool> =
+                round.iter().copied().zip(entries.iter().map(|e| e.delivery.is_success())).collect();
+            esc.settle(|i| delivered.get(&i).copied().unwrap_or(false));
+            sent.extend(round.into_iter().zip(entries));
+        }
+        let entries = Core::in_order(&esc, sent);
         for t in &sel.resolved {
             t.close_async(self.transport.as_ref(), &self.core.asset_for(t)).await;
         }
@@ -227,6 +237,7 @@ impl AsyncMercurio {
         &self,
         msg: &Message,
         targets: Vec<&Target>,
+        filter: &TagFilter,
         on_entry: &(dyn Fn(&ReportEntry) + Sync),
     ) -> Vec<ReportEntry> {
         let (transport, targets) = (self.transport.as_ref(), &targets);
@@ -240,7 +251,8 @@ impl AsyncMercurio {
                 if let Some(gap) = throttle_wait(t, last.get(t.def.id).copied()) {
                     transport.sleep(gap).await;
                 }
-                let attempts = t.deliver_async(msg, transport, &self.core.asset_for(t)).await;
+                let retry = filter.retry_for(t.tag_set()).map(|r| u32::try_from(r).unwrap_or(u32::MAX));
+                let attempts = t.deliver_with_retry(msg, transport, &self.core.asset_for(t), retry).await;
                 let entry = self.core.entry(t, attempts);
                 on_entry(&entry);
                 done.push((i, entry));
