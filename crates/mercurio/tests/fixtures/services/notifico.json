@@ -1,0 +1,20 @@
+{
+  "cases": [
+    {"name": "empty", "url": "notifico://"},
+    {"name": "no_hook", "url": "notifico://1234"},
+    {"name": "bad_project", "url": "notifico://example.com/abcd/hook"},
+    {"name": "bad_hook", "url": "notifico://1234/ab-cd"},
+    {"name": "hosted", "url": "notifico://1234/abcdefg"},
+    {"name": "hosted_failure", "url": "notifico://1234/abcdefg", "type": "failure", "title": "T", "body": "B"},
+    {"name": "no_color", "url": "notifico://1234/abcdefg?color=no"},
+    {"name": "no_prefix", "url": "notifico://1234/abcdefg?prefix=no"},
+    {"name": "no_color_strips_codes", "url": "notifico://1234/abcdefg?color=no&prefix=no", "body": "a\\x0304,12b\\x03c"},
+    {"name": "token_project_args", "url": "notifico://1234/abcdefg?project=99&token=zzz"},
+    {"name": "self_hosted", "url": "notifico://example.com/1234/abcdefg"},
+    {"name": "self_hosted_https_port", "url": "notificos://example.com:8443/1234/abcdefg"},
+    {"name": "self_hosted_user", "url": "notifico://user@example.com/1234/abcdefg"},
+    {"name": "self_hosted_auth", "url": "notifico://user:pass@example.com/1234/abcdefg"},
+    {"name": "native", "url": "https://n.tkte.ch/h/1234/abcdefg/?prefix=no"},
+    {"name": "http_error", "url": "notifico://1234/abcdefg", "responses": [{"status": 500}]}
+  ]
+}

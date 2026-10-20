@@ -1,0 +1,127 @@
+---
+source: crates/mercurio/tests/it/services.rs
+---
+bad_hook:
+  error: "Notifico: an invalid Notifico Message Token was specified"
+  valid: false
+bad_project:
+  error: "Notifico: an invalid Notifico Project ID was specified"
+  valid: false
+empty:
+  error: "Notifico: an invalid Notifico Project ID was specified"
+  valid: false
+hosted:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/1234/abcdefg?payload=%0310%5Bi%5D%03+%02Mercurio%0F%3A+Mercurio+Title%0D%0AMercurio+Body%0F"
+  valid: true
+hosted_failure:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/1234/abcdefg?payload=%0304%5B%E2%9C%97%5D%03+%02Mercurio%0F%3A+T%0D%0AB%0F"
+  valid: true
+http_error:
+  errors:
+    - "HTTP 500: {}"
+  ok: false
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/1234/abcdefg?payload=%0310%5Bi%5D%03+%02Mercurio%0F%3A+Mercurio+Title%0D%0AMercurio+Body%0F"
+  valid: true
+native:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/1234/abcdefg?payload=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+no_color:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/1234/abcdefg?payload=%5Bi%5D+Mercurio%3A+Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+no_color_strips_codes:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/1234/abcdefg?payload=Mercurio+Title%0D%0Aabc"
+  valid: true
+no_hook:
+  error: "Notifico: an invalid Notifico Message Token was specified"
+  valid: false
+no_prefix:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/1234/abcdefg?payload=Mercurio+Title%0D%0AMercurio+Body"
+  valid: true
+self_hosted:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "http://example.com/h/1234/abcdefg?payload=%0310%5Bi%5D%03+%02Mercurio%0F%3A+Mercurio+Title%0D%0AMercurio+Body%0F"
+  valid: true
+self_hosted_auth:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: Basic dXNlcjpwYXNz
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "http://example.com/h/1234/abcdefg?payload=%0310%5Bi%5D%03+%02Mercurio%0F%3A+Mercurio+Title%0D%0AMercurio+Body%0F"
+  valid: true
+self_hosted_https_port:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://example.com:8443/h/1234/abcdefg?payload=%0310%5Bi%5D%03+%02Mercurio%0F%3A+Mercurio+Title%0D%0AMercurio+Body%0F"
+  valid: true
+self_hosted_user:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Authorization: Basic dXNlcjo=
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "http://example.com/h/1234/abcdefg?payload=%0310%5Bi%5D%03+%02Mercurio%0F%3A+Mercurio+Title%0D%0AMercurio+Body%0F"
+  valid: true
+token_project_args:
+  ok: true
+  requests:
+    - body: ~
+      headers:
+        Content-Type: application/x-www-form-urlencoded; charset=utf-8
+      method: GET
+      url: "https://n.tkte.ch/h/99/zzz?payload=%0310%5Bi%5D%03+%02Mercurio%0F%3A+Mercurio+Title%0D%0AMercurio+Body%0F"
+  valid: true

@@ -138,6 +138,7 @@ all-services = [
   "service-nextcloudtalk",
   "service-notica",
   "service-notifiarr",
+  "service-notifico",
   "service-notifyre",
   "service-novu",
   "service-ntfy",
@@ -309,6 +310,7 @@ service-nextcloud = []
 service-nextcloudtalk = []
 service-notica = []
 service-notifiarr = []
+service-notifico = []
 service-notifyre = []
 service-novu = []
 service-ntfy = []
