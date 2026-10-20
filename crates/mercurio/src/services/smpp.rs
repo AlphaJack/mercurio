@@ -446,6 +446,7 @@ impl Protocol for Session {
                 }
             }
             Input::ReadError(e) | Input::WriteError(e) => self.io_failed(Error::transport(e)),
+            Input::ChannelBinding(_) => {}
             Input::Tls(r) => {
                 if let Err(e) = r {
                     self.fail(e);

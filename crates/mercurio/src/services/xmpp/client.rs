@@ -8,6 +8,7 @@ use super::xml::{self, Element, Event, Parser};
 use crate::env::Env;
 use crate::error::{Error, Result};
 use crate::machine::{Input, Output, Protocol};
+use crate::transport::ChannelBinding;
 
 const NS_TLS: &str = "urn:ietf:params:xml:ns:xmpp-tls";
 const NS_SASL: &str = "urn:ietf:params:xml:ns:xmpp-sasl";
@@ -41,6 +42,8 @@ pub struct Session {
     pub targets: Vec<(String, String)>,
     pub subject: String,
     pub body: String,
+    /// Use SCRAM `-PLUS` (channel binding) when the server offers it on a TLS stream (`?scramplus=`).
+    pub scramplus: bool,
 }
 
 struct Jid<'a> {
@@ -80,9 +83,41 @@ fn stanza(ev: Event) -> Result<Element> {
     }
 }
 
-fn sasl_failed(el: &Element) -> Error {
+/// A SASL `<failure>`. One that mentions channel binding gets Apprise's hint about `?scramplus=no`.
+fn sasl_failed(el: &Element, scramplus: bool) -> Error {
+    let all = flatten(el).to_lowercase();
+    if all.contains("channel") && all.contains("binding") {
+        return Error::service(if scramplus {
+            "XMPP authentication failed: the server rejected SASL SCRAM-PLUS channel binding. Add ?scramplus=no to \
+             your URL to disable SCRAM-PLUS mechanism negotiation."
+        } else {
+            "XMPP authentication failed: the server rejected channel binding despite ?scramplus=no being set."
+        });
+    }
     let cond = el.children.iter().find(|c| c.local() != "text").map(|c| c.local().to_string());
     Error::service(format!("XMPP authentication failed: {}", cond.unwrap_or_else(|| "unknown".into())))
+}
+
+/// Every name and text inside `el`.
+fn flatten(el: &Element) -> String {
+    let mut out = format!("{} {}", el.local(), el.text);
+    for c in &el.children {
+        out.push(' ');
+        out.push_str(&flatten(c));
+    }
+    out
+}
+
+/// The channel binding types to try, best first: those the server lists (XEP-0440), else `tls-exporter` (the TLS 1.3 default of RFC 9266).
+fn binding_types(features: &Element) -> VecDeque<ChannelBinding> {
+    let all = [ChannelBinding::TlsExporter, ChannelBinding::TlsServerEndPoint];
+    match features.child("sasl-channel-binding") {
+        Some(list) => all
+            .into_iter()
+            .filter(|k| list.children_named("channel-binding").any(|c| c.attr("type") == Some(k.name())))
+            .collect(),
+        None => VecDeque::from([ChannelBinding::TlsExporter]),
+    }
 }
 
 fn sasl_unexpected() -> Error {
@@ -137,6 +172,8 @@ enum Wait {
     Muc { occupant: String, target: usize },
     /// The transport's TLS upgrade.
     TlsHandshake,
+    /// The connection's channel binding data of `kind` for `mech` (`SCRAM-*-PLUS`); `rest` are the types left to try, `offered` the mechanisms to fall back on.
+    Binding { mech: Mech, kind: ChannelBinding, rest: VecDeque<ChannelBinding>, offered: Vec<String> },
     /// `</stream:stream>` is sent: the server's close (or any failure) ends the session.
     Close,
     Done,
@@ -152,6 +189,8 @@ pub struct Client {
     tls: bool,
     ids: u32,
     scram: Option<Scram>,
+    /// SCRAM `-PLUS` was attempted.
+    plus: bool,
     /// The features after authentication (bind, session).
     features: Option<Element>,
     env: Arc<dyn Env>,
@@ -169,6 +208,7 @@ impl Client {
             tls,
             ids: 0,
             scram: None,
+            plus: false,
             features: None,
             env,
             result: None,
@@ -228,6 +268,7 @@ impl Client {
             | Wait::Iq { .. }
             | Wait::Muc { .. }
             | Wait::TlsHandshake
+            | Wait::Binding { .. }
             | Wait::Done) => match stanza(ev) {
                 Ok(el) => self.on_stanza(wait, &el),
                 Err(e) => self.fail(e),
@@ -257,7 +298,7 @@ impl Client {
             }
             // Unrelated stanzas are skipped.
             wait @ (Wait::Features(_) | Wait::Iq { .. } | Wait::Muc { .. }) => self.wait = wait,
-            Wait::Header(_) | Wait::TlsHandshake | Wait::Close | Wait::Done => {}
+            Wait::Header(_) | Wait::TlsHandshake | Wait::Binding { .. } | Wait::Close | Wait::Done => {}
         }
     }
 
@@ -283,6 +324,37 @@ impl Client {
             .child("mechanisms")
             .map(|m| m.children_named("mechanism").map(|c| c.text.trim().to_string()).collect())
             .unwrap_or_default();
+        if self.cfg.scramplus
+            && self.tls
+            && let Some(mech) = Mech::choose_plus(offered.iter().map(String::as_str))
+        {
+            let mut kinds = binding_types(features);
+            if let Some(kind) = kinds.pop_front() {
+                self.wait = Wait::Binding { mech, kind, rest: kinds, offered };
+                return;
+            }
+        }
+        self.authenticate_unbound(&offered);
+    }
+
+    /// The connection answered for channel binding: SCRAM `-PLUS` with the data, else the next type, else no binding.
+    fn on_binding(&mut self, data: Option<Vec<u8>>) {
+        let Wait::Binding { mech, kind, mut rest, offered } = std::mem::replace(&mut self.wait, Wait::Done) else {
+            return;
+        };
+        match (data, rest.pop_front()) {
+            (Some(data), _) => {
+                self.plus = true;
+                let user = split_jid(&self.cfg.jid).local.to_string();
+                let scram = Scram::new(mech, &user, self.env.as_ref()).with_binding(kind.name(), data);
+                self.start_scram(&format!("{}-PLUS", mech.name()), scram);
+            }
+            (None, Some(next)) => self.wait = Wait::Binding { mech, kind: next, rest, offered },
+            (None, None) => self.authenticate_unbound(&offered),
+        }
+    }
+
+    fn authenticate_unbound(&mut self, offered: &[String]) {
         let Some(mech) = Mech::choose(offered.iter().map(String::as_str), self.tls) else {
             return self.fail(Error::service(if offered.iter().any(|m| m.eq_ignore_ascii_case("PLAIN")) && !self.tls {
                 "XMPP: the server only offers PLAIN authentication over an unencrypted stream; use TLS".to_string()
@@ -298,19 +370,20 @@ impl Client {
             return;
         }
         let scram = Scram::new(mech, &user, self.env.as_ref());
-        let auth = format!(
-            "<auth xmlns='{NS_SASL}' mechanism='{}'>{}</auth>",
-            mech.name(),
-            crate::crypto::b64(scram.client_first().as_bytes())
-        );
-        self.send(&auth);
+        self.start_scram(mech.name(), scram);
+    }
+
+    fn start_scram(&mut self, mechanism: &str, scram: Scram) {
+        log::debug!("XMPP: authenticating with {mechanism} ({})", scram.binding_name());
+        let first = crate::crypto::b64(scram.client_first().as_bytes());
+        self.send(&format!("<auth xmlns='{NS_SASL}' mechanism='{mechanism}'>{first}</auth>"));
         self.scram = Some(scram);
         self.wait = Wait::Sasl(Sasl::First);
     }
 
     fn on_sasl(&mut self, step: Sasl, el: &Element) {
         let res = match (step, el.local()) {
-            (_, "failure") => Err(sasl_failed(el)),
+            (_, "failure") => Err(sasl_failed(el, self.cfg.scramplus)),
             (Sasl::Plain | Sasl::Verified, "success") => Ok(true),
             (Sasl::First, "challenge") => self.scram_final(el).map(|()| false),
             (Sasl::Final, "challenge") => {
@@ -427,7 +500,7 @@ impl Client {
     }
 
     fn reading(&self) -> bool {
-        !matches!(self.wait, Wait::TlsHandshake | Wait::Done)
+        !matches!(self.wait, Wait::TlsHandshake | Wait::Binding { .. } | Wait::Done)
     }
 }
 
@@ -438,6 +511,7 @@ impl Protocol for Client {
         }
         match self.wait {
             Wait::TlsHandshake => Output::StartTls,
+            Wait::Binding { kind, .. } => Output::ChannelBinding(kind),
             Wait::Done => Output::Done(self.result.take().unwrap_or(Ok(()))),
             Wait::Header(_)
             | Wait::Features(_)
@@ -477,6 +551,7 @@ impl Protocol for Client {
                 self.open(Phase::AfterTls);
             }
             Input::Tls(Err(e)) => self.fail(e),
+            Input::ChannelBinding(data) => self.on_binding(data),
         }
     }
 }
@@ -497,6 +572,7 @@ mod tests {
             targets: Vec::new(),
             subject: String::new(),
             body: "hi".into(),
+            scramplus: true,
         }
     }
 
@@ -525,5 +601,84 @@ mod tests {
         )).unwrap_err();
         assert!(err.to_string().contains("after STARTTLS"), "{err}");
         assert!(!AsyncConn::is_tls(&conn));
+    }
+
+    /// A server that upgrades with STARTTLS, then offers `mechanisms` and the binding `types` (XEP-0440), records the `<auth>` and rejects it with `reason`.
+    fn plus_run(mechanisms: &[&str], types: &[&str], scramplus: bool, reason: &str) -> (String, Error) {
+        let auth = Arc::new(std::sync::Mutex::new(String::new()));
+        let seen = auth.clone();
+        let mut opened = 0;
+        let mechs: String = mechanisms.iter().map(|m| format!("<mechanism>{m}</mechanism>")).collect();
+        let cb: String = if types.is_empty() {
+            String::new()
+        } else {
+            let list: String = types.iter().map(|t| format!("<channel-binding type='{t}'/>")).collect();
+            format!("<sasl-channel-binding xmlns='urn:xmpp:sasl-cb:0'>{list}</sasl-channel-binding>")
+        };
+        let reason = reason.to_string();
+        let conn = ScriptedConn::bytes(Vec::new(), move |w: &[u8]| {
+            let w = String::from_utf8_lossy(w);
+            let head = "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>";
+            if w.contains("<stream:stream") {
+                opened += 1;
+                if opened == 1 {
+                    format!("{head}<stream:features><starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/></stream:features>")
+                } else {
+                    format!(
+                        "{head}<stream:features><mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>{mechs}</mechanisms>\
+                         {cb}</stream:features>"
+                    )
+                }
+                .into_bytes()
+            } else if w.contains("<starttls") {
+                b"<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>".to_vec()
+            } else if w.contains("<auth") {
+                *seen.lock().unwrap() = w.to_string();
+                format!("<failure xmlns='urn:ietf:params:xml:ns:xmpp-sasl'><not-authorized/><text>{reason}</text></failure>")
+                    .into_bytes()
+            } else {
+                Vec::new()
+            }
+        });
+        let mut conn: Box<dyn crate::transport::Conn> = Box::new(conn);
+        let client = Client::new(Session { scramplus, ..session() }, false, Arc::new(crate::testing::FixedEnv::new(0)));
+        let err = pollster::block_on(crate::machine::drive(
+            client,
+            &mut conn,
+            &crate::Blocking(crate::testing::FakeTransport::new()),
+        ))
+        .unwrap_err();
+        let auth = auth.lock().unwrap().clone();
+        (auth, err)
+    }
+
+    /// The first SCRAM message inside a recorded `<auth>`.
+    fn first_message(auth: &str) -> String {
+        let b64 = auth.split('>').nth(1).unwrap().split('<').next().unwrap();
+        String::from_utf8(crate::crypto::b64_decode(b64).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn scram_plus_uses_the_listed_binding() {
+        let mechs = ["SCRAM-SHA-256-PLUS", "SCRAM-SHA-256"];
+        let (auth, err) = plus_run(&mechs, &["tls-server-end-point"], true, "Invalid channel binding");
+        assert!(auth.contains("mechanism='SCRAM-SHA-256-PLUS'"), "{auth}");
+        assert!(first_message(&auth).starts_with("p=tls-server-end-point,,n=user,r="), "{auth}");
+        assert!(err.to_string().contains("Add ?scramplus=no"), "{err}");
+    }
+
+    #[test]
+    fn scram_plus_falls_back_without_binding() {
+        let mechs = ["SCRAM-SHA-256-PLUS", "SCRAM-SHA-256"];
+        // Disabled: plain SCRAM.
+        let (auth, err) = plus_run(&mechs, &["tls-exporter"], false, "bad password");
+        assert!(auth.contains("mechanism='SCRAM-SHA-256'") && first_message(&auth).starts_with("n,,"), "{auth}");
+        assert_eq!(err.to_string(), "service error: XMPP authentication failed: not-authorized");
+        // Only a type the connection cannot provide: plain SCRAM.
+        let (auth, _) = plus_run(&mechs, &["tls-unique"], true, "x");
+        assert!(auth.contains("mechanism='SCRAM-SHA-256'"), "{auth}");
+        // No list: tls-exporter.
+        let (auth, _) = plus_run(&mechs, &[], true, "x");
+        assert!(first_message(&auth).starts_with("p=tls-exporter,,"), "{auth}");
     }
 }

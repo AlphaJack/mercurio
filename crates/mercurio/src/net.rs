@@ -120,3 +120,97 @@ fn unix_connect_abstract(name: &str) -> std::io::Result<std::os::unix::net::Unix
 fn unix_connect_abstract(_: &str) -> std::io::Result<std::os::unix::net::UnixStream> {
     Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "abstract sockets exist only on Linux"))
 }
+
+/// Channel binding data for a TLS client session (see [`crate::Conn::channel_binding`]). `tls-exporter` needs TLS 1.3 (RFC 9266 forbids it on TLS 1.2 without extended master secret).
+pub(crate) fn channel_binding(
+    conn: &rustls::ClientConnection,
+    kind: crate::transport::ChannelBinding,
+) -> Option<Vec<u8>> {
+    use crate::transport::ChannelBinding;
+    match kind {
+        ChannelBinding::TlsExporter => {
+            if conn.protocol_version() != Some(rustls::ProtocolVersion::TLSv1_3) {
+                return None;
+            }
+            conn.export_keying_material(vec![0u8; 32], b"EXPORTER-Channel-Binding", None).ok()
+        }
+        ChannelBinding::TlsServerEndPoint => server_end_point(conn.peer_certificates()?.first()?),
+    }
+}
+
+/// RFC 5929 `tls-server-end-point`: the certificate hashed with its signature's hash, SHA-256 for MD5 and SHA-1. `None` for other algorithms (RSASSA-PSS, Ed25519), which the RFC leaves undefined.
+fn server_end_point(der: &[u8]) -> Option<Vec<u8>> {
+    let (cert, _) = der_seq(der)?;
+    let (_tbs, rest) = der_element(cert)?;
+    let (alg, _) = der_seq(rest)?;
+    let (oid, _) = der_element(alg)?;
+    const RSA: &[u8] = &[0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01];
+    const ECDSA: &[u8] = &[0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04];
+    let digest = match oid.strip_prefix(RSA).or_else(|| oid.strip_prefix(ECDSA)) {
+        // md5/sha1WithRSAEncryption, sha256WithRSAEncryption, ecdsa-with-SHA1, ecdsa-with-SHA256
+        Some([0x04] | [0x05] | [0x0b] | [0x01] | [0x03, 0x02]) => &ring::digest::SHA256,
+        Some([0x0c] | [0x03, 0x03]) => &ring::digest::SHA384,
+        Some([0x0d] | [0x03, 0x04]) => &ring::digest::SHA512,
+        _ => return None,
+    };
+    Some(ring::digest::digest(digest, der).as_ref().to_vec())
+}
+
+/// The content of a DER SEQUENCE at the start of `b`, and what follows it.
+fn der_seq(b: &[u8]) -> Option<(&[u8], &[u8])> {
+    if *b.first()? != 0x30 {
+        return None;
+    }
+    der_element(b)
+}
+
+/// The content of the DER element at the start of `b` (definite lengths only), and what follows it.
+fn der_element(b: &[u8]) -> Option<(&[u8], &[u8])> {
+    let first = *b.get(1)?;
+    let (len, head) = if first < 0x80 {
+        (usize::from(first), 2)
+    } else {
+        let n = usize::from(first & 0x7f);
+        if n == 0 || n > 4 {
+            return None;
+        }
+        let len = b.get(2..2 + n)?.iter().fold(0usize, |acc, &x| (acc << 8) | usize::from(x));
+        (len, 2 + n)
+    };
+    let end = head.checked_add(len)?;
+    Some((b.get(head..end)?, b.get(end..)?))
+}
+
+#[cfg(test)]
+mod channel_binding_tests {
+    use super::*;
+
+    /// A certificate-shaped DER: `SEQUENCE { tbs, SEQUENCE { oid, NULL }, BIT STRING }`.
+    fn cert(oid: &[u8]) -> Vec<u8> {
+        let tbs = [0x30, 0x03, 0x02, 0x01, 0x01];
+        let mut alg = vec![0x06, u8::try_from(oid.len()).unwrap()];
+        alg.extend_from_slice(oid);
+        alg.extend_from_slice(&[0x05, 0x00]);
+        let mut body = tbs.to_vec();
+        body.extend_from_slice(&[0x30, u8::try_from(alg.len()).unwrap()]);
+        body.extend_from_slice(&alg);
+        body.extend_from_slice(&[0x03, 0x02, 0x00, 0xff]);
+        let mut der = vec![0x30, u8::try_from(body.len()).unwrap()];
+        der.extend_from_slice(&body);
+        der
+    }
+
+    #[test]
+    fn server_end_point_hashes() {
+        let sha256_rsa = cert(&[0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0b]);
+        assert_eq!(server_end_point(&sha256_rsa), Some(crate::crypto::sha256(&sha256_rsa)));
+        let sha1_rsa = cert(&[0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x05]);
+        assert_eq!(server_end_point(&sha1_rsa), Some(crate::crypto::sha256(&sha1_rsa)));
+        let ecdsa_384 = cert(&[0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x03]);
+        assert_eq!(server_end_point(&ecdsa_384).map(|h| h.len()), Some(48));
+        let ecdsa_512 = cert(&[0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x04]);
+        assert_eq!(server_end_point(&ecdsa_512), Some(crate::crypto::sha512(&ecdsa_512)));
+        assert_eq!(server_end_point(&cert(&[0x2b, 0x65, 0x70])), None, "Ed25519 is undefined");
+        assert_eq!(server_end_point(&[0x30, 0x05, 0x01]), None, "truncated");
+    }
+}

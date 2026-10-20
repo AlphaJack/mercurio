@@ -418,6 +418,7 @@ impl Protocol for Smtp {
             Input::Data([]) => self.io_failed(Error::unconfirmed("connection closed")),
             Input::Data(data) => self.received(data),
             Input::ReadError(e) | Input::WriteError(e) => self.io_failed(Error::unconfirmed(e)),
+            Input::ChannelBinding(_) => {}
             Input::Tls(Ok(())) => {
                 // Plaintext buffered before the upgrade is discarded (it must be empty per RFC 3207).
                 self.rx.clear();
@@ -459,6 +460,7 @@ mod tests {
                 }
                 Output::Read => m.input(Input::Data(std::mem::take(&mut pending).as_bytes())),
                 Output::StartTls => m.input(Input::Tls(Ok(()))),
+                Output::ChannelBinding(_) => m.input(Input::ChannelBinding(None)),
                 Output::Sleep(_) => {}
                 Output::Done(r) => return (sent, r),
             }

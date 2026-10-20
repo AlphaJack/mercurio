@@ -4,7 +4,7 @@ use std::io;
 use std::time::Duration;
 
 use crate::error::Result;
-use crate::transport::{AsyncConn, AsyncTransport};
+use crate::transport::{AsyncConn, AsyncTransport, ChannelBinding};
 
 /// A socket protocol as a state machine over bytes: [`Protocol::next`] says what it needs, [`Protocol::input`] answers [`Output::Read`] and [`Output::StartTls`] (and reports a failed [`Output::Write`]).
 pub trait Protocol: Send {
@@ -23,6 +23,8 @@ pub enum Output {
     Read,
     /// Upgrade the connection to TLS and pass the result to [`Protocol::input`].
     StartTls,
+    /// Ask the connection for its TLS channel binding data and pass it to [`Protocol::input`].
+    ChannelBinding(ChannelBinding),
     /// Wait this long (through the transport), then call [`Protocol::next`] again.
     Sleep(Duration),
     /// The session ended.
@@ -38,6 +40,8 @@ pub enum Input<'a> {
     ReadError(io::Error),
     /// The TLS upgrade finished.
     Tls(Result<()>),
+    /// The answer to [`Output::ChannelBinding`]; `None` when the connection cannot provide it.
+    ChannelBinding(Option<Vec<u8>>),
     /// Sending the last [`Output::Write`] failed.
     WriteError(io::Error),
 }
@@ -97,6 +101,7 @@ pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn, transpo
                 let r = conn.start_tls().await;
                 machine.input(Input::Tls(r));
             }
+            Output::ChannelBinding(kind) => machine.input(Input::ChannelBinding(conn.channel_binding(kind))),
             Output::Sleep(d) => transport.sleep(d).await,
             Output::Done(r) => return r,
         }

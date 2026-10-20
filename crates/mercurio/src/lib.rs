@@ -292,8 +292,8 @@ pub use service::{Context, Kind, Limits, Notify, Param, Secret, ServiceDef, UrlI
 pub use store::{Memo, PersistentStore, Store, StoreRef};
 pub use tag::{Tag, TagFilter};
 pub use transport::{
-    AsyncConn, AsyncTransport, Blocking, BoxFuture, Command, CommandOutput, Conn, Datagram, DatagramTarget, Endpoint,
-    FileMeta, FileOp, FileOutput, Transport,
+    AsyncConn, AsyncTransport, Blocking, BoxFuture, ChannelBinding, Command, CommandOutput, Conn, Datagram,
+    DatagramTarget, Endpoint, FileMeta, FileOp, FileOutput, Transport,
 };
 pub use url::COMMON_PARAMS;
 pub use url::{Pairs, ParsedUrl};

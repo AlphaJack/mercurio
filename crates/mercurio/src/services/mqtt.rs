@@ -404,6 +404,7 @@ impl Protocol for Client {
             // Best effort: once DISCONNECT is due, the messages are already delivered.
             Input::WriteError(_) if self.state == State::Disconnecting => self.state = State::Done,
             Input::WriteError(e) => self.fail(Error::transport(e)),
+            Input::ChannelBinding(_) => {}
             Input::Tls(r) => {
                 if let Err(e) = r {
                     self.fail(e);
@@ -530,6 +531,7 @@ mod tests {
                     c.input(Input::Data(&[b]));
                 }
                 Output::StartTls => c.input(Input::Tls(Ok(()))),
+                Output::ChannelBinding(_) => c.input(Input::ChannelBinding(None)),
                 Output::Sleep(_) => {}
                 Output::Done(r) => break r,
             }
