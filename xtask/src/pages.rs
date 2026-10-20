@@ -500,11 +500,7 @@ fn examples_section(fixtures: &[Fixture]) -> String {
     }
     let mut out = vec!["## Examples".to_owned(), String::new()];
     if !good.is_empty() {
-        out.extend([
-            "Accepted URLs (tokens are fake):".to_owned(),
-            String::new(),
-            "```text".to_owned(),
-        ]);
+        out.extend(["Accepted URLs (tokens are fake):".to_owned(), String::new(), "```text".to_owned()]);
         out.extend(good.iter().cloned());
         out.extend(["```".to_owned(), String::new()]);
     }
