@@ -10,7 +10,9 @@ use futures_util::future::join_all;
 use crate::config::template::TemplateVars;
 use crate::config::{Config, ConfigFormat, ConfigOptions, PendingTarget};
 use crate::error::{Error, Result};
-use crate::notify::{Core, Mercurio, Report, ReportEntry, SEND_PERMITS, Selection, Target, lanes, throttle_wait};
+use crate::notify::{Core, Mercurio, SEND_PERMITS, Selection, lanes, throttle_wait};
+use crate::report::{Report, ReportEntry};
+use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking};
 use crate::{Asset, Message, TagFilter};
 

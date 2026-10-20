@@ -243,6 +243,7 @@ mod service;
 mod services;
 pub mod store;
 mod tag;
+mod target;
 #[expect(clippy::unwrap_used, reason = "fakes fail loudly by design")]
 #[cfg_attr(
     any(test, feature = "testing"),
@@ -258,6 +259,7 @@ mod util;
 mod blocking;
 mod mercurio_async;
 mod notify;
+mod report;
 #[cfg(feature = "transport-tokio")]
 mod tokio;
 
@@ -270,12 +272,11 @@ pub use error::{Error, ErrorClass, Result, ResultExt};
 pub use http::parse_multipart;
 pub use http::{Method, Multipart, Request, Response};
 pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode, Prepared};
-pub use notify::{
-    Attempt, MAX_RETRY_AFTER, Mercurio, Report, ReportEntry, Selection, Status, Target, parse, service_for_scheme,
-    services,
-};
+pub use notify::{Mercurio, Selection};
 pub use plan::{Delivery, Outcome, Plan, redact_url};
 pub use registry::{CustomScheme, Handler, Hook, register, register_scheme, unregister};
+pub use report::{Attempt, Report, ReportEntry, Status};
+pub use target::{MAX_RETRY_AFTER, Target, parse, service_for_scheme, services};
 
 /// The Cargo feature table of the crate docs, generated from `Cargo.toml` (the book's library page shows it too).
 #[doc(hidden)]

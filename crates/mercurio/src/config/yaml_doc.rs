@@ -8,9 +8,9 @@ use super::pending::{dropped, url_parses, uses};
 use super::template::{self, Placeholders, TemplateSchema};
 use super::text::get_schema;
 use super::yaml::{self, Yaml};
-use crate::notify::service_for_scheme;
 use crate::parse::parse_urls;
 use crate::tag::Tag;
+use crate::target::service_for_scheme;
 
 /// `parse_list(value, cast=str)` over YAML values.
 pub(super) fn yaml_list(v: &Yaml, out: &mut Vec<String>) {

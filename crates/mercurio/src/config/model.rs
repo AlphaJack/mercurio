@@ -11,8 +11,8 @@ use super::template::Placeholders;
 use super::text::detect_format;
 use crate::asset::Asset;
 use crate::error::{Error, Result};
-use crate::notify::Target;
 use crate::tag::Tag;
+use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking, Transport};
 
 /// Largest configuration read (`max_buffer_size`, 128 KiB).

@@ -6,9 +6,9 @@ use std::sync::Arc;
 use super::model::{AssetValue, Config, ConfigService, Parsed};
 use super::template::{self, Placeholders, TemplateError, TemplateVars};
 use crate::error::{Error, Result};
-use crate::notify::{Target, parse, service_for_scheme};
 use crate::service::ServiceDef;
 use crate::tag::{Tag, parse_tags};
+use crate::target::{Target, parse, service_for_scheme};
 use crate::url::{ParseOptions, ParsedUrl, parse_url_with};
 
 pub(super) fn uses(p: &Placeholders, text: &str) -> bool {
