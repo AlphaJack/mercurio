@@ -13,8 +13,6 @@ use super::settings::Settings;
 use super::store::ConfigStore;
 use super::{MISSING_KEY, Server, auth, metrics, notify, valid_key};
 
-/// Requests in progress at once; more get 503 + `Retry-After`. Above the library's 128 sends at once, so a burst queues for a send slot instead of being refused.
-const MAX_CONNECTIONS: usize = 512;
 /// The HTTP API: paths, methods, purpose. [`router`] implements it; the `routes_match_the_router` test checks every row against it.
 pub(crate) const ROUTES: &[(&str, &str, &str)] = &[
     ("/status, /status/{key}", "GET", "health check: OK or the problems found (JSON with Accept: application/json)"),
@@ -93,10 +91,10 @@ pub(super) fn app(s: Settings) -> tower_http::normalize_path::NormalizePath<axum
         .layer(tower_http::catch_panic::CatchPanicLayer::new())
         .layer(axum::error_handling::HandleErrorLayer::new(busy))
         .load_shed()
-        .layer(tower::limit::GlobalConcurrencyLimitLayer::new(MAX_CONNECTIONS))
+        .layer(tower::limit::GlobalConcurrencyLimitLayer::new(server.s.max_requests))
         .layer(axum::middleware::from_fn_with_state(server.clone(), observe))
         .layer(axum::middleware::from_fn_with_state((bodies, limit), body_budget))
-        .layer(tower_http::timeout::RequestBodyTimeoutLayer::new(http::IO_TIMEOUT))
+        .layer(tower_http::timeout::RequestBodyTimeoutLayer::new(server.s.io_timeout))
         .layer(axum::extract::DefaultBodyLimit::max(limit));
     let app = router(&server).layer(layers).with_state(server);
     // `/notify/` is `/notify`.
@@ -121,7 +119,7 @@ async fn body_budget(
     next.run(request).await
 }
 
-/// A request beyond [`MAX_CONNECTIONS`] in progress.
+/// A request beyond `max_requests` in progress.
 async fn busy(_: tower::BoxError) -> Reply {
     busy_reply()
 }

@@ -20,8 +20,6 @@ const FIELDS_ALLOWANCE: usize = 1024 * 1024;
 const MIN_BODY: usize = 8 * 1024 * 1024;
 /// The most a body buffer is sized by `Content-Length` before any byte arrives.
 const PREALLOC_MAX: usize = 256 * 1024 * 1024;
-/// How long a client may take to send a request head (and how long an idle connection stays open), and each piece of its body.
-pub const IO_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
 /// A value a handler sets on the request it is answering (`Send + Sync`, unlike `Cell`).
 #[derive(Default)]

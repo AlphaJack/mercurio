@@ -34,9 +34,10 @@ link-local). `*` matches any run of characters, `?` one.
 Limits: a request body up to `APPRISE_ATTACH_SIZE` plus 1 MiB (at least 8 MiB; `413`
 beyond), 256 MiB of request bodies
 being read at once (a request is charged its `Content-Length`, 1 MiB when it
-has none; more get `503` with `Retry-After: 1`), 512 requests in progress
-(more get `503` with `Retry-After: 1`). A request head, and each piece of a
-body, must arrive within 30 s.
+has none; more get `503` with `Retry-After: 1`), `APPRISE_WORKER_COUNT` times
+128 requests in progress (512 by default; more get `503` with
+`Retry-After: 1`). A request head, and each piece of a body, must arrive
+within `APPRISE_WORKER_TIMEOUT` seconds (30 by default).
 
 ## Request log
 
