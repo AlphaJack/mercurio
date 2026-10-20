@@ -44,11 +44,11 @@ generic conversion (`Notify::convert`):
 | Service | Dialect |
 |---|---|
 | [Slack](../services/slack.md) | Slack mrkdwn (`*bold*`, `<url\|text>` links) |
-| [Google Chat](../services/google_chat.md) | Google Chat text formatting |
+| [Google Chat](../services/googlechat.md) | Google Chat text formatting |
 | [Telegram](../services/telegram.md) | Telegram HTML (reduced tag set) or MarkdownV1/V2 |
 | [Matrix](../services/matrix.md) | HTML (`formatted_body`); Slack-style text in Slack mode |
 | [Pushover](../services/pushover.md) | Pushover's HTML subset |
-| [Signal API](../services/signal_api.md) | Signal styled text ranges |
+| [Signal API](../services/signalapi.md) | Signal styled text ranges |
 | [Evolution API](../services/evolution.md) (WhatsApp) | WhatsApp formatting |
 | [KOOK](../services/kook.md) | KMarkdown |
 | [Mastodon](../services/mastodon.md) | Mastodon text |

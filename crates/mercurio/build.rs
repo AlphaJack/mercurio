@@ -1,6 +1,6 @@
 //! Generates the service registry and the per-fixture tests.
 //!
-//! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `service-<id>` (`_` becomes `-`), which `Cargo.toml` must declare and list in `all-services`. It must export `pub static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
+//! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `service-<id>`, which `Cargo.toml` must declare and list in `all-services`. It must export `pub static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
 
 #![expect(clippy::unwrap_used, clippy::expect_used, clippy::panic, reason = "a build script should fail loudly")]
 
@@ -58,6 +58,11 @@ fn main() {
     }
     // Every service is compiled only with its own feature.
     for (name, _) in &modules {
+        assert!(
+            name.starts_with(|c: char| c.is_ascii_lowercase())
+                && name.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit()),
+            "service id `{name}`: use the brand name in lowercase letters and digits, without separators"
+        );
         let feature = service_feature(name);
         assert!(
             features.contains(&feature),
@@ -117,9 +122,9 @@ fn main() {
     fs::write(out.join("fixtures_generated.rs"), tests).unwrap();
 }
 
-/// `service-google-chat` for `google_chat`.
+/// `service-googlechat` for `googlechat`; a fixture file `<id>-<variant>.json` maps to the feature `service-<id>-<variant>` (`matrix-e2ee.json`).
 fn service_feature(id: &str) -> String {
-    format!("service-{}", id.replace('_', "-"))
+    format!("service-{id}")
 }
 
 fn display(p: &Path) -> String {

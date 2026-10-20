@@ -41,7 +41,7 @@ where
     phone_entries(targets, min_len).into_iter().filter_map(|(_, r)| r.map(|p| p.full)).collect()
 }
 
-/// The `{apikey}@{from_phone}/{targets}` layout shared by telnyx, httpsms and eight00com: `?from=` moves the host into the targets. Returns the source number (`full`) and the targets; when no targets were given at all, the source itself is notified. `None` when the source is not a phone number.
+/// The `{apikey}@{from_phone}/{targets}` layout shared by telnyx, httpsms and eighthundredcom: `?from=` moves the host into the targets. Returns the source number (`full`) and the targets; when no targets were given at all, the source itself is notified. `None` when the source is not a phone number.
 pub(crate) fn source_and_targets(u: &ParsedUrl, min_len: usize) -> Option<(String, Vec<String>)> {
     let (source, mut raw) = match param_unquoted(u, "from") {
         Some(f) => {

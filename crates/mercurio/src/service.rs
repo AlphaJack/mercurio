@@ -36,7 +36,7 @@ impl Default for Limits {
 /// Static description of a service; one `pub static SERVICE` per module.
 #[derive(Clone, Copy)]
 pub struct ServiceDef {
-    /// Module / feature name, e.g. `"google_chat"`.
+    /// Module name, lowercase letters and digits (the Cargo feature is `service-<id>`), e.g. `"googlechat"`.
     pub id: &'static str,
     /// Human name, e.g. `"Google Chat"`.
     pub name: &'static str,

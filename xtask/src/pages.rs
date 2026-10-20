@@ -106,7 +106,7 @@ fn is_set(v: Option<&Value>) -> bool {
 
 /// Same rule as `service_feature` in `crates/mercurio/build.rs`.
 fn service_feature(id: &str) -> String {
-    format!("service-{}", id.replace('_', "-"))
+    format!("service-{id}")
 }
 
 /// Rust files of a service module: `<id>.rs` or every file under `<id>/`.

@@ -9,7 +9,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "one_signal",
+    id: "onesignal",
     name: "OneSignal",
     schemes: &["onesignal"],
     service_url: "https://onesignal.com",

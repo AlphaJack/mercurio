@@ -7,7 +7,7 @@ use crate::url::ParsedUrl;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "custom_form",
+    id: "form",
     name: "Form",
     schemes: &["form", "forms"],
     parse,

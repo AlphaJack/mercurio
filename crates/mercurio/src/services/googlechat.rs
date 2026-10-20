@@ -9,7 +9,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
 pub static SERVICE: ServiceDef = ServiceDef {
-    id: "google_chat",
+    id: "googlechat",
     name: "Google Chat",
     schemes: &["gchat"],
     service_url: "https://chat.google.com/",
