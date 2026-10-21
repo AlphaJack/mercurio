@@ -2,8 +2,8 @@
 
 mercurio aims to accept every Apprise URL and configuration file; sending
 byte-for-byte the same requests is not a goal. Each entry says what Apprise
-does, what mercurio does instead, and a status: *intentional* means it stays
-that way, *todo* means it could be added. Differences of a single service are
+does and what mercurio does instead. Every difference on this page is
+intentional: it stays that way. Differences of a single service are
 on its page (see the [service list](services/index.md)), taken from the
 `# Differences with Apprise` section of its module docs.
 
@@ -11,39 +11,39 @@ on its page (see the [service list](services/index.md)), taken from the
 
 - **Markdown.** Apprise renders with the Python `markdown` package, while mercurio renders CommonMark plus GFM tables (`pulldown-cmark`); ordinary
   Markdown gives the same HTML, edge cases differ (headings with seven or
-  more `#`, some entities, list continuation lines). *intentional*
+  more `#`, some entities, list continuation lines).
 - **Request throttle.** Apprise waits 5.5 s between requests to the same
   service (`NotifyBase.request_rate_per_sec`), while mercurio keeps only the
-  explicit per-plugin throttles and drops the inherited default. *intentional*
+  explicit per-plugin throttles and drops the inherited default.
 - **Basic auth without a password.** Apprise's `requests` sends
-  `user:None`, while mercurio sends `user:`. *intentional*
+  `user:None`, while mercurio sends `user:`.
 - **URL parser.** Apprise checks hosts in `parse_url` and turns `+` in
   query values into a space for Office 365, while mercurio leaves host checks
-  to the services that connect and never turns `+` into a space. *intentional*
+  to the services that connect and never turns `+` into a space.
 - **`?tag=` on a URL.** Apprise ignores it, while mercurio tags the URL for
   `--tag` / `TagFilter`; in a configuration file the values are added to
-  the entry's tags. *intentional*
+  the entry's tags.
 - **Emoji names.** Apprise expands `:shortcode:` from its own table, while mercurio uses GitHub's gemoji names (the `emojis` crate). They agree on
   1,843 of Apprise's 1,855 names; 10 give another emoji (`:grinning:` is
   😀, not 😄; `:beetle:` 🪲, not 🐞), `:blond_woman:` and
   `:information_deskperson:` stay as text, and about 70 gemoji names that
-  Apprise lacks are expanded. *intentional*
+  Apprise lacks are expanded.
 - **`%2F` in a URL path.** Apprise decodes it into a separator, so
   `json://`, `xml://` and `form://` request another path (its issue #1799),
   while mercurio keeps it encoded for those three, so `a%2Fb` stays one path
   segment. Other services decode it as Apprise does (xmpp JIDs, signalgrid
-  channels). *intentional*
+  channels).
 - **`?tz=`.** Validated as in Apprise (the UTC family, any case, or the
   location alone such as `paris`; an unknown zone rejects the URL). E-mail
   `Date:` and syslog timestamps use it, else a YAML `asset:` `timezone`
-  (or `tz`), else the machine's zone. *intentional*
-- **`?optional=`.** Parsed by both; no effect in mercurio. *intentional*
+  (or `tz`), else the machine's zone.
+- **`?optional=`.** Parsed by both; no effect in mercurio.
 - **Overflow.** Apprise lets each plugin tune overflow (`overflow_*`
   attributes), numbers split pieces (`[01/03]`) and may repeat the title, while mercurio uses one policy: title on the first piece only, no counters,
-  `truncate` keeps the first piece `split` would produce. *intentional*
+  `truncate` keeps the first piece `split` would produce.
 - **Malformed HTML** (for example a malformed `<![` section). Apprise
   fails the notification, while mercurio fails too when the core converts it,
-  but the Pushover and Telegram reducers send it unreduced. *intentional*
+  but the Pushover and Telegram reducers send it unreduced.
 - **Upstream bugs.** Where Apprise's behaviour is clearly a bug mercurio
   does the correct thing; see the service entries for e-mail, IFTTT, IRC,
   Mastodon, Plivo, PushWard, Reddit, Remote Syslog, SMPP and Synology Chat.
@@ -55,28 +55,25 @@ on its page (see the [service list](services/index.md)), taken from the
   Burst SMS `country=US`, Twitter `mode=DM`, VoIP.ms stopping on one bad
   reply, Home Assistant `svc:a,b,c` lists and `storage prune` deleting
   Apprise's `*.psdata` files.
-  *intentional*
 - **Not available.** Pickling a loaded notifier, internationalised
-  messages (`i18n`). *intentional* Apprise's `async_notify` is
+  messages (`i18n`). Apprise's `async_notify` is
   `AsyncMercurio::notify`.
 
 ## CLI
 
 - **Default input format.** Apprise's CLI assumes `text`, while mercurio passes
   the body through when `-i` is not given; `-i text` gives Apprise's
-  behaviour. *intentional*
+  behaviour.
 - **`-e`.** Apprise runs its full escape decoder, while the CLI decodes `\n`,
   `\r`, `\t` and `\\` only (`Asset::interpret_escapes` in the library runs
-  the full decoder). *intentional*
+  the full decoder).
 - **`-g` with URLs on the command line.** Apprise ignores it and notifies
-  all of them, while mercurio filters them by their `?tag=` values. *intentional*
+  all of them, while mercurio filters them by their `?tag=` values.
 - **No services** (nothing given, nothing configured) exits with 2.
-  *intentional*
 - **Not implemented:** `-P/--plugin-path` (register custom services from
-  Rust), `-D/--debug` (use `-vvv`). *intentional*
+  Rust), `-D/--debug` (use `-vvv`).
 - **`-d`** does not print storage URL ids; use `mercurio storage`.
-  *intentional*
-- **`check`, `serve`, `services`** are mercurio subcommands. *intentional*
+- **`check`, `serve`, `services`** are mercurio subcommands.
 
 ## Server
 
@@ -84,29 +81,28 @@ on its page (see the [service list](services/index.md)), taken from the
   and still cannot build a body from a list of alerts, while mercurio reads
   their webhook payloads directly on `/notify` (see
   [Alertmanager and Grafana webhooks](server.md#alertmanager-and-grafana-webhooks)).
-  *intentional*
 - **Web UI.** apprise-api serves a web UI (`/`, login/logout, `/qr`,
   `/cfg/@`, themes, `APPRISE_API_ONLY`), while mercurio has none: those paths
-  are `404` and the setting is ignored. *intentional*
+  are `404` and the setting is ignored.
 - **Non-ASCII header values** (UTF-8 titles in `X-Apprise-Title`).
   apprise-api gets them as WSGI Latin-1 strings, while mercurio decodes them as
-  UTF-8, as Latin-1 only when they are not valid UTF-8. *intentional*
+  UTF-8, as Latin-1 only when they are not valid UTF-8.
 - **Basic Auth credentials.** apprise-api decodes them as UTF-8, so a
   non-ASCII password from Apprise Mobile (which sends Latin-1) fails, while mercurio decodes them as UTF-8, as Latin-1 only when they are not valid
-  UTF-8. *intentional*
+  UTF-8.
 - **Translated messages.** apprise-api translates its error and status
-  messages by `Accept-Language` or cookie and sets `Content-Language`, while mercurio answers in English only. *intentional*
+  messages by `Accept-Language` or cookie and sets `Content-Language`, while mercurio answers in English only.
 - **Returned logs.** Both return the library's own log lines for the
   request's level and stream them live while sending. mercurio's lines
   have their own wording, redact URLs, and add one INFO or ERROR line per
-  finished service; `APPRISE_WEBHOOK_URL` gets INFO and up. *intentional*
+  finished service; `APPRISE_WEBHOOK_URL` gets INFO and up.
 - **Persistent storage.** Both prune old persistent storage and logins
   without a configuration once at start-up and then daily
   (`APPRISE_PRUNE_ENABLED`, `APPRISE_PRUNE_INTERVAL_SECONDS`,
   `APPRISE_PRUNE_TIMEOUT_SECONDS`, `APPRISE_STORAGE_PRUNE_DAYS`,
   `APPRISE_AUTH_PRUNE_SECONDS`): apprise-api in a separate container
   process, mercurio inside the server. The storage layout differs and
-  `APPRISE_STORAGE_UID_LENGTH` works the same. *intentional*
+  `APPRISE_STORAGE_UID_LENGTH` works the same.
 - **Workers.** apprise-api sizes gunicorn by `APPRISE_WORKER_COUNT` (twice the
   CPUs plus one by default), gives a worker `APPRISE_WORKER_TIMEOUT` seconds
   (300 by default) and recycles it after `APPRISE_WORKER_MAX_REQUESTS`
@@ -115,28 +111,28 @@ on its page (see the [service list](services/index.md)), taken from the
   512, by default), and the timeout is how long a request head, and each
   piece of a body, may take to arrive (30 s by default). It has no worker
   processes to recycle, so `APPRISE_WORKER_MAX_REQUESTS` and its jitter are
-  ignored. *intentional*
+  ignored.
 - **Request log.** apprise-api logs requests through nginx (`combined`
   format) plus `NOTIFY - ip - ...` warnings, while mercurio logs one line per
-  request with its key, services, failures and error. *intentional*
+  request with its key, services, failures and error.
 - **Unknown paths.** apprise-api answers `404` with an error message, while mercurio answers an empty `404`, before authentication; its `405`
-  `Allow` header omits `OPTIONS`. *intentional*
+  `Allow` header omits `OPTIONS`.
 - **Metrics.** apprise-api exports the full `django_prometheus` set, while mercurio exports its HTTP metrics under the same names (request and
   response counts, latency overall and by view, body sizes, streaming
   responses) and, on Linux, `prometheus_client`'s `process_*` metrics.
   Django's model, database, cache and migration metrics and Python's `gc`
-  and `info` metrics have no equivalent. *intentional*
-- **Other settings.** Plugin paths are ignored. *intentional*
+  and `info` metrics have no equivalent.
+- **Other settings.** Plugin paths are ignored.
 - **Logins and times.** apprise-api checks logins with Django's default
   hashers; without `argon2-cffi` and `bcrypt` (not in its requirements) those
   are `pbkdf2_sha256`, `pbkdf2_sha1` and `scrypt`, and it writes
   `pbkdf2_sha256`. It reports times in the `TZ` zone, while mercurio reads both
   PBKDF2 forms and writes `pbkdf2_sha256`; a `scrypt` digest, which
-  apprise-api never writes, is rejected. Times are UTC. *intentional*
+  apprise-api never writes, is rejected. Times are UTC.
 - **JSON `/add` without `format`.** apprise-api rejects it, while mercurio
-  detects TEXT or YAML. *intentional*
+  detects TEXT or YAML.
 - **Stored configurations** cannot include local files; attachment fields
-  only accept `http(s)://` URLs (a local path is a `400`). *intentional*
+  only accept `http(s)://` URLs (a local path is a `400`).
 
 ## Config and YAML
 
@@ -145,56 +141,54 @@ on its page (see the [service list](services/index.md)), taken from the
 - **`${NAME}` in an e-mail port.** Apprise's e-mail parser drops the host
   and the marker with it, so the port is ignored, while mercurio keeps the
   entry pending and rejects a non-numeric value when it is resolved.
-  *intentional*
-- **Self-referencing YAML anchor.** Apprise rejects only that entry, while mercurio rejects the whole document. *intentional*
+- **Self-referencing YAML anchor.** Apprise rejects only that entry, while mercurio rejects the whole document.
 - **YAML parser** (`saphyr-parser` plus a composer instead of PyYAML):
   several documents (`---`), custom `!tags` and collection keys are
   rejected; explicit `? key` entries are not supported; timestamps stay
   strings; `1`, `1.0` and `true` are three distinct keys; tabs are accepted
   as separators and trailing whitespace; `=` is a plain string; a quoted
-  continuation line less indented than its block is an error. *intentional*
+  continuation line less indented than its block is an error.
 - **`asset:` keys.** `storage_path` is accepted in configuration files (a
   mercurio extension; Apprise takes it only as a constructor argument);
   `interpret_emojis` is rejected with a warning; keys mercurio has no use
   for (`interpret_escapes`, `async_mode`, `encoding`, `image_path_*`, ...)
   are accepted without effect; the defaults name mercurio
-  (`app_id: Mercurio`). *intentional*
+  (`app_id: Mercurio`).
 
 ## Storage
 
 - **File format.** Apprise writes gzip `cache.psdata`, while mercurio writes
   plain JSON `cache.json`; neither reads the other's file (prune and clear
-  remove both). *intentional*
+  remove both).
 - **Modes.** `auto`, `flush` and `memory` (`-SM`, `APPRISE_STORAGE_MODE`,
   `Asset::storage_mode`) as in Apprise; `flush` writes before each I/O step
-  of a send rather than on every change. *intentional*
+  of a send rather than on every change.
 - **Entry checksum.** Each `cache.json` entry carries a 6-character
   SHA-256 checksum (`"!"`), and entries that fail it are dropped on load,
   as in Apprise. The hashed text differs (Apprise hashes its Python
   `repr`), so the checksums are not interchangeable; the files are not
   shared anyway. Caches written by earlier mercurio versions have no
-  checksum and are dropped once. *intentional*
+  checksum and are dropped once.
 - **Size cap.** Apprise refuses `write()` calls that would push a
   namespace past 1 MiB; mercurio has no `write()` API for named files, and
-  Apprise's cache itself is uncapped, so there is no cap. *intentional*
+  Apprise's cache itself is uncapped, so there is no cap.
 - **`mercurio storage list`** shows every configured URL, including
   services that never store anything (`unused`); Apprise omits them.
-  *intentional*
 - **`${NAME}` template targets** are rebuilt per call, so their in-memory
-  store does not outlive the call. *intentional*
+  store does not outlive the call.
 - **Rate-limit state** (Bluesky, Mastodon, Reddit, Twitter) is kept for
-  the life of a URL, across sends, as in Apprise. *intentional*
-- **Remote stores.** Store I/O is local only. *intentional*
+  the life of a URL, across sends, as in Apprise.
+- **Remote stores.** Store I/O is local only.
 
 ## Attachments
 
 - **`?+Header=`** on an attachment URL. Apprise sends it as a header and a
-  query parameter, while mercurio only as a header. *intentional*
+  query parameter, while mercurio only as a header.
 - **Downloads.** Apprise streams to a temporary file and stops early, while mercurio reads into memory and also stops once the body passes
-  `attachment_max_size`. *intentional*
+  `attachment_max_size`.
 - **Split messages.** Apprise plugins can pick the piece that carries the
   attachments (`_attachment_send_index`), while mercurio always sends them with
-  the first piece. *intentional*
+  the first piece.
 
 ## Retries
 
@@ -203,24 +197,23 @@ on its page (see the [service list](services/index.md)), taken from the
   (429, 503 with `Retry-After`) and transient failures (408, 5xx, DNS and
   connect errors). It stops on authentication errors, other 4xx and
   failures after the request was sent. It honours `Retry-After` up to
-  300 s. *intentional*
+  300 s.
 - **`?wait=`.** Apprise defaults to 0, while mercurio defaults to 0.5 s. Both
-  cap it at 20 s. *intentional*
+  cap it at 20 s.
 - **Unclassified failures.** `Error::Service` failures (for example a JSON
   body with `"ok": false`) and `register_scheme` closures are not retried.
-  *intentional*
 - **Service hints.** Apprise reads neither Telegram's
   `parameters.retry_after` nor Matrix's `retry_after_ms`, while mercurio feeds
   both into the retry loop as the 429's wait (Matrix once its own back-off
-  gives up). *intentional*
+  gives up).
 
 ## Services
 
 - **Microsoft Teams (`msteams://`).** Apprise's retired plugin is not
-  provided; use `workflows://`. *intentional*
+  provided; use `workflows://`.
 - **Discontinued services.** Apprise still ships plugins for services that
   no longer run, while mercurio does not provide them, and their URLs fail as an
-  unknown scheme. *intentional*
+  unknown scheme.
   - Growl (`growl://`): the project was retired in November 2020.
   - Guilded (`guilded://`): Roblox shut it down on 19 December 2025.
   - Kumulos (`kumulos://`): acquired by Optimove in 2022; the API host
