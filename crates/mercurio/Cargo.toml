@@ -60,8 +60,8 @@ insta = { version = "1.49.0", features = ["yaml"] }
 tokio = { version = "1.54", features = ["rt", "macros", "net", "io-util", "time"] }
 
 [features]
-# Every service and the async API on tokio.
-default = ["all-services", "transport-tokio"]
+# Every service, the async API on tokio and the bundled time zones.
+default = ["all-services", "transport-tokio", "bundle-timezones"]
 # Every `service-*` feature.
 all-services = [
   "service-africastalking",
@@ -227,6 +227,9 @@ all-services = [
   "service-zoom",
   "service-zulip",
 ]
+
+# The IANA time zone database inside the binary (about 256 KiB), so `?tz=` zones resolve where the host has no `/usr/share/zoneinfo`, as in a `scratch` image. A system copy is still preferred when there is one.
+bundle-timezones = ["jiff/tzdb-bundle-always"]
 
 # Tokio transport: `TokioTransport` and `AsyncMercurio::new` (tokio + reqwest).
 transport-tokio = ["dep:tokio", "dep:tokio-rustls", "dep:reqwest"]
