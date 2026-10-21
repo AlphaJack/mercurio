@@ -640,7 +640,7 @@ mod tests {
             assert_eq!((mode(&path), mode(&dir.join("ns"))), (PRIVATE_FILE_MODE, PRIVATE_DIR_MODE));
         }
         let meta = std_file(&FileOp::Stat { path: path.clone() }).unwrap();
-        assert_eq!(meta, FileOutput::Meta(Some(FileMeta { is_file: true, len: 1, executable: false })));
+        assert_eq!(meta, FileOutput::Meta(Some(FileMeta { is_file: true, len: 1, executable: !cfg!(unix) })));
         assert_eq!(std_file(&FileOp::Read { path: path.clone(), max: 1 }).unwrap(), FileOutput::Bytes(b"k".to_vec()));
         assert!(std_file(&FileOp::Read { path: dir.join("ns"), max: 0 }).is_err(), "not a file");
         assert!(std_file(&FileOp::Remove { path: path.clone() }).is_ok());
