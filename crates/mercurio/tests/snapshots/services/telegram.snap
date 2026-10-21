@@ -517,11 +517,14 @@ image:
   ok: true
   requests:
     - body:
-        json:
-          chat_id: "@lead2gold"
-          photo: "https://example.org/info-256x256.png"
+        multipart:
+          - name: chat_id
+            value: "@lead2gold"
+          - filename: icon.png
+            name: photo
+            value: "<ignored>"
       headers:
-        Content-Type: application/json
+        Content-Type: multipart/form-data
       method: POST
       url: "https://api.telegram.org/bot123456789:abcdefg_hijklmnop/SendPhoto"
     - body:
