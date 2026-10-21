@@ -340,7 +340,7 @@ pub(super) fn refresh_verified_state(s: &Session) -> bool {
         return true;
     }
     let ok = s.store.set("device_id", json!(s.device_id), CACHE_EXPIRY)
-        && s.store.set("e2ee_account", acct.to_value(), CACHE_EXPIRY)
+        && super::vault::set(s, "e2ee_account", acct.to_value())
         && s.store.set("e2ee_device_binding", binding.clone(), CACHE_EXPIRY)
         && s.store.set("e2ee_verified_binding", binding, CACHE_EXPIRY);
     if ok {
