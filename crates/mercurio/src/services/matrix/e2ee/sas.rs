@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 
 use serde_json::{Map, Value, json};
 
-use super::e2ee::{XKey, b64dec, b64enc, canonical_json, hkdf_sha256, hmac_sha256, sha256, verify_device_keys};
-use super::e2ee_flow::binding_key;
-use super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value};
+use super::{XKey, b64dec, b64enc, canonical_json, hkdf_sha256, hmac_sha256, sha256, verify_device_keys};
+use super::flow::binding_key;
+use super::super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value};
 use crate::Plan;
 use crate::env::Env;
 
@@ -322,7 +322,7 @@ fn store_verified_binding(s: &Session) -> bool {
 }
 
 /// Extend trust for the verified identity.
-pub(super) fn refresh_verified_state(s: &Session) -> bool {
+pub(in super::super) fn refresh_verified_state(s: &Session) -> bool {
     let Some(binding) = s.store.get("e2ee_device_binding").filter(has_value) else { return false };
     if s.store.get("e2ee_verified_binding").as_ref() != Some(&binding)
         || s.user_id.as_deref().is_none_or(str::is_empty)
@@ -350,7 +350,7 @@ pub(super) fn refresh_verified_state(s: &Session) -> bool {
 }
 
 /// Complete one same-user SAS verification.
-pub(super) fn auto_verify(s: Session, k: K<bool>) -> Plan {
+pub(in super::super) fn auto_verify(s: Session, k: K<bool>) -> Plan {
     let binding = s.store.get("e2ee_device_binding");
     if binding.as_ref().is_some_and(has_value) && s.store.get("e2ee_verified_binding") == binding {
         return k(s, true);
@@ -813,7 +813,7 @@ mod tests {
             let info = format!("MATRIX_KEY_VERIFICATION_MAC{user}{peer_dev}{user}{own_dev}{txn}{key_id}");
             b64enc(&hmac_sha256(&hkdf_sha256(&shared, 32, None, info.as_bytes()), value.as_bytes()))
         };
-        let own = super::super::e2ee::OlmAccount::new(crate::testing::test_env());
+        let own = super::super::OlmAccount::new(crate::testing::test_env());
         let mac = sas.mac_content(&own.signing_key()).unwrap();
         assert!(mac["mac"].get("ed25519:MERCURIO").is_some());
         // Our MAC verifies with the peer-side derivation (sender = us).
@@ -822,7 +822,7 @@ mod tests {
             b64enc(&hmac_sha256(&hkdf_sha256(&shared, 32, None, info.as_bytes()), own.signing_key().as_bytes()));
         assert_eq!(mac["mac"]["ed25519:MERCURIO"], expect);
 
-        let peer_acct = super::super::e2ee::OlmAccount::new(crate::testing::test_env());
+        let peer_acct = super::super::OlmAccount::new(crate::testing::test_env());
         let kid = format!("ed25519:{peer_dev}");
         let content = json!({
             "transaction_id": txn,

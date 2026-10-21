@@ -26,11 +26,7 @@ pub mod sizing;
 #[cfg(feature = "service-matrix-e2ee")]
 pub mod e2ee;
 #[cfg(feature = "service-matrix-e2ee")]
-mod e2ee_flow;
-#[cfg(feature = "service-matrix-e2ee")]
-mod sas;
-#[cfg(feature = "service-matrix-e2ee")]
-mod vault;
+use e2ee::{flow as e2ee_flow, sas};
 
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};

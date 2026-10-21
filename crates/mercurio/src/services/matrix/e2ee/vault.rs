@@ -6,7 +6,7 @@ use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
 use ring::hkdf;
 use serde_json::{Value, json};
 
-use super::server::{CACHE_EXPIRY, Session, has_value};
+use super::super::server::{CACHE_EXPIRY, Session, has_value};
 use crate::crypto::{b64, b64_decode};
 
 /// Marks a sealed value in the store.
@@ -22,7 +22,7 @@ fn key(s: &Session) -> Option<LessSafeKey> {
 }
 
 /// Seal `v` and store it under `name`; stored as it is when the URL has no secret.
-pub(super) fn set(s: &Session, name: &str, v: Value) -> bool {
+pub(in super::super) fn set(s: &Session, name: &str, v: Value) -> bool {
     let sealed = match key(s) {
         Some(k) => seal(s, &k, name, &v),
         None => Some(v),
@@ -39,7 +39,7 @@ fn seal(s: &Session, k: &LessSafeKey, name: &str, v: &Value) -> Option<Value> {
 }
 
 /// The value stored under `name`, opened; `None` when absent or when it no longer opens.
-pub(super) fn get(s: &Session, name: &str) -> Option<Value> {
+pub(in super::super) fn get(s: &Session, name: &str) -> Option<Value> {
     let v = s.store.get(name).filter(has_value)?;
     if v.get(SEALED).is_none() {
         // Written before sealing existed (or without a secret): sealed from now on.

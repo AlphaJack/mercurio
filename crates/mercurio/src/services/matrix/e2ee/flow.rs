@@ -7,19 +7,19 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
-use super::e2ee::{
+use super::{
     MEGOLM_ALGORITHM, MegolmSession, OLM_ALGORITHM, OlmAccount, cross_signing_key, verify_device_keys, verify_signed_by,
     verify_signed_otk,
 };
-use super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value, quote_path};
-use super::sizing::{MATRIX_EVENT_BYTE_LIMIT, MATRIX_EVENT_SAFETY_MARGIN};
+use super::super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value, quote_path};
+use super::super::sizing::{MATRIX_EVENT_BYTE_LIMIT, MATRIX_EVENT_SAFETY_MARGIN};
 use crate::Plan;
 use crate::error::Error;
 use crate::http::Request;
 
 /// E2EE state of one send.
 #[derive(Debug, Default)]
-pub(super) struct E2ee {
+pub(in super::super) struct E2ee {
     pub account: Option<OlmAccount>,
     /// Setup succeeded; encryption is still decided per room.
     pub capable: bool,
@@ -28,12 +28,12 @@ pub(super) struct E2ee {
 }
 
 /// How long a room's "not encrypted" answer is trusted: encryption can be enabled at any time, but never disabled, so "encrypted" is kept longer.
-pub(super) const UNENCRYPTED_TTL: Option<Duration> = Some(Duration::from_secs(300));
+pub(in super::super) const UNENCRYPTED_TTL: Option<Duration> = Some(Duration::from_secs(300));
 /// Store value of a room known to have no `m.room.encryption` state.
 const UNENCRYPTED: &str = "unencrypted";
 
 /// How long the joined members and their device keys are reused before they are queried again: joins and leaves are noticed within this time.
-pub(super) const MEMBERS_TTL: Option<Duration> = Some(Duration::from_secs(300));
+pub(in super::super) const MEMBERS_TTL: Option<Duration> = Some(Duration::from_secs(300));
 
 /// Devices of the joined members: user -> device -> (curve25519, ed25519).
 type Members = BTreeMap<String, BTreeMap<String, (String, String)>>;
@@ -91,7 +91,7 @@ fn merge(into: &mut DeviceSet, from: DeviceSet) {
     }
 }
 
-pub(super) fn restore(s: &mut Session) {
+pub(in super::super) fn restore(s: &mut Session) {
     if s.cfg.e2ee
         && let Some(v) = super::vault::get(s, "e2ee_account")
     {
@@ -99,7 +99,7 @@ pub(super) fn restore(s: &mut Session) {
     }
 }
 
-pub(super) fn binding_key(s: &Session) -> String {
+pub(in super::super) fn binding_key(s: &Session) -> String {
     match &s.e2ee.account {
         None => String::new(),
         Some(a) => format!(
@@ -113,7 +113,7 @@ pub(super) fn binding_key(s: &Session) -> String {
 }
 
 /// E2EE setup, plus the optional automatic verification.
-pub(super) fn setup(mut s: Session, k: K<()>) -> Plan {
+pub(in super::super) fn setup(mut s: Session, k: K<()>) -> Plan {
     if s.e2ee.account.is_none() {
         s.e2ee.account = super::vault::get(&s, "e2ee_account").and_then(|v| OlmAccount::from_value(&v).ok());
         if s.e2ee.account.is_none() {
@@ -185,7 +185,7 @@ fn upload_keys(mut s: Session, k: K<bool>) -> Plan {
 }
 
 /// `Ok` only for a definitive answer (200: the room has an `m.room.encryption` state event, even an empty/redacted one; 404 `M_NOT_FOUND`: it has none). Any other answer is an error and is never cached. It fails the room rather than downgrading to plaintext.
-pub(super) fn room_encrypted(s: Session, room_id: String, k: K<Result<bool, Error>>) -> Plan {
+pub(in super::super) fn room_encrypted(s: Session, room_id: String, k: K<Result<bool, Error>>) -> Plan {
     let cache_key = format!("e2ee_room_enc_{room_id}");
     match s.store.get(&cache_key) {
         Some(Value::Bool(true)) => return k(s, Ok(true)),
@@ -236,7 +236,7 @@ fn save_megolm(s: &Session, room_id: &str, sess: &MegolmSession) {
 }
 
 /// Encrypted delivery to one room: message, then attachments.
-pub(super) fn deliver_encrypted(s: Session, label: String, room_id: String) -> Plan {
+pub(in super::super) fn deliver_encrypted(s: Session, label: String, room_id: String) -> Plan {
     send_to_room(
         s,
         room_id.clone(),
@@ -384,7 +384,7 @@ fn encrypt_and_send(
     mut session: MegolmSession,
     k: K<(Option<MegolmSession>, Option<&'static str>)>,
 ) -> Plan {
-    let content = super::message_content(&s.cfg, &s.msg);
+    let content = super::super::message_content(&s.cfg, &s.msg);
     let inner = json!({"type": "m.room.message", "content": content, "room_id": room_id});
     let ct = session.encrypt(&inner);
     save_megolm(&s, &room_id, &session);
@@ -702,7 +702,7 @@ fn send_attachment(
     k: K<(MegolmSession, Option<&'static str>)>,
 ) -> Plan {
     let att = s.msg.attachments[idx].clone();
-    let (ciphertext, mut file_info) = super::e2ee::encrypt_attachment(&att.data, s.env.as_ref());
+    let (ciphertext, mut file_info) = super::encrypt_attachment(&att.data, s.env.as_ref());
     s.with_base(move |s, base| {
         let Ok(base) = base else { return k(s, (session, Some("upload"))) };
         let name = if att.name.is_empty() { "file".to_string() } else { att.name.clone() };

@@ -6,6 +6,19 @@
 //!
 //! References: <https://gitlab.matrix.org/matrix-org/olm/-/blob/master/docs/olm.md>, <https://gitlab.matrix.org/matrix-org/olm/-/blob/master/docs/megolm.md>, <https://spec.matrix.org/v1.11/client-server-api/#end-to-end-encryption>.
 
+pub(super) mod flow;
+pub(super) mod sas;
+pub(super) mod vault;
+
+mod attachment;
+pub(super) mod keys;
+mod megolm;
+mod olm;
+pub use attachment::encrypt_attachment;
+pub use keys::{cross_signing_key, verify_device_keys, verify_signed_by, verify_signed_otk};
+pub use megolm::MegolmSession;
+pub use olm::OlmAccount;
+
 use aes::Aes256;
 use aes::cipher::{Array, BlockCipherEncrypt, KeyInit};
 use base64::Engine;
@@ -18,12 +31,15 @@ use crate::env::Env;
 
 /// Rotate the Megolm session after this many messages.
 pub const MEGOLM_ROTATION_MSGS: u32 = 100;
+
 /// Rotate the Megolm session after this many seconds (7 days).
 pub const MEGOLM_ROTATION_AGE: f64 = 60.0 * 60.0 * 24.0 * 7.0;
+
 /// Serialisation version of cached Megolm sessions.
 pub const MATRIX_MEGOLM_STORE_VERSION: u64 = 1;
 
 pub const OLM_ALGORITHM: &str = "m.olm.v1.curve25519-aes-sha2";
+
 pub const MEGOLM_ALGORITHM: &str = "m.megolm.v1.aes-sha2";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -336,299 +352,6 @@ impl XKey {
     }
 }
 
-/// Verify an Ed25519 signature.
-pub fn verify_ed25519(public_b64: &str, msg: &[u8], sig_b64: &str) -> bool {
-    let (Ok(pk), Ok(sig)) = (b64dec(public_b64), b64dec(sig_b64)) else { return false };
-    if pk.len() != 32 {
-        return false;
-    }
-    UnparsedPublicKey::new(&ED25519, pk).verify(msg, &sig).is_ok()
-}
-
-/// Verify the self-signature of a `/keys/query` device object.
-pub fn verify_device_keys(dev: &Value, user_id: &str, device_id: &str) -> bool {
-    let Some(obj) = dev.as_object() else { return false };
-    if obj.get("user_id").and_then(Value::as_str) != Some(user_id)
-        || obj.get("device_id").and_then(Value::as_str) != Some(device_id)
-    {
-        return false;
-    }
-    let sig_key = format!("ed25519:{device_id}");
-    let Some(pk) = obj.get("keys").and_then(|k| k.get(&sig_key)).and_then(Value::as_str).filter(|s| !s.is_empty())
-    else {
-        return false;
-    };
-    let Some(sig) = obj
-        .get("signatures")
-        .and_then(|s| s.get(user_id))
-        .and_then(|s| s.get(&sig_key))
-        .and_then(Value::as_str)
-        .filter(|s| !s.is_empty())
-    else {
-        return false;
-    };
-    let signed: Map<String, Value> = obj
-        .iter()
-        .filter(|(k, _)| *k != "signatures" && *k != "unsigned")
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect();
-    verify_ed25519(pk, canonical_json(&Value::Object(signed)).as_bytes(), sig)
-}
-
-/// Verify that the ed25519 key `public` of `user_id` (key id `ed25519:{public}`, as cross-signing keys are named) signed `obj`: its canonical JSON without `signatures` and `unsigned`.
-pub fn verify_signed_by(obj: &Value, user_id: &str, public: &str) -> bool {
-    let Some(map) = obj.as_object() else { return false };
-    let Some(sig) = map
-        .get("signatures")
-        .and_then(|s| s.get(user_id))
-        .and_then(|s| s.get(format!("ed25519:{public}")))
-        .and_then(Value::as_str)
-        .filter(|s| !s.is_empty())
-    else {
-        return false;
-    };
-    let signed: Map<String, Value> = map
-        .iter()
-        .filter(|(k, _)| *k != "signatures" && *k != "unsigned")
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect();
-    verify_ed25519(public, canonical_json(&Value::Object(signed)).as_bytes(), sig)
-}
-
-/// The ed25519 public key of a cross-signing key object (a `master_keys` or `self_signing_keys` entry): for `user_id`, with `usage`, holding exactly one key whose id is `ed25519:` and the key itself.
-pub fn cross_signing_key(obj: &Value, user_id: &str, usage: &str) -> Option<String> {
-    let map = obj.as_object()?;
-    if map.get("user_id").and_then(Value::as_str) != Some(user_id)
-        || !map.get("usage")?.as_array()?.iter().any(|u| u.as_str() == Some(usage))
-    {
-        return None;
-    }
-    let keys = map.get("keys")?.as_object()?;
-    let [(id, public)] = keys.iter().collect::<Vec<_>>()[..] else { return None };
-    let public = public.as_str()?;
-    (id.strip_prefix("ed25519:") == Some(public)).then(|| public.to_string())
-}
-
-/// Verify a `signed_curve25519` one-time key object.
-pub fn verify_signed_otk(otk: &Value, user_id: &str, device_id: &str, ed25519_pub: &str) -> bool {
-    let Some(obj) = otk.as_object() else { return false };
-    let Some(sig) = obj
-        .get("signatures")
-        .and_then(|s| s.get(user_id))
-        .and_then(|s| s.get(format!("ed25519:{device_id}")))
-        .and_then(Value::as_str)
-        .filter(|s| !s.is_empty())
-    else {
-        return false;
-    };
-    let signed: Map<String, Value> =
-        obj.iter().filter(|(k, _)| *k != "signatures").map(|(k, v)| (k.clone(), v.clone())).collect();
-    verify_ed25519(ed25519_pub, canonical_json(&Value::Object(signed)).as_bytes(), sig)
-}
-
-/// Encrypt attachment bytes (Matrix `EncryptedFile` v2, AES-256-CTR).
-pub fn encrypt_attachment(data: &[u8], env: &dyn Env) -> (Vec<u8>, Value) {
-    let key = Zeroizing::new(random32(env));
-    let mut iv = [0u8; 16];
-    env.fill_random(&mut iv[..8]);
-    encrypt_attachment_with(data, &key, &iv)
-}
-
-pub fn encrypt_attachment_with(data: &[u8], key: &[u8; 32], iv: &[u8; 16]) -> (Vec<u8>, Value) {
-    let ct = aes_ctr(key, iv, data);
-    let digest = sha256(&ct);
-    let info = json!({
-        "v": "v2",
-        "key": {
-            "kty": "oct",
-            "key_ops": ["encrypt", "decrypt"],
-            "alg": "A256CTR",
-            "k": b64url_nopad(key),
-            "ext": true,
-        },
-        "iv": b64enc(iv),
-        "hashes": {"sha256": b64enc(&digest)},
-    });
-    (ct, info)
-}
-
-/// Device-level Curve25519 identity key + Ed25519 signing key.
-#[derive(Debug)]
-pub struct OlmAccount {
-    ik: XKey,
-    sk: SigningKey,
-    /// `{"id": ..., "sk": ...}` of the published fallback key.
-    fallback_otk: Option<Value>,
-}
-
-impl Drop for OlmAccount {
-    fn drop(&mut self) {
-        if let Some(Value::Object(f)) = &mut self.fallback_otk
-            && let Some(Value::String(sk)) = f.get_mut("sk")
-        {
-            sk.zeroize();
-        }
-    }
-}
-
-impl OlmAccount {
-    pub fn new(env: &dyn Env) -> Self {
-        Self { ik: XKey::generate(env), sk: SigningKey::generate(env), fallback_otk: None }
-    }
-
-    #[cfg(test)]
-    pub fn from_keys(ik: XKey, sk: SigningKey) -> Self {
-        Self { ik, sk, fallback_otk: None }
-    }
-
-    pub fn identity_key(&self) -> String {
-        b64enc(&self.ik.public())
-    }
-
-    pub fn signing_key(&self) -> String {
-        b64enc(self.sk.public())
-    }
-
-    pub fn sign(&self, data: &[u8]) -> String {
-        self.sk.sign_b64(data)
-    }
-
-    #[cfg(test)]
-    pub fn identity_private(&self) -> &XKey {
-        &self.ik
-    }
-
-    pub fn to_value(&self) -> Value {
-        json!({"ik": self.ik.to_b64(), "sk": self.sk.seed_b64(), "fallback_otk": self.fallback_otk})
-    }
-
-    pub fn from_value(v: &Value) -> CResult<Self> {
-        let ik = v.get("ik").and_then(Value::as_str).ok_or(CryptoError("missing ik"))?;
-        let sk = v.get("sk").and_then(Value::as_str).ok_or(CryptoError("missing sk"))?;
-        let ik = XKey::from_b64(ik)?;
-        let sk = SigningKey::from_b64(sk)?;
-        let fallback_otk = v.get("fallback_otk").filter(|f| !f.is_null()).cloned();
-        Ok(Self { ik, sk, fallback_otk })
-    }
-
-    /// Signed `device_keys` for `POST /keys/upload`.
-    pub fn device_keys_payload(&self, user_id: &str, device_id: &str) -> Value {
-        let mut dk = json!({
-            "algorithms": [OLM_ALGORITHM, MEGOLM_ALGORITHM],
-            "device_id": device_id,
-            "keys": {
-                format!("curve25519:{device_id}"): self.identity_key(),
-                format!("ed25519:{device_id}"): self.signing_key(),
-            },
-            "user_id": user_id,
-        });
-        let sig = self.sign(canonical_json(&dk).as_bytes());
-        dk["signatures"] = json!({user_id: {format!("ed25519:{device_id}"): sig}});
-        dk
-    }
-
-    fn signed_curve25519_key(&self, user_id: &str, device_id: &str, key_b64: &str) -> Value {
-        let mut p = json!({"key": key_b64});
-        let sig = self.sign(canonical_json(&p).as_bytes());
-        p["signatures"] = json!({user_id: {format!("ed25519:{device_id}"): sig}});
-        p
-    }
-
-    /// Signed `fallback_keys` (creates the fallback key on first use).
-    pub fn fallback_keys_payload(&mut self, user_id: &str, device_id: &str, env: &dyn Env) -> Value {
-        let parsed = self.fallback_otk.as_ref().and_then(|f| {
-            let id = f.get("id")?.as_str()?.to_string();
-            let sk = XKey::from_b64(f.get("sk")?.as_str()?).ok()?;
-            Some((id, sk))
-        });
-        let (id, sk) = match parsed {
-            Some(p) => p,
-            None => {
-                let id = env.uuid4().replace('-', "").get(..10).unwrap_or_default().to_string();
-                let sk = XKey::generate(env);
-                self.fallback_otk = Some(json!({"id": id, "sk": sk.to_b64()}));
-                (id, sk)
-            }
-        };
-        json!({format!("signed_curve25519:{id}"): self.signed_curve25519_key(user_id, device_id, &b64enc(&sk.public()))})
-    }
-
-    /// Outbound Olm session (X3DH) to a device.
-    pub fn create_outbound_session(&self, their_ik_b64: &str, their_otk_b64: &str, env: &dyn Env) -> CResult<OlmSession> {
-        self.create_outbound_session_with(their_ik_b64, their_otk_b64, XKey::generate(env))
-    }
-
-    pub fn create_outbound_session_with(
-        &self,
-        their_ik_b64: &str,
-        their_otk_b64: &str,
-        eph: XKey,
-    ) -> CResult<OlmSession> {
-        let their_ik = b64dec(their_ik_b64)?;
-        let their_otk = b64dec(their_otk_b64)?;
-        if their_ik.len() != 32 || their_otk.len() != 32 {
-            return Err(CryptoError("curve25519 keys must be 32 bytes"));
-        }
-        let dh1 = Zeroizing::new(self.ik.exchange(&their_otk)?);
-        let dh2 = Zeroizing::new(eph.exchange(&their_ik)?);
-        let dh3 = Zeroizing::new(eph.exchange(&their_otk)?);
-        let mut ikm = Zeroizing::new(Vec::with_capacity(96));
-        ikm.extend_from_slice(&dh1[..]);
-        ikm.extend_from_slice(&dh2[..]);
-        ikm.extend_from_slice(&dh3[..]);
-        let keys = hkdf_sha256(&ikm, 64, None, b"OLM_ROOT");
-        let mut chain = [0u8; 32];
-        chain.copy_from_slice(&keys[32..]);
-        Ok(OlmSession {
-            our_ik_pub: self.ik.public(),
-            eph_pub: eph.public(),
-            their_otk_pub: their_otk,
-            chain_key: chain,
-            counter: 0,
-        })
-    }
-}
-
-/// Single-use outbound Olm session (pre-key messages only).
-#[derive(Debug)]
-pub struct OlmSession {
-    our_ik_pub: [u8; 32],
-    eph_pub: [u8; 32],
-    their_otk_pub: Vec<u8>,
-    chain_key: [u8; 32],
-    counter: u64,
-}
-
-impl Drop for OlmSession {
-    fn drop(&mut self) {
-        self.chain_key.zeroize();
-    }
-}
-
-impl OlmSession {
-    /// Encrypt as an Olm pre-key (type 0) message: `{"type": 0, "body": ...}`.
-    pub fn encrypt(&mut self, plaintext: &[u8]) -> Value {
-        let msg_key = Zeroizing::new(hmac_sha256(&self.chain_key, b"\x01"));
-        self.chain_key = hmac_sha256(&self.chain_key, b"\x02");
-        let keys = hkdf_sha256(&msg_key[..], 80, Some(&[0u8; 32]), b"OLM_KEYS");
-        let (aes_key, mac_key, iv) = split_keys(&keys);
-        let ct = aes_cbc_encrypt(&aes_key, &iv, plaintext);
-        let mut inner = vec![3u8];
-        inner.extend(pb_bytes(1, &self.eph_pub));
-        inner.extend(pb_varint(2, self.counter));
-        inner.extend(pb_bytes(4, &ct));
-        let mac = hmac_sha256(&mac_key[..], &inner);
-        inner.extend_from_slice(&mac[..8]);
-        let mut outer = vec![3u8];
-        outer.extend(pb_bytes(1, &self.their_otk_pub));
-        outer.extend(pb_bytes(2, &self.eph_pub));
-        outer.extend(pb_bytes(3, &self.our_ik_pub));
-        outer.extend(pb_bytes(4, &inner));
-        self.counter += 1;
-        json!({"type": 0, "body": b64enc(&outer)})
-    }
-}
-
 /// AES key, MAC key (both wiped on drop) and IV from 80 HKDF bytes.
 fn split_keys(keys: &[u8]) -> (Zeroizing<[u8; 32]>, Zeroizing<[u8; 32]>, [u8; 16]) {
     let mut a = Zeroizing::new([0u8; 32]);
@@ -640,135 +363,10 @@ fn split_keys(keys: &[u8]) -> (Zeroizing<[u8; 32]>, Zeroizing<[u8; 32]>, [u8; 16
     (a, m, iv)
 }
 
-/// Outbound Megolm session (ratchet wiped on drop).
-#[derive(Debug)]
-pub struct MegolmSession {
-    ratchet: [[u8; 32]; 4],
-    counter: u32,
-    sk: SigningKey,
-    pub session_id: String,
-    pub created_at: f64,
-}
-
-impl Drop for MegolmSession {
-    fn drop(&mut self) {
-        self.ratchet.zeroize();
-    }
-}
-
-impl MegolmSession {
-    pub fn new(env: &dyn Env) -> Self {
-        let ratchet = [random32(env), random32(env), random32(env), random32(env)];
-        Self::from_parts(ratchet, 0, SigningKey::generate(env), env.unix_time_f64())
-    }
-
-    pub fn from_parts(ratchet: [[u8; 32]; 4], counter: u32, sk: SigningKey, created_at: f64) -> Self {
-        let session_id = b64enc(sk.public());
-        Self { ratchet, counter, sk, session_id, created_at }
-    }
-
-    #[cfg(test)]
-    pub fn counter(&self) -> u32 {
-        self.counter
-    }
-
-    fn advance(&mut self) {
-        let r = &mut self.ratchet;
-        let n1 = self.counter.wrapping_add(1);
-        let h = if n1.is_multiple_of(1 << 24) {
-            0
-        } else if n1.is_multiple_of(1 << 16) {
-            1
-        } else if n1.is_multiple_of(1 << 8) {
-            2
-        } else {
-            3
-        };
-        let orig = Zeroizing::new(r[h]);
-        for i in (h..4).rev() {
-            r[i] = hmac_sha256(&orig[..], &[i as u8]);
-        }
-        self.counter = n1;
-    }
-
-    fn message_keys(&self) -> (Zeroizing<[u8; 32]>, Zeroizing<[u8; 32]>, [u8; 16]) {
-        let ratchet = Zeroizing::new(self.ratchet.concat());
-        let keys = hkdf_sha256(&ratchet, 80, None, b"MEGOLM_KEYS");
-        split_keys(&keys)
-    }
-
-    pub fn should_rotate(&self, env: &dyn Env) -> bool {
-        self.counter >= MEGOLM_ROTATION_MSGS || env.unix_time_f64() - self.created_at >= MEGOLM_ROTATION_AGE
-    }
-
-    /// Encrypt bytes; returns the base64 Megolm message.
-    pub fn encrypt_bytes(&mut self, plaintext: &[u8]) -> String {
-        let (aes_key, mac_key, iv) = self.message_keys();
-        let ct = aes_cbc_encrypt(&aes_key, &iv, plaintext);
-        let mut body = vec![3u8];
-        body.extend(pb_varint(1, self.counter as u64));
-        body.extend(pb_bytes(2, &ct));
-        let mac = hmac_sha256(&mac_key[..], &body);
-        body.extend_from_slice(&mac[..8]);
-        let sig = self.sk.sign(&body);
-        body.extend_from_slice(&sig);
-        self.advance();
-        b64enc(&body)
-    }
-
-    /// Encrypt a JSON event (compact serialisation).
-    pub fn encrypt(&mut self, event: &Value) -> String {
-        self.encrypt_bytes(event.to_string().as_bytes())
-    }
-
-    /// Exportable session key (`m.room_key` `session_key`).
-    pub fn session_key(&self) -> String {
-        let mut payload = Zeroizing::new(Vec::with_capacity(229));
-        payload.push(2u8);
-        payload.extend_from_slice(&self.counter.to_be_bytes());
-        for part in &self.ratchet {
-            payload.extend_from_slice(part);
-        }
-        payload.extend_from_slice(self.sk.public());
-        let sig = self.sk.sign(&payload);
-        payload.extend_from_slice(&sig);
-        b64enc(&payload)
-    }
-
-    pub fn to_value(&self) -> Value {
-        json!({
-            "version": MATRIX_MEGOLM_STORE_VERSION,
-            "ratchet": self.ratchet.iter().map(|r| b64enc(r)).collect::<Vec<_>>(),
-            "counter": self.counter,
-            "sk": self.sk.seed_b64(),
-            "session_id": self.session_id,
-            "created_at": self.created_at,
-        })
-    }
-
-    pub fn from_value(v: &Value, env: &dyn Env) -> CResult<Self> {
-        if v.get("version").and_then(Value::as_u64) != Some(MATRIX_MEGOLM_STORE_VERSION) {
-            return Err(CryptoError("incompatible Megolm session cache format"));
-        }
-        let parts = v.get("ratchet").and_then(Value::as_array).ok_or(CryptoError("missing ratchet"))?;
-        if parts.len() != 4 {
-            return Err(CryptoError("ratchet must have 4 parts"));
-        }
-        let mut ratchet = Zeroizing::new([[0u8; 32]; 4]);
-        for (slot, p) in ratchet.iter_mut().zip(parts) {
-            let raw = Zeroizing::new(b64dec(p.as_str().ok_or(CryptoError("ratchet part"))?)?);
-            *slot = <[u8; 32]>::try_from(raw.as_slice()).map_err(|_| CryptoError("ratchet part must be 32 bytes"))?;
-        }
-        let counter = v.get("counter").and_then(Value::as_u64).ok_or(CryptoError("missing counter"))?;
-        let counter = u32::try_from(counter).map_err(|_| CryptoError("counter out of range"))?;
-        let sk = SigningKey::from_b64(v.get("sk").and_then(Value::as_str).ok_or(CryptoError("missing sk"))?)?;
-        let created_at = v.get("created_at").and_then(Value::as_f64).unwrap_or_else(|| env.unix_time_f64());
-        Ok(Self::from_parts(*ratchet, counter, sk, created_at))
-    }
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
+    use super::attachment::encrypt_attachment_with;
+    use super::keys::verify_ed25519;
     use super::*;
 
     use crate::crypto::unhex as hex;
