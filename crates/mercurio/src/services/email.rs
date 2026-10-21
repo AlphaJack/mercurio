@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `?pgp=sign` (feature `service-email-pgp`) signs only with an Ed25519 key, while Apprise also signs with RSA keys: rpgp's RSA has an open timing side channel (RUSTSEC-2023-0071), so RSA private keys are refused.
+//! - `?pgp=sign` (feature `service-email-pgp`) signs only with an Ed25519 key in GnuPG's encoding, while Apprise also signs with RSA and other keys: mercurio's OpenPGP is its own, built on `ring`, and covers just that key type.
 //! - `?pgp=encrypt` and `?wkd=yes` are validated like Apprise, but delivery fails with `Unsupported`; signed mail does not yet carry the Autocrypt header or get encrypted when a recipient key exists. *todo*
 //! - `?reply=` with several targets raised on the second target in Apprise, while mercurio sends it.
 
