@@ -4,8 +4,8 @@
 //!
 //! # Differences with Apprise
 //!
-//! - The key file must be local (a path or `file://`); only RSA service account keys are supported (Apprise fails on others as well). *intentional*
-//! - Legacy mode (server API key, `fcm/send`) defaults on in Apprise when no key file is given, while mercurio rejects such URLs and `?mode=legacy`: Google shut that API down in July 2024. Only the HTTP v1 API is used. *intentional*
+//! - The key file must be local (a path or `file://`); only RSA service account keys are supported (Apprise fails on others as well).
+//! - Legacy mode (server API key, `fcm/send`) defaults on in Apprise when no key file is given, while mercurio rejects such URLs and `?mode=legacy`: Google shut that API down in July 2024. Only the HTTP v1 API is used.
 
 use ring::rand::SystemRandom;
 use ring::signature::{RSA_PKCS1_SHA256, RsaKeyPair};

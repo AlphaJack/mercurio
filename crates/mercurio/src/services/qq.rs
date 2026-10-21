@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise posts to the legacy `/send/{key}` endpoint (which Qmsg is retiring) and trusts any 200, while mercurio posts to `/v3/send/{key}` and fails when the reply says `"success": false`. *intentional*
+//! - Apprise posts to the legacy `/send/{key}` endpoint (which Qmsg is retiring) and trusts any 200, while mercurio posts to `/v3/send/{key}` and fails when the reply says `"success": false`.
 
 use serde_json::Value;
 

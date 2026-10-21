@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `logperror` copies the line to stderr like `LOG_PERROR`. *intentional*
+//! - `logperror` copies the line to stderr like `LOG_PERROR`.
 
 use super::_sockets::{syslog_facility, syslog_level};
 use crate::service::{Context, Notify, Param, ServiceDef};

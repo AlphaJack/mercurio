@@ -4,8 +4,8 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise uses a `Gio.DBusProxy`, while mercurio speaks D-Bus itself; the call is the same. *intentional*
-//! - Apprise attaches the icon as `icon_data` pixels (GdkPixbuf), while mercurio passes the icon file as `app_icon`. *intentional*
+//! - Apprise uses a `Gio.DBusProxy`, while mercurio speaks D-Bus itself; the call is the same.
+//! - Apprise attaches the icon as `icon_data` pixels (GdkPixbuf), while mercurio passes the icon file as `app_icon`.
 
 use super::_desktop::{DesktopNotify, notify, urgency, xy};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef};

@@ -2,9 +2,9 @@
 //!
 //! # Differences with Apprise
 //!
-//! - The rate-limit reset is read from `X-RateLimit-Reset` (an RFC 3339 time); Apprise reads `X-RateLimit-Limit`, a request count, so its back-off never waits. The budget is kept for the life of the URL, as in Apprise. *intentional*
-//! - The account lookup of direct mode is kept for the life of the URL whatever `?cache=` says, as in Apprise (whose `_whoami()` call ignores it). *intentional*
-//! - In direct mode prepended targets keep their configured (sorted) order; Apprise iterates an unordered set. *intentional*
+//! - The rate-limit reset is read from `X-RateLimit-Reset` (an RFC 3339 time); Apprise reads `X-RateLimit-Limit`, a request count, so its back-off never waits. The budget is kept for the life of the URL, as in Apprise.
+//! - The account lookup of direct mode is kept for the life of the URL whatever `?cache=` says, as in Apprise (whose `_whoami()` call ignores it).
+//! - In direct mode prepended targets keep their configured (sorted) order; Apprise iterates an unordered set.
 
 use std::sync::Arc;
 

@@ -6,7 +6,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `opsgenie://` URLs are sent by the `jira` service to Jira Service Management Operations (Apprise posts them to `api(.eu).opsgenie.com`, which shuts down on 2027-04-05); the key must come from a JSM Operations API integration. `?region=eu` no longer changes the host. *intentional*
+//! - `opsgenie://` URLs are sent by the `jira` service to Jira Service Management Operations (Apprise posts them to `api(.eu).opsgenie.com`, which shuts down on 2027-04-05); the key must come from a JSM Operations API integration. `?region=eu` no longer changes the host.
 
 use serde_json::{Map, Value, json};
 

@@ -4,9 +4,9 @@
 //!
 //! # Differences with Apprise
 //!
-//! - The login names the software `mercurio <version>` (Apprise: `apprise <version>`). *intentional*
-//! - When the first read holds only the server banner, mercurio reads once more for the `# logresp` line (Apprise fails). *intentional*
-//! - The 0.8 s (+ `delay`) wait applies between the message packets of one notification, not between login and the first packet. *intentional*
+//! - The login names the software `mercurio <version>` (Apprise: `apprise <version>`).
+//! - When the first read holds only the server banner, mercurio reads once more for the `# logresp` line (Apprise fails).
+//! - The 0.8 s (+ `delay`) wait applies between the message packets of one notification, not between login and the first packet.
 
 use std::time::Duration;
 

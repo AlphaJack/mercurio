@@ -2,9 +2,9 @@
 //!
 //! # Differences with Apprise
 //!
-//! - HTML that Apprise's parser rejects (a malformed `<![` declaration) is sent unreduced. *intentional*
-//! - E2EE gzip members use stored deflate blocks with a zero mtime; they decompress identically. *intentional*
-//! - Split overflow: Apprise splits the source and sends each piece through its HTML reducer, while mercurio reduces each chunk once and splits the reduced HTML at line or word boundaries, closing open tags at a cut and reopening them in the next piece. *intentional*
+//! - HTML that Apprise's parser rejects (a malformed `<![` declaration) is sent unreduced.
+//! - E2EE gzip members use stored deflate blocks with a zero mtime; they decompress identically.
+//! - Split overflow: Apprise splits the source and sends each piece through its HTML reducer, while mercurio reduces each chunk once and splits the reduced HTML at line or word boundaries, closing open tags at a cut and reopening them in the next piece.
 
 use std::sync::Arc;
 

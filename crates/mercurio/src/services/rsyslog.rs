@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise computes PRI as `level + facility * 8` with already shifted facility constants (`user.info` becomes `<70>`), while mercurio sends the RFC 5424 value (`<14>`). *intentional*
+//! - Apprise computes PRI as `level + facility * 8` with already shifted facility constants (`user.info` becomes `<70>`), while mercurio sends the RFC 5424 value (`<14>`).
 
 use super::_sockets::{syslog_facility, syslog_level};
 use crate::service::{Context, Notify, Param, ServiceDef};
