@@ -6,7 +6,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - URL order is kept (users first, then group members); Apprise iterates unordered sets. *intentional*
+//! - URL order is kept (users first, then group members); Apprise iterates unordered sets.
 
 use std::sync::Arc;
 

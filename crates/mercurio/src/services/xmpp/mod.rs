@@ -6,10 +6,10 @@
 //!
 //! # Differences with Apprise
 //!
-//! - SCRAM `-PLUS` uses the `tls-exporter` (TLS 1.3) or `tls-server-end-point` binding the server lists (XEP-0440), `tls-exporter` when it lists none, and plain SCRAM when the connection cannot provide one; slixmpp uses Python's `tls-unique`, which TLS 1.3 does not have. *intentional*
-//! - `?keepalive=yes` is accepted, but every notification opens its own connection. *intentional*
-//! - `?mode=none`: slixmpp refuses every password mechanism on an unencrypted stream and Apprise then reports success without sending, while mercurio authenticates with SCRAM, refuses PLAIN and fails when nothing usable is offered. *intentional*
-//! - A server without STARTTLS under `?mode=starttls` is a failure (slixmpp reports silent success). *intentional*
+//! - SCRAM `-PLUS` uses the `tls-exporter` (TLS 1.3) or `tls-server-end-point` binding the server lists (XEP-0440), `tls-exporter` when it lists none, and plain SCRAM when the connection cannot provide one; slixmpp uses Python's `tls-unique`, which TLS 1.3 does not have.
+//! - `?keepalive=yes` is accepted, but every notification opens its own connection.
+//! - `?mode=none`: slixmpp refuses every password mechanism on an unencrypted stream and Apprise then reports success without sending, while mercurio authenticates with SCRAM, refuses PLAIN and fails when nothing usable is offered.
+//! - A server without STARTTLS under `?mode=starttls` is a failure (slixmpp reports silent success).
 
 mod client;
 mod sasl;

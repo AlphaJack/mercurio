@@ -5,7 +5,8 @@ byte-for-byte the same requests is not a goal. Each entry says what Apprise
 does and what mercurio does instead. Every difference on this page is
 intentional: it stays that way. Differences of a single service are
 on its page (see the [service list](services/index.md)), taken from the
-`# Differences with Apprise` section of its module docs.
+`# Differences with Apprise` section of its module docs; those are
+intentional too, unless marked *todo*.
 
 ## General
 

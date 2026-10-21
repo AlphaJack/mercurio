@@ -4,8 +4,8 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `kde://` / `qt://` select a Qt/GLib main loop in Apprise, while in mercurio all schemes behave alike. *intentional*
-//! - Apprise attaches the icon as `icon_data` pixels (GdkPixbuf), while mercurio passes the icon file as `app_icon`. *intentional*
+//! - `kde://` / `qt://` select a Qt/GLib main loop in Apprise, while in mercurio all schemes behave alike.
+//! - Apprise attaches the icon as `icon_data` pixels (GdkPixbuf), while mercurio passes the icon file as `app_icon`.
 
 use super::_desktop::{DesktopNotify, notify, urgency, xy};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef};

@@ -11,7 +11,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Not in Apprise; written from the vendor documentation (hand-written fixtures). *intentional*
+//! - Not in Apprise; written from the vendor documentation (hand-written fixtures).
 
 use serde_json::{Map, Value, json};
 

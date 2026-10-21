@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise accepts `volume=nan`, while mercurio does not. *intentional*
+//! - Apprise accepts `volume=nan`, while mercurio does not.
 
 use serde_json::json;
 

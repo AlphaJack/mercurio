@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - HTML that Apprise's parser rejects is sent unreduced. *intentional*
+//! - HTML that Apprise's parser rejects is sent unreduced.
 
 use std::sync::Arc;
 use std::time::Duration;

@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise posts to the classic `rest.messagebird.com/messages` API with a 25-character key, while mercurio uses Bird's SMS API (`{region}.platform.bird.com/v1/sms/messages`, `bk_...` key as Bearer, JSON `from`/`to`/`text`/`category`, new `?category=`); classic keys, which stop working on 2026-12-31, are rejected. *intentional*
+//! - Apprise posts to the classic `rest.messagebird.com/messages` API with a 25-character key, while mercurio uses Bird's SMS API (`{region}.platform.bird.com/v1/sms/messages`, `bk_...` key as Bearer, JSON `from`/`to`/`text`/`category`, new `?category=`); classic keys, which stop working on 2026-12-31, are rejected.
 
 use serde_json::json;
 

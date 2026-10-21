@@ -4,9 +4,9 @@
 //!
 //! # Differences with Apprise
 //!
-//! - The token is dropped after `expires_in` (Apprise computes the expiry but never checks it). *intentional*
-//! - `X-RateLimit-Reset` is read as the seconds left in the window, as Reddit documents it; Apprise reads it as a Unix time, so its back-off never waits. The budget is kept for the life of the URL, as in Apprise. *intentional*
-//! - After a failed submit Apprise retries with the previous bearer token (stale headers), while mercurio retries with the fresh one. *intentional*
+//! - The token is dropped after `expires_in` (Apprise computes the expiry but never checks it).
+//! - `X-RateLimit-Reset` is read as the seconds left in the window, as Reddit documents it; Apprise reads it as a Unix time, so its back-off never waits. The budget is kept for the life of the URL, as in Apprise.
+//! - After a failed submit Apprise retries with the previous bearer token (stale headers), while mercurio retries with the fresh one.
 
 use std::sync::Arc;
 

@@ -6,9 +6,9 @@
 //!
 //! # Differences with Apprise
 //!
-//! - An explicit `:port` is honoured (Apprise always uses 2775 / 3550). *intentional*
-//! - `smpps://` uses TLS (Apprise opens a plain socket). *intentional*
-//! - `submit_sm_resp` statuses are checked (Apprise never reads them). *intentional*
+//! - An explicit `:port` is honoured (Apprise always uses 2775 / 3550).
+//! - `smpps://` uses TLS (Apprise opens a plain socket).
+//! - `submit_sm_resp` statuses are checked (Apprise never reads them).
 
 use std::collections::BTreeMap;
 use std::sync::LazyLock;

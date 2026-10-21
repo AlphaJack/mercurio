@@ -4,10 +4,10 @@
 //!
 //! # Differences with Apprise
 //!
-//! - MQTT 5 works (Apprise passes `clean_session` to paho for every version, which paho rejects for v5). *intentional*
-//! - TLS uses the bundled Mozilla roots or the `SSL_CERT_FILE` bundle (Apprise refuses verified `mqtts://` without a CA bundle on disk). *intentional*
-//! - Topics of one notification are not throttled against each other (Apprise waits 0.5 s between publishes). *intentional*
-//! - CONNACK is awaited before publishing (paho publishes asynchronously). *intentional*
+//! - MQTT 5 works (Apprise passes `clean_session` to paho for every version, which paho rejects for v5).
+//! - TLS uses the bundled Mozilla roots or the `SSL_CERT_FILE` bundle (Apprise refuses verified `mqtts://` without a CA bundle on disk).
+//! - Topics of one notification are not throttled against each other (Apprise waits 0.5 s between publishes).
+//! - CONNACK is awaited before publishing (paho publishes asynchronously).
 
 use std::time::Duration;
 

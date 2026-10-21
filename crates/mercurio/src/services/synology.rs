@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise crashes on URLs without a path, while mercurio handles them. *intentional*
+//! - Apprise crashes on URLs without a path, while mercurio handles them.
 
 use serde_json::json;
 

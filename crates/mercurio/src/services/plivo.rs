@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise posts to a literal `{auth_id}` URL, while mercurio fills it in. *intentional*
+//! - Apprise posts to a literal `{auth_id}` URL, while mercurio fills it in.
 
 use serde_json::json;
 

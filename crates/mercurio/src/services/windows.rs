@@ -6,9 +6,9 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Apprise uses the Win32 API, while mercurio runs `powershell.exe` (`System.Windows.Forms.NotifyIcon`). *intentional*
-//! - The tray icon is the stock application icon; `?image=` is accepted and ignored. *intentional*
-//! - On other platforms delivery fails with `Unsupported`. *intentional*
+//! - Apprise uses the Win32 API, while mercurio runs `powershell.exe` (`System.Windows.Forms.NotifyIcon`).
+//! - The tray icon is the stock application icon; `?image=` is accepted and ignored.
+//! - On other platforms delivery fails with `Unsupported`.
 
 #[cfg(windows)]
 use super::_desktop::check_exit;

@@ -6,8 +6,8 @@
 //!
 //! # Differences with Apprise
 //!
-//! - Both files are re-read on every send. *intentional*
-//! - Expired endpoints are never pruned from the subscription file (Apprise rewrites a writable one) and no starter file is written. *intentional*
+//! - Both files are re-read on every send.
+//! - Expired endpoints are never pruned from the subscription file (Apprise rewrites a writable one) and no starter file is written.
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
