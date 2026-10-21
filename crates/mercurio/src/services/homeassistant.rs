@@ -178,11 +178,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 impl HomeAssistant {
-    fn post(&self, url: String, payload: &Value, ctx: &Context<'_>) -> Plan {
+    fn post(&self, url: String, payload: &Value, text: &str, ctx: &Context<'_>) -> Plan {
         let mut req = ctx.post(url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.token.expose()))
-            .json(payload);
+            .json_text(payload, text);
         req = req.basic_auth_opt(self.user.as_deref(), self.password.as_ref().map(Secret::expose));
         Plan::send_expect(req, &[200])
     }
@@ -190,13 +190,13 @@ impl HomeAssistant {
 
 impl Notify for HomeAssistant {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let payload = json!({"title": msg.title, "message": msg.body});
+        let payload = json!({"title": msg.title, "message": crate::http::TEXT});
         let Some(targets) = &self.targets else {
             let mut payload = payload;
             let nid = self.nid.clone().unwrap_or_else(|| ctx.env().uuid4());
             payload["notification_id"] = json!(nid);
             let url = format!("{}/api/services/persistent_notification/create", self.base);
-            return self.post(url, &payload, ctx);
+            return self.post(url, &payload, msg.body, ctx);
         };
         if targets.is_empty() {
             return Plan::Fail(Error::Service("no valid Home Assistant service targets to notify".into()));
@@ -208,13 +208,13 @@ impl Notify for HomeAssistant {
             let url = format!("{}{}/api/services/{}/{}", self.base, prefix, t.domain, t.service);
             let label = format!("{}.{}", t.domain, t.service);
             if t.devices.is_empty() {
-                plans.push(self.post(url, &payload, ctx).target(label));
+                plans.push(self.post(url, &payload, msg.body, ctx).target(label));
                 continue;
             }
             for chunk in t.devices.chunks(batch_size) {
                 let mut p = payload.clone();
                 p["targets"] = json!(chunk);
-                plans.push(self.post(url.clone(), &p, ctx).target(label.clone()));
+                plans.push(self.post(url.clone(), &p, msg.body, ctx).target(label.clone()));
             }
         }
         Plan::chain(plans)

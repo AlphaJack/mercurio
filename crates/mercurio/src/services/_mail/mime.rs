@@ -79,25 +79,46 @@ pub fn formataddr(name: &str, address: &str) -> String {
 
 /// Quoted-printable body encoding (RFC 2045 6.7) with CRLF hard breaks.
 pub fn qp_encode(text: &str) -> String {
-    let text = text.replace("\r\n", "\n").replace('\r', "\n");
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
     let mut out = String::with_capacity(text.len() + text.len() / 8);
-    for (i, line) in text.split('\n').enumerate() {
-        if i > 0 {
+    let mut rest = text;
+    let mut first = true;
+    loop {
+        // Lines end at `\r\n`, `\n` or a lone `\r`; the text after the last break is a line too.
+        let (line, next) = match rest.find(['\r', '\n']) {
+            Some(p) => {
+                let (line, tail) = rest.split_at(p);
+                (line, Some(tail.strip_prefix("\r\n").or_else(|| tail.get(1..)).unwrap_or("")))
+            }
+            None => (rest, None),
+        };
+        if !first {
             out.push_str(CRLF);
         }
+        first = false;
         let bytes = line.as_bytes();
         let mut len = 0;
         for (j, &b) in bytes.iter().enumerate() {
             let last = j + 1 == bytes.len();
             let literal = matches!(b, 33..=60 | 62..=126) || ((b == b' ' || b == b'\t') && !last);
-            let token = if literal { (b as char).to_string() } else { format!("={b:02X}") };
+            let width = if literal { 1 } else { 3 };
             let limit = if last { MAX_LINE } else { MAX_LINE - 1 };
-            if len + token.len() > limit {
+            if len + width > limit {
                 out.push_str("=\r\n");
                 len = 0;
             }
-            out.push_str(&token);
-            len += token.len();
+            if literal {
+                out.push(b as char);
+            } else {
+                out.push('=');
+                out.push(HEX[usize::from(b >> 4)] as char);
+                out.push(HEX[usize::from(b & 15)] as char);
+            }
+            len += width;
+        }
+        match next {
+            Some(n) => rest = n,
+            None => break,
         }
     }
     out
@@ -172,9 +193,52 @@ fn boundary(env: &dyn Env) -> String {
     format!("=============mercurio{}==", env.random_hex(12))
 }
 
+/// [`render`] that consumes the tree and frees each leaf's content once it is written, so a large body is not held twice at the end.
+pub fn render_owned(headers: &[(String, String)], body: Part, env: &dyn Env) -> String {
+    let mut out = String::with_capacity(content_len(&body) + 4096);
+    write_headers(headers, &mut out);
+    render_part_owned(body, &mut out, env);
+    out
+}
+
+fn render_part_owned(part: Part, out: &mut String, env: &dyn Env) {
+    match part {
+        Part::Leaf { headers, content } => {
+            for (k, v) in &headers {
+                out.push_str(k);
+                out.push_str(": ");
+                out.push_str(v);
+                out.push_str(CRLF);
+            }
+            out.push_str(CRLF);
+            out.push_str(&content);
+        }
+        Part::Multi { subtype, parts } => {
+            let b = boundary(env);
+            out.push_str(&format!("Content-Type: multipart/{subtype}; boundary=\"{b}\"\r\n\r\n"));
+            for p in parts {
+                out.push_str(&format!("--{b}\r\n"));
+                render_part_owned(p, out, env);
+                out.push_str(CRLF);
+            }
+            out.push_str(&format!("--{b}--"));
+        }
+    }
+}
+
+fn write_headers(headers: &[(String, String)], out: &mut String) {
+    for (k, v) in headers {
+        out.push_str(k);
+        out.push_str(": ");
+        out.push_str(v);
+        out.push_str(CRLF);
+    }
+    out.push_str("MIME-Version: 1.0\r\n");
+}
+
 /// Serialise a message: `headers` first, then the MIME tree. CRLF everywhere.
 pub fn render(headers: &[(String, String)], body: &Part, env: &dyn Env) -> String {
-    let mut out = String::new();
+    let mut out = String::with_capacity(content_len(body) + 4096);
     for (k, v) in headers {
         out.push_str(k);
         out.push_str(": ");
@@ -184,6 +248,14 @@ pub fn render(headers: &[(String, String)], body: &Part, env: &dyn Env) -> Strin
     out.push_str("MIME-Version: 1.0\r\n");
     render_part(body, &mut out, env);
     out
+}
+
+/// Bytes of leaf content in the tree: what `render` sizes its buffer for, so a large body is written without regrowing.
+fn content_len(part: &Part) -> usize {
+    match part {
+        Part::Leaf { content, .. } => content.len(),
+        Part::Multi { parts, .. } => parts.iter().map(content_len).sum(),
+    }
 }
 
 fn render_part(part: &Part, out: &mut String, env: &dyn Env) {
@@ -212,8 +284,33 @@ fn render_part(part: &Part, out: &mut String, env: &dyn Env) {
 }
 
 /// SMTP DATA payload: dot-stuffed, CRLF-terminated, without the final `.`.
+#[cfg(test)]
 pub fn dot_stuff(message: &str) -> Vec<u8> {
     let mut out = Vec::with_capacity(message.len() + 16);
+    dot_stuff_into(&mut out, message);
+    out
+}
+
+/// [`dot_stuff_into`] for a message nobody needs afterwards: when no line starts with a dot the message's own buffer becomes the output, with no copy.
+pub fn dot_stuff_owned(out: &mut Vec<u8>, message: String) {
+    if message.starts_with('.') || message.contains("\r\n.") {
+        dot_stuff_into(out, &message);
+        return;
+    }
+    let mut bytes = message.into_bytes();
+    if !bytes.ends_with(b"\r\n") {
+        bytes.extend_from_slice(b"\r\n");
+    }
+    if out.is_empty() {
+        *out = bytes;
+    } else {
+        out.extend_from_slice(&bytes);
+    }
+}
+
+/// [`dot_stuff`] appended to `out`, which is grown once for the whole message.
+pub fn dot_stuff_into(out: &mut Vec<u8>, message: &str) {
+    out.reserve(message.len() + message.len() / 64 + 16);
     for (i, line) in message.split("\r\n").enumerate() {
         if i > 0 {
             out.extend_from_slice(b"\r\n");
@@ -226,7 +323,6 @@ pub fn dot_stuff(message: &str) -> Vec<u8> {
     if !message.ends_with("\r\n") {
         out.extend_from_slice(b"\r\n");
     }
-    out
 }
 
 #[cfg(test)]
@@ -261,5 +357,61 @@ mod tests {
     #[test]
     fn stuffing() {
         assert_eq!(dot_stuff("a\r\n.b\r\n."), b"a\r\n..b\r\n..\r\n");
+    }
+}
+
+#[cfg(test)]
+mod qp_equivalence {
+    use super::*;
+
+    /// The encoder as it was before it stopped copying: normalise the line breaks, then one `String` per byte.
+    fn before(text: &str) -> String {
+        let text = text.replace("\r\n", "\n").replace('\r', "\n");
+        let mut out = String::with_capacity(text.len() + text.len() / 8);
+        for (i, line) in text.split('\n').enumerate() {
+            if i > 0 {
+                out.push_str(CRLF);
+            }
+            let bytes = line.as_bytes();
+            let mut len = 0;
+            for (j, &b) in bytes.iter().enumerate() {
+                let last = j + 1 == bytes.len();
+                let literal = matches!(b, 33..=60 | 62..=126) || ((b == b' ' || b == b'\t') && !last);
+                let token = if literal { (b as char).to_string() } else { format!("={b:02X}") };
+                let limit = if last { MAX_LINE } else { MAX_LINE - 1 };
+                if len + token.len() > limit {
+                    out.push_str("=\r\n");
+                    len = 0;
+                }
+                out.push_str(&token);
+                len += token.len();
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn same_output_for_awkward_text() {
+        let long = "ä".repeat(90) + &"x".repeat(80) + " ";
+        for text in ["", "a", "a\n", "\n", "a\r\nb", "a\rb\r", "a\n\rb", "tab\t \n=sign", "end \r\n", &long, "é\r\n\r\n\r\nz  "] {
+            assert_eq!(qp_encode(text), before(text), "{text:?}");
+        }
+    }
+}
+
+#[cfg(test)]
+mod dot_stuff_owned_tests {
+    use super::*;
+
+    #[test]
+    fn owned_matches_borrowed() {
+        for msg in ["", "a", "a\r\n", ".a", "a\r\n.b\r\n", "a\r\nb", "..\r\n.", "x\r\n\r\n.\r\n"] {
+            let mut owned = Vec::new();
+            dot_stuff_owned(&mut owned, msg.to_string());
+            assert_eq!(owned, dot_stuff(msg), "{msg:?}");
+            let mut appended = b"EHLO\r\n".to_vec();
+            dot_stuff_owned(&mut appended, msg.to_string());
+            assert_eq!(&appended[6..], &dot_stuff(msg)[..], "{msg:?}");
+        }
     }
 }

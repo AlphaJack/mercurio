@@ -206,17 +206,31 @@ fn aes_gcm_decrypt(key: &[u8], iv: &[u8], ciphertext: &[u8]) -> Option<Vec<u8>> 
 }
 
 /// Compact JSON object keeping the payload's insertion order.
-fn compact_json(pairs: &[(&str, Value)]) -> String {
-    let body: Vec<String> = pairs.iter().map(|(k, v)| format!("{}:{v}", Value::from(*k))).collect();
-    format!("{{{}}}", body.join(","))
+fn compact_json(pairs: &[(&str, Value)], text: &str) -> Vec<u8> {
+    let mut out = Vec::with_capacity(text.len() + text.len() / 64 + 1024);
+    out.push(b'{');
+    for (i, (k, v)) in pairs.iter().enumerate() {
+        if i > 0 {
+            out.push(b',');
+        }
+        let ok = serde_json::to_writer(&mut out, k).is_ok() && {
+            out.push(b':');
+            crate::http::write_json_text(&mut out, v, text).is_ok()
+        };
+        if !ok {
+            return Vec::new();
+        }
+    }
+    out.push(b'}');
+    out
 }
 
 /// Encrypt one payload; returns `(base64 ciphertext, iv)`.
-fn encrypt_payload(key: &[u8], pairs: &[(&str, Value)], env: &dyn Env) -> Option<(String, String)> {
+fn encrypt_payload(key: &[u8], pairs: &[(&str, Value)], text: &str, env: &dyn Env) -> Option<(String, String)> {
     let mut raw = [0u8; 9];
     env.fill_random(&mut raw);
     let iv = b64_url_nopad(&raw);
-    let ct = aes_gcm_encrypt(key, iv.as_bytes(), compact_json(pairs).as_bytes())?;
+    let ct = aes_gcm_encrypt(key, iv.as_bytes(), &compact_json(pairs, text))?;
     Some((b64(&ct), iv))
 }
 
@@ -228,9 +242,9 @@ impl Notify for Bark {
         let title = if msg.title.is_empty() { ctx.app_desc() } else { msg.title };
         let mut pairs: Vec<(&str, Value)> = vec![("title", json!(title))];
         if msg.format == NotifyFormat::Markdown {
-            pairs.push(("markdown", json!(msg.body)));
+            pairs.push(("markdown", json!(crate::http::TEXT)));
         } else {
-            pairs.push(("body", json!(msg.body)));
+            pairs.push(("body", json!(crate::http::TEXT)));
         }
         let image = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy128) } else { None };
         if let Some(icon) = self.icon.clone().filter(|i| !i.is_empty()).or(image) {
@@ -263,7 +277,7 @@ impl Notify for Bark {
 
         Plan::all(self.targets.iter().map(|target| {
             let payload = match &self.key {
-                Some(key) => match encrypt_payload(key.expose().as_bytes(), &pairs, ctx.env().as_ref()) {
+                Some(key) => match encrypt_payload(key.expose().as_bytes(), &pairs, msg.body, ctx.env().as_ref()) {
                     Some((ciphertext, iv)) => json!({"device_key": target, "ciphertext": ciphertext, "iv": iv}),
                     None => return Plan::Fail(Error::Service("failed to encrypt Bark notification".into())),
                 },
@@ -277,7 +291,7 @@ impl Notify for Bark {
                 }
             };
             let mut req =
-                ctx.post(&self.notify_url).header("Content-Type", "application/json; charset=utf-8").json(&payload);
+                ctx.post(&self.notify_url).header("Content-Type", "application/json; charset=utf-8").json_text(&payload, msg.body);
             req = req.basic_auth_opt(self.user.as_deref(), self.password.as_ref().map(Secret::expose));
             Plan::send_expect(req, &[200]).target(target.clone())
         }))
@@ -300,7 +314,7 @@ mod tests {
     fn round_trip_all_key_sizes() {
         let pairs = vec![("title", json!("t")), ("body", json!("héllo \"x\"")), ("badge", json!(3))];
         for key in ["0123456789abcdef", "0123456789abcdef01234567", "0123456789abcdef0123456789abcdef"] {
-            let (ct, iv) = encrypt_payload(key.as_bytes(), &pairs, crate::testing::test_env()).unwrap();
+            let (ct, iv) = encrypt_payload(key.as_bytes(), &pairs, "", crate::testing::test_env()).unwrap();
             assert_eq!(iv.len(), 12);
             let plain =
                 aes_gcm_decrypt(key.as_bytes(), iv.as_bytes(), &crate::crypto::b64_decode(&ct).unwrap()).unwrap();

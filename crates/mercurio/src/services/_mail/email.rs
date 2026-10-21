@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use regex::Regex;
 
-use super::mime::{Part, formataddr, header_value, render};
+use super::mime::{Part, formataddr, header_value, render_owned};
 use super::smtp::{Envelope, Job, Security, session};
 use crate::convert::html_to_text;
 use crate::error::{Error, Result};
@@ -538,7 +538,8 @@ impl Email {
             let bcc: Vec<&String> = self.bcc.iter().filter(|a| *a != to_addr).collect();
             let reply: Vec<&String> = self.reply_to.iter().filter(|a| *a != to_addr).collect();
 
-            let mut body = msg.body.to_string();
+            // Borrowed until the inline-image handling below has to add to it: the body can be megabytes.
+            let mut body: std::borrow::Cow<'_, str> = std::borrow::Cow::Borrowed(msg.body);
             let mut cid_refs: Vec<String> = Vec::new();
             let att_name =
                 |i: usize, n: &str| if n.is_empty() { format!("file{:03}.dat", i + 1) } else { n.to_string() };
@@ -562,7 +563,7 @@ impl Email {
                         }
                     }
                     for n in appends {
-                        body.push_str(&format!("<br/><img src=\"cid:{}\">", n.replace(' ', "%20")));
+                        body.to_mut().push_str(&format!("<br/><img src=\"cid:{}\">", n.replace(' ', "%20")));
                     }
                 } else {
                     let imgs: Vec<String> = msg
@@ -573,7 +574,7 @@ impl Email {
                         .map(|(i, a)| format!("[Image: {}]", att_name(i, &a.name)))
                         .collect();
                     if !imgs.is_empty() {
-                        body = format!("{body}\n{}", imgs.join("\n"));
+                        body = std::borrow::Cow::Owned(format!("{body}\n{}", imgs.join("\n")));
                     }
                 }
             }
@@ -630,7 +631,7 @@ impl Email {
             let mut recipients = vec![to_addr.clone()];
             recipients.extend(cc.iter().map(|a| a.to_string()));
             recipients.extend(bcc.iter().map(|a| a.to_string()));
-            out.push(Envelope { from: self.from_addr.clone(), recipients, data: render(&headers, &base, ctx.env().as_ref()) });
+            out.push(Envelope { from: self.from_addr.clone(), recipients, data: render_owned(&headers, base, ctx.env().as_ref()) });
         }
         out
     }

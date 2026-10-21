@@ -84,14 +84,14 @@ impl Notify for Gotify {
         let mut payload = json!({
             "priority": self.priority,
             "title": msg.title,
-            "message": msg.body,
+            "message": crate::http::TEXT,
         });
         if msg.format == NotifyFormat::Markdown {
             payload["extras"] = json!({"client::display": {"contentType": "text/markdown"}});
         }
         let req = ctx.post(format!("{}message", self.base))
             .header("X-Gotify-Key", self.token.expose())
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200])
     }
 }

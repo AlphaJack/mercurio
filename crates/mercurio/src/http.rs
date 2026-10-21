@@ -82,6 +82,64 @@ pub fn body_too_large(limit: u64) -> crate::Error {
     crate::Error::Transport(format!("the response body is larger than request limit: {limit}"))
 }
 
+/// Stands for a message's text inside a JSON payload until [`json_with_text`] writes the real text.
+pub(crate) const TEXT: &str = "\u{0}text\u{0}";
+
+/// Compact JSON of `value` with `text` written (escaped) wherever the [`TEXT`] placeholder stands, in a buffer sized for it.
+pub(crate) fn json_with_text(value: &Value, text: &str) -> Vec<u8> {
+    let mut out = Vec::with_capacity(text.len() + text.len() / 64 + 1024);
+    write_json_text(&mut out, value, text).map(|()| out).unwrap_or_default()
+}
+
+/// The length [`json_with_text`] would produce, without building it.
+pub(crate) fn json_text_len(value: &Value, text: &str) -> usize {
+    struct Count(usize);
+    impl std::io::Write for Count {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.0 += buf.len();
+            Ok(buf.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut count = Count(0);
+    write_json_text(&mut count, value, text).map_or(0, |()| count.0)
+}
+
+/// Write `value` as compact JSON, `text` in place of the [`TEXT`] placeholder.
+pub(crate) fn write_json_text<W: std::io::Write>(w: &mut W, value: &Value, text: &str) -> std::io::Result<()> {
+    match value {
+        Value::String(s) if s == TEXT => serde_json::to_writer(&mut *w, text)?,
+        Value::Array(items) => {
+            w.write_all(b"[")?;
+            for (i, item) in items.iter().enumerate() {
+                if i > 0 {
+                    w.write_all(b",")?;
+                }
+                write_json_text(w, item, text)?;
+            }
+            w.write_all(b"]")?;
+        }
+        Value::Object(map) => {
+            w.write_all(b"{")?;
+            for (i, (key, item)) in map.iter().enumerate() {
+                if i > 0 {
+                    w.write_all(b",")?;
+                }
+                serde_json::to_writer(&mut *w, key)?;
+                w.write_all(b":")?;
+                write_json_text(w, item, text)?;
+            }
+            w.write_all(b"}")?;
+        }
+        other @ (Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_)) => {
+            serde_json::to_writer(&mut *w, other)?;
+        }
+    }
+    Ok(())
+}
+
 /// An outgoing HTTP request.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Request {
@@ -200,6 +258,15 @@ impl Request {
     /// JSON body with `Content-Type: application/json` (unless already set).
     pub fn json(mut self, value: &Value) -> Self {
         self.body = serde_json::to_vec(value).unwrap_or_default().into();
+        if self.header_value("content-type").is_none() {
+            self = self.header("Content-Type", "application/json");
+        }
+        self
+    }
+
+    /// JSON body like [`Request::json`], writing `text` wherever `value` holds the [`TEXT`] placeholder, so a large message is not copied into a `Value` first.
+    pub(crate) fn json_text(mut self, value: &Value, text: &str) -> Self {
+        self.body = Bytes::from(json_with_text(value, text));
         if self.header_value("content-type").is_none() {
             self = self.header("Content-Type", "application/json");
         }
