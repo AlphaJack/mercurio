@@ -7,7 +7,7 @@ use aes::{Aes128, Aes192, Aes256};
 use curve25519_dalek::montgomery::MontgomeryPoint;
 use zeroize::Zeroizing;
 
-use super::{ALGO_RSA, armor, big_mod, dearmor, limbs, magnitude, mpi, next_packet, put_mpi};
+use super::{ALGO_ECDH, ALGO_RSA, CV25519_OID, armor, big_mod, dearmor, limbs, magnitude, mpi, next_packet, packet, put_mpi};
 use crate::crypto;
 use crate::env::Env;
 
@@ -43,9 +43,6 @@ const TAG_PUBLIC_SUBKEY: u8 = 14;
 const TAG_SEIPD: u8 = 18;
 const TAG_MDC: u8 = 19;
 const ALGO_RSA_ENCRYPT: u8 = 2;
-const ALGO_ECDH: u8 = 18;
-/// The curve OID of Curve25519 in GnuPG's ECDH encoding.
-const CV25519_OID: &[u8] = &[0x2b, 0x06, 0x01, 0x04, 0x01, 0x97, 0x55, 0x01, 0x05, 0x01];
 /// Symmetric algorithms: AES-128, AES-192, AES-256.
 const SYM_AES128: u8 = 7;
 const SYM_AES192: u8 = 8;
@@ -163,7 +160,7 @@ struct Candidate<'a> {
 }
 
 /// The key flags (subpacket 27) in the hashed area of a v4 signature.
-fn key_flags(sig: &[u8]) -> Option<u8> {
+pub(super) fn key_flags(sig: &[u8]) -> Option<u8> {
     if sig.first() != Some(&4) {
         return None;
     }
@@ -263,24 +260,6 @@ fn recipient(data: &[u8]) -> Result<(Recipient, [u8; 20]), EncryptError> {
         .try_into()
         .map_err(|_| EncryptError::Unreadable)?;
     Ok((recipient, fingerprint))
-}
-
-/// A new-format packet with the shortest length encoding.
-fn packet(tag: u8, body: &[u8]) -> Vec<u8> {
-    let mut out = vec![0xc0 | tag];
-    match body.len() {
-        l @ 0..=191 => out.push(u8::try_from(l).unwrap_or(0)),
-        l @ 192..=8383 => {
-            let l = l - 192;
-            out.extend_from_slice(&[u8::try_from(l / 256 + 192).unwrap_or(0), u8::try_from(l % 256).unwrap_or(0)]);
-        }
-        l => {
-            out.push(255);
-            out.extend_from_slice(&u32::try_from(l).unwrap_or(u32::MAX).to_be_bytes());
-        }
-    }
-    out.extend_from_slice(body);
-    out
 }
 
 /// The session key sealed for the recipient: the PKESK v3 body.
@@ -413,9 +392,9 @@ mod tests {
         assert!(matches!(recipient(b"junk"), Err(EncryptError::Unreadable)));
     }
 
-    /// Bob's cv25519 secret scalar, from his secret subkey (the MPI holds it byte-reversed).
-    fn bob_scalar() -> [u8; 32] {
-        let data = dearmor(BOB_CV25519_SEC).unwrap();
+    /// The cv25519 secret scalar of an armored secret key's subkey.
+    fn scalar_of(secret: &str) -> [u8; 32] {
+        let data = dearmor(secret).unwrap();
         let mut rest = data.as_slice();
         while let Some((tag, body, next)) = next_packet(rest) {
             rest = next;
@@ -467,20 +446,25 @@ mod tests {
 
     /// Decrypt a message to Bob's cv25519 key: the PKESK opened, the SEIPD decrypted, the MDC checked, the literal data returned.
     fn bob_decrypts(armored: &str) -> Vec<u8> {
+        decrypts(armored, BOB_CV25519_SEC, &hex(BOB_CV25519_SUBKEY))
+    }
+
+    /// Decrypt a message with the cv25519 subkey of `secret` (armored), whose fingerprint is `subkey`.
+    fn decrypts(armored: &str, secret: &str, subkey: &[u8]) -> Vec<u8> {
         let data = dearmor(armored).unwrap();
         let (tag, pkesk, rest) = next_packet(&data).unwrap();
         assert_eq!((tag, pkesk[0]), (TAG_PKESK, 3));
-        assert!(BOB_CV25519_SUBKEY.ends_with(&crypto::hex(&pkesk[1..9]).to_uppercase()), "key id");
+        assert_eq!(&pkesk[1..9], &subkey[12..], "key id");
         assert_eq!(pkesk[9], ALGO_ECDH);
         let (eph, rest_pk) = mpi(&pkesk[10..]).unwrap();
         let eph: [u8; 32] = eph[1..].try_into().unwrap();
         let wrapped = &rest_pk[1..1 + usize::from(rest_pk[0])];
-        let shared = MontgomeryPoint(eph).mul_clamped(bob_scalar()).to_bytes();
+        let shared = MontgomeryPoint(eph).mul_clamped(scalar_of(secret)).to_bytes();
         let mut param = vec![10];
         param.extend_from_slice(CV25519_OID);
         param.extend_from_slice(&[ALGO_ECDH, 3, 1, 8, SYM_AES128]);
         param.extend_from_slice(b"Anonymous Sender    ");
-        param.extend_from_slice(&hex(BOB_CV25519_SUBKEY));
+        param.extend_from_slice(subkey);
         let kek = crypto::sha256(&[&[0, 0, 0, 1], shared.as_slice(), &param].concat());
         let m = key_unwrap(&kek[..16], wrapped);
         assert_eq!(m[0], SYM_AES256);
@@ -643,5 +627,73 @@ mod tests {
         let d = crate::parse(url).unwrap().send(&Message::new("x"), &fake, &Asset::default());
         let errs: Vec<String> = d.errors().map(ToString::to_string).collect();
         assert!(errs[0].contains("Unable to encrypt email via PGP"), "{errs:?}");
+    }
+
+    /// The fingerprint of the encryption subkey in an armored certificate.
+    fn subkey_fingerprint(public: &str) -> Vec<u8> {
+        recipient(&dearmor(public).unwrap()).unwrap().1.to_vec()
+    }
+
+    /// `?pgp=encrypt` to oneself with no key: a pair is generated and written to the storage folder, the mail decrypts with it, and its Autocrypt header advertises it. With `pgp_autogen: no`, nothing is generated.
+    #[test]
+    fn keys_are_generated_for_messages_to_oneself() {
+        use crate::testing::FakeTransport;
+        use crate::{Asset, Message};
+
+        let url = "mailto://user:pass@example.com:2525?from=me@example.com&to=me@example.com&pgp=encrypt";
+        let target = crate::parse(url).unwrap();
+        let asset = Asset { storage_path: Some("/data".into()), ..Asset::default() };
+        let folder = std::path::Path::new("/data").join(target.url_id(&asset).unwrap());
+        let fake = FakeTransport::new();
+        let data = super::super::tests::capture_smtp(&fake);
+        let d = target.send(&Message::new("note to self"), &fake, &asset);
+        assert!(d.is_success(), "{d:?}");
+        let files = fake.files();
+        let public = String::from_utf8(files[&folder.join("me-pub.asc")].clone()).unwrap();
+        let secret = String::from_utf8(files[&folder.join("me-prv.asc")].clone()).unwrap();
+        assert!(public.contains("PUBLIC KEY BLOCK") && secret.contains("PRIVATE KEY BLOCK"));
+
+        let mail = data.lock().unwrap().join("\r\n");
+        let (armored, outer) = encrypted_part(&mail);
+        let inner = String::from_utf8(decrypts(&armored, &secret, &subkey_fingerprint(&public))).unwrap();
+        assert!(inner.contains("note to self"), "{inner}");
+        let autocrypt = outer.split("Autocrypt: ").nth(1).expect(&outer);
+        assert!(autocrypt.starts_with("addr=me@example.com; prefer-encrypt=mutual; keydata="), "{autocrypt}");
+
+        let fake = FakeTransport::new();
+        let off = Asset { pgp_autogen: false, ..asset };
+        let d = target.send(&Message::new("x"), &fake, &off);
+        let errs: Vec<String> = d.errors().map(ToString::to_string).collect();
+        assert!(errs[0].contains("Unable to encrypt email via PGP"), "{errs:?}");
+        assert!(fake.files().is_empty());
+    }
+
+    /// Encrypting to someone else with no key of our own: ours is generated for the Autocrypt header. Signing with a key that has no encryption subkey: no Autocrypt header.
+    #[test]
+    fn autocrypt_header_cases() {
+        use crate::testing::FakeTransport;
+        use crate::{Asset, Message};
+
+        let url = "mailto://user:pass@example.com:2525?from=me@example.com&to=bob@example.org&pgp=encrypt";
+        let target = crate::parse(url).unwrap();
+        let asset = Asset { storage_path: Some("/data".into()), ..Asset::default() };
+        let folder = std::path::Path::new("/data").join(target.url_id(&asset).unwrap());
+        let fake = FakeTransport::new();
+        let data = super::super::tests::capture_smtp(&fake);
+        fake.file(folder.join("bob@example.org-pub.asc"), BOB_CV25519_PUB);
+        assert!(target.send(&Message::new("hi bob"), &fake, &asset).is_success());
+        assert!(fake.files().contains_key(&folder.join("me-prv.asc")), "our key was generated");
+        let (armored, outer) = encrypted_part(&data.lock().unwrap().join("\r\n"));
+        assert!(outer.contains("Autocrypt: addr=me@example.com; prefer-encrypt=mutual; keydata="), "{outer}");
+        assert!(String::from_utf8(bob_decrypts(&armored)).unwrap().contains("hi bob"));
+
+        let alice = include_str!("../../../../tests/fixtures/data/pgp_alice_ed25519.asc");
+        let url = "mailto://user:pass@example.com:2525?from=me@example.com&to=bob@example.org&pgp=sign&pgpprv=/keys/alice.asc";
+        let fake = FakeTransport::new();
+        let data = super::super::tests::capture_smtp(&fake);
+        fake.file("/keys/alice.asc", alice);
+        assert!(crate::parse(url).unwrap().send(&Message::new("signed"), &fake, &Asset::default()).is_success());
+        let mail = data.lock().unwrap().join("\r\n");
+        assert!(!mail.contains("Autocrypt:"), "a sign-only key is not advertised: {mail}");
     }
 }

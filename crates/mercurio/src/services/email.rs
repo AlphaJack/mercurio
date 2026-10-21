@@ -7,7 +7,7 @@
 //! - `?pgp=sign` (feature `service-email-pgp`) signs with Ed25519 keys (GnuPG's encoding) and RSA keys of 2048 to 8192 bits, while Apprise also accepts DSA, ECDSA and smaller RSA keys: mercurio's OpenPGP is its own, built on `ring`, and covers those two.
 //! - `?pgp=encrypt` (and `?pgp=sign` when the recipient's key is at hand) encrypts to Curve25519 (`cv25519`) and RSA keys, without compression, while Apprise compresses the message (ZIP) and also encrypts to ECDH keys on the NIST, Brainpool and secp256k1 curves.
 //! - `?wkd=yes` asks a recipient's Web Key Directory (RFC 9080) only when no key is in `?pgppub=` or the storage folder, as in Apprise, but asks both URLs at once, where Apprise tries the direct URL only after the `openpgpkey.` one fails; the `openpgpkey.` answer still wins.
-//! - The Autocrypt header and key generation for messages to oneself are missing. *todo*
+//! - When encryption needs a key pair and none exists (a message to oneself, or the Autocrypt header advertising ours), mercurio generates an Ed25519 key with a Curve25519 encryption subkey, while Apprise generates RSA 2048 keys; both write `<local>-pub.asc` and `<local>-prv.asc` to the storage folder (`asset: pgp_autogen: no` turns it off).
 //! - `?reply=` with several targets raised on the second target in Apprise, while mercurio sends it.
 
 use crate::service::{Notify, Param, ServiceDef};

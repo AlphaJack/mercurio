@@ -170,7 +170,11 @@ pub const ASSET_KEYS: &[AssetKey] = &[
     asset_flag("async_mode"),
     asset_flag("interpret_escapes"),
     asset_flag("abort_on_chain_failure"),
-    asset_flag("pgp_autogen"),
+    AssetKey {
+        name: "pgp_autogen",
+        flag: true,
+        effect: "generate a PGP key pair in the storage folder when e-mail encryption needs one; default yes",
+    },
     asset_flag("pem_autogen"),
     asset_flag("secure_logging"),
     asset_flag("http_redirects"),
@@ -193,6 +197,7 @@ pub fn asset_value(asset: &crate::Asset, name: &str) -> Option<String> {
         "default_ascii_chars" => Some(asset.default_ascii.clone()),
         "storage_path" => asset.storage_path.as_ref().map(|p| p.display().to_string()),
         "image_path_mask" => asset.image_path_mask.clone(),
+        "pgp_autogen" => Some(if asset.pgp_autogen { "yes" } else { "no" }.into()),
         _ => None,
     }
 }
