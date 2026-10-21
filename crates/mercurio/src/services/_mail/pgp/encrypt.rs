@@ -596,4 +596,52 @@ mod tests {
             }
         }
     }
+
+    /// `?wkd=yes` end to end: no local key, Bob's (binary) key from his Web Key Directory, the mail decrypted; the answer is reused by the next send. When the advanced URL fails, the direct one is used.
+    #[test]
+    fn wkd_key_encrypts() {
+        use crate::http::Response;
+        use crate::testing::FakeTransport;
+        use crate::{Asset, Message};
+
+        let binary = dearmor(BOB_CV25519_PUB).unwrap();
+        let url = "mailto://user:pass@example.com:2525?from=alice@example.com&to=bob@example.org&wkd=yes";
+        let target = crate::parse(url).unwrap();
+        let wkd = |fake: &FakeTransport| {
+            fake.requests().iter().filter(|r| r.url.contains("/.well-known/openpgpkey/")).map(|r| r.url.clone()).collect::<Vec<_>>()
+        };
+
+        let fake = FakeTransport::new();
+        let data = super::super::tests::capture_smtp(&fake);
+        fake.on_url("https://openpgpkey.example.org/", Response::new(200, binary.clone()));
+        let d = target.send(&Message::new("via wkd"), &fake, &Asset::default());
+        assert!(d.is_success(), "{d:?}");
+        assert_eq!(wkd(&fake).len(), 2, "both URLs asked: {:?}", wkd(&fake));
+        assert!(wkd(&fake)[0].starts_with("https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/"));
+        let (armored, _) = encrypted_part(&data.lock().unwrap().join("\r\n"));
+        assert!(String::from_utf8(bob_decrypts(&armored)).unwrap().contains("via wkd"));
+
+        // The same target: the answer is cached, no lookup.
+        let again = FakeTransport::new();
+        let _data = super::super::tests::capture_smtp(&again);
+        assert!(target.send(&Message::new("again"), &again, &Asset::default()).is_success());
+        assert!(wkd(&again).is_empty(), "{:?}", wkd(&again));
+
+        // A fresh target whose advanced URL fails: the direct one is used.
+        let fake = FakeTransport::new();
+        let data = super::super::tests::capture_smtp(&fake);
+        fake.on_url("https://openpgpkey.example.org/", Response::new(404, ""));
+        fake.on_url("https://example.org/", Response::new(200, binary));
+        let d = crate::parse(url).unwrap().send(&Message::new("direct"), &fake, &Asset::default());
+        assert!(d.is_success(), "{d:?}");
+        let (armored, _) = encrypted_part(&data.lock().unwrap().join("\r\n"));
+        assert!(String::from_utf8(bob_decrypts(&armored)).unwrap().contains("direct"));
+
+        // Nothing published: Apprise's error.
+        let fake = FakeTransport::new();
+        fake.on_url("/.well-known/openpgpkey/", Response::new(404, ""));
+        let d = crate::parse(url).unwrap().send(&Message::new("x"), &fake, &Asset::default());
+        let errs: Vec<String> = d.errors().map(ToString::to_string).collect();
+        assert!(errs[0].contains("Unable to encrypt email via PGP"), "{errs:?}");
+    }
 }

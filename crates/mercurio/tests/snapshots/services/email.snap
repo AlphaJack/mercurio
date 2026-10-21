@@ -2489,6 +2489,15 @@ wkd_implies_encrypt:
     - "service error: Unable to encrypt email via PGP; supply a public key via pgppub= or place one in the cache directory"
   events: []
   ok: false
+  requests:
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://openpgpkey.domain.com/.well-known/openpgpkey/domain.com/hu/4y36rkzdjnzmk3oxaekyi5biowgr5kcz?l=admin"
+    - body: ~
+      headers: {}
+      method: GET
+      url: "https://domain.com/.well-known/openpgpkey/hu/4y36rkzdjnzmk3oxaekyi5biowgr5kcz?l=admin"
   valid: true
 yahoo:
   events:

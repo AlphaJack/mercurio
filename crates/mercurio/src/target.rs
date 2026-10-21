@@ -406,7 +406,7 @@ impl Target {
     async fn plan_piece(&self, msg: &Prepared<'_>, ctx: &Context<'_>, transport: &dyn AsyncTransport) -> Plan {
         let files = read_files(self.service.files(ctx), transport).await;
         let mut fetched = Vec::new();
-        for req in self.service.fetches(ctx) {
+        for req in self.service.fetches(&ctx.with_files(&files)) {
             let res = transport.http(&req).await;
             fetched.push((req, res));
         }

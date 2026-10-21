@@ -279,6 +279,8 @@ pub struct Email {
     pgp_prv: Option<String>,
     /// `?pgppub=`: the recipients' public key's path or URL.
     pgp_pub: Option<String>,
+    /// `?wkd=yes`: look keys up in the recipient's Web Key Directory.
+    use_wkd: bool,
     inline: bool,
 }
 
@@ -295,6 +297,9 @@ const ENCRYPT_FAILED: &str =
 
 /// Largest public key read (Apprise's `max_pgp_public_key_size`).
 const MAX_PUBLIC_KEY: u64 = 8_000;
+
+/// How long a Web Key Directory answer is reused.
+const WKD_CACHE: Duration = Duration::from_secs(86_400);
 
 /// `re.split(r"[\s@]+", user)[0]`.
 fn user_prefix(user: &str) -> &str {
@@ -526,6 +531,7 @@ impl Email {
             pgp,
             pgp_prv: def.text(u, "pgpprv"),
             pgp_pub: def.text(u, "pgppub"),
+            use_wkd,
             inline,
         })
     }
@@ -573,8 +579,45 @@ impl Email {
     }
 
     /// The first public key for `to` that could be read.
-    fn public_key<'a>(&self, ctx: &Context<'a>, to: &str) -> Option<&'a [u8]> {
+    fn public_key<'a>(&self, ctx: &Context<'a>, to: &str) -> Option<std::borrow::Cow<'a, [u8]>> {
+        if let Some(key) = self.local_public_key(ctx, to) {
+            return Some(std::borrow::Cow::Borrowed(key));
+        }
+        self.wkd_key(ctx, to).map(std::borrow::Cow::Owned)
+    }
+
+    /// The public key for `to` from `?pgppub=` or the storage folder.
+    fn local_public_key<'a>(&self, ctx: &Context<'a>, to: &str) -> Option<&'a [u8]> {
         self.public_key_specs(ctx, to).iter().find_map(|spec| read_local_file(ctx, spec, MAX_PUBLIC_KEY))
+    }
+
+    /// The store entry keeping `to`'s Web Key Directory answer for a day (Apprise's `default_cache_expiry_sec`).
+    fn wkd_cache_key(to: &str) -> String {
+        format!("wkd_{}", to.trim().to_lowercase())
+    }
+
+    /// `to`'s key from its Web Key Directory: the cached answer, else the advanced URL's, else the direct URL's (HTTP 200, not empty, at most 64 KiB).
+    #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
+    fn wkd_key(&self, ctx: &Context<'_>, to: &str) -> Option<Vec<u8>> {
+        if !self.use_wkd {
+            return None;
+        }
+        let cache = Self::wkd_cache_key(to);
+        if let Some(b64) = ctx.store.get_str(&cache) {
+            return crate::crypto::b64_decode(&b64);
+        }
+        let (advanced, direct) = super::wkd::urls(to)?;
+        let key = [advanced, direct]
+            .iter()
+            .find_map(|url| ctx.fetched(url).ok().filter(|b| !b.is_empty() && b.len() <= super::wkd::MAX_RESPONSE))?
+            .to_vec();
+        ctx.store.remember(&cache, serde_json::json!(crate::crypto::b64(&key)), Some(WKD_CACHE));
+        Some(key)
+    }
+
+    #[cfg(not(any(feature = "service-email-pgp", feature = "service-deltachat-pgp")))]
+    fn wkd_key(&self, _: &Context<'_>, _: &str) -> Option<Vec<u8>> {
+        None
     }
 
     /// The first private key that could be read.
@@ -691,7 +734,7 @@ impl Email {
                     base = self.signed(base, ctx)?;
                     if let Some(key) = self.public_key(ctx, to_addr) {
                         let content = super::mime::render_part_alone(&base, ctx.env().as_ref());
-                        if let Ok(enc) = self.encrypted(key, &content, ctx) {
+                        if let Ok(enc) = self.encrypted(&key, &content, ctx) {
                             base = enc;
                         }
                     }
@@ -713,7 +756,7 @@ impl Email {
                         log::warn!("{}", if self.pgp_pub.is_some() { "PGP Public Key could not be accessed" } else { "No PGP public key found" });
                         Error::Service(ENCRYPT_FAILED.into())
                     })?;
-                    base = self.encrypted(key, &content, ctx)?;
+                    base = self.encrypted(&key, &content, ctx)?;
                 }
             }
 
@@ -875,7 +918,33 @@ impl Notify for Email {
         if let (Some(spec), Pgp::Sign | Pgp::Encrypt) = (&self.pgp_pub, self.pgp) {
             out.extend(remote_fetches(ctx, spec, MAX_PUBLIC_KEY));
         }
+        out.extend(self.wkd_fetches(ctx));
         out
+    }
+}
+
+impl Email {
+    /// Web Key Directory lookups for the recipients with no key of their own and no answer cached (both URLs; the advanced one wins).
+    #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
+    fn wkd_fetches(&self, ctx: &Context<'_>) -> Vec<crate::http::Request> {
+        if !self.use_wkd || self.pgp == Pgp::None || self.pgp_pub.is_some() {
+            return Vec::new();
+        }
+        let mut out = Vec::new();
+        for (_, to) in &self.targets {
+            if self.local_public_key(ctx, to).is_some() || ctx.store.get(&Self::wkd_cache_key(to)).is_some() {
+                continue;
+            }
+            for url in super::wkd::urls(to).into_iter().flat_map(|(a, d)| [a, d]) {
+                out.push(crate::http::Request::get(url).header("User-Agent", ctx.app_id()));
+            }
+        }
+        out
+    }
+
+    #[cfg(not(any(feature = "service-email-pgp", feature = "service-deltachat-pgp")))]
+    fn wkd_fetches(&self, _: &Context<'_>) -> Vec<crate::http::Request> {
+        Vec::new()
     }
 
 }
