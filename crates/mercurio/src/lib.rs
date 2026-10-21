@@ -213,7 +213,7 @@
 //!
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/features.md"))]
 //!
-//! For a slim build, disable default features and pick services: `mercurio = { version = "0.1", default-features = false, features = ["service-telegram", "service-ntfy"] }`
+//! For a slim build, disable default features and pick services: `mercurio = { version = "0.1", default-features = false, features = ["service-telegram", "service-ntfy"] }`. Add `bundle-timezones` to keep `?tz=` zones working on hosts without a system time zone database.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(

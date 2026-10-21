@@ -15,8 +15,9 @@ name = "mercurio"
 path = "src/main.rs"
 
 [features]
-default = ["all-services"]
+default = ["all-services", "bundle-timezones"]
 all-services = ["mercurio/all-services"]
+bundle-timezones = ["mercurio/bundle-timezones"]
 
 [dependencies]
 mercurio = { workspace = true, features = ["transport-tokio"] }
