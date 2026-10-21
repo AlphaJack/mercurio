@@ -146,7 +146,7 @@ impl Notify for WeChat {
         let mut payload = Map::new();
         payload.insert("agentid".into(), json!(self.agentid));
         payload.insert("msgtype".into(), json!(msgtype));
-        payload.insert(msgtype.into(), json!({"content": msg.body}));
+        payload.insert(msgtype.into(), json!({"content": crate::http::TEXT}));
         if !self.users.is_empty() {
             payload.insert("touser".into(), json!(self.users.join("|")));
         }
@@ -156,14 +156,15 @@ impl Notify for WeChat {
         if !self.tags.is_empty() {
             payload.insert("totag".into(), json!(self.tags.join("|")));
         }
-        let payload = Value::Object(payload);
+        // Serialized once: the token continuation keeps these bytes, not a copy of the text.
+        let payload = bytes::Bytes::from(crate::http::json_with_text(&Value::Object(payload), msg.body));
         let user_agent = ctx.app_id().to_string();
 
         let store = ctx.store();
         let send = move |token: String| {
             let req = Request::post(format!("{NOTIFY_URL}?access_token={token}"))
                 .header("User-Agent", user_agent)
-                .json(&payload);
+                .body(payload, Some("application/json"));
             Plan::send_check(req, move |r| {
                 let res = check_send(r);
                 if res.is_err() && errcode(r).is_some_and(|c| TOKEN_ERROR_CODES.contains(&c)) {
