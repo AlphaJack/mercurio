@@ -2,7 +2,6 @@
 //!
 //! [`Smtp`] never does I/O: every command it writes moves it to the [`State`] that reads the reply, and each reply decides the next command.
 
-use md5::{Digest, Md5};
 
 use crate::crypto;
 use crate::error::{Error, Result};
@@ -86,13 +85,13 @@ impl Extensions {
 fn hmac_md5(key: &[u8], data: &[u8]) -> [u8; 16] {
     let mut block = [0u8; 64];
     if key.len() > block.len() {
-        block[..16].copy_from_slice(&Md5::digest(key));
+        block[..16].copy_from_slice(&crypto::md5(key));
     } else {
         block[..key.len()].copy_from_slice(key);
     }
     let pad = |byte: u8| block.map(|b| b ^ byte);
-    let inner = Md5::new().chain_update(pad(0x36)).chain_update(data).finalize();
-    Md5::new().chain_update(pad(0x5c)).chain_update(inner).finalize().into()
+    let inner = crypto::md5(&[&pad(0x36)[..], data].concat());
+    crypto::md5(&[&pad(0x5c)[..], &inner[..]].concat())
 }
 
 /// The CRAM-MD5 answer to a base64 `challenge`, like smtplib's `auth_cram_md5`.
