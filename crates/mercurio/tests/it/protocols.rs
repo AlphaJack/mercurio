@@ -7,7 +7,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-use mercurio::{BlockingTransport, Mercurio, Message};
+use mercurio::{Mercurio, Message, transport::BlockingTransport};
 
 fn mercurio() -> Mercurio {
     Mercurio::with_transport(Arc::new(BlockingTransport::new()))

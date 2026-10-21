@@ -27,7 +27,7 @@ pub type Session =
 /// A plan is a value: building one does no I/O. The constructors cover the common shapes; a service returns one from [`Notify::plan`](crate::Notify::plan).
 ///
 /// ```
-/// use mercurio::{Plan, Request};
+/// use mercurio::{service::Plan, transport::Request};
 ///
 /// // Two targets, each with its own outcome; `b` logs in first and stops
 /// // if the login is not answered with 200.
@@ -183,7 +183,7 @@ impl Plan {
     /// Name the step this plan performs in failures it produces itself (see [`Error::context`]): a `Fail`, a failed socket session, the failure an `Http` or `Command` continuation returns directly, and the same for every plan inside `All`, `Chain`, `Target` and `Defer`. Plans a continuation hands on (the next steps) are left alone.
     ///
     /// ```
-    /// use mercurio::{Error, Plan};
+    /// use mercurio::{Error, service::Plan};
     ///
     /// let Plan::Fail(e) = Plan::Fail(Error::service("no token")).context("login") else { unreachable!() };
     /// assert_eq!(e.to_string(), "login: service error: no token");

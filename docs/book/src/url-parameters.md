@@ -56,7 +56,7 @@ error has an `ErrorClass` (`mercurio::Error::class()`):
   (`login: HTTP 500: server error`); the class is that of the underlying
   error.
 - `Retry-After` is read as seconds or as an IMF-fixdate HTTP date. Longer
-  than `mercurio::MAX_RETRY_AFTER` (300 s) ends the retries instead of
+  than `mercurio::service::MAX_RETRY_AFTER` (300 s) ends the retries instead of
   blocking. A 429 without it waits `wait`; Discord uses its
   `X-RateLimit-Reset` instead.
 - Targets and pieces of a split message that an earlier attempt delivered

@@ -737,7 +737,7 @@ mod tests {
             total: 1,
         };
         let asset = crate::Asset::default();
-        let (store, memo) = (crate::PersistentStore::memory().shared(), crate::Memo::disabled());
+        let (store, memo) = (crate::store::PersistentStore::memory().shared(), crate::store::Memo::disabled());
         let plan = svc.plan(&msg, &Context::new(&asset, &store, &memo));
         let d = crate::plan::execute(plan, &fake, Default::default());
         assert!(d.is_success(), "{d:?}");
@@ -769,7 +769,7 @@ mod tests {
             total: 1,
         };
         let asset = crate::Asset::default();
-        let (store, memo) = (crate::PersistentStore::memory().shared(), crate::Memo::disabled());
+        let (store, memo) = (crate::store::PersistentStore::memory().shared(), crate::store::Memo::disabled());
         let d = crate::plan::execute(n.plan(&msg, &Context::new(&asset, &store, &memo)), &fake, Default::default());
         assert!(!d.is_success());
         assert_eq!(fake.requests().len(), 1);

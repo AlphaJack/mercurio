@@ -9,7 +9,7 @@
 //!
 //! ```
 //! use std::sync::{Arc, Mutex};
-//! use mercurio::{Mercurio, Message, Plan};
+//! use mercurio::{Mercurio, Message, service::Plan};
 //!
 //! let seen = Arc::new(Mutex::new(Vec::new()));
 //! let log = seen.clone();

@@ -6,7 +6,7 @@ use std::time::{Duration, SystemTime};
 
 use axum::response::IntoResponse;
 use axum::response::sse::{Event, KeepAlive, Sse};
-use mercurio::{AsyncMercurio, BoxFuture, Message, Report, TagFilter, TemplateVars};
+use mercurio::{AsyncMercurio, Message, Report, TagFilter, TemplateVars, transport::BoxFuture};
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 

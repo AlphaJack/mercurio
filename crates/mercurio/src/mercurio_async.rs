@@ -23,7 +23,7 @@ use crate::{Asset, Message, Registry, TagFilter};
 /// ```
 /// use std::sync::Arc;
 /// use mercurio::testing::FakeTransport;
-/// use mercurio::{AsyncMercurio, Blocking, Message};
+/// use mercurio::{AsyncMercurio, transport::Blocking, Message};
 ///
 /// let fake = Arc::new(FakeTransport::new());
 /// let mut m = AsyncMercurio::with_transport(Arc::new(Blocking(fake.clone())));

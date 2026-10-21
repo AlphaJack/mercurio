@@ -35,8 +35,8 @@ use std::sync::Arc;
 use mercurio::__private::{default_paths, expand_path};
 use mercurio::ConfigOptions;
 use mercurio::{
-    Asset, AsyncMercurio, AsyncTransport, Attachment, Message, NotifyFormat, NotifyType, StorageMode, TagFilter,
-    TemplateVars, TokioTransport,
+    Asset, AsyncMercurio, Attachment, Message, NotifyFormat, NotifyType, TagFilter, TemplateVars, asset::StorageMode,
+    transport::AsyncTransport, transport::TokioTransport,
 };
 
 /// stdout went away: exit 0 when the reader closed the pipe (as `head` does), 1 otherwise.
@@ -148,7 +148,7 @@ struct Opts {
     #[arg(long, global = true, value_name = "N", env = "APPRISE_STORAGE_PRUNE_DAYS", default_value_t = DEFAULT_PRUNE_DAYS, allow_negative_numbers = true, value_parser = parse_days)]
     storage_prune_days: i64,
     /// Characters of the URL ids naming persistent storage, at least 2 (`-SUL`)
-    #[arg(long, global = true, value_name = "N", env = "APPRISE_STORAGE_UID_LENGTH", default_value_t = mercurio::DEFAULT_STORAGE_IDLEN)]
+    #[arg(long, global = true, value_name = "N", env = "APPRISE_STORAGE_UID_LENGTH", default_value_t = mercurio::asset::DEFAULT_STORAGE_IDLEN)]
     storage_uid_length: usize,
     /// When persistent storage is written: `auto` (after each send), `flush` (also before each step) or `memory` (never) (`-SM`)
     #[arg(long, global = true, value_name = "MODE", default_value = "auto")]
@@ -337,8 +337,8 @@ fn cmd_services(json: bool) -> ExitCode {
                     "throttle_ms": d.throttle.as_millis() as u64,
                     "native_url": d.parse_native.is_some(),
                     "templates": d.templates,
-                    "tokens": d.tokens.iter().map(mercurio::Param::to_json).collect::<Vec<_>>(),
-                    "params": d.params.iter().map(mercurio::Param::to_json).collect::<Vec<_>>(),
+                    "tokens": d.tokens.iter().map(mercurio::service::Param::to_json).collect::<Vec<_>>(),
+                    "params": d.params.iter().map(mercurio::service::Param::to_json).collect::<Vec<_>>(),
                 })
             })
             .collect();

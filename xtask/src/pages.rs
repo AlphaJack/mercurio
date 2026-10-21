@@ -452,7 +452,7 @@ fn params_table(svc: &Value) -> String {
         out.append(&mut prefixed);
         out.push(String::new());
     }
-    let common: Vec<&str> = mercurio::COMMON_PARAMS.iter().map(|p| p.key).collect();
+    let common: Vec<&str> = mercurio::service::COMMON_PARAMS.iter().map(|p| p.key).collect();
     out.push(format!("The [common URL parameters](../url-parameters.md) ({}) apply as well.", codes(common)));
     out.join("\n") + "\n"
 }
@@ -576,11 +576,11 @@ fn page(
     Ok(parts.join("\n"))
 }
 
-/// The table of [`mercurio::COMMON_PARAMS`], for `url-parameters.md`.
+/// The table of [`mercurio::service::COMMON_PARAMS`], for `url-parameters.md`.
 pub fn common_params_table() -> String {
     let mut out =
         vec!["| Parameter | Meaning | Type | Default | Notes |".to_owned(), "|---|---|---|---|---|".to_owned()];
-    for p in mercurio::COMMON_PARAMS.iter().map(mercurio::Param::to_json) {
+    for p in mercurio::service::COMMON_PARAMS.iter().map(mercurio::service::Param::to_json) {
         out.push(format!(
             "| {} | {} | {} | {} | {} |",
             code(str_of(&p, "key")),

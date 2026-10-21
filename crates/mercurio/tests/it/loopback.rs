@@ -5,7 +5,9 @@ use std::net::TcpListener;
 use std::sync::mpsc;
 use std::thread;
 
-use mercurio::{BlockingTransport, Mercurio, Message, Method, Request, Transport};
+use mercurio::{
+    Mercurio, Message, transport::BlockingTransport, transport::Method, transport::Request, transport::Transport,
+};
 
 type Captured = (String, Vec<(String, String)>, Vec<u8>);
 
@@ -106,7 +108,7 @@ fn unix_echo(path: &str, listener: std::os::unix::net::UnixListener) {
         s.read_exact(&mut b).unwrap();
         s.write_all(&b).unwrap();
     });
-    let mut conn = BlockingTransport::new().connect(&mercurio::Endpoint::unix(path)).unwrap();
+    let mut conn = BlockingTransport::new().connect(&mercurio::transport::Endpoint::unix(path)).unwrap();
     conn.write_all(b"ping").unwrap();
     let mut b = [0u8; 4];
     conn.read_exact(&mut b).unwrap();
@@ -123,7 +125,9 @@ fn unix_socket_round_trip() {
     let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
     unix_echo(&path.to_string_lossy(), listener);
     assert!(
-        BlockingTransport::new().connect(&mercurio::Endpoint::unix(dir.join("missing").to_string_lossy())).is_err()
+        BlockingTransport::new()
+            .connect(&mercurio::transport::Endpoint::unix(dir.join("missing").to_string_lossy()))
+            .is_err()
     );
     std::fs::remove_dir_all(&dir).unwrap();
 }

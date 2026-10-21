@@ -1,6 +1,6 @@
 //! `GET /details`: the service schemas in the shape of Apprise's `details()`.
 
-use mercurio::{Kind, Param, ServiceDef};
+use mercurio::{service::Kind, service::Param, service::ServiceDef};
 use serde_json::{Map, Value, json};
 
 /// One `schemas` entry; `enabled` is only given with `?all=yes`, as in Apprise.
@@ -9,7 +9,7 @@ pub fn schema(d: &ServiceDef, enabled: Option<bool>) -> Value {
     let mut out = json!({
         "service_name": d.name,
         "service_url": d.service_url,
-        "setup_url": format!("{}/services/{}.html", mercurio::PAGES_URL, d.id),
+        "setup_url": format!("{}/services/{}.html", mercurio::asset::PAGES_URL, d.id),
         "details": details(d),
         "attachment_support": d.attachments,
         "category": "native",
@@ -47,7 +47,7 @@ fn details(d: &ServiceDef) -> Value {
     );
     let (mut args, mut kwargs) = (Map::new(), Map::new());
     let usable = |p: &&Param| !p.ignored;
-    for p in d.params.iter().chain(mercurio::COMMON_PARAMS).filter(usable) {
+    for p in d.params.iter().chain(mercurio::service::COMMON_PARAMS).filter(usable) {
         if ["+", "-", ":"].contains(&p.prefix) {
             kwargs.entry(p.key).or_insert_with(|| param(p, &[",", " "]));
             continue;

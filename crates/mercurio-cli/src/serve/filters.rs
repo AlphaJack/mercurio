@@ -177,7 +177,7 @@ impl UrlFilter {
 
 /// POST the result of a notification call to `APPRISE_WEBHOOK_URL`.
 pub async fn send_webhook(
-    transport: &dyn mercurio::AsyncTransport,
+    transport: &dyn mercurio::transport::AsyncTransport,
     url: &str,
     source: &str,
     ok: bool,
@@ -198,9 +198,9 @@ pub async fn send_webhook(
             let (u, p) = userinfo.split_once(':').map(|(u, p)| (u, Some(p))).unwrap_or((userinfo, None));
             let u = mercurio::__private::unquote(u);
             let p = p.map(mercurio::__private::unquote);
-            mercurio::Request::post(format!("{scheme}://{host}{tail}")).basic_auth(&u, p.as_deref())
+            mercurio::transport::Request::post(format!("{scheme}://{host}{tail}")).basic_auth(&u, p.as_deref())
         }
-        None => mercurio::Request::post(url.to_string()),
+        None => mercurio::transport::Request::post(url.to_string()),
     };
     req = req.header("User-Agent", format!("Mercurio/{}", env!("CARGO_PKG_VERSION"))).json(&body);
     match transport.http(&req).await {
