@@ -14,12 +14,12 @@ use crate::blocking::BlockingTransport;
 use crate::config::template::TemplateVars;
 use crate::config::{Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
 use crate::error::{Error, Result};
-use crate::message::{Message, Prepared};
-use crate::plan::{Delivery, Outcome, Plan};
+use crate::message::Message;
+use crate::plan::{Delivery, Outcome};
+use crate::registry::Registry;
 use crate::report::{Attempt, Report, ReportEntry};
-use crate::service::ServiceDef;
 use crate::tag::TagFilter;
-use crate::target::{Target, parse};
+use crate::target::Target;
 use crate::transport::{Blocking, Transport};
 
 /// Most sends in progress at once across every [`Mercurio`] and [`crate::AsyncMercurio`] in the process. Targets of a service with a [`ServiceDef::throttle`] go one at a time, with the throttle between them.
@@ -72,7 +72,7 @@ pub(crate) struct Core {
 
 impl Core {
     pub(crate) fn add(&mut self, url: &str) -> Result<()> {
-        self.targets.push(parse(url)?);
+        self.targets.push(self.config.registry.parse(url)?);
         Ok(())
     }
 
@@ -287,19 +287,6 @@ impl Selection<'_> {
 }
 
 impl Mercurio {
-    /// Register a closure as the notifier for `scheme://` URLs, for every notifier in this process. See [`crate::register`].
-    pub fn register_scheme<F>(scheme: &str, handler: F) -> Result<&'static ServiceDef>
-    where
-        F: Fn(&Prepared<'_>, &crate::registry::Hook<'_>) -> Plan + Send + Sync + 'static,
-    {
-        crate::registry::register_scheme(scheme, handler)
-    }
-
-    /// Add a full service definition at runtime ([`crate::register`]).
-    pub fn register(def: &'static ServiceDef) -> Result<()> {
-        crate::registry::register(def)
-    }
-
     /// A notifier using [`BlockingTransport`] and the default [`Asset`] (feature `transport-blocking`).
     #[cfg(feature = "transport-blocking")]
     pub fn new() -> Self {
@@ -323,10 +310,15 @@ impl Mercurio {
         self
     }
 
-    /// Options for [`Mercurio::add_config`] (include depth, templates, ...).
+    /// Options for [`Mercurio::add_config`] (include depth, templates, ...). `opts.registry` replaces this notifier's [`Registry`].
     pub fn config_options(mut self, opts: ConfigOptions) -> Self {
         self.core.config = opts;
         self
+    }
+
+    /// The runtime services of this notifier: register custom schemes here before adding their URLs.
+    pub fn registry_mut(&mut self) -> &mut Registry {
+        &mut self.core.config.registry
     }
 
     /// Parse and add one URL.
@@ -543,8 +535,11 @@ impl Mercurio {
 mod tests {
     use super::*;
     use crate::error::ErrorClass;
+    use crate::message::Prepared;
+    use crate::plan::Plan;
     use crate::report::Status;
-    use crate::service::{Context, Notify};
+    use crate::service::{Context, Notify, ServiceDef};
+    use crate::target::parse;
     use crate::transport::FileOp;
 
     #[test]
@@ -664,7 +659,6 @@ mod tests {
             parse: |_| Ok(Box::new(Saver)),
             ..ServiceDef::DEFAULTS
         };
-        Mercurio::register(&SAVER).unwrap();
 
         // Flush writes before the second request and is then clean; auto writes once at the end; memory never.
         for (mode, writes) in [(StorageMode::Flush, 2), (StorageMode::Auto, 1), (StorageMode::Memory, 0)] {
@@ -672,6 +666,7 @@ mod tests {
             fake.default_response(crate::Response::new(200, b"{}".to_vec()));
             let asset = Asset { storage_mode: mode, ..Asset::default() }.with_storage("/data");
             let mut m = Mercurio::with_transport(fake.clone()).asset(asset);
+            m.registry_mut().register(&SAVER).unwrap();
             m.add("savertest://host/x").unwrap();
             assert!(m.notify(&Message::new("b")).is_success());
             let written = fake
@@ -703,7 +698,6 @@ mod tests {
             throttle: Duration::from_secs(5),
             ..ServiceDef::DEFAULTS
         };
-        Mercurio::register(&THROTTLED).unwrap();
 
         for sequential in [false, true] {
             let fake = Arc::new(FakeTransport::new());
@@ -712,6 +706,7 @@ mod tests {
             if sequential {
                 m = m.sequential();
             }
+            m.registry_mut().register(&THROTTLED).unwrap();
             for i in 0..3 {
                 m.add(&format!("throttledtest://t{i}")).unwrap();
                 m.add(&format!("json://localhost/t{i}/")).unwrap();

@@ -11,6 +11,7 @@ use crate::error::{Error, ErrorClass, Result};
 use crate::message::{Message, NotifyFormat, OverflowMode, Prepared};
 use crate::plan::{Delivery, DeliveryTracker, ExecOptions, Executor, Outcome, Plan, read_files, run_files};
 use crate::prepare::{PipelineOptions, PreparedMessage};
+use crate::registry::Registry;
 use crate::report::Attempt;
 use crate::service::{Context, Notify, ServiceDef, UrlIdentifier};
 use crate::store::{Memo, PersistentStore, StoreRef};
@@ -18,12 +19,12 @@ use crate::tag::Tag;
 use crate::transport::{AsyncTransport, Blocking, Transport};
 use crate::url::{ParseOptions, ParsedUrl, parse_url_with, scheme_of};
 
-/// Every service compiled into this build (services added at runtime with [`crate::register`] are not listed).
+/// Every service compiled into this build (services added at runtime to a [`Registry`] are not listed).
 pub fn services() -> &'static [&'static ServiceDef] {
     crate::services::ALL
 }
 
-/// The service handling `scheme`: compiled-in services first, then those registered at runtime ([`crate::register`], [`crate::register_scheme`]).
+/// The compiled-in service handling `scheme`. [`Registry::service_for_scheme`] also looks at runtime services.
 pub fn service_for_scheme(scheme: &str) -> Option<&'static ServiceDef> {
     // Compiled-in schemes by ASCII-lowercased name; the first service listing a scheme wins, as with a scan of `services()`.
     static BY_SCHEME: LazyLock<BTreeMap<String, &'static ServiceDef>> = LazyLock::new(|| {
@@ -41,7 +42,7 @@ pub fn service_for_scheme(scheme: &str) -> Option<&'static ServiceDef> {
     } else {
         BY_SCHEME.get(scheme)
     };
-    found.copied().or_else(|| crate::registry::lookup(scheme))
+    found.copied()
 }
 
 /// Longest `Retry-After` a `?retry=` loop waits for; longer requests end the retries instead of blocking the caller.
@@ -91,28 +92,32 @@ impl fmt::Debug for Target {
     }
 }
 
-/// Parse a service URL into a [`Target`].
+/// Parse a service URL into a [`Target`], with the compiled-in services only. [`Registry::parse`] also knows runtime services.
 pub fn parse(url: &str) -> Result<Target> {
+    parse_with(url, &Registry::default())
+}
+
+pub(crate) fn parse_with(url: &str, registry: &Registry) -> Result<Target> {
     // `/#channel` is a literal '#', not a fragment.
     let url = url.replace("/#", "/%23");
     let scheme = scheme_of(&url).ok_or_else(|| Error::InvalidUrl(crate::plan::redact_url(&url)))?;
-    if let Some(def) = service_for_scheme(&scheme) {
-        return build(def, &url);
+    if let Some(def) = registry.service_for_scheme(&scheme) {
+        return build(def, &url, registry);
     }
-    for def in services().iter().copied().chain(crate::registry::registered()) {
+    for def in services().iter().copied().chain(registry.registered()) {
         if let Some(native) = def.parse_native
             && let Some(mapped) = native(&url)
         {
             let mapped = mapped.replace("/#", "/%23");
             let scheme = scheme_of(&mapped).unwrap_or_default();
-            let target_def = service_for_scheme(&scheme).unwrap_or(def);
-            return build(target_def, &mapped);
+            let target_def = registry.service_for_scheme(&scheme).unwrap_or(def);
+            return build(target_def, &mapped, registry);
         }
     }
     Err(Error::UnknownScheme(scheme))
 }
 
-fn build(def: &'static ServiceDef, url: &str) -> Result<Target> {
+fn build(def: &'static ServiceDef, url: &str, registry: &Registry) -> Result<Target> {
     let opts = ParseOptions { verify_host: false, ..Default::default() };
     let parsed = parse_url_with(url, opts).ok_or_else(|| Error::InvalidUrl(format!("{}://...", def.schemes[0])))?;
     if let Some(tz) = parsed.tz.as_deref()
@@ -120,7 +125,7 @@ fn build(def: &'static ServiceDef, url: &str) -> Result<Target> {
     {
         return Err(Error::config(def.name, format!("An invalid notification timezone ({tz}) was specified.")));
     }
-    let service = (def.parse)(&parsed)?;
+    let service = registry.build(def, &parsed)?;
     Ok(Target::new(def, service, &parsed))
 }
 

@@ -14,7 +14,7 @@ use crate::notify::{Core, Escalation, Mercurio, SEND_PERMITS, Selection, lanes, 
 use crate::report::{Report, ReportEntry};
 use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking};
-use crate::{Asset, Message, Plan, Prepared, ServiceDef, TagFilter};
+use crate::{Asset, Message, Registry, TagFilter};
 
 /// A set of notification targets sending through an [`AsyncTransport`].
 ///
@@ -74,19 +74,6 @@ impl From<Mercurio> for AsyncMercurio {
 }
 
 impl AsyncMercurio {
-    /// Register a closure as the notifier for `scheme://` URLs, for every notifier in this process. See [`crate::register`].
-    pub fn register_scheme<F>(scheme: &str, handler: F) -> Result<&'static ServiceDef>
-    where
-        F: Fn(&Prepared<'_>, &crate::registry::Hook<'_>) -> Plan + Send + Sync + 'static,
-    {
-        crate::registry::register_scheme(scheme, handler)
-    }
-
-    /// Add a full service definition at runtime ([`crate::register`]).
-    pub fn register(def: &'static ServiceDef) -> Result<()> {
-        crate::registry::register(def)
-    }
-
     /// A notifier on [`crate::TokioTransport`] and the default [`Asset`].
     #[cfg(feature = "transport-tokio")]
     pub fn new() -> Self {
@@ -110,10 +97,15 @@ impl AsyncMercurio {
         self
     }
 
-    /// Options for [`AsyncMercurio::add_config`] (include depth, templates, ...).
+    /// Options for [`AsyncMercurio::add_config`] (include depth, templates, ...). `opts.registry` replaces this notifier's [`Registry`].
     pub fn config_options(mut self, opts: ConfigOptions) -> Self {
         self.core.config = opts;
         self
+    }
+
+    /// The runtime services of this notifier: register custom schemes here before adding their URLs.
+    pub fn registry_mut(&mut self) -> &mut Registry {
+        &mut self.core.config.registry
     }
 
     /// Parse and add one URL.
@@ -296,10 +288,9 @@ mod tests {
             throttle: Duration::from_secs(5),
             ..ServiceDef::DEFAULTS
         };
-        Mercurio::register(&THROTTLED).unwrap();
-
         let fake = Arc::new(FakeTransport::new());
         let mut m = notifier(&fake);
+        m.registry_mut().register(&THROTTLED).unwrap();
         for i in 0..3 {
             m.add(&format!("throttledasynctest://t{i}")).unwrap();
             m.add(&format!("json://localhost/t{i}/")).unwrap();
@@ -368,12 +359,13 @@ mod tests {
 
     #[test]
     fn same_api_as_the_blocking_notifier() {
-        AsyncMercurio::register_scheme("asyncparity", |msg, _| {
-            Plan::send(crate::Request::post(format!("http://localhost/{}", msg.body)))
-        })
-        .unwrap();
         let fake = Arc::new(FakeTransport::new());
         let mut m = notifier(&fake);
+        m.registry_mut()
+            .register_scheme("asyncparity", |msg, _| {
+                Plan::send(crate::Request::post(format!("http://localhost/{}", msg.body)))
+            })
+            .unwrap();
         m.add("asyncparity://x").unwrap();
         m.add("json://localhost/dropped").unwrap();
         m.retain(|t| t.service().id != "json");

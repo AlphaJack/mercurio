@@ -204,7 +204,7 @@ impl Loader<'_> {
                 ConfigFormat::Yaml => parse_yaml(&content, self.opts),
             };
             let includes = parsed.includes.clone();
-            build(parsed, cfg);
+            build(parsed, cfg, &self.opts.registry);
             for inc in includes {
                 if recursion == 0 {
                     log::debug!("Recursion limit reached; ignoring Include URL: {}", crate::plan::redact_url(&inc));
