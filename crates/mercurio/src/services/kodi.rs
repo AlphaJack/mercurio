@@ -77,7 +77,7 @@ impl Notify for Kodi {
             "method": "GUI.ShowNotification",
             "params": {
                 "title": msg.title,
-                "message": msg.body,
+                "message": crate::http::TEXT,
                 "displaytime": self.duration.saturating_mul(1000),
             },
             "id": 1,
@@ -94,7 +94,7 @@ impl Notify for Kodi {
             }
         }
         let mut req = ctx.post(&self.url)
-            .json(&payload);
+            .json_text(&payload, msg.body);
         req = req.basic_auth_opt(self.user.as_deref(), self.password.as_ref().map(Secret::expose));
         Plan::send_expect(req, &[200])
     }

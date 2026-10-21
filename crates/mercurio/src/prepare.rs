@@ -188,7 +188,8 @@ pub fn apply_overflow<'m>(
         .into();
         title.clear();
     }
-    if limits.body_max_line_count > 0 {
+    // A body with no line break is one line already: the split and join would return it unchanged.
+    if limits.body_max_line_count > 0 && body.contains('\n') {
         let re = crate::regex!(r"\r*\n");
         body = re.split(&body).take(limits.body_max_line_count).collect::<Vec<_>>().join("\r\n").into();
     }

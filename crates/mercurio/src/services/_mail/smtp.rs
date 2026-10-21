@@ -260,8 +260,8 @@ impl Smtp {
             }
             State::Data { msg, .. } if r.code != 354 => self.rset(msg, smtp_error("DATA", r)),
             State::Data { msg, refused } => {
-                let data = super::mime::dot_stuff(&self.job.messages[msg].data);
-                self.out.extend_from_slice(&data);
+                // The message is sent once: its buffer is handed on instead of copied.
+                super::mime::dot_stuff_owned(&mut self.out, std::mem::take(&mut self.job.messages[msg].data));
                 self.send(".", State::Dot { msg, refused });
             }
             State::Dot { msg, refused } => {

@@ -249,7 +249,7 @@ impl Notify for Mattermost {
                     None => None,
                 };
                 let post = |channel: Option<&str>| {
-                    let mut payload = json!({"text": msg.body});
+                    let mut payload = json!({"text": crate::http::TEXT});
                     if let Some(i) = &image {
                         payload["icon_url"] = json!(i);
                     }
@@ -257,7 +257,7 @@ impl Notify for Mattermost {
                     if let Some(c) = channel.filter(|c| !c.is_empty()) {
                         payload["channel"] = json!(c);
                     }
-                    let req = Request::post(&url).header("User-Agent", &ua).json(&payload);
+                    let req = Request::post(&url).header("User-Agent", &ua).json_text(&payload, msg.body);
                     Plan::send_expect(req, &[200])
                 };
                 if self.targets.is_empty() {

@@ -254,9 +254,9 @@ fn parse_native(url: &str) -> Option<String> {
 }
 
 /// One upload: (filename, data).
-struct Upload<'a> {
+struct Upload {
     name: String,
-    data: &'a [u8],
+    data: bytes::Bytes,
 }
 
 /// Per-message values shared by every request.
@@ -269,7 +269,7 @@ struct Common<'a> {
 
 impl Ntfy {
     /// Publish to one topic; `None` attach sends JSON.
-    fn send_one(&self, topic: &str, body: &str, title: &str, upload: Option<Upload<'_>>, common: &Common<'_>) -> Plan {
+    fn send_one(&self, topic: &str, body: &str, title: &str, upload: Option<Upload>, common: &Common<'_>) -> Plan {
         let mut headers: Vec<(&str, String)> = vec![("User-Agent", common.app_id.to_string())];
         let mut basic: Option<(&str, Option<&str>)> = None;
         let mut url = match self.mode {
@@ -306,7 +306,7 @@ impl Ntfy {
                 payload.insert("title".into(), json!(title));
             }
             if !body.is_empty() {
-                payload.insert("message".into(), json!(body));
+                payload.insert("message".into(), json!(crate::http::TEXT));
             }
         } else {
             url.push('/');
@@ -344,18 +344,18 @@ impl Ntfy {
             headers.push(("X-Actions", a.clone()));
         }
 
-        let data: Vec<u8> = match upload {
-            Some(up) => up.data.to_vec(),
+        let data: bytes::Bytes = match upload {
+            Some(up) => up.data,
             None => {
-                if serde_json::to_string(&payload).map_or(0, |s| s.len()) > JSON_SIZE_LIMIT {
+                if crate::http::json_text_len(&Value::Object(payload.clone()), body) > JSON_SIZE_LIMIT {
                     // Send the message as an attachment instead.
                     let content =
                         format!("{}{}", if title.is_empty() { String::new() } else { format!("{title}\n") }, body);
                     let name = format!("{}.txt", common.env.uuid4());
-                    let up = Upload { name, data: content.as_bytes() };
+                    let up = Upload { name, data: bytes::Bytes::from(content.into_bytes()) };
                     return self.send_one(topic, "", "", Some(up), common);
                 }
-                serde_json::to_vec(&Value::Object(payload)).unwrap_or_default()
+                bytes::Bytes::from(crate::http::json_with_text(&Value::Object(payload), body))
             }
         };
 
@@ -406,7 +406,7 @@ impl Notify for Ntfy {
             Plan::chain(topics.map(|topic| {
                 Plan::chain(msg.attachments.iter().enumerate().map(|(no, a)| {
                     let (body, title) = if no == 0 { (msg.body, msg.title) } else { ("", "") };
-                    let up = Upload { name: a.name.clone(), data: &a.data };
+                    let up = Upload { name: a.name.clone(), data: a.data.clone() };
                     self.send_one(topic, body, title, Some(up), &common)
                 }))
                 .target(topic.clone())

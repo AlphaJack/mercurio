@@ -205,16 +205,21 @@ pub fn connect_packet(
 
 /// PUBLISH packet (`packet_id` is ignored for QoS 0).
 pub fn publish_packet(version: Version, topic: &str, payload: &[u8], qos: u8, retain: bool, packet_id: u16) -> Vec<u8> {
-    let mut body = Vec::new();
-    put_str(&mut body, topic.as_bytes());
+    // The variable header is small; the payload is copied once, into the packet.
+    let mut head = Vec::new();
+    put_str(&mut head, topic.as_bytes());
     if qos > 0 {
-        body.extend_from_slice(&packet_id.to_be_bytes());
+        head.extend_from_slice(&packet_id.to_be_bytes());
     }
     if version == Version::V5 {
-        body.push(0);
+        head.push(0);
     }
-    body.extend_from_slice(payload);
-    packet(0x30 | (qos << 1) | u8::from(retain), &body)
+    let mut out = Vec::with_capacity(1 + 4 + head.len() + payload.len());
+    out.push(0x30 | (qos << 1) | u8::from(retain));
+    encode_varint(head.len() + payload.len(), &mut out);
+    out.extend_from_slice(&head);
+    out.extend_from_slice(payload);
+    out
 }
 
 /// A control packet read from the broker.
@@ -326,7 +331,12 @@ impl Client {
         };
         self.packet_id = self.packet_id.checked_add(1).unwrap_or(1);
         let p = publish_packet(self.s.version, t, &self.s.payload, self.s.qos, self.s.retain, self.packet_id);
-        self.out.extend_from_slice(&p);
+        // The packet is the payload plus a few bytes: take it as the output instead of copying it into one.
+        if self.out.is_empty() {
+            self.out = p;
+        } else {
+            self.out.extend_from_slice(&p);
+        }
         match self.s.qos {
             1 => self.state = State::Puback { topic },
             2 => self.state = State::Pubrec { topic },
