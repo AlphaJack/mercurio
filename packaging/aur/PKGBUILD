@@ -10,17 +10,22 @@ provides=('mercurio')
 conflicts=('mercurio')
 options=('!strip' '!debug')
 backup=('etc/mercurio/mercurio.env')
-source_x86_64=("$url/releases/download/v$pkgver/mercurio-cli-x86_64-unknown-linux-musl.tar.xz")
-source_aarch64=("$url/releases/download/v$pkgver/mercurio-cli-aarch64-unknown-linux-musl.tar.xz")
-source_armv7h=("$url/releases/download/v$pkgver/mercurio-cli-armv7-unknown-linux-musleabihf.tar.xz")
+source_x86_64=("$pkgname-$pkgver-x86_64-unknown-linux-musl.tar.xz::$url/releases/download/v$pkgver/mercurio-cli-x86_64-unknown-linux-musl.tar.xz")
+source_aarch64=("$pkgname-$pkgver-aarch64-unknown-linux-musl.tar.xz::$url/releases/download/v$pkgver/mercurio-cli-aarch64-unknown-linux-musl.tar.xz")
+source_armv7h=("$pkgname-$pkgver-armv7-unknown-linux-musleabihf.tar.xz::$url/releases/download/v$pkgver/mercurio-cli-armv7-unknown-linux-musleabihf.tar.xz")
 b2sums_x86_64=('SKIP')
 b2sums_aarch64=('SKIP')
 b2sums_armv7h=('SKIP')
 
 package() {
-  local dir
-  dir="$(dirname "$(find "$srcdir" -type f -name mercurio | head -n 1)")"
-  install -Dm755 "$dir/mercurio" "$pkgdir/usr/bin/mercurio"
-  install -Dm644 "$dir/mercurio.service" "$pkgdir/usr/lib/systemd/system/mercurio.service"
-  install -Dm600 "$dir/mercurio.env" "$pkgdir/etc/mercurio/mercurio.env"
+  local target
+  case "$CARCH" in
+    "x86_64") target="x86_64-unknown-linux-musl" ;;
+    "aarch64") target="aarch64-unknown-linux-musl" ;;
+    "armv7h") target="armv7-unknown-linux-musleabihf" ;;
+  esac
+  cd "$srcdir/mercurio-cli-$target"
+  install -Dm755 mercurio "$pkgdir/usr/bin/mercurio"
+  install -Dm644 mercurio.service "$pkgdir/usr/lib/systemd/system/mercurio.service"
+  install -Dm600 mercurio.env "$pkgdir/etc/mercurio/mercurio.env"
 }
