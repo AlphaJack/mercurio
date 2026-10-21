@@ -5,7 +5,8 @@
 //! # Differences with Apprise
 //!
 //! - `?pgp=sign` (feature `service-email-pgp`) signs with Ed25519 keys (GnuPG's encoding) and RSA keys of 2048 to 8192 bits, while Apprise also accepts DSA, ECDSA and smaller RSA keys: mercurio's OpenPGP is its own, built on `ring`, and covers those two.
-//! - `?pgp=encrypt` and `?wkd=yes` are validated like Apprise, but delivery fails with `Unsupported`; signed mail does not yet carry the Autocrypt header or get encrypted when a recipient key exists. *todo*
+//! - `?pgp=encrypt` (and `?pgp=sign` when the recipient's key is at hand) encrypts to Curve25519 (`cv25519`) and RSA keys, without compression, while Apprise compresses the message (ZIP) and also encrypts to ECDH keys on the NIST, Brainpool and secp256k1 curves.
+//! - `?wkd=yes` key lookup, the Autocrypt header and key generation for messages to oneself are missing: without a key in `?pgppub=` or the storage folder, encryption fails. *todo*
 //! - `?reply=` with several targets raised on the second target in Apprise, while mercurio sends it.
 
 use crate::service::{Notify, Param, ServiceDef};
@@ -51,8 +52,9 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("inline", "Inline Attachments").bool(false),
         Param::new("mode", "Secure Mode").choice(&["starttls", "ssl", "insecure"]).default("starttls").inferred(),
         Param::new("name", "From Name"),
-        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("`sign` needs an Ed25519 or RSA (2048 to 8192 bits) key; without the `service-email-pgp` feature a PGP mode fails with `Unsupported`").inferred(),
+        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("`sign`: Ed25519 or RSA (2048 to 8192 bits) private key; `encrypt`: cv25519 or RSA public key; without the `service-email-pgp` feature a PGP mode fails with `Unsupported`").inferred(),
         Param::new("pgpprv", "PGP Private Key Path").secret().note("path, `file://` or `http(s)://`; default: the storage folder"),
+        Param::new("pgppub", "PGP Public Key Path").secret().note("path, `file://` or `http(s)://`; default: the storage folder"),
         Param::new("reply", "Reply To").list(", "),
         Param::new("smtp", "SMTP Server"),
         Param::new("to", "To Email"),

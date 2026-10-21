@@ -10,6 +10,9 @@ use ring::signature::{Ed25519KeyPair, RSA_PKCS1_SHA256, RsaKeyPair};
 use crate::crypto;
 use crate::env::Env;
 
+mod encrypt;
+pub use encrypt::encrypt;
+
 /// Why a key could not sign.
 #[derive(Debug, PartialEq, Eq)]
 pub enum SignError {
@@ -120,8 +123,13 @@ fn dearmor(text: &str) -> Option<Vec<u8>> {
     Some(data)
 }
 
-/// The first packet: its tag and body. Old and new packet formats; partial and indeterminate lengths are refused (keys never use them).
+/// The first packet: its tag and body (see [`next_packet`]).
 fn first_packet(data: &[u8]) -> Option<(u8, &[u8])> {
+    next_packet(data).map(|(tag, body, _)| (tag, body))
+}
+
+/// The packet at the start of `data`: its tag, its body and what follows it. Old and new packet formats; partial and indeterminate lengths are refused (keys never use them).
+fn next_packet(data: &[u8]) -> Option<(u8, &[u8], &[u8])> {
     let head = *data.first()?;
     if head & 0x80 == 0 {
         return None;
@@ -143,7 +151,8 @@ fn first_packet(data: &[u8]) -> Option<(u8, &[u8])> {
             _ => return None,
         }
     };
-    Some((tag, data.get(start..start.checked_add(len)?)?))
+    let end = start.checked_add(len)?;
+    Some((tag, data.get(start..end)?, data.get(end..)?))
 }
 
 /// A multiprecision integer at the start of `b` (its value without leading zeros), and what follows it.
@@ -432,11 +441,11 @@ mod tests {
 
     use super::*;
 
-    const ED25519_KEY: &str = include_str!("../../../tests/fixtures/data/pgp/ed25519.asc");
-    const LOCKED_KEY: &str = include_str!("../../../tests/fixtures/data/pgp/ed25519-locked.asc");
-    const RSA_KEY: &str = include_str!("../../../tests/fixtures/data/pgp/rsa.asc");
-    /// `gpg --fingerprint` of `ED25519_KEY`.
-    const ED25519_FPR: &str = "91C4B7D9E4C600F7122145D5B401712C1AE117D4";
+    const ALICE_ED25519: &str = include_str!("../../../tests/fixtures/data/pgp_alice_ed25519.asc");
+    const ALICE_LOCKED: &str = include_str!("../../../tests/fixtures/data/pgp_alice_ed25519_locked.asc");
+    const ALICE_RSA: &str = include_str!("../../../tests/fixtures/data/pgp_alice_rsa.asc");
+    /// `gpg --fingerprint` of `ALICE_ED25519`.
+    const ALICE_ED25519_FPR: &str = "91C4B7D9E4C600F7122145D5B401712C1AE117D4";
 
     /// Check an armored detached signature over `data` against `key` (armored): the packet parsed back, the digest recomputed, the signature verified.
     fn verify_with(key: &str, sig: &str, data: &[u8]) {
@@ -470,19 +479,19 @@ mod tests {
     }
 
     fn verify(sig: &str, data: &[u8]) {
-        verify_with(ED25519_KEY, sig, data);
+        verify_with(ALICE_ED25519, sig, data);
     }
 
     #[test]
     fn gnupg_key_fingerprint() {
-        let key = secret_key(ED25519_KEY.as_bytes()).unwrap();
-        assert_eq!(crypto::hex(&key.fingerprint).to_uppercase(), ED25519_FPR);
+        let key = secret_key(ALICE_ED25519.as_bytes()).unwrap();
+        assert_eq!(crypto::hex(&key.fingerprint).to_uppercase(), ALICE_ED25519_FPR);
     }
 
     #[test]
     fn signatures_verify() {
         let data = b"Content-Type: text/plain\r\n\r\nhello";
-        let (sig, micalg) = sign(ED25519_KEY.as_bytes(), data, crate::testing::test_env()).unwrap();
+        let (sig, micalg) = sign(ALICE_ED25519.as_bytes(), data, crate::testing::test_env()).unwrap();
         assert_eq!(micalg, "pgp-sha256");
         assert!(sig.starts_with("-----BEGIN PGP SIGNATURE-----\r\n\r\n"), "{sig}");
         assert!(sig.ends_with("-----END PGP SIGNATURE-----\r\n"), "{sig}");
@@ -493,9 +502,9 @@ mod tests {
     #[test]
     fn rsa_signatures_verify() {
         let data = b"Content-Type: text/plain\r\n\r\nhello";
-        let (sig, micalg) = sign(RSA_KEY.as_bytes(), data, crate::testing::test_env()).unwrap();
+        let (sig, micalg) = sign(ALICE_RSA.as_bytes(), data, crate::testing::test_env()).unwrap();
         assert_eq!(micalg, "pgp-sha256");
-        verify_with(RSA_KEY, &sig, data);
+        verify_with(ALICE_RSA, &sig, data);
     }
 
     #[test]
@@ -511,10 +520,10 @@ mod tests {
     #[test]
     fn other_keys_are_refused() {
         let env = crate::testing::test_env();
-        assert_eq!(sign(LOCKED_KEY.as_bytes(), b"x", env), Err(SignError::Protected));
+        assert_eq!(sign(ALICE_LOCKED.as_bytes(), b"x", env), Err(SignError::Protected));
         assert_eq!(sign(b"not a key", b"x", env), Err(SignError::Unreadable));
         // A damaged armor checksum.
-        let damaged = ED25519_KEY.replacen("lFgE", "lFgF", 1);
+        let damaged = ALICE_ED25519.replacen("lFgE", "lFgF", 1);
         assert_eq!(sign(damaged.as_bytes(), b"x", env), Err(SignError::Unreadable));
     }
 
@@ -524,13 +533,11 @@ mod tests {
         assert_eq!(crc24(b"123456789"), 0x0021_cf02);
     }
 
-    /// A signed e-mail end to end: the key from `?pgpprv=`, the message through a scripted SMTP server, the signature checked over the exact signed part.
-    #[test]
-    fn signed_mail_verifies() {
+    /// A scripted SMTP server on `fake`: the lines of every message it receives (dot-stuffing undone).
+    pub(super) fn capture_smtp(fake: &crate::testing::FakeTransport) -> std::sync::Arc<std::sync::Mutex<Vec<String>>> {
         use std::sync::{Arc, Mutex};
 
-        use crate::testing::{FakeTransport, ScriptedConn};
-        use crate::{Asset, Message};
+        use crate::testing::ScriptedConn;
 
         let data = Arc::new(Mutex::new(Vec::<String>::new()));
         let seen = data.clone();
@@ -560,9 +567,19 @@ mod tests {
                 .into(),
             )
         });
-        let fake = FakeTransport::new();
         fake.push_conn(conn);
-        fake.file("/keys/me.asc", ED25519_KEY);
+        data
+    }
+
+    /// A signed e-mail end to end: the key from `?pgpprv=`, the message through a scripted SMTP server, the signature checked over the exact signed part.
+    #[test]
+    fn signed_mail_verifies() {
+        use crate::testing::FakeTransport;
+        use crate::{Asset, Message};
+
+        let fake = FakeTransport::new();
+        let data = capture_smtp(&fake);
+        fake.file("/keys/me.asc", ALICE_ED25519);
         let url = "mailto://user:pass@example.com:2525?to=bob@example.org&pgp=sign&pgpprv=/keys/me.asc";
         let d = crate::parse(url).unwrap().send(&Message::new("hello").title("T"), &fake, &Asset::default());
         assert!(d.is_success(), "{d:?}");

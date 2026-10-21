@@ -277,6 +277,8 @@ pub struct Email {
     pgp: Pgp,
     /// `?pgpprv=`: the private key's path or URL.
     pgp_prv: Option<String>,
+    /// `?pgppub=`: the recipients' public key's path or URL.
+    pgp_pub: Option<String>,
     inline: bool,
 }
 
@@ -286,6 +288,13 @@ const SIGN_FAILED: &str =
 
 /// Largest private key read (Apprise's `max_pgp_private_key_size`).
 const MAX_PRIVATE_KEY: u64 = 32_000;
+
+/// Why encryption failed, as Apprise words it.
+const ENCRYPT_FAILED: &str =
+    "Unable to encrypt email via PGP; supply a public key via pgppub= or place one in the cache directory";
+
+/// Largest public key read (Apprise's `max_pgp_public_key_size`).
+const MAX_PUBLIC_KEY: u64 = 8_000;
 
 /// `re.split(r"[\s@]+", user)[0]`.
 fn user_prefix(user: &str) -> &str {
@@ -303,6 +312,16 @@ fn set_name(names: &mut Vec<(String, Name)>, addr: &str, name: Name) {
         Some(entry) => entry.1 = name,
         None => names.push((addr.to_string(), name)),
     }
+}
+
+/// Public key file names in the storage folder for `to`, best first (Apprise's `_pub_key_candidates`).
+fn public_key_names(to: &str) -> Vec<String> {
+    let mut names = vec![
+        format!("{}-pub.asc", to.to_lowercase()),
+        format!("{}-pub.asc", to.split('@').next().unwrap_or("").to_lowercase()),
+    ];
+    names.extend(["pgp-public.asc", "pgp-pub.asc", "public.asc", "pub.asc"].map(String::from));
+    names
 }
 
 /// Private key file names in the storage folder, best first (Apprise's `_prv_key_candidates`).
@@ -506,6 +525,7 @@ impl Email {
             headers,
             pgp,
             pgp_prv: def.text(u, "pgpprv"),
+            pgp_pub: def.text(u, "pgppub"),
             inline,
         })
     }
@@ -543,6 +563,20 @@ impl Email {
         private_key_names(&self.from_addr).iter().map(|n| dir.join(n).display().to_string()).collect()
     }
 
+    /// Public key files to look at for `to`: `?pgppub=`, else Apprise's names in the storage folder.
+    fn public_key_specs(&self, ctx: &Context<'_>, to: &str) -> Vec<String> {
+        if let Some(spec) = &self.pgp_pub {
+            return vec![spec.clone()];
+        }
+        let Some(dir) = ctx.store.path() else { return Vec::new() };
+        public_key_names(to).iter().map(|n| dir.join(n).display().to_string()).collect()
+    }
+
+    /// The first public key for `to` that could be read.
+    fn public_key<'a>(&self, ctx: &Context<'a>, to: &str) -> Option<&'a [u8]> {
+        self.public_key_specs(ctx, to).iter().find_map(|spec| read_local_file(ctx, spec, MAX_PUBLIC_KEY))
+    }
+
     /// The first private key that could be read.
     fn private_key<'a>(&self, ctx: &Context<'a>) -> Option<&'a [u8]> {
         let key = self.private_key_specs(ctx).iter().find_map(|spec| read_local_file(ctx, spec, MAX_PRIVATE_KEY));
@@ -558,7 +592,9 @@ impl Email {
         let subject = match (self.flavor, self.pgp) {
             // A signed message must not show its content in the subject either.
             (Flavor::DeltaChat, Pgp::Sign) => "Chat:".to_string(),
-            (Flavor::DeltaChat, Pgp::None | Pgp::Encrypt) => Self::chat_subject(msg.body),
+            // Delta Chat's placeholder when the subject is not carried inside the encryption.
+            (Flavor::DeltaChat, Pgp::Encrypt) => "Chat: Encrypted message".to_string(),
+            (Flavor::DeltaChat, Pgp::None) => Self::chat_subject(msg.body),
             (Flavor::Email, _) => msg.title.to_string(),
         };
         let subject: String = subject.split_whitespace().collect::<Vec<_>>().join(" ");
@@ -648,8 +684,37 @@ impl Email {
                 base = Part::multi(if cid_refs.is_empty() { "mixed" } else { "related" }, parts);
             }
 
-            if self.pgp == Pgp::Sign {
-                base = self.signed(base, ctx)?;
+            match self.pgp {
+                Pgp::None => {}
+                Pgp::Sign => {
+                    // Signed, then encrypted too when the recipient's key is at hand.
+                    base = self.signed(base, ctx)?;
+                    if let Some(key) = self.public_key(ctx, to_addr) {
+                        let content = super::mime::render_part_alone(&base, ctx.env().as_ref());
+                        if let Ok(enc) = self.encrypted(key, &content, ctx) {
+                            base = enc;
+                        }
+                    }
+                }
+                Pgp::Encrypt => {
+                    // The From, To and Subject travel inside the encryption too.
+                    let inner = super::mime::render_part_alone(&base, ctx.env().as_ref());
+                    let protected = format!(
+                        "From: {}\r\nTo: {}\r\nSubject: {}\r\n",
+                        self.from_addr,
+                        to_addr,
+                        header_value(&subject)
+                    );
+                    let content = match inner.split_once("\r\n\r\n") {
+                        Some((head, body)) => format!("{head}\r\n{protected}\r\n{body}"),
+                        None => inner,
+                    };
+                    let key = self.public_key(ctx, to_addr).ok_or_else(|| {
+                        log::warn!("{}", if self.pgp_pub.is_some() { "PGP Public Key could not be accessed" } else { "No PGP public key found" });
+                        Error::Service(ENCRYPT_FAILED.into())
+                    })?;
+                    base = self.encrypted(key, &content, ctx)?;
+                }
             }
 
             let mut headers: Vec<(String, String)> = Vec::new();
@@ -711,6 +776,36 @@ impl Email {
         })
     }
 
+    /// RFC 3156 `multipart/encrypted`: the version part, then `content` encrypted to `key`.
+    #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
+    fn encrypted<'a>(&self, key: &[u8], content: &str, ctx: &Context<'_>) -> Result<Part<'a>> {
+        let armored = super::pgp::encrypt(key, content.as_bytes(), ctx.env().as_ref()).map_err(|e| {
+            log::warn!("{}", e.warning());
+            Error::Service(ENCRYPT_FAILED.into())
+        })?;
+        let version = Part::Leaf {
+            headers: vec![
+                ("Content-Type".into(), "application/pgp-encrypted; charset=\"us-ascii\"".into()),
+                ("Content-Transfer-Encoding".into(), "7bit".into()),
+            ],
+            content: super::mime::Content::Encoded("Version: 1".into()),
+        };
+        let data = Part::Leaf {
+            headers: vec![("Content-Type".into(), "application/octet-stream".into())],
+            content: super::mime::Content::Encoded(armored),
+        };
+        Ok(Part::Multi {
+            subtype: "encrypted",
+            params: "; protocol=\"application/pgp-encrypted\"".into(),
+            parts: vec![version, data],
+        })
+    }
+
+    #[cfg(not(any(feature = "service-email-pgp", feature = "service-deltachat-pgp")))]
+    fn encrypted<'a>(&self, _: &[u8], _: &str, _: &Context<'_>) -> Result<Part<'a>> {
+        Err(Error::Unsupported("PGP encryption of e-mail is not compiled in".into()))
+    }
+
     #[cfg(not(any(feature = "service-email-pgp", feature = "service-deltachat-pgp")))]
     fn signed<'a>(&self, _: Part<'a>, _: &Context<'_>) -> Result<Part<'a>> {
         Err(Error::Unsupported("PGP signing of e-mail is not compiled in".into()))
@@ -728,8 +823,7 @@ impl Notify for Email {
                 let feature = if self.flavor == Flavor::Email { "service-email-pgp" } else { "service-deltachat-pgp" };
                 return Plan::Fail(Error::Unsupported(format!("PGP needs the `{feature}` feature")));
             }
-            Pgp::Sign => {}
-            Pgp::Encrypt => return Plan::Fail(Error::Unsupported("PGP encryption of e-mail is not supported yet".into())),
+            Pgp::Sign | Pgp::Encrypt => {}
         }
         let messages = match self.prepare(msg, ctx) {
             Ok(m) => m,
@@ -757,17 +851,31 @@ impl Notify for Email {
     }
 
     fn files(&self, ctx: &Context<'_>) -> Vec<FileOp> {
-        if self.pgp != Pgp::Sign {
-            return Vec::new();
+        let mut specs = Vec::new();
+        if self.pgp == Pgp::Sign {
+            specs.extend(self.private_key_specs(ctx));
         }
-        self.private_key_specs(ctx).iter().flat_map(|s| local_file_ops(s)).collect()
+        if self.pgp != Pgp::None {
+            for (_, to) in &self.targets {
+                for spec in self.public_key_specs(ctx, to) {
+                    if !specs.contains(&spec) {
+                        specs.push(spec);
+                    }
+                }
+            }
+        }
+        specs.iter().flat_map(|s| local_file_ops(s)).collect()
     }
 
     fn fetches(&self, ctx: &Context<'_>) -> Vec<crate::http::Request> {
-        match (&self.pgp_prv, self.pgp) {
-            (Some(spec), Pgp::Sign) => remote_fetches(ctx, spec, MAX_PRIVATE_KEY),
-            _ => Vec::new(),
+        let mut out = Vec::new();
+        if let (Some(spec), Pgp::Sign) = (&self.pgp_prv, self.pgp) {
+            out.extend(remote_fetches(ctx, spec, MAX_PRIVATE_KEY));
         }
+        if let (Some(spec), Pgp::Sign | Pgp::Encrypt) = (&self.pgp_pub, self.pgp) {
+            out.extend(remote_fetches(ctx, spec, MAX_PUBLIC_KEY));
+        }
+        out
     }
 
 }
