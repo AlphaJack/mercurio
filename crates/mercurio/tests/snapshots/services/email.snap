@@ -1790,7 +1790,7 @@ path_target_quoted:
   valid: true
 pgp_encrypt:
   errors:
-    - "unsupported: PGP encryption of e-mail is not supported yet"
+    - "service error: Unable to encrypt email via PGP; supply a public key via pgppub= or place one in the cache directory"
   events: []
   ok: false
   valid: true
@@ -2486,7 +2486,7 @@ user_param:
   valid: true
 wkd_implies_encrypt:
   errors:
-    - "unsupported: PGP encryption of e-mail is not supported yet"
+    - "service error: Unable to encrypt email via PGP; supply a public key via pgppub= or place one in the cache directory"
   events: []
   ok: false
   valid: true

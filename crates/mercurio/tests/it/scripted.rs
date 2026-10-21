@@ -128,14 +128,15 @@ fn auth_cram_md5_preferred() {
 }
 
 #[test]
-fn pgp_without_key_or_encryption_fails() {
+fn pgp_without_keys_fails() {
     let t = mercurio::parse("mailto://user:pass@example.com?pgp=sign").unwrap();
     let d = t.send(&Message::new("hi"), &FakeTransport::new(), &Asset::default());
     let errs: Vec<_> = d.errors().map(ToString::to_string).collect();
     assert!(errs[0].contains("Unable to sign email via PGP"), "{errs:?}");
     let t = mercurio::parse("mailto://user:pass@example.com?pgp=encrypt").unwrap();
     let d = t.send(&Message::new("hi"), &FakeTransport::new(), &Asset::default());
-    assert!(matches!(d.errors().next(), Some(mercurio::Error::Unsupported(_))), "{d:?}");
+    let errs: Vec<_> = d.errors().map(ToString::to_string).collect();
+    assert!(errs[0].contains("Unable to encrypt email via PGP"), "{errs:?}");
 }
 
 /// Send one notification through a scripted server offering `mechanisms`.
