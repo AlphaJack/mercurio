@@ -320,25 +320,35 @@ impl Target {
         self
     }
 
-    /// Plan and execute delivery of `msg` (the last attempt's outcomes).
+    /// Plan and execute delivery of `msg`, with `?retry=` handling; returns the last attempt's outcomes.
     pub fn send(&self, msg: &Message, transport: &dyn Transport, asset: &Asset) -> Delivery {
-        self.deliver(msg, transport, asset).pop().map(|a| a.delivery).unwrap_or_default()
+        last_delivery(self.send_attempts(msg, transport, asset))
     }
 
-    /// Plan and execute delivery of `msg`, returning every attempt.
+    /// [`Target::send`] on an [`AsyncTransport`].
+    pub async fn send_async(&self, msg: &Message, transport: &dyn AsyncTransport, asset: &Asset) -> Delivery {
+        last_delivery(self.send_attempts_async(msg, transport, asset).await)
+    }
+
+    /// [`Target::send`], returning every attempt instead of the last one's outcomes.
     ///
     /// With `?retry=N`, failed attempts are repeated after `?wait=`; message pieces and targets (`Plan::Target`) that an earlier attempt delivered are skipped and reported as delivered.
-    pub fn deliver(&self, msg: &Message, transport: &dyn Transport, asset: &Asset) -> Vec<Attempt> {
-        pollster::block_on(self.deliver_async(msg, &Blocking(transport), asset))
+    pub fn send_attempts(&self, msg: &Message, transport: &dyn Transport, asset: &Asset) -> Vec<Attempt> {
+        pollster::block_on(self.send_attempts_async(msg, &Blocking(transport), asset))
     }
 
-    /// [`Target::deliver`] on an [`AsyncTransport`].
-    pub async fn deliver_async(&self, msg: &Message, transport: &dyn AsyncTransport, asset: &Asset) -> Vec<Attempt> {
-        self.deliver_with_retry(msg, transport, asset, None).await
+    /// [`Target::send_attempts`] on an [`AsyncTransport`].
+    pub async fn send_attempts_async(
+        &self,
+        msg: &Message,
+        transport: &dyn AsyncTransport,
+        asset: &Asset,
+    ) -> Vec<Attempt> {
+        self.send_attempts_with_retry(msg, transport, asset, None).await
     }
 
-    /// [`Target::deliver_async`] with `retry` (a tag filter's `tag:N`) instead of the URL's `?retry=`, clamped the same way.
-    pub(crate) async fn deliver_with_retry(
+    /// [`Target::send_attempts_async`] with `retry` (a tag filter's `tag:N`) instead of the URL's `?retry=`, clamped the same way.
+    pub(crate) async fn send_attempts_with_retry(
         &self,
         msg: &Message,
         transport: &dyn AsyncTransport,
@@ -462,6 +472,11 @@ impl Target {
         let prep = self.prepare_in(msg, &ctx)?;
         Ok(self.service.plan(&self.piece(&prep, msg, 0), &ctx))
     }
+}
+
+/// The outcomes of the last attempt (none when nothing was attempted).
+fn last_delivery(mut attempts: Vec<Attempt>) -> Delivery {
+    attempts.pop().map(|a| a.delivery).unwrap_or_default()
 }
 
 /// Store namespace input for URLs without a custom identifier:

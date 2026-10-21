@@ -529,7 +529,8 @@ impl Mercurio {
         let send = |t: &Target| {
             let retry = filter.retry_for(t.tag_set()).map(|r| u32::try_from(r).unwrap_or(u32::MAX));
             let transport = Blocking(self.transport.as_ref());
-            let attempts = pollster::block_on(t.deliver_with_retry(msg, &transport, &self.core.asset_for(t), retry));
+            let attempts =
+                pollster::block_on(t.send_attempts_with_retry(msg, &transport, &self.core.asset_for(t), retry));
             let entry = self.core.entry(t, attempts);
             on_entry(&entry);
             entry
@@ -599,7 +600,7 @@ mod tests {
         let fake = crate::testing::FakeTransport::new();
         let (t, msg, asset) = (crate::parse("json://localhost").unwrap(), Message::new("x"), Asset::default());
         let blocking = Blocking(&fake);
-        assert_send(&t.deliver_async(&msg, &blocking, &asset));
+        assert_send(&t.send_attempts_async(&msg, &blocking, &asset));
         assert_send(&t.close_async(&blocking, &asset));
         assert_send(&Config::load_async("/nowhere", &blocking, &ConfigOptions::default()));
         assert_send(&crate::AttachmentSet::default().load_async(&blocking, &asset));

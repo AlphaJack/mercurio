@@ -38,7 +38,7 @@ pub fn snapshot(dir: &str, name: &str, value: &Value) {
 /// Which API runs the cases: the blocking [`crate::Target`] calls, or [`crate::AsyncMercurio`] on the same fake. The parity suite checks both record the same.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Front {
-    /// [`crate::Target::deliver`] and [`crate::Target::close`].
+    /// [`crate::Target::send_attempts`] and [`crate::Target::close`].
     Blocking,
     /// [`crate::AsyncMercurio::notify`] and [`crate::AsyncMercurio::close`] over [`Blocking`].
     Async,
@@ -112,7 +112,8 @@ pub(super) fn run_sends(
 ) -> Vec<(Vec<Attempt>, usize)> {
     match front {
         Front::Blocking => {
-            let out = msgs.iter().map(|m| (target.deliver(m, fake.as_ref(), asset), fake.requests().len())).collect();
+            let out =
+                msgs.iter().map(|m| (target.send_attempts(m, fake.as_ref(), asset), fake.requests().len())).collect();
             if close {
                 target.close(fake.as_ref(), asset);
             }
