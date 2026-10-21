@@ -232,7 +232,7 @@ pgp_invalid:
   valid: false
 pgp_sign:
   errors:
-    - "unsupported: PGP signing/encryption of e-mail is not supported"
+    - "service error: Unable to sign email via PGP; supply a private key via pgpprv= or place one in the cache directory"
   events: []
   ok: false
   valid: true

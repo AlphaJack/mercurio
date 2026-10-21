@@ -171,10 +171,18 @@ impl Content<'_> {
 #[derive(Debug, Clone)]
 pub enum Part<'a> {
     Leaf { headers: Vec<(String, String)>, content: Content<'a> },
-    Multi { subtype: &'static str, parts: Vec<Part<'a>> },
+    /// `params` go between the subtype and the boundary (`; micalg="pgp-sha256"; protocol="..."`).
+    Multi { subtype: &'static str, params: String, parts: Vec<Part<'a>> },
+    /// A part rendered already (the content of `multipart/signed`, whose bytes the signature covers).
+    Raw(String),
 }
 
 impl<'a> Part<'a> {
+    /// A multipart without parameters.
+    pub fn multi(subtype: &'static str, parts: Vec<Part<'a>>) -> Part<'a> {
+        Part::Multi { subtype, params: String::new(), parts }
+    }
+
     /// `MIMEText(text, subtype, "utf-8")`: quoted-printable.
     pub fn text(subtype: &str, text: impl Into<std::borrow::Cow<'a, str>>) -> Part<'a> {
         Part::Leaf {
@@ -243,9 +251,9 @@ fn render_part_owned(part: Part<'_>, out: &mut String, env: &dyn Env) {
             out.push_str(CRLF);
             content.write_to(out);
         }
-        Part::Multi { subtype, parts } => {
+        Part::Multi { subtype, params, parts } => {
             let b = boundary(env);
-            out.push_str(&format!("Content-Type: multipart/{subtype}; boundary=\"{b}\"\r\n\r\n"));
+            out.push_str(&format!("Content-Type: multipart/{subtype}{params}; boundary=\"{b}\"\r\n\r\n"));
             for p in parts {
                 out.push_str(&format!("--{b}\r\n"));
                 render_part_owned(p, out, env);
@@ -253,6 +261,7 @@ fn render_part_owned(part: Part<'_>, out: &mut String, env: &dyn Env) {
             }
             out.push_str(&format!("--{b}--"));
         }
+        Part::Raw(text) => out.push_str(&text),
     }
 }
 
@@ -285,6 +294,7 @@ fn content_len(part: &Part<'_>) -> usize {
     match part {
         Part::Leaf { content, .. } => content.len(),
         Part::Multi { parts, .. } => parts.iter().map(content_len).sum(),
+        Part::Raw(text) => text.len(),
     }
 }
 
@@ -300,9 +310,9 @@ fn render_part(part: &Part<'_>, out: &mut String, env: &dyn Env) {
             out.push_str(CRLF);
             content.write_to(out);
         }
-        Part::Multi { subtype, parts } => {
+        Part::Multi { subtype, params, parts } => {
             let b = boundary(env);
-            out.push_str(&format!("Content-Type: multipart/{subtype}; boundary=\"{b}\"\r\n\r\n"));
+            out.push_str(&format!("Content-Type: multipart/{subtype}{params}; boundary=\"{b}\"\r\n\r\n"));
             for p in parts {
                 out.push_str(&format!("--{b}\r\n"));
                 render_part(p, out, env);
@@ -310,7 +320,15 @@ fn render_part(part: &Part<'_>, out: &mut String, env: &dyn Env) {
             }
             out.push_str(&format!("--{b}--"));
         }
+        Part::Raw(text) => out.push_str(text),
     }
+}
+
+/// One part on its own (its headers, a blank line, its content), as it appears inside a multipart.
+pub fn render_part_alone(part: &Part<'_>, env: &dyn Env) -> String {
+    let mut out = String::new();
+    render_part(part, &mut out, env);
+    out
 }
 
 /// SMTP DATA payload: dot-stuffed, CRLF-terminated, without the final `.`.
