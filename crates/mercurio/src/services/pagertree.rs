@@ -92,7 +92,7 @@ impl Notify for PagerTree {
         if self.action == "create" {
             let title = if msg.title.is_empty() { ctx.app_desc() } else { msg.title };
             payload.insert("title".into(), json!(title));
-            payload.insert("description".into(), json!(msg.body));
+            payload.insert("description".into(), json!(crate::http::TEXT));
             let meta: Map<String, Value> = self.meta_extras.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
             payload.insert("meta".into(), Value::Object(meta));
             payload.insert("tags".into(), json!(self.tags));
@@ -106,7 +106,7 @@ impl Notify for PagerTree {
         let req = ctx
             .post(format!("https://api.pagertree.com/integration/{}", self.integration.expose()))
             .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-            .json(&Value::Object(payload));
+            .json_text(&Value::Object(payload), msg.body);
         Plan::send_expect(req, &[200, 201, 202])
     }
 }

@@ -92,7 +92,7 @@ impl Notify for Flock {
         let user = self.user.as_deref().filter(|u| !u.is_empty());
         let payload = json!({
             "token": self.token.expose(),
-            "flockml": flockml,
+            "flockml": crate::http::TEXT,
             "sendAs": {
                 "name": user.unwrap_or(ctx.app_id()),
                 "profileImage": image.map_or(Value::Null, Value::String),
@@ -100,7 +100,7 @@ impl Notify for Flock {
         });
         let post = |url: String, payload: &Value| {
             let req = ctx.post(url)
-                .json(payload);
+                .json_text(payload, &flockml);
             Plan::send_expect(req, &[200])
         };
         if self.targets.is_empty() {

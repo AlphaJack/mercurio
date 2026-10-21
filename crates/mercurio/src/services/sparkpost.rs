@@ -140,7 +140,7 @@ impl Notify for SparkPost {
         content.insert("subject".into(), json!(if msg.title.trim().is_empty() { "." } else { msg.title }));
         content.insert("reply_to".into(), json!(formataddr(from_name.unwrap_or(""), &self.from_addr)));
         let key = if msg.format == NotifyFormat::Html { "html" } else { "text" };
-        content.insert(key.into(), json!(msg.body));
+        content.insert(key.into(), json!(crate::http::TEXT));
         if !msg.attachments.is_empty() {
             let atts: Vec<Value> = msg
                 .attachments
@@ -196,7 +196,7 @@ impl Notify for SparkPost {
                 .post(&url)
                 .header("Accept", "application/json")
                 .header("Authorization", self.apikey.expose())
-                .json(&payload);
+                .json_text(&payload, msg.body);
             let label = if batch.len() <= 3 {
                 batch.iter().map(|(_, e)| e.as_str()).collect::<Vec<_>>().join(", ")
             } else {

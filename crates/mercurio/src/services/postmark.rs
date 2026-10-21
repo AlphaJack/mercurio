@@ -149,7 +149,7 @@ impl Notify for Postmark {
             "Subject": if msg.title.is_empty() { "<no subject>" } else { msg.title },
         });
         let key = if msg.format == NotifyFormat::Html { "HtmlBody" } else { "TextBody" };
-        base[key] = json!(msg.body);
+        base[key] = json!(crate::http::TEXT);
         if !msg.attachments.is_empty() {
             base["Attachments"] = attachments_json(msg.attachments, "dat", |name, data, a| json!({
                         "Name": name,
@@ -175,7 +175,7 @@ impl Notify for Postmark {
             let req = ctx.post(NOTIFY_URL)
                 .header("Accept", "application/json")
                 .header("X-Postmark-Server-Token", self.apikey.expose())
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200]).target(target.clone())
         });
         Plan::all(plans.collect::<Vec<_>>())

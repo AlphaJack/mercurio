@@ -279,7 +279,7 @@ impl Pingram {
             for (k, v) in &self.tokens {
                 params.insert(k.clone(), json!(v));
             }
-            params.insert("appBody".into(), json!(msg.body));
+            params.insert("appBody".into(), json!(crate::http::TEXT));
             params.insert("appTitle".into(), json!(title));
             params.insert("appType".into(), json!(msg.kind.as_str()));
             params.insert("appId".into(), json!(ctx.app_id()));
@@ -361,7 +361,7 @@ impl Notify for Pingram {
             let req = ctx.post(&url)
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", self.apikey.expose()))
-                .json(&Value::Object(payload));
+                .json_text(&Value::Object(payload), msg.body);
             Plan::send_check(req, |r| {
                 if r.json().is_none() {
                     return Err(Error::Service("invalid response from Pingram server".into()));

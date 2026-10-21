@@ -94,8 +94,9 @@ impl Notify for Ryver {
             (msg.title.to_string(), msg.body.to_string())
         };
         let avatar = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy72) } else { None };
+        let text = if title.is_empty() { body } else { format!("**{title}**\r\n{body}") };
         let payload = json!({
-            "body": if title.is_empty() { body } else { format!("**{title}**\r\n{body}") },
+            "body": crate::http::TEXT,
             "createSource": {
                 "displayName": self.user.as_ref().map_or(Value::Null, |u| json!(u)),
                 "avatar": avatar.map_or(Value::Null, Value::String),
@@ -104,7 +105,7 @@ impl Notify for Ryver {
         let url =
             format!("https://{}.ryver.com/application/webhook/{}", self.organization, self.token.expose());
         let req = ctx.post(url)
-            .json(&payload);
+            .json_text(&payload, &text);
         Plan::send_expect(req, &[200])
     }
 }

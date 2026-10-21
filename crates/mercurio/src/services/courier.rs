@@ -109,7 +109,7 @@ impl Notify for Courier {
             Some(t) => {
                 message.insert("template".into(), json!(t));
                 data.insert("title".into(), json!(msg.title));
-                data.insert("body".into(), json!(msg.body));
+                data.insert("body".into(), json!(crate::http::TEXT));
             }
             None => {
                 message.insert("content".into(), json!({"title": msg.title, "body": crate::http::TEXT}));

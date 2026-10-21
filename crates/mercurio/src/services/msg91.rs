@@ -77,7 +77,7 @@ impl Notify for Msg91 {
         }
         let mut recipient = Map::new();
         recipient.insert("mobiles".into(), Value::Null);
-        recipient.insert("body".into(), json!(msg.body));
+        recipient.insert("body".into(), json!(crate::http::TEXT));
         recipient.insert("type".into(), json!(msg.kind.as_str()));
         for (key, value) in &self.mapping {
             if key == "mobiles" {
@@ -108,7 +108,7 @@ impl Notify for Msg91 {
         });
         let req = ctx.post("https://control.msg91.com/api/v5/flow/")
             .header("authkey", self.authkey.expose())
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_check(req, |r| expect(r, &[200]))
     }
 

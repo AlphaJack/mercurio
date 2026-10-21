@@ -119,10 +119,10 @@ impl Notify for Brevo {
             "subject": if msg.title.is_empty() { "<no subject>" } else { msg.title },
         });
         if msg.format == NotifyFormat::Html {
-            base["htmlContent"] = json!(msg.body);
+            base["htmlContent"] = json!(crate::http::TEXT);
             base["textContent"] = json!(html_to_text(msg.body));
         } else {
-            base["textContent"] = json!(msg.body);
+            base["textContent"] = json!(crate::http::TEXT);
             base["htmlContent"] = json!(text_to_html(msg.body));
         }
         if !msg.attachments.is_empty() {
@@ -149,7 +149,7 @@ impl Notify for Brevo {
                 .post(NOTIFY_URL)
                 .header("Accept", "application/json")
                 .header("api-key", self.apikey.expose())
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200, 201, 202]).target(target.clone())
         });
         Plan::all(plans.collect::<Vec<_>>())
