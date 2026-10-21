@@ -69,7 +69,7 @@ bytes). `AttachmentSet` parses the sources above and loads them:
 
 ```rust
 use mercurio::testing::FakeTransport;
-use mercurio::{AttachSource, AttachmentSet, Asset, Attachment, Message, Response};
+use mercurio::{AttachSource, AttachmentSet, Asset, Attachment, Message, transport::Response};
 
 let fake = FakeTransport::new();
 fake.respond_with(Response::new(200, "a,b\n1,2\n").with_header("Content-Type", "text/csv"));

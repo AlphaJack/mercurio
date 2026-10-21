@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use axum::extract::{ConnectInfo, State};
 use axum::response::IntoResponse;
-use mercurio::TokioTransport;
+use mercurio::transport::TokioTransport;
 
 use super::auth::Role;
 use super::http::{self, Reply, Req};

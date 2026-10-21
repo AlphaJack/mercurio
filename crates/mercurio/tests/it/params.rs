@@ -1,4 +1,4 @@
-//! The declared URL tokens and query parameters ([`mercurio::ServiceDef::params`]) match what the service sources read: the book pages are generated from them.
+//! The declared URL tokens and query parameters ([`mercurio::service::ServiceDef::params`]) match what the service sources read: the book pages are generated from them.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -216,25 +216,28 @@ fn short(v: &serde_json::Value) -> String {
     if s.chars().count() > 90 { format!("{}...", s.chars().take(90).collect::<String>()) } else { s }
 }
 
-/// [`mercurio::COMMON_PARAMS`] matches what the URL parser and the target builder read, and its numeric defaults are the ones they apply.
+/// [`mercurio::service::COMMON_PARAMS`] matches what the URL parser and the target builder read, and its numeric defaults are the ones they apply.
 #[test]
 fn common_params_match_the_parser() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let code = ["url.rs", "target.rs"].map(|f| fs::read_to_string(root.join(f)).unwrap()).join("\n");
     let code = code.split("pub static COMMON_PARAMS").next().unwrap().to_string()
         + code.split("pub static COMMON_PARAMS").nth(1).and_then(|s| s.split_once("\n];")).map_or("", |(_, rest)| rest);
-    let declared: BTreeSet<&str> =
-        mercurio::COMMON_PARAMS.iter().flat_map(|p| std::iter::once(p.key).chain(p.aliases.iter().copied())).collect();
+    let declared: BTreeSet<&str> = mercurio::service::COMMON_PARAMS
+        .iter()
+        .flat_map(|p| std::iter::once(p.key).chain(p.aliases.iter().copied()))
+        .collect();
     let read = regex::Regex::new(r#"(?:query\.get|parsed\.param)\("([a-z_]+)"\)"#).unwrap();
     let read: BTreeSet<&str> = read.captures_iter(&code).map(|c| c.get(1).unwrap().as_str()).collect();
-    let ignored: BTreeSet<&str> = mercurio::COMMON_PARAMS.iter().filter(|p| p.ignored).map(|p| p.key).collect();
+    let ignored: BTreeSet<&str> =
+        mercurio::service::COMMON_PARAMS.iter().filter(|p| p.ignored).map(|p| p.key).collect();
     let unread: Vec<_> = declared.difference(&read).filter(|k| !ignored.contains(*k)).collect();
     let undeclared: Vec<_> = read.difference(&declared).collect();
     assert!(unread.is_empty(), "declared in COMMON_PARAMS but never read: {unread:?}");
     assert!(undeclared.is_empty(), "read by the parser but not in COMMON_PARAMS: {undeclared:?}");
 
-    let retry = mercurio::COMMON_PARAMS.iter().find(|p| p.key == "retry").unwrap();
-    let wait = mercurio::COMMON_PARAMS.iter().find(|p| p.key == "wait").unwrap();
+    let retry = mercurio::service::COMMON_PARAMS.iter().find(|p| p.key == "retry").unwrap();
+    let wait = mercurio::service::COMMON_PARAMS.iter().find(|p| p.key == "wait").unwrap();
     assert!(code.contains(&format!("const MAX_RETRY: u32 = {};", retry.max.unwrap())));
     assert!(code.contains(&format!("parsed.retry.unwrap_or({}).min(MAX_RETRY)", retry.default)));
     assert!(code.contains(&format!("const DEFAULT_WAIT: f64 = {};", wait.default)));

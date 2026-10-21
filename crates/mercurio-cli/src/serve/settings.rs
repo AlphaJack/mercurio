@@ -115,7 +115,7 @@ pub(crate) struct ServeArgs {
     #[arg(skip = 30)]
     pub(crate) storage_prune_days: i64,
     /// `--storage-uid-length` / `APPRISE_STORAGE_UID_LENGTH`, an option every command shares (set by `main`).
-    #[arg(skip = mercurio::DEFAULT_STORAGE_IDLEN)]
+    #[arg(skip = mercurio::asset::DEFAULT_STORAGE_IDLEN)]
     pub(crate) storage_uid_length: usize,
     /// `yes` replaces `:shortcode:` emoji unless a URL says `?emojis=no` (also `-j`); `no` never does; unset lets each URL decide
     #[arg(long, env = "APPRISE_INTERPRET_EMOJIS", value_name = "YES|NO")]
@@ -228,7 +228,7 @@ pub(crate) struct Settings {
     /// How long a request head, and each piece of its body, may take (`APPRISE_WORKER_TIMEOUT`).
     pub(super) io_timeout: Duration,
     pub(super) storage_idlen: usize,
-    pub(super) storage_mode: mercurio::StorageMode,
+    pub(super) storage_mode: mercurio::asset::StorageMode,
     /// The periodic clean-up; `None` when `APPRISE_PRUNE_ENABLED=no`.
     pub(super) prune: Option<Prune>,
     pub(super) services: filters::ServiceFilter,
@@ -273,12 +273,12 @@ impl Settings {
         let attach_urls = filters::UrlFilter::new(&a.attach_allow_url, &a.attach_reject_url);
         // apprise-api reads the first letter only.
         let storage_mode = match a.storage_mode.trim().to_lowercase().as_bytes().first() {
-            Some(b'm') => mercurio::StorageMode::Memory,
-            Some(b'f') => mercurio::StorageMode::Flush,
-            Some(b'a') => mercurio::StorageMode::Auto,
+            Some(b'm') => mercurio::asset::StorageMode::Memory,
+            Some(b'f') => mercurio::asset::StorageMode::Flush,
+            Some(b'a') => mercurio::asset::StorageMode::Auto,
             _ => return Err("APPRISE_STORAGE_MODE must be one of: auto, flush, memory".into()),
         };
-        let storage = (storage_mode != mercurio::StorageMode::Memory).then(|| {
+        let storage = (storage_mode != mercurio::asset::StorageMode::Memory).then(|| {
             a.storage_dir
                 .as_deref()
                 .filter(|d| !d.trim().is_empty())

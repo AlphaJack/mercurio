@@ -60,7 +60,7 @@ pub fn form_fields(req: &Req) -> FormFields {
         let ct = req.header("content-type").unwrap_or("");
         // The body is moved into shared bytes, and an upload is a slice of them: no copy of the file.
         let body = axum::body::Bytes::from(req.take_body());
-        for part in mercurio::multipart_parts(ct, &body) {
+        for part in mercurio::__private::multipart_parts(ct, &body) {
             let name = part.name.unwrap_or_default();
             if let Some(filename) = part.filename {
                 let mime = part.content_type.map(|m| m.to_ascii_lowercase());
@@ -505,7 +505,7 @@ pub struct AttachRules<'a> {
 pub async fn attachments(
     c: &mut Content,
     rules: &AttachRules<'_>,
-    transport: &dyn mercurio::AsyncTransport,
+    transport: &dyn mercurio::transport::AsyncTransport,
 ) -> Result<Vec<Attachment>, String> {
     let payload: Vec<Value> = if let Some(form) = c.form_attach.take() {
         form.into_iter().map(Value::String).collect()

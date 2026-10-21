@@ -18,9 +18,9 @@ pub fn run(args: &[&str]) -> Result<(), String> {
 }
 
 pub fn fill(text: &str) -> String {
-    let path = mercurio::REPOSITORY_URL.trim_start_matches("https://github.com/").to_lowercase();
-    text.replace("{{repository}}", mercurio::REPOSITORY_URL)
-        .replace("{{pages}}", mercurio::PAGES_URL)
+    let path = mercurio::asset::REPOSITORY_URL.trim_start_matches("https://github.com/").to_lowercase();
+    text.replace("{{repository}}", mercurio::asset::REPOSITORY_URL)
+        .replace("{{pages}}", mercurio::asset::PAGES_URL)
         .replace("{{description}}", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{{image}}", &format!("ghcr.io/{path}"))
 }

@@ -131,7 +131,7 @@ impl Entry {
 ///
 /// ```
 /// use std::time::Duration;
-/// use mercurio::{PersistentStore, Store};
+/// use mercurio::{store::PersistentStore, store::Store};
 /// use serde_json::json;
 ///
 /// let store = PersistentStore::memory();

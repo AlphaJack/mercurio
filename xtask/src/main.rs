@@ -131,7 +131,7 @@ fn docs() -> Result<(), String> {
     ]))?;
 
     eprintln!("==> mdbook");
-    let repository = mercurio::REPOSITORY_URL;
+    let repository = mercurio::asset::REPOSITORY_URL;
     run(Command::new("mdbook")
         .current_dir(&root)
         .env("MDBOOK_BOOK__DESCRIPTION", env!("CARGO_PKG_DESCRIPTION"))

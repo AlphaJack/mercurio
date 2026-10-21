@@ -38,7 +38,7 @@ pub(crate) fn file_context<R>(
     f: impl FnOnce(&crate::Context<'_>) -> R,
 ) -> R {
     let (asset, store, memo) =
-        (crate::Asset::default(), crate::PersistentStore::memory().shared(), crate::Memo::disabled());
+        (crate::Asset::default(), crate::store::PersistentStore::memory().shared(), crate::store::Memo::disabled());
     let files = pollster::block_on(crate::plan::read_files(ops, &crate::Blocking(transport)));
     f(&crate::Context::new(&asset, &store, &memo).with_files(&files))
 }
@@ -60,7 +60,7 @@ type Rule = (Box<dyn Fn(&Request) -> bool + Send + Sync>, Result<Response>);
 /// ```
 /// use std::sync::Arc;
 /// use mercurio::testing::FakeTransport;
-/// use mercurio::{Error, ErrorClass, Mercurio, Message, Response};
+/// use mercurio::{Error, ErrorClass, Mercurio, Message, transport::Response};
 ///
 /// let fake = Arc::new(FakeTransport::new());
 /// fake.on_url("/flaky", Response::new(503, "busy").with_header("Retry-After", "1"));
@@ -356,7 +356,7 @@ pub(crate) fn test_env() -> &'static FixedEnv {
 /// The bytes are SHA-256 of a counter, so they are not secret; use it in tests only.
 ///
 /// ```
-/// use mercurio::Env;
+/// use mercurio::transport::Env;
 /// use mercurio::testing::{FakeTransport, FixedEnv};
 ///
 /// let (a, b) = (FixedEnv::new(1_700_000_000), FixedEnv::new(1_700_000_000));

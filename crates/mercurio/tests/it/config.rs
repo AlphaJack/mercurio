@@ -8,7 +8,7 @@ use std::path::Path;
 
 use mercurio::__private::parse_url_unverified;
 use mercurio::__private::yaml::{self, Yaml};
-use mercurio::ParsedUrl;
+use mercurio::service::ParsedUrl;
 use mercurio::testing::FakeTransport;
 use mercurio::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService};
 use mercurio::{Tag, TagFilter, TemplateVars};
@@ -34,7 +34,7 @@ fn tags_json(tags: &[Tag]) -> Value {
     json!(v)
 }
 
-fn pairs(p: &mercurio::Pairs) -> Map<String, Value> {
+fn pairs(p: &mercurio::service::Pairs) -> Map<String, Value> {
     p.iter().map(|(k, v)| (k.to_string(), json!(v))).collect()
 }
 

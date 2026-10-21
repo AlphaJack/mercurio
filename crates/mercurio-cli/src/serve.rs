@@ -20,7 +20,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::extract::ConnectInfo;
-use mercurio::AsyncTransport;
+use mercurio::transport::AsyncTransport;
 use mercurio::{Config, ConfigFormat, ConfigOptions, ConfigService};
 use tower::ServiceExt;
 

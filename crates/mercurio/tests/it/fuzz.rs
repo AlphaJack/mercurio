@@ -5,7 +5,7 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use mercurio::testing::FakeTransport;
-use mercurio::{Asset, Attachment, Message, NotifyFormat, NotifyType, Response};
+use mercurio::{Asset, Attachment, Message, NotifyFormat, NotifyType, transport::Response};
 
 /// splitmix64: tiny, deterministic, good enough for input generation.
 struct Rng(u64);

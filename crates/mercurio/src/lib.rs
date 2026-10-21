@@ -38,7 +38,7 @@
 //! - Runtime services: a per-notifier [`Registry`], with [`Registry::register_scheme`] for a closure and [`Registry::register`] for a full [`ServiceDef`].
 //! - Configuration: [`Config`] loads TEXT and YAML files from paths, `http(s)://` or memory, with `include`, tags and [`TemplateVars`].
 //! - Tags: [`Tag`] and [`TagFilter`] (`all`, `always`, AND/OR groups).
-//! - [`store`]: the per-target [`PersistentStore`] (tokens, sessions, delivery tracking).
+//! - [`store`]: the per-target [`PersistentStore`](store::PersistentStore) (tokens, sessions, delivery tracking).
 //! - Attachments: [`AttachmentSet`] loads files, `http(s)://` and `memory://` sources into [`Attachment`]s.
 //! - [`Asset`]: branding (`app_id`, colours, images) and pipeline defaults.
 //!
@@ -48,7 +48,7 @@
 //!
 //! ```
 //! use mercurio::testing::FakeTransport;
-//! use mercurio::{Asset, Message, Plan};
+//! use mercurio::{Asset, Message, service::Plan};
 //!
 //! let target = mercurio::parse("json://localhost/hook")?;
 //! let msg = Message::new("Backup done").title("cron");
@@ -78,8 +78,8 @@
 //! use std::sync::Arc;
 //! use std::time::Duration;
 //! use mercurio::{
-//!     AsyncConn, AsyncMercurio, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp,
-//!     FileOutput, Request, Response, Result, TokioTransport,
+//!     transport::AsyncConn, AsyncMercurio, transport::AsyncTransport, transport::BoxFuture, transport::Command, transport::CommandOutput, transport::Datagram, transport::Endpoint, transport::FileOp,
+//!     transport::FileOutput, transport::Request, transport::Response, Result, transport::TokioTransport,
 //! };
 //!
 //! /// Logs every operation, then lets tokio do it.
@@ -140,7 +140,8 @@
 //! [`Registry::register_scheme`] adds a URL scheme at run time, to one notifier's [`Registry`] ([`Mercurio::registry_mut`]). The closure gets each prepared piece of the message and a [`Hook`] (parsed URL, asset, store) and returns a [`Plan`]: requests for mercurio to send, or [`Plan::Done`] when it did the work itself.
 //!
 //! ```
-//! use mercurio::{Mercurio, Plan, Request};
+//! use mercurio::Mercurio;
+//! use mercurio::service::{Plan, Request};
 //!
 //! let mut m = Mercurio::new();
 //! m.registry_mut().register_scheme("bookhook", |msg, hook| {
@@ -222,7 +223,8 @@
 )]
 
 // Hidden modules are public only for the CLI and the integration tests; they are not a stable API. Use the re-exports below.
-mod asset;
+#[path = "asset.rs"]
+mod asset_def;
 mod attachment;
 mod config;
 mod convert;
@@ -237,7 +239,8 @@ mod parse;
 mod plan;
 mod prepare;
 mod registry;
-mod service;
+#[path = "service.rs"]
+mod service_def;
 mod services;
 pub mod store;
 mod tag;
@@ -249,7 +252,8 @@ mod target;
 )]
 pub mod testing;
 mod time;
-mod transport;
+#[path = "transport.rs"]
+mod transport_def;
 mod url;
 mod util;
 
@@ -261,49 +265,71 @@ mod report;
 #[cfg(feature = "transport-tokio")]
 mod tokio;
 
-pub use asset::{
-    Asset, DEFAULT_STORAGE_IDLEN, ICON_PNG, ICON_SVG, IconFile, ImageSize, PAGES_URL, REPOSITORY_URL, StorageMode,
-};
 pub use attachment::{AttachSource, AttachmentSet, Cache, Location};
 pub use config::template::{TemplateError, TemplateVars};
 pub use config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
-pub use env::{Env, SystemEnv};
-pub use error::{Error, ErrorClass, Result, ResultExt};
-pub use http::{MAX_BODY, Method, Multipart, Request, Response, body_too_large};
-#[doc(hidden)]
-pub use http::{MultipartPart, multipart_parts, parse_multipart};
-pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode, Prepared};
+pub use error::{Error, ErrorClass, Result};
+pub use mercurio_async::AsyncMercurio;
+pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode};
 pub use notify::{Mercurio, NotifyOptions, Selection};
-pub use plan::{Delivery, Outcome, Plan, redact_url};
-pub use registry::{CustomScheme, Handler, Hook, Registry};
+pub use plan::{Delivery, Outcome, redact_url};
+pub use registry::Registry;
 pub use report::{Attempt, Report, ReportEntry, Status};
-pub use target::{MAX_RETRY_AFTER, Target, parse, service_for_scheme, services};
+pub use tag::{Tag, TagFilter};
+pub use target::{Target, parse, service_for_scheme, services};
+
+pub use asset::Asset;
+
+/// Branding and pipeline defaults: [`Asset`] and the types and constants around it.
+pub mod asset {
+    pub use crate::asset_def::{
+        Asset, DEFAULT_STORAGE_IDLEN, ICON_PNG, ICON_SVG, IconFile, ImageSize, PAGES_URL, REPOSITORY_URL, StorageMode,
+    };
+}
+
+/// Writing a service: the [`Notify`] trait, its [`ServiceDef`], the [`Plan`] it returns and the request types it builds. Add one to a notifier through its [`Registry`].
+pub mod service {
+    pub use crate::error::ResultExt;
+    pub use crate::http::{Method, Multipart, Request, Response};
+    pub use crate::message::Prepared;
+    pub use crate::plan::Plan;
+    pub use crate::prepare::{Piece, PreparedMessage};
+    pub use crate::registry::{CustomScheme, Handler, Hook};
+    pub use crate::service_def::{Context, Kind, Limits, Notify, Param, Secret, ServiceDef, UrlIdentifier};
+    pub use crate::target::MAX_RETRY_AFTER;
+    pub use crate::url::{COMMON_PARAMS, Pairs, ParsedUrl};
+}
+
+/// Doing the I/O: the [`Transport`] and [`AsyncTransport`] traits, the built-in transports and the operations they run.
+pub mod transport {
+    #[cfg(feature = "transport-blocking")]
+    pub use crate::blocking::BlockingTransport;
+    pub use crate::env::{Env, SystemEnv};
+    pub use crate::http::{MAX_BODY, Method, Multipart, Request, Response, body_too_large};
+    #[cfg(feature = "transport-tokio")]
+    pub use crate::tokio::TokioTransport;
+    pub(crate) use crate::transport_def::*;
+    pub use crate::transport_def::{
+        AsyncConn, AsyncTransport, Blocking, BoxFuture, ChannelBinding, Command, CommandOutput, Conn, Datagram,
+        DatagramTarget, Endpoint, FileMeta, FileOp, FileOutput, Transport,
+    };
+}
+
+// Crate-internal shorthands (`crate::Plan`, `crate::Request`, ...) for the items the modules above own.
+pub(crate) use asset::*;
+pub(crate) use service::*;
+pub(crate) use transport::*;
 
 /// The Cargo feature table of the crate docs, generated from `Cargo.toml` (the book's library page shows it too).
 #[doc(hidden)]
 pub const FEATURES_TABLE: &str = include_str!(concat!(env!("OUT_DIR"), "/features.md"));
-#[cfg(feature = "transport-tokio")]
-pub use crate::tokio::TokioTransport;
-#[cfg(feature = "transport-blocking")]
-pub use blocking::BlockingTransport;
-pub use mercurio_async::AsyncMercurio;
-pub use prepare::{Piece, PreparedMessage};
-pub use service::{Context, Kind, Limits, Notify, Param, Secret, ServiceDef, UrlIdentifier};
-pub use store::{Memo, PersistentStore, Store, StoreRef};
-pub use tag::{Tag, TagFilter};
-pub use transport::{
-    AsyncConn, AsyncTransport, Blocking, BoxFuture, ChannelBinding, Command, CommandOutput, Conn, Datagram,
-    DatagramTarget, Endpoint, FileMeta, FileOp, FileOutput, Transport,
-};
-pub use url::COMMON_PARAMS;
-pub use url::{Pairs, ParsedUrl};
-
 /// Helpers for the CLI, the integration tests, `xtask` and the crate's macros. Not a stable API: anything here may change in any release.
 #[doc(hidden)]
 pub mod __private {
     pub use crate::config::template::{TemplateSchema, valid_name, validate_value};
     pub use crate::config::{default_paths, detect_format, expand_path, spec, yaml};
     pub use crate::crypto::{b64, b64_decode, hmac_sha256};
+    pub use crate::http::{MultipartPart, multipart_parts, parse_multipart};
 
     /// Random bytes from the system generator.
     #[expect(clippy::disallowed_methods, reason = "for the CLI, outside any send")]

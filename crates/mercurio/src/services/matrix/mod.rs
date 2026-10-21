@@ -5,7 +5,7 @@
 //! - Webhooks (`?mode=matrix|slack|t2bot|hookshot`, t2bot also as `matrix://{64-char-token}` or the native t2bot URL).
 //! - End-to-end encryption (cargo feature `service-matrix-e2ee`; `?e2ee=no` disables it): device keys are uploaded, encrypted rooms get Megolm events, room keys are shared over Olm, attachments are AES-CTR encrypted. `?autoverify=yes` answers one same-user SAS verification.
 //!
-//! Persistent state (session, transaction counter, room cache, discovery, E2EE identity and Megolm sessions) lives in the target's [`crate::Store`]. In memory mode the session lasts as long as the target and [`Target::close`](crate::Target::close) logs out; with a storage path it survives between runs and is never logged out. `?keystore=DIR` keeps this URL's state under `DIR` (flush mode) whatever the asset's storage settings are.
+//! Persistent state (session, transaction counter, room cache, discovery, E2EE identity and Megolm sessions) lives in the target's [`crate::store::Store`]. In memory mode the session lasts as long as the target and [`Target::close`](crate::Target::close) logs out; with a storage path it survives between runs and is never logged out. `?keystore=DIR` keeps this URL's state under `DIR` (flush mode) whatever the asset's storage settings are.
 //!
 //! Divergences (listed under Differences):
 //! - Non-string ids in server answers (room ids, tokens) are treated as missing instead of raising.
