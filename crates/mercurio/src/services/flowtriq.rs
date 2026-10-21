@@ -64,14 +64,14 @@ impl Notify for Flowtriq {
         };
         let payload = json!({
             "title": msg.title,
-            "body": msg.body,
+            "body": crate::http::TEXT,
             "severity": severity,
             "type": msg.kind.as_str(),
             "source": "apprise",
         });
         let req = ctx.post(&self.url)
             .header("X-API-Key", self.apikey.expose())
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200, 201, 202, 204])
     }
 }

@@ -46,7 +46,7 @@ impl Notify for SpugPush {
         let title = if msg.title.is_empty() { msg.body } else { msg.title };
         let req = ctx.post(format!("https://push.spug.cc/send/{}", self.token.expose()))
             .header("Content-Type", "application/json")
-            .json(&json!({"title": title, "content": msg.body}));
+            .json_text(&json!({"title": title, "content": crate::http::TEXT}), msg.body);
         Plan::send_expect(req, &[200])
     }
 }

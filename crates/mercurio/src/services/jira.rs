@@ -216,7 +216,7 @@ impl Notify for Jira {
             ("Content-Type", "application/json".to_string()),
             ("Authorization", format!("GenieKey {}", self.apikey.expose())),
         ];
-        let mut note = json!({"source": ctx.app_desc(), "note": msg.body});
+        let mut note = json!({"source": ctx.app_desc(), "note": crate::http::TEXT});
         if let Some(u) = &self.user {
             note["user"] = json!(u);
         }
@@ -229,6 +229,7 @@ impl Notify for Jira {
             payload: Value::Null,
             batches: Vec::new(),
             note,
+            text: msg.body.to_string(),
             piece: msg.index,
         };
         if action != "new" {
@@ -250,7 +251,7 @@ impl Notify for Jira {
         let mut payload = json!({
             "source": ctx.app_desc(),
             "message": message,
-            "description": msg.body,
+            "description": crate::http::TEXT,
             "details": Value::Object(details),
             "priority": format!("P{}", self.priority),
         });

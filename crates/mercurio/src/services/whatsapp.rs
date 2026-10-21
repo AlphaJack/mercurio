@@ -188,7 +188,7 @@ impl Notify for WhatsApp {
             None => {
                 payload["recipient_type"] = json!("individual");
                 payload["type"] = json!("text");
-                payload["text"] = json!({"body": msg.body});
+                payload["text"] = json!({"body": crate::http::TEXT});
             }
             Some((name, lang)) => {
                 payload["type"] = json!("template");
@@ -199,7 +199,7 @@ impl Notify for WhatsApp {
                         .iter()
                         .map(|c| match c {
                             Component::Text(t) => json!({"type": "text", "text": t}),
-                            Component::Body => json!({"type": "text", "text": msg.body}),
+                            Component::Body => json!({"type": "text", "text": crate::http::TEXT}),
                             Component::Type => json!({"type": "text", "text": msg.kind.as_str()}),
                         })
                         .collect();
@@ -219,7 +219,7 @@ impl Notify for WhatsApp {
             let req = ctx.post(&url)
                 .header("Accept", "application/json")
                 .bearer(self.token.expose())
-                .json(&p);
+                .json_text(&p, msg.body);
             Plan::send_check(req, check).target(target.clone())
         }))
     }

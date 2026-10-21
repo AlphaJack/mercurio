@@ -56,10 +56,10 @@ impl Notify for HttpSms {
             return Plan::Fail(SERVICE.err("there are no valid httpSMS targets to notify"));
         }
         Plan::all(self.targets.iter().map(|t| {
-            let payload = json!({"from": format!("+{}", self.source), "to": format!("+{t}"), "content": msg.body});
+            let payload = json!({"from": format!("+{}", self.source), "to": format!("+{t}"), "content": crate::http::TEXT});
             let req = ctx.post(NOTIFY_URL)
                 .header("x-api-key", self.apikey.expose())
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200]).target(t.clone())
         }))
     }

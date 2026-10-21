@@ -45,9 +45,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 impl Notify for FreeMobile {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let payload = json!({"user": self.user, "pass": self.password.expose(), "msg": msg.body});
+        let payload = json!({"user": self.user, "pass": self.password.expose(), "msg": crate::http::TEXT});
         let req = ctx.post(NOTIFY_URL)
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200])
     }
 }

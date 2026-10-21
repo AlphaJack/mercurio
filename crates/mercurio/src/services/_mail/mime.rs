@@ -78,9 +78,16 @@ pub fn formataddr(name: &str, address: &str) -> String {
 }
 
 /// Quoted-printable body encoding (RFC 2045 6.7) with CRLF hard breaks.
+#[cfg(test)]
 pub fn qp_encode(text: &str) -> String {
-    const HEX: &[u8; 16] = b"0123456789ABCDEF";
     let mut out = String::with_capacity(text.len() + text.len() / 8);
+    qp_encode_into(&mut out, text);
+    out
+}
+
+/// [`qp_encode`] appended to `out`.
+pub fn qp_encode_into(out: &mut String, text: &str) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
     let mut rest = text;
     let mut first = true;
     loop {
@@ -121,7 +128,6 @@ pub fn qp_encode(text: &str) -> String {
             None => break,
         }
     }
-    out
 }
 
 /// Base64 in 76-character lines.
@@ -137,27 +143,51 @@ pub fn b64_lines(data: &[u8]) -> String {
     out
 }
 
-/// One node of a MIME tree.
+/// What a leaf holds: text already encoded, or text still to be quoted-printable encoded when the message is rendered (so a large body is encoded straight into the output).
 #[derive(Debug, Clone)]
-pub enum Part {
-    Leaf { headers: Vec<(String, String)>, content: String },
-    Multi { subtype: &'static str, parts: Vec<Part> },
+pub enum Content<'a> {
+    Encoded(String),
+    Qp(std::borrow::Cow<'a, str>),
 }
 
-impl Part {
+impl Content<'_> {
+    /// An estimate of the encoded size, for sizing the output.
+    fn len(&self) -> usize {
+        match self {
+            Content::Encoded(s) => s.len(),
+            Content::Qp(t) => t.len() + t.len() / 8,
+        }
+    }
+
+    fn write_to(&self, out: &mut String) {
+        match self {
+            Content::Encoded(s) => out.push_str(s),
+            Content::Qp(t) => qp_encode_into(out, t),
+        }
+    }
+}
+
+/// One node of a MIME tree.
+#[derive(Debug, Clone)]
+pub enum Part<'a> {
+    Leaf { headers: Vec<(String, String)>, content: Content<'a> },
+    Multi { subtype: &'static str, parts: Vec<Part<'a>> },
+}
+
+impl<'a> Part<'a> {
     /// `MIMEText(text, subtype, "utf-8")`: quoted-printable.
-    pub fn text(subtype: &str, text: &str) -> Part {
+    pub fn text(subtype: &str, text: impl Into<std::borrow::Cow<'a, str>>) -> Part<'a> {
         Part::Leaf {
             headers: vec![
                 ("Content-Type".into(), format!("text/{subtype}; charset=\"utf-8\"")),
                 ("Content-Transfer-Encoding".into(), "quoted-printable".into()),
             ],
-            content: qp_encode(text),
+            content: Content::Qp(text.into()),
         }
     }
 
     /// A base64 attachment with `Content-Disposition: {disposition}; filename="..."`.
-    pub fn file(mime: &str, data: &[u8], disposition: &str, filename: &str, content_id: Option<String>) -> Part {
+    pub fn file(mime: &str, data: &[u8], disposition: &str, filename: &str, content_id: Option<String>) -> Part<'a> {
         let mime =
             if mime.contains('/') && mime.is_ascii() { single_line(mime) } else { "application/octet-stream".into() };
         let mut headers = vec![
@@ -168,7 +198,7 @@ impl Part {
         if let Some(cid) = content_id {
             headers.push(("Content-ID".into(), format!("<{}>", single_line(&cid))));
         }
-        Part::Leaf { headers, content: b64_lines(data) }
+        Part::Leaf { headers, content: Content::Encoded(b64_lines(data)) }
     }
 }
 
@@ -194,14 +224,14 @@ fn boundary(env: &dyn Env) -> String {
 }
 
 /// [`render`] that consumes the tree and frees each leaf's content once it is written, so a large body is not held twice at the end.
-pub fn render_owned(headers: &[(String, String)], body: Part, env: &dyn Env) -> String {
+pub fn render_owned(headers: &[(String, String)], body: Part<'_>, env: &dyn Env) -> String {
     let mut out = String::with_capacity(content_len(&body) + 4096);
     write_headers(headers, &mut out);
     render_part_owned(body, &mut out, env);
     out
 }
 
-fn render_part_owned(part: Part, out: &mut String, env: &dyn Env) {
+fn render_part_owned(part: Part<'_>, out: &mut String, env: &dyn Env) {
     match part {
         Part::Leaf { headers, content } => {
             for (k, v) in &headers {
@@ -211,7 +241,7 @@ fn render_part_owned(part: Part, out: &mut String, env: &dyn Env) {
                 out.push_str(CRLF);
             }
             out.push_str(CRLF);
-            out.push_str(&content);
+            content.write_to(out);
         }
         Part::Multi { subtype, parts } => {
             let b = boundary(env);
@@ -237,7 +267,7 @@ fn write_headers(headers: &[(String, String)], out: &mut String) {
 }
 
 /// Serialise a message: `headers` first, then the MIME tree. CRLF everywhere.
-pub fn render(headers: &[(String, String)], body: &Part, env: &dyn Env) -> String {
+pub fn render(headers: &[(String, String)], body: &Part<'_>, env: &dyn Env) -> String {
     let mut out = String::with_capacity(content_len(body) + 4096);
     for (k, v) in headers {
         out.push_str(k);
@@ -251,14 +281,14 @@ pub fn render(headers: &[(String, String)], body: &Part, env: &dyn Env) -> Strin
 }
 
 /// Bytes of leaf content in the tree: what `render` sizes its buffer for, so a large body is written without regrowing.
-fn content_len(part: &Part) -> usize {
+fn content_len(part: &Part<'_>) -> usize {
     match part {
         Part::Leaf { content, .. } => content.len(),
         Part::Multi { parts, .. } => parts.iter().map(content_len).sum(),
     }
 }
 
-fn render_part(part: &Part, out: &mut String, env: &dyn Env) {
+fn render_part(part: &Part<'_>, out: &mut String, env: &dyn Env) {
     match part {
         Part::Leaf { headers, content } => {
             for (k, v) in headers {
@@ -268,7 +298,7 @@ fn render_part(part: &Part, out: &mut String, env: &dyn Env) {
                 out.push_str(CRLF);
             }
             out.push_str(CRLF);
-            out.push_str(content);
+            content.write_to(out);
         }
         Part::Multi { subtype, parts } => {
             let b = boundary(env);

@@ -95,10 +95,10 @@ impl Notify for Plivo {
         let size = if self.batch { BATCH_SIZE } else { 1 };
         let chunks: Vec<String> = self.targets.chunks(size).map(|c| c.join("<")).collect();
         per_target(chunks, String::clone, |dst| {
-            let payload = json!({"src": self.source, "dst": dst, "text": msg.body});
+            let payload = json!({"src": self.source, "dst": dst, "text": crate::http::TEXT});
             let req = ctx.post(&url)
                 .basic_auth(self.auth_id.expose(), Some(self.token.expose()))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_check(req, |r| expect(r, &[200, 201, 202]))
         })
     }

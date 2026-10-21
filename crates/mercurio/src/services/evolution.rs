@@ -98,7 +98,7 @@ impl Notify for Evolution {
                 .post(&self.url)
                 .header("Content-Type", "application/json")
                 .header("apikey", self.apikey.expose())
-                .json(&json!({"number": number, "text": msg.body}));
+                .json_text(&json!({"number": number, "text": crate::http::TEXT}), msg.body);
             Plan::send_expect(req, &[200, 201]).target(number.clone())
         }))
     }

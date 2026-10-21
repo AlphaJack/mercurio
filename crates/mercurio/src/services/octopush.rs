@@ -142,7 +142,7 @@ impl Notify for Octopush {
             let recipients: Vec<Value> = chunk.iter().map(|p| json!({"phone_number": p})).collect();
             let payload = json!({
                 "recipients": recipients,
-                "text": msg.body,
+                "text": crate::http::TEXT,
                 "type": self.mtype,
                 "purpose": self.purpose,
                 "sender": sender,
@@ -154,7 +154,7 @@ impl Notify for Octopush {
                 .header("api-key", self.api_key.expose())
                 .header("api-login", self.api_login.expose())
                 .header("cache-control", "no-cache")
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_check(req, |r| expect(r, &[201]))
         })
     }

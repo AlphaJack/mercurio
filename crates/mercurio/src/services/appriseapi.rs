@@ -152,7 +152,7 @@ impl Notify for AppriseApi {
             .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())));
 
         if self.json {
-            let mut payload = json!({"title": msg.title, "body": msg.body, "type": msg.kind.as_str()});
+            let mut payload = json!({"title": msg.title, "body": crate::http::TEXT, "type": msg.kind.as_str()});
             if let Some(f) = format {
                 payload["format"] = json!(f.as_str());
             }
@@ -173,7 +173,7 @@ impl Notify for AppriseApi {
             }
             req = req
                 .set_header("Content-Type", "application/json")
-                .body(serde_json::to_vec(&payload).unwrap_or_default(), None);
+                .body(crate::http::json_with_text(&payload, msg.body), None);
         } else {
             let mut fields: Vec<(&str, String)> =
                 vec![("title", msg.title.into()), ("body", msg.body.into()), ("type", msg.kind.as_str().into())];

@@ -116,7 +116,7 @@ impl Notify for YouLmk {
         } else {
             ctx.app_id()
         };
-        let mut payload = json!({"title": title, "body": msg.body, "priority": priority});
+        let mut payload = json!({"title": title, "body": crate::http::TEXT, "priority": priority});
         if let Some(link) = &self.link {
             payload["url"] = json!(link);
             if let Some(label) = &self.url_label {
@@ -136,6 +136,6 @@ impl Notify for YouLmk {
         if is_token {
             req = req.bearer(token);
         }
-        Plan::send_expect(req.json(&payload), &[200])
+        Plan::send_expect(req.json_text(&payload, msg.body), &[200])
     }
 }

@@ -99,7 +99,7 @@ impl Notify for GoogleChat {
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let mut params = vec![("token", self.token.expose()), ("key", self.key.expose())];
-        let mut payload = json!({"text": msg.body});
+        let mut payload = json!({"text": crate::http::TEXT});
         if let Some(t) = &self.thread_key {
             params.push(("messageReplyOption", "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"));
             payload["thread"] = json!({"thread_key": t.expose()});
@@ -108,7 +108,7 @@ impl Notify for GoogleChat {
             .query(&params)
             .header("User-Agent", ctx.app_id())
             .header("Content-Type", "application/json; charset=utf-8")
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200, 204])
     }
 }

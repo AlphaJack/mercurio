@@ -134,7 +134,7 @@ impl Notify for Notifiarr {
                     "text": {
                         "title": msg.title,
                         "content": if content.is_empty() { String::new() } else { format!("👉 {}", content.join(" ")) },
-                        "description": msg.body,
+                        "description": crate::http::TEXT,
                         "footer": ctx.app_desc(),
                     },
                     "ids": {"channel": ch},
@@ -150,7 +150,7 @@ impl Notify for Notifiarr {
                 .post(NOTIFY_URL)
                 .header("Accept", "text/plain")
                 .header("X-api-Key", self.apikey.expose())
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send(req).target(format!("#{ch}"))
         }))
     }

@@ -102,11 +102,11 @@ impl Notify for Viber {
             sender["avatar"] = json!(a);
         }
         Plan::all(self.targets.iter().map(|dest| {
-            let payload = json!({"type": "text", "text": msg.body, "sender": sender, "receiver": dest});
+            let payload = json!({"type": "text", "text": crate::http::TEXT, "sender": sender, "receiver": dest});
             let req = ctx
                 .post("https://chatapi.viber.com/pa/send_message")
                 .header("X-Viber-Auth-Token", self.token.expose())
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_check(req, check).target(dest.clone())
         }))
     }

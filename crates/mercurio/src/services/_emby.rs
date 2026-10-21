@@ -174,7 +174,7 @@ fn parse_sessions(r: &Response) -> std::result::Result<Vec<String>, Error> {
 
 impl Emby {
     /// Look up the client sessions and message each one.
-    fn notify(self, session: Session, ua: String, payload: Value) -> Plan {
+    fn notify(self, session: Session, ua: String, payload: bytes::Bytes) -> Plan {
         let url = format!("{}/Sessions?ControllableByUserId={}", self.base, session.user_id);
         let req = self.request(Request::get(url), &ua, Some(&session));
         Plan::http(req, move |res| {
@@ -191,7 +191,7 @@ impl Emby {
                 Ok(ids) => Plan::all(ids.into_iter().map(|id| {
                     let req = self
                         .request(Request::post(format!("{}/Sessions/{}/Message", self.base, id)), &ua, Some(&session))
-                        .body(serde_json::to_vec(&payload).unwrap_or_default(), None);
+                        .body(payload.clone(), None);
                     Plan::send_expect(req, &[200, 204]).context("send").target(id)
                 })),
             }
@@ -204,10 +204,12 @@ impl Notify for Emby {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let me = self.clone();
         let ua = ctx.app_id().to_string();
-        let mut payload = json!({"Header": msg.title, "Text": msg.body});
+        let mut payload = json!({"Header": msg.title, "Text": crate::http::TEXT});
         if !self.modal {
             payload["TimeoutMs"] = json!(MESSAGE_TIMEOUT_MS);
         }
+        // Serialized once here: every session gets the same bytes, and the login continuation keeps them instead of a copy of the text.
+        let payload = bytes::Bytes::from(crate::http::json_with_text(&payload, msg.body));
         if let Some(session) = Session::load(ctx.store.as_ref()) {
             return me.notify(session, ua, payload);
         }

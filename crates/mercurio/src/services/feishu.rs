@@ -42,7 +42,7 @@ impl Notify for Feishu {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let req = ctx.post(format!("https://open.feishu.cn/open-apis/bot/v2/hook/{}/", self.token.expose()))
             .header("Content-Type", "application/json")
-            .json(&json!({"msg_type": "text", "content": {"text": msg.body}}));
+            .json_text(&json!({"msg_type": "text", "content": {"text": crate::http::TEXT}}), msg.body);
         Plan::send_expect(req, &[200])
     }
 }

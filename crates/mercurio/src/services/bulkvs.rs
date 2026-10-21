@@ -89,11 +89,11 @@ impl Notify for BulkVs {
             self.targets.iter().map(|t| (t.clone(), json!(t))).collect()
         };
         per_target(items, |(label, _)| label.clone(), |(_, to)| {
-            let payload = json!({"From": self.source, "To": to, "Message": msg.body});
+            let payload = json!({"From": self.source, "To": to, "Message": crate::http::TEXT});
             let req = ctx.post("https://portal.bulkvs.com/api/v1.0/messageSend")
                 .header("Accept", "application/json")
                 .basic_auth(&self.user, Some(self.password.expose()))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_check(req, |r| expect(r, &[200]))
         })
     }

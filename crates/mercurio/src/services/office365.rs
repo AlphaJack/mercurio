@@ -489,6 +489,8 @@ struct Message {
 }
 
 struct Prepared365 {
+    /// The message text, written into each target's payload where the placeholder stands.
+    text: String,
     large: Vec<(String, Attachment)>,
     send_url: String,
     draft_url: String,
@@ -502,7 +504,7 @@ fn deliver(shared: Shared, msg: Message, from: Option<(String, Option<String>)>)
     };
     let mut message = Map::new();
     message.insert("subject".into(), json!(msg.subject));
-    message.insert("body".into(), json!({"contentType": if msg.html { "HTML" } else { "Text" }, "content": msg.body}));
+    message.insert("body".into(), json!({"contentType": if msg.html { "HTML" } else { "Text" }, "content": crate::http::TEXT}));
     if let Some((email, name)) = &from {
         message.insert(
             "from".into(),
@@ -562,6 +564,7 @@ fn deliver(shared: Shared, msg: Message, from: Option<(String, Option<String>)>)
         per_target.push((to.clone(), payload));
     }
     let prep = Arc::new(Prepared365 {
+        text: msg.body,
         large,
         send_url: format!("{base}/sendMail"),
         draft_url: format!("{base}/messages"),
@@ -592,7 +595,7 @@ fn next_target(shared: Shared, prep: Arc<Prepared365>, targets: Vec<(String, Val
 fn send_one(shared: Shared, prep: Arc<Prepared365>, payload: Value) -> Plan {
     let url = if prep.large.is_empty() { prep.send_url.clone() } else { prep.draft_url.clone() };
     let req = json_request(&shared.lock().unwrap_or_else(std::sync::PoisonError::into_inner), Request::post(url))
-        .json(&payload);
+        .json_text(&payload, &prep.text);
     Plan::http(req, move |res| {
         let res = match res {
             Ok(r) if !matches!(r.status, 200..=202) => {

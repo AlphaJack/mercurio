@@ -81,7 +81,7 @@ impl Notify for Lauther {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let mut payload = json!({
             "title": msg.title,
-            "message": msg.body,
+            "message": crate::http::TEXT,
             "priority": self.priority,
         });
         for (k, v) in &self.extras {
@@ -89,7 +89,7 @@ impl Notify for Lauther {
         }
         let req = ctx.post(NOTIFY_URL)
             .bearer(self.token.expose())
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200])
     }
 }

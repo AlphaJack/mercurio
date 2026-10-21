@@ -70,7 +70,7 @@ impl Notify for Seven {
         if self.targets.is_empty() {
             return Plan::Fail(SERVICE.err("there were no seven targets to notify"));
         }
-        let mut payload = json!({"to": null, "text": msg.body});
+        let mut payload = json!({"to": null, "text": crate::http::TEXT});
         if let Some(s) = self.source.as_deref().filter(|s| !s.is_empty()) {
             payload["from"] = json!(s);
         }
@@ -87,7 +87,7 @@ impl Notify for Seven {
                 .header("Accept", "application/json")
                 .header("SentWith", ctx.app_id())
                 .header("X-Api-Key", self.apikey.expose())
-                .json(&p);
+                .json_text(&p, msg.body);
             Plan::send_expect(req, &[200, 201]).target(t.clone())
         }))
     }

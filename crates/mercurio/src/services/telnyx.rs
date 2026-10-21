@@ -60,14 +60,14 @@ impl Notify for Telnyx {
             return Plan::Fail(SERVICE.err("there are no valid Telnyx targets to notify"));
         }
         Plan::all(self.targets.iter().map(|t| {
-            let mut payload = json!({"from": format!("+{}", self.source), "to": format!("+{t}"), "text": msg.body});
+            let mut payload = json!({"from": format!("+{}", self.source), "to": format!("+{t}"), "text": crate::http::TEXT});
             if let Some(p) = &self.profile {
                 payload["messaging_profile_id"] = json!(p);
             }
             let req = ctx.post(NOTIFY_URL)
                 .header("Authorization", format!("Bearer {}", self.apikey.expose()))
                 .header("Accept", "application/json")
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200]).target(t.clone())
         }))
     }

@@ -63,11 +63,11 @@ impl Notify for Eight00com {
             let req = ctx.post(NOTIFY_URL)
                 .header("Authorization", format!("Bearer {}", self.token.expose()));
             let req = if msg.attachments.is_empty() {
-                req.header("Content-Type", "application/json").json(&json!({
+                req.header("Content-Type", "application/json").json_text(&json!({
                     "sender": sender,
                     "recipient": recipient,
-                    "message": msg.body,
-                }))
+                    "message": crate::http::TEXT,
+                }), msg.body)
             } else {
                 let mut form =
                     Form::new(ctx.env().as_ref()).text("sender", &sender).text("recipient", &recipient).text("message", msg.body);

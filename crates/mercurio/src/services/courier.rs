@@ -112,7 +112,7 @@ impl Notify for Courier {
                 data.insert("body".into(), json!(msg.body));
             }
             None => {
-                message.insert("content".into(), json!({"title": msg.title, "body": msg.body}));
+                message.insert("content".into(), json!({"title": msg.title, "body": crate::http::TEXT}));
             }
         }
         for (k, v) in &self.data {
@@ -127,7 +127,7 @@ impl Notify for Courier {
             .header("Accept", "application/json")
             .bearer(self.token.expose())
             .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-            .json(&json!({"message": message}));
+            .json_text(&json!({"message": message}), msg.body);
         Plan::send(req).target(self.labels.join(", "))
     }
 }

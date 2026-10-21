@@ -52,7 +52,7 @@ impl Notify for WeComBot {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let req = ctx.post(format!("https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={}", self.key.expose()))
             .header("Content-Type", "application/json; charset=utf-8")
-            .json(&json!({"msgtype": "text", "text": {"content": msg.body}}));
+            .json_text(&json!({"msgtype": "text", "text": {"content": crate::http::TEXT}}), msg.body);
         Plan::send_expect(req, &[200])
     }
 }

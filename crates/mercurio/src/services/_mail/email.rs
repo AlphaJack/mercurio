@@ -582,10 +582,10 @@ impl Email {
             let mut base = if format == NotifyFormat::Html {
                 Part::Multi {
                     subtype: "alternative",
-                    parts: vec![Part::text("plain", &html_to_text(&body)), Part::text("html", &body)],
+                    parts: vec![Part::text("plain", html_to_text(&body)), Part::text("html", &*body)],
                 }
             } else {
-                Part::text("plain", &body)
+                Part::text("plain", &*body)
             };
             if !msg.attachments.is_empty() {
                 let mut parts = vec![base];

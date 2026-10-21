@@ -127,7 +127,7 @@ impl Notify for Splunk {
             "entity_id": self.entity_id.clone().unwrap_or_else(|| format!("{}/{}", ctx.app_id(), self.routing_key)),
             "message_type": message_type,
             "entity_display_name": if msg.title.is_empty() { ctx.app_desc() } else { msg.title },
-            "state_message": msg.body,
+            "state_message": crate::http::TEXT,
             "monitoring_tool": ctx.app_id(),
         });
         let url = format!(
@@ -136,7 +136,7 @@ impl Notify for Splunk {
             self.routing_key
         );
         let req = ctx.post(url)
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200])
     }
 }

@@ -95,7 +95,7 @@ impl Notify for SendGrid {
         base.insert("from".into(), json!({"email": self.from_email}));
         base.insert("subject".into(), json!(if msg.title.is_empty() { "<no subject>" } else { msg.title }));
         let ctype = if msg.format == NotifyFormat::Text { "text/plain" } else { "text/html" };
-        base.insert("content".into(), json!([{"type": ctype, "value": msg.body}]));
+        base.insert("content".into(), json!([{"type": ctype, "value": crate::http::TEXT}]));
         if !msg.attachments.is_empty() {
             base.insert("attachments".into(), attachments_json(msg.attachments, "dat", |name, data, _| json!({
                         "content": data,
@@ -132,7 +132,7 @@ impl Notify for SendGrid {
                 .post(NOTIFY_URL)
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", self.apikey.expose()))
-                .json(&Value::Object(payload));
+                .json_text(&Value::Object(payload), msg.body);
             Plan::send_expect(req, &[200, 202]).target(target.clone())
         });
         Plan::all(plans.collect::<Vec<_>>())

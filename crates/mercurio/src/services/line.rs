@@ -68,7 +68,7 @@ impl Notify for Line {
         if self.targets.is_empty() {
             return Plan::Fail(crate::Error::Message("there were no Line targets to notify".into()));
         }
-        let mut message = json!({"type": "text", "text": msg.body, "sender": {"name": ctx.app_id()}});
+        let mut message = json!({"type": "text", "text": crate::http::TEXT, "sender": {"name": ctx.app_id()}});
         if self.include_image
             && let Some(img) = ctx.asset.image_url(msg.kind, ImageSize::Xy128)
         {
@@ -78,7 +78,7 @@ impl Notify for Line {
             let req = ctx.post(NOTIFY_URL)
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", self.token.expose()))
-                .json(&json!({"to": t, "messages": [message]}));
+                .json_text(&json!({"to": t, "messages": [message]}), msg.body);
             Plan::send_expect(req, &[200]).target(t.clone())
         }))
     }

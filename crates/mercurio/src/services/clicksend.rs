@@ -68,11 +68,11 @@ impl Notify for ClickSend {
         let chunks: Vec<Vec<String>> = self.targets.chunks(size).map(<[String]>::to_vec).collect();
         per_target(chunks, |c| c.join(","), |chunk| {
             let messages: Vec<_> =
-                chunk.iter().map(|to| json!({"source": "php", "body": msg.body, "to": format!("+{to}")})).collect();
+                chunk.iter().map(|to| json!({"source": "php", "body": crate::http::TEXT, "to": format!("+{to}")})).collect();
             let req = ctx.post("https://rest.clicksend.com/v3/sms/send")
                 .header("Content-Type", "application/json; charset=utf-8")
                 .basic_auth(&self.user, Some(self.password.expose()))
-                .json(&json!({"messages": messages}));
+                .json_text(&json!({"messages": messages}), msg.body);
             Plan::send_check(req, |r| expect(r, &[200]))
         })
     }

@@ -137,7 +137,7 @@ impl Notify for Pinglet {
             NotifyType::Warning => "warning",
             NotifyType::Failure => "error",
         };
-        let mut payload = json!({"message": msg.body, "priority": self.priority, "level": level});
+        let mut payload = json!({"message": crate::http::TEXT, "priority": self.priority, "level": level});
         if !msg.title.is_empty() {
             payload["title"] = json!(msg.title);
         }
@@ -151,7 +151,7 @@ impl Notify for Pinglet {
             .post(&self.url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.token.expose()))
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200])
     }
 }

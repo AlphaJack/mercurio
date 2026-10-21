@@ -282,6 +282,8 @@ struct Session {
     password: Option<String>,
     topics: Vec<String>,
     payload: Vec<u8>,
+    /// The only PUBLISH packet, built in `plan` from the borrowed message (one topic at QoS 0), so the payload is not copied into the session as well.
+    prebuilt: Option<Vec<u8>>,
     qos: u8,
     retain: bool,
 }
@@ -330,7 +332,10 @@ impl Client {
             return;
         };
         self.packet_id = self.packet_id.checked_add(1).unwrap_or(1);
-        let p = publish_packet(self.s.version, t, &self.s.payload, self.s.qos, self.s.retain, self.packet_id);
+        let p = match self.s.prebuilt.take() {
+            Some(p) => p,
+            None => publish_packet(self.s.version, t, &self.s.payload, self.s.qos, self.s.retain, self.packet_id),
+        };
         // The packet is the payload plus a few bytes: take it as the output instead of copying it into one.
         if self.out.is_empty() {
             self.out = p;
@@ -435,6 +440,12 @@ impl Notify for Mqtt {
             _ => String::new(),
         };
         let topics: Vec<String> = self.topics.clone();
+        let (payload, prebuilt) = match topics.as_slice() {
+            [topic] if self.qos == 0 => {
+                (Vec::new(), Some(publish_packet(self.version, topic, msg.body.as_bytes(), 0, self.retain, 0)))
+            }
+            _ => (msg.body.as_bytes().to_vec(), None),
+        };
         let session = Session {
             version: self.version,
             client_id,
@@ -442,7 +453,8 @@ impl Notify for Mqtt {
             user: self.user.clone(),
             password: if self.user.is_some() { self.password.as_ref().map(|p| p.expose().to_string()) } else { None },
             topics,
-            payload: msg.body.as_bytes().to_vec(),
+            payload,
+            prebuilt,
             qos: self.qos,
             retain: self.retain,
         };
@@ -516,6 +528,7 @@ mod tests {
             password: None,
             topics: vec!["a".into(), "b".into()],
             payload: b"x".to_vec(),
+            prebuilt: None,
             qos: 2,
             retain: false,
         };
