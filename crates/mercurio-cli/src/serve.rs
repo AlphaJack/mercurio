@@ -21,7 +21,7 @@ use std::time::Duration;
 
 use axum::extract::ConnectInfo;
 use mercurio::transport::AsyncTransport;
-use mercurio::{Config, ConfigFormat, ConfigOptions, ConfigService};
+use mercurio::{Config, ConfigFormat, ConfigOptions, config::ConfigService};
 use tower::ServiceExt;
 
 use auth::{KeyState, Role};

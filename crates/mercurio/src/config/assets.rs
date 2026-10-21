@@ -83,7 +83,7 @@ mod spec_tests {
     use super::super::spec::{ASSET_KEYS, asset_value};
     use super::apply_asset_value;
     use crate::asset::Asset;
-    use crate::config::model::AssetValue;
+    use crate::config::AssetValue;
 
     /// Every key with an effect is applied by the loader and read back by `asset_value`; every key without one changes nothing.
     #[test]

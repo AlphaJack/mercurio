@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 use mercurio::TagFilter;
 use mercurio::redact_url;
-use mercurio::{Config, ConfigFormat, ConfigService};
+use mercurio::{Config, ConfigFormat, config::ConfigService};
 use serde_json::{Map, Value, json};
 
 use super::super::auth::Role;

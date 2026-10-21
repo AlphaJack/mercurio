@@ -313,7 +313,8 @@ fn unescape(s: &str) -> String {
 
 /// A path, `file://`, `http(s)://` or `memory://` attachment (`mercurio::attachment`).
 async fn load_attachment(spec: &str, transport: &dyn AsyncTransport) -> Result<Attachment, String> {
-    let source = mercurio::AttachSource::parse(spec).map_err(|e| format!("{}: {e}", mercurio::redact_url(spec)))?;
+    let source =
+        mercurio::attachment::AttachSource::parse(spec).map_err(|e| format!("{}: {e}", mercurio::redact_url(spec)))?;
     source.load_async(transport, &mercurio::Asset::default()).await.map_err(|e| e.to_string())
 }
 

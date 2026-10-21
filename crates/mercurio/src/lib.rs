@@ -225,8 +225,10 @@
 // Hidden modules are public only for the CLI and the integration tests; they are not a stable API. Use the re-exports below.
 #[path = "asset.rs"]
 mod asset_def;
-mod attachment;
-mod config;
+#[path = "attachment.rs"]
+mod attachment_def;
+#[path = "config/mod.rs"]
+mod config_def;
 mod convert;
 mod crypto;
 mod env;
@@ -265,9 +267,8 @@ mod report;
 #[cfg(feature = "transport-tokio")]
 mod tokio;
 
-pub use attachment::{AttachSource, AttachmentSet, Cache, Location};
-pub use config::template::{TemplateError, TemplateVars};
-pub use config::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
+pub use attachment::AttachmentSet;
+pub use config::{Config, ConfigFormat, ConfigOptions, TemplateVars};
 pub use error::{Error, ErrorClass, Result};
 pub use mercurio_async::AsyncMercurio;
 pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode};
@@ -279,6 +280,19 @@ pub use tag::{Tag, TagFilter};
 pub use target::{Target, parse, service_for_scheme, services};
 
 pub use asset::Asset;
+
+/// Attachments loaded from files, `http(s)://` and `memory://` sources: [`AttachmentSet`] and the options of each source.
+pub mod attachment {
+    pub(crate) use crate::attachment_def::*;
+    pub use crate::attachment_def::{AttachSource, AttachmentSet, Cache, Location};
+}
+
+/// Configuration files: [`Config`] and what loading one produces (ready targets, template entries, asset overrides).
+pub mod config {
+    pub use crate::config_def::template::{TemplateError, TemplateVars};
+    pub(crate) use crate::config_def::*;
+    pub use crate::config_def::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService, PendingTarget};
+}
 
 /// Branding and pipeline defaults: [`Asset`] and the types and constants around it.
 pub mod asset {
@@ -326,8 +340,8 @@ pub const FEATURES_TABLE: &str = include_str!(concat!(env!("OUT_DIR"), "/feature
 /// Helpers for the CLI, the integration tests, `xtask` and the crate's macros. Not a stable API: anything here may change in any release.
 #[doc(hidden)]
 pub mod __private {
-    pub use crate::config::template::{TemplateSchema, valid_name, validate_value};
-    pub use crate::config::{default_paths, detect_format, expand_path, spec, yaml};
+    pub use crate::config_def::template::{TemplateSchema, valid_name, validate_value};
+    pub use crate::config_def::{default_paths, detect_format, expand_path, spec, yaml};
     pub use crate::crypto::{b64, b64_decode, hmac_sha256};
     pub use crate::http::{MultipartPart, multipart_parts, parse_multipart};
 

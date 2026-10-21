@@ -578,9 +578,9 @@ pub async fn attachments(
         if !(rules.allowed)(&url) {
             return Err(format!("Denied attachment {no} (blocked web request)"));
         }
-        let mut source =
-            mercurio::AttachSource::parse(&url).map_err(|_| format!("Failed to parse attachment {no} URL"))?;
-        if source.location() != mercurio::Location::Hosted {
+        let mut source = mercurio::attachment::AttachSource::parse(&url)
+            .map_err(|_| format!("Failed to parse attachment {no} URL"))?;
+        if source.location() != mercurio::attachment::Location::Hosted {
             return Err(format!("Denied attachment {no} (not a hosted resource)"));
         }
         if let Some(n) = name {
