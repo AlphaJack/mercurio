@@ -6,6 +6,8 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
+keywords = ["apprise", "notifications", "cli", "push", "alerts"]
+categories = ["command-line-utilities", "network-programming"]
 
 [lints]
 workspace = true

@@ -6,7 +6,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
-keywords = ["notifications", "push", "webhook", "alerts"]
+keywords = ["apprise", "notifications", "push", "webhook", "alerts"]
 categories = ["network-programming", "web-programming::http-client"]
 build = "build.rs"
 
