@@ -9,8 +9,8 @@ use super::template::{self, Placeholders, TemplateSchema};
 use super::text::get_schema;
 use super::yaml::{self, Yaml};
 use crate::parse::parse_urls;
+use crate::registry::Registry;
 use crate::tag::Tag;
-use crate::target::service_for_scheme;
 
 /// `parse_list(value, cast=str)` over YAML values.
 pub(super) fn yaml_list(v: &Yaml, out: &mut Vec<String>) {
@@ -46,7 +46,7 @@ pub(super) fn parse_yaml(content: &str, opts: &ConfigOptions) -> Parsed {
     if let Some(tokens) = doc.get("asset").filter(|v| v.has_value()) {
         parse_asset(tokens, &mut out);
     }
-    let mut ctx = Entries { placeholders, declared, global_tags: global_tags(&doc) };
+    let mut ctx = Entries { placeholders, declared, global_tags: global_tags(&doc), registry: &opts.registry };
     let mut groups: Vec<(String, Vec<String>)> = Vec::new();
     if let Some(g) = doc.get("groups") {
         parse_groups(g, &mut groups);
@@ -136,13 +136,14 @@ fn includes(doc: &Yaml) -> Vec<String> {
 }
 
 /// Turns `urls:` entries into [`RawEntry`]s.
-struct Entries {
+struct Entries<'a> {
     placeholders: Option<Placeholders>,
     declared: Vec<String>,
     global_tags: Vec<String>,
+    registry: &'a Registry,
 }
 
-impl Entries {
+impl Entries<'_> {
     fn encode_url(&mut self, url: &str) -> String {
         match self.placeholders.as_mut() {
             Some(p) => p.encode_url(url),
@@ -165,11 +166,11 @@ impl Entries {
             warnings.push(format!("Invalid URL, entry #{no}"));
             return None;
         };
-        if !url_parses(&url) {
+        if !url_parses(&url, self.registry) {
             warnings.push(format!("Unparseable URL, entry #{no}"));
             return None;
         }
-        if let Some(off) = dropped(&url, self.placeholders.as_ref()) {
+        if let Some(off) = dropped(&url, self.placeholders.as_ref(), self.registry) {
             warnings.push(format!(
                 "Template variable '{off}' can not be used at this position for {schema}://, entry #{no}"
             ));
@@ -208,12 +209,12 @@ impl Entries {
             siblings = siblings.into_iter().map(|(k, v)| (k, p.encode_value(&v))).collect();
             tokens = p.encode_value(&tokens);
         }
-        let parsed_ok = url_parses(&url);
+        let parsed_ok = url_parses(&url, self.registry);
         if !parsed_ok && self.placeholders.as_ref().is_some_and(|p| uses(p, &url)) {
             warnings.push(format!("A template variable can not be used at this position for {schema}://, entry #{no}"));
             return Vec::new();
         }
-        if parsed_ok && let Some(off) = dropped(&url, self.placeholders.as_ref()) {
+        if parsed_ok && let Some(off) = dropped(&url, self.placeholders.as_ref(), self.registry) {
             warnings.push(format!(
                 "Template variable '{off}' can not be used at this position for {schema}://, entry #{no}"
             ));
@@ -243,7 +244,9 @@ impl Entries {
     /// Validate one item's schema and tags and fold its settings into the URL.
     fn raw_entry(&self, item: YamlItem, no: usize, item_no: usize, warnings: &mut Vec<String>) -> Option<RawEntry> {
         let (base, schema, tokens) = item;
-        if service_for_scheme(&schema).is_none() && base.as_deref().is_none_or(|u| crate::parse(u).is_err()) {
+        if self.registry.service_for_scheme(&schema).is_none()
+            && base.as_deref().is_none_or(|u| self.registry.parse(u).is_err())
+        {
             warnings.push(format!("An invalid schema ({schema}) in YAML configuration entry #{no}, item #{item_no}"));
             return None;
         }

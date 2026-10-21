@@ -35,7 +35,7 @@
 //!
 //! Around this core:
 //!
-//! - Runtime services: [`register_scheme`] for a closure, [`register`] for a full [`ServiceDef`].
+//! - Runtime services: a per-notifier [`Registry`], with [`Registry::register_scheme`] for a closure and [`Registry::register`] for a full [`ServiceDef`].
 //! - Configuration: [`Config`] loads TEXT and YAML files from paths, `http(s)://` or memory, with `include`, tags and [`TemplateVars`].
 //! - Tags: [`Tag`] and [`TagFilter`] (`all`, `always`, AND/OR groups).
 //! - [`store`]: the per-target [`PersistentStore`] (tokens, sessions, delivery tracking).
@@ -137,24 +137,24 @@
 //!
 //! ## Custom services
 //!
-//! [`Mercurio::register_scheme`] adds a URL scheme at run time. The closure gets each prepared piece of the message and a [`Hook`] (parsed URL, asset, store) and returns a [`Plan`]: requests for mercurio to send, or [`Plan::Done`] when it did the work itself.
+//! [`Registry::register_scheme`] adds a URL scheme at run time, to one notifier's [`Registry`] ([`Mercurio::registry_mut`]). The closure gets each prepared piece of the message and a [`Hook`] (parsed URL, asset, store) and returns a [`Plan`]: requests for mercurio to send, or [`Plan::Done`] when it did the work itself.
 //!
 //! ```
 //! use mercurio::{Mercurio, Plan, Request};
 //!
-//! Mercurio::register_scheme("bookhook", |msg, hook| {
+//! let mut m = Mercurio::new();
+//! m.registry_mut().register_scheme("bookhook", |msg, hook| {
 //!     let channel = hook.url.text("channel").unwrap_or_else(|| "general".into());
 //!     Plan::send(Request::post(format!("https://{}/notify", hook.url.host())).json(&serde_json::json!({
 //!         "channel": channel,
 //!         "text": format!("{}: {}", msg.title, msg.body),
 //!     })))
 //! })?;
-//! let mut m = Mercurio::new();
 //! m.add("bookhook://hooks.internal?channel=ops")?;
 //! # Ok::<(), mercurio::Error>(())
 //! ```
 //!
-//! [`register`] adds a full [`ServiceDef`] with its own URL parser, limits and [`Notify`] type, written like a built-in service. Built-in services always win.
+//! [`Registry::register`] adds a full [`ServiceDef`] with its own URL parser, limits and [`Notify`] type, written like a built-in service. Built-in services always win. Each notifier has its own registry, so two notifiers in one process can map the same scheme to different handlers.
 //!
 //! ## Configuration and tags
 //!
@@ -275,7 +275,7 @@ pub use http::{MultipartPart, multipart_parts, parse_multipart};
 pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode, Prepared};
 pub use notify::{Mercurio, Selection};
 pub use plan::{Delivery, Outcome, Plan, redact_url};
-pub use registry::{CustomScheme, Handler, Hook, register, register_scheme, unregister};
+pub use registry::{CustomScheme, Handler, Hook, Registry};
 pub use report::{Attempt, Report, ReportEntry, Status};
 pub use target::{MAX_RETRY_AFTER, Target, parse, service_for_scheme, services};
 

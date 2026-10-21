@@ -10,6 +10,7 @@ use super::template::Placeholders;
 use super::text::detect_format;
 use crate::asset::Asset;
 use crate::error::{Error, Result};
+use crate::registry::Registry;
 use crate::tag::Tag;
 use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking, Transport};
@@ -62,11 +63,19 @@ pub struct ConfigOptions {
     pub allow_templates: bool,
     /// Force a format instead of detecting it.
     pub format: Option<ConfigFormat>,
+    /// Runtime services the entries may use, besides the compiled-in ones.
+    pub registry: Registry,
 }
 
 impl Default for ConfigOptions {
     fn default() -> Self {
-        Self { recursion: 0, insecure_includes: false, allow_templates: true, format: None }
+        Self {
+            recursion: 0,
+            insecure_includes: false,
+            allow_templates: true,
+            format: None,
+            registry: Registry::default(),
+        }
     }
 }
 

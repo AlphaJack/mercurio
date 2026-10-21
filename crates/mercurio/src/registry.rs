@@ -1,11 +1,11 @@
 //! Services registered at runtime.
 //!
-//! Compiled-in services are always consulted first; a runtime service can only claim schemes nobody handles yet. Two ways to add one:
+//! A [`Registry`] holds the services one notifier knows besides the compiled-in ones, which are always consulted first; a runtime service can only claim schemes nobody handles yet. Two ways to add one:
 //!
-//! - [`register`] a full [`ServiceDef`] (your own [`Notify`] type, URL parser and limits), exactly like a built-in service module;
-//! - [`register_scheme`] a closure that turns each prepared message into a [`Plan`]. [`CustomScheme`] sets a display name or the accepted formats.
+//! - [`Registry::register`] a full [`ServiceDef`] (your own [`Notify`] type, URL parser and limits), exactly like a built-in service module;
+//! - [`Registry::register_scheme`] a closure that turns each prepared message into a [`Plan`]. [`CustomScheme`] sets a display name or the accepted formats.
 //!
-//! The registry is process-wide and thread-safe; registered definitions live for the rest of the process.
+//! Each [`crate::Mercurio`] and [`crate::AsyncMercurio`] has its own registry ([`crate::Mercurio::registry_mut`]), so two notifiers in one process can use the same scheme for different handlers. [`ConfigOptions::registry`](crate::ConfigOptions::registry) carries it into [`crate::Config`] loading.
 //!
 //! ```
 //! use std::sync::{Arc, Mutex};
@@ -13,20 +13,20 @@
 //!
 //! let seen = Arc::new(Mutex::new(Vec::new()));
 //! let log = seen.clone();
-//! Mercurio::register_scheme("docexample", move |msg, hook| {
-//!     log.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(format!("{} -> {}: {}", hook.url.host(), msg.title, msg.body));
-//!     Plan::Done
-//! })
-//! .unwrap();
-//!
 //! let mut m = Mercurio::new();
+//! m.registry_mut()
+//!     .register_scheme("docexample", move |msg, hook| {
+//!         log.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(format!("{} -> {}: {}", hook.url.host(), msg.title, msg.body));
+//!         Plan::Done
+//!     })
+//!     .unwrap();
 //! m.add("docexample://ops").unwrap();
 //! assert!(m.notify(&Message::new("disk full").title("alert")).is_success());
 //! assert_eq!(seen.lock().unwrap_or_else(std::sync::PoisonError::into_inner)[0], "ops -> alert: disk full");
 //! ```
 
 use std::fmt;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
 use crate::asset::Asset;
 use crate::error::{Error, Result};
@@ -34,6 +34,7 @@ use crate::message::{NotifyFormat, Prepared};
 use crate::plan::Plan;
 use crate::service::{Context, Notify, ServiceDef};
 use crate::store::{Memo, StoreRef};
+use crate::target::Target;
 use crate::url::ParsedUrl;
 
 /// A closure-based notifier: one call per message piece.
@@ -59,19 +60,23 @@ impl Hook<'_> {
     }
 }
 
-struct Registry {
-    defs: Vec<&'static ServiceDef>,
-    handlers: Vec<(&'static str, Arc<Handler>)>,
+/// Services added at runtime, on top of the compiled-in ones. Cheap to clone: the handlers are shared.
+#[derive(Clone, Default)]
+pub struct Registry {
+    entries: Vec<Entry>,
 }
 
-static REGISTRY: RwLock<Registry> = RwLock::new(Registry { defs: Vec::new(), handlers: Vec::new() });
-
-fn read() -> std::sync::RwLockReadGuard<'static, Registry> {
-    REGISTRY.read().unwrap_or_else(|p| p.into_inner())
+#[derive(Clone)]
+struct Entry {
+    def: &'static ServiceDef,
+    /// The closure of a [`CustomScheme`]; `None` for a full [`ServiceDef`].
+    handler: Option<Arc<Handler>>,
 }
 
-fn write() -> std::sync::RwLockWriteGuard<'static, Registry> {
-    REGISTRY.write().unwrap_or_else(|p| p.into_inner())
+impl fmt::Debug for Registry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.entries.iter().map(|e| e.def.id)).finish()
+    }
 }
 
 /// Valid custom scheme: 1 to 32 ASCII letters or digits.
@@ -79,57 +84,122 @@ fn valid_scheme(scheme: &str) -> bool {
     (1..=32).contains(&scheme.len()) && scheme.bytes().all(|b| b.is_ascii_alphanumeric())
 }
 
-fn check(reg: &Registry, def: &ServiceDef) -> Result<()> {
-    if def.schemes.is_empty() {
-        return Err(Error::Message(format!("service {:?} declares no schemes", def.id)));
+impl Registry {
+    /// An empty registry: only the compiled-in services.
+    pub fn new() -> Self {
+        Self::default()
     }
-    for s in def.schemes {
-        if !valid_scheme(s) {
-            return Err(Error::Message(format!("invalid scheme {s:?}")));
+
+    fn taken(&self, scheme: &str) -> bool {
+        crate::services::ALL.iter().any(|d| d.handles(scheme)) || self.entries.iter().any(|e| e.def.handles(scheme))
+    }
+
+    fn check(&self, def: &ServiceDef) -> Result<()> {
+        if def.schemes.is_empty() {
+            return Err(Error::Message(format!("service {:?} declares no schemes", def.id)));
         }
-        let taken = crate::services::ALL.iter().chain(reg.defs.iter()).any(|d| d.handles(s));
-        if taken {
-            return Err(Error::Message(format!("the scheme {s}:// is already handled by another service")));
+        for s in def.schemes {
+            if !valid_scheme(s) {
+                return Err(Error::Message(format!("invalid scheme {s:?}")));
+            }
+            if self.taken(s) {
+                return Err(Error::Message(format!("the scheme {s}:// is already handled by another service")));
+            }
+        }
+        Ok(())
+    }
+
+    /// Add a full service definition. Fails when one of its schemes is invalid or already handled (compiled-in services always win).
+    pub fn register(&mut self, def: &'static ServiceDef) -> Result<()> {
+        self.check(def)?;
+        self.entries.push(Entry { def, handler: None });
+        Ok(())
+    }
+
+    /// Register a closure as the notifier for `scheme://` URLs. The host of such a URL is not validated.
+    ///
+    /// Shorthand for `CustomScheme::new(scheme, handler).register(registry)`.
+    pub fn register_scheme<F>(&mut self, scheme: &str, handler: F) -> Result<&'static ServiceDef>
+    where
+        F: Fn(&Prepared<'_>, &Hook<'_>) -> Plan + Send + Sync + 'static,
+    {
+        CustomScheme::new(scheme, handler).register(self)
+    }
+
+    /// Remove the runtime service handling `scheme` (all of its schemes). Returns `false` when no runtime service handles it; compiled-in services can not be removed. Targets already built keep working.
+    pub fn unregister(&mut self, scheme: &str) -> bool {
+        let Some(i) = self.entries.iter().position(|e| e.def.handles(scheme)) else { return false };
+        self.entries.remove(i);
+        true
+    }
+
+    /// Runtime services, in registration order.
+    pub fn registered(&self) -> impl Iterator<Item = &'static ServiceDef> + '_ {
+        self.entries.iter().map(|e| e.def)
+    }
+
+    /// The service handling `scheme`: compiled-in services first ([`crate::service_for_scheme`]), then this registry's.
+    pub fn service_for_scheme(&self, scheme: &str) -> Option<&'static ServiceDef> {
+        crate::target::service_for_scheme(scheme).or_else(|| self.lookup(scheme))
+    }
+
+    /// [`crate::parse`] with this registry's services too.
+    pub fn parse(&self, url: &str) -> Result<Target> {
+        crate::target::parse_with(url, self)
+    }
+
+    /// The runtime service handling `scheme`.
+    pub(crate) fn lookup(&self, scheme: &str) -> Option<&'static ServiceDef> {
+        self.entries.iter().map(|e| e.def).find(|d| d.handles(scheme))
+    }
+
+    /// The closure behind `def`, when it is one of this registry's [`CustomScheme`]s.
+    pub(crate) fn handler(&self, def: &ServiceDef) -> Option<Arc<Handler>> {
+        self.entries.iter().find(|e| std::ptr::eq(e.def, def)).and_then(|e| e.handler.clone())
+    }
+
+    /// Build `def`'s service from `parsed`: its closure when it has one, its URL parser otherwise.
+    pub(crate) fn build(&self, def: &'static ServiceDef, parsed: &ParsedUrl) -> Result<Box<dyn Notify>> {
+        match self.handler(def) {
+            Some(handler) => Ok(custom_notify(parsed, handler)),
+            None => (def.parse)(parsed),
         }
     }
-    Ok(())
 }
 
-/// Add a service at runtime. Fails when one of its schemes is invalid or already handled (compiled-in services always win).
-pub fn register(def: &'static ServiceDef) -> Result<()> {
-    let mut reg = write();
-    check(&reg, def)?;
-    reg.defs.push(def);
-    Ok(())
+/// A [`CustomScheme`] target's service.
+pub(crate) fn custom_notify(parsed: &ParsedUrl, handler: Arc<Handler>) -> Box<dyn Notify> {
+    Box::new(CustomNotify { url: parsed.clone(), handler })
 }
 
-/// Remove the runtime service handling `scheme` (all of its schemes). Returns `false` when no runtime service handles it; compiled-in services can not be removed. Targets already built keep working.
-pub fn unregister(scheme: &str) -> bool {
-    let mut reg = write();
-    let Some(i) = reg.defs.iter().position(|d| d.handles(scheme)) else { return false };
-    let def = reg.defs.remove(i);
-    reg.handlers.retain(|(s, _)| !def.handles(s));
-    true
+/// Closure definitions, shared by every registry that registers the same scheme with the same settings. A [`ServiceDef`] must be `'static`, so each one is leaked once and reused, which bounds the leak by the distinct schemes, not by the number of notifiers.
+static DEFS: Mutex<Vec<&'static ServiceDef>> = Mutex::new(Vec::new());
+
+fn closure_def(scheme: &str, name: &str, formats: &'static [NotifyFormat], attachments: bool) -> &'static ServiceDef {
+    let mut defs = DEFS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let same = |d: &&&'static ServiceDef| {
+        d.schemes == [scheme] && d.name == name && d.formats == formats && d.attachments == attachments
+    };
+    if let Some(def) = defs.iter().find(same) {
+        return def;
+    }
+    let scheme: &'static str = Box::leak(scheme.to_string().into_boxed_str());
+    let def: &'static ServiceDef = Box::leak(Box::new(ServiceDef {
+        id: Box::leak(format!("custom_{scheme}").into_boxed_str()),
+        name: Box::leak(name.to_string().into_boxed_str()),
+        schemes: Box::leak(vec![scheme].into_boxed_slice()),
+        parse: parse_custom,
+        formats,
+        attachments,
+        ..ServiceDef::DEFAULTS
+    }));
+    defs.push(def);
+    def
 }
 
-/// Runtime-registered services, in registration order.
-pub fn registered() -> Vec<&'static ServiceDef> {
-    read().defs.clone()
-}
-
-/// The runtime service handling `scheme`.
-pub(crate) fn lookup(scheme: &str) -> Option<&'static ServiceDef> {
-    read().defs.iter().copied().find(|d| d.handles(scheme))
-}
-
-/// Register a closure as the notifier for `scheme://` URLs. The host of such a URL is not validated.
-///
-/// Shorthand for `CustomScheme::new(scheme, handler).register()`.
-pub fn register_scheme<F>(scheme: &str, handler: F) -> Result<&'static ServiceDef>
-where
-    F: Fn(&Prepared<'_>, &Hook<'_>) -> Plan + Send + Sync + 'static,
-{
-    CustomScheme::new(scheme, handler).register()
+/// The URL parser of a closure definition. Its targets are built from the registry holding the closure ([`Registry::build`]), never from here.
+fn parse_custom(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
+    Err(Error::UnknownScheme(u.scheme.clone()))
 }
 
 /// Builder for a closure-based service.
@@ -185,42 +255,20 @@ impl CustomScheme {
         self
     }
 
-    /// Add it to the registry.
-    pub fn register(self) -> Result<&'static ServiceDef> {
+    /// Add it to `registry`.
+    pub fn register(self, registry: &mut Registry) -> Result<&'static ServiceDef> {
         if !valid_scheme(&self.scheme) {
             return Err(Error::Message(format!("invalid scheme {:?}", self.scheme)));
         }
-        let mut reg = write();
         // Validate before leaking anything.
-        if crate::services::ALL.iter().chain(reg.defs.iter()).any(|d| d.handles(&self.scheme)) {
+        if registry.taken(&self.scheme) {
             return Err(Error::Message(format!("the scheme {}:// is already handled by another service", self.scheme)));
         }
-        let scheme: &'static str = Box::leak(self.scheme.clone().into_boxed_str());
-        let name = self.name.unwrap_or_else(|| format!("Custom - {scheme}"));
-        let def: &'static ServiceDef = Box::leak(Box::new(ServiceDef {
-            id: Box::leak(format!("custom_{scheme}").into_boxed_str()),
-            name: Box::leak(name.into_boxed_str()),
-            schemes: Box::leak(vec![scheme].into_boxed_slice()),
-            parse: parse_custom,
-            formats: self.formats,
-            attachments: self.attachments,
-            ..ServiceDef::DEFAULTS
-        }));
-        check(&reg, def)?;
-        reg.defs.push(def);
-        reg.handlers.push((scheme, self.handler));
+        let name = self.name.unwrap_or_else(|| format!("Custom - {}", self.scheme));
+        let def = closure_def(&self.scheme, &name, self.formats, self.attachments);
+        registry.entries.push(Entry { def, handler: Some(self.handler) });
         Ok(def)
     }
-}
-
-fn parse_custom(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let handler = read()
-        .handlers
-        .iter()
-        .find(|(s, _)| s.eq_ignore_ascii_case(&u.scheme))
-        .map(|(_, h)| h.clone())
-        .ok_or_else(|| Error::UnknownScheme(u.scheme.clone()))?;
-    Ok(Box::new(CustomNotify { url: u.clone(), handler }))
 }
 
 struct CustomNotify {
@@ -253,19 +301,20 @@ mod tests {
     fn closure_service_receives_message_and_url() {
         let seen = Arc::new(Mutex::new(Vec::new()));
         let log = seen.clone();
-        crate::register_scheme("tclosure", move |msg, hook| {
-            log.lock().unwrap().push((
-                msg.title.to_string(),
-                msg.body.to_string(),
-                msg.kind.as_str().to_string(),
-                hook.url.host(),
-                hook.url.param("x").map(str::to_string),
-                msg.attachments.len(),
-            ));
-            Plan::Done
-        })
-        .unwrap();
         let mut m = Mercurio::new();
+        m.registry_mut()
+            .register_scheme("tclosure", move |msg, hook| {
+                log.lock().unwrap().push((
+                    msg.title.to_string(),
+                    msg.body.to_string(),
+                    msg.kind.as_str().to_string(),
+                    hook.url.host(),
+                    hook.url.param("x").map(str::to_string),
+                    msg.attachments.len(),
+                ));
+                Plan::Done
+            })
+            .unwrap();
         m.add("tclosure://box?x=1").unwrap();
         let mut msg = Message::new("body").title("title");
         msg.kind = crate::NotifyType::Warning;
@@ -281,15 +330,16 @@ mod tests {
 
     #[test]
     fn closure_plan_goes_through_the_transport() {
-        crate::register_scheme("thttp", |msg, hook| {
-            let req = Request::post(format!("https://{}/hook", hook.url.host()))
-                .header("User-Agent", hook.context().app_id().to_string())
-                .text(msg.body.to_string());
-            Plan::send(req)
-        })
-        .unwrap();
         let fake = Arc::new(FakeTransport::new());
         let mut m = Mercurio::with_transport(fake.clone());
+        m.registry_mut()
+            .register_scheme("thttp", |msg, hook| {
+                let req = Request::post(format!("https://{}/hook", hook.url.host()))
+                    .header("User-Agent", hook.context().app_id().to_string())
+                    .text(msg.body.to_string());
+                Plan::send(req)
+            })
+            .unwrap();
         m.add("thttp://example.com").unwrap();
         assert!(m.notify(&Message::new("hi")).is_success());
         let reqs = fake.requests();
@@ -299,50 +349,79 @@ mod tests {
 
     #[test]
     fn failures_are_reported() {
-        crate::register_scheme("tfail", |_, _| Plan::fail(Error::Message("failed".into()))).unwrap();
         let mut m = Mercurio::new();
+        m.registry_mut().register_scheme("tfail", |_, _| Plan::fail(Error::Message("failed".into()))).unwrap();
         m.add("tfail://").unwrap();
         assert!(!m.notify(&Message::new("x")).is_success());
     }
 
     #[test]
     fn compiled_in_and_duplicate_schemes_are_rejected() {
+        let mut reg = Registry::new();
         if let Some(def) = crate::services().first() {
-            assert!(crate::register_scheme(def.schemes[0], |_, _| Plan::Done).is_err());
+            assert!(reg.register_scheme(def.schemes[0], |_, _| Plan::Done).is_err());
         }
-        crate::register_scheme("tdup", |_, _| Plan::Done).unwrap();
-        assert!(crate::register_scheme("TDUP", |_, _| Plan::Done).is_err());
-        assert!(crate::register_scheme("", |_, _| Plan::Done).is_err());
-        assert!(crate::register_scheme("a-b", |_, _| Plan::Done).is_err());
-        assert!(crate::register_scheme(&"x".repeat(33), |_, _| Plan::Done).is_err());
-        assert!(crate::register_scheme("a b", |_, _| Plan::Done).is_err());
+        reg.register_scheme("tdup", |_, _| Plan::Done).unwrap();
+        assert!(reg.register_scheme("TDUP", |_, _| Plan::Done).is_err());
+        assert!(reg.register_scheme("", |_, _| Plan::Done).is_err());
+        assert!(reg.register_scheme("a-b", |_, _| Plan::Done).is_err());
+        assert!(reg.register_scheme(&"x".repeat(33), |_, _| Plan::Done).is_err());
+        assert!(reg.register_scheme("a b", |_, _| Plan::Done).is_err());
     }
 
     #[test]
     fn unregister_then_register_again() {
-        crate::register_scheme("tcycle", |_, _| Plan::Done).unwrap();
-        assert!(crate::parse("tcycle://x").is_ok());
-        assert!(unregister("tcycle"));
-        assert!(!unregister("tcycle"));
-        assert!(matches!(crate::parse("tcycle://x"), Err(Error::UnknownScheme(_))));
-        crate::register_scheme("tcycle", |_, _| Plan::Done).unwrap();
-        assert!(crate::parse("tcycle://x").is_ok());
-        assert!(registered().iter().any(|d| d.handles("tcycle")));
+        let mut reg = Registry::new();
+        reg.register_scheme("tcycle", |_, _| Plan::Done).unwrap();
+        assert!(reg.parse("tcycle://x").is_ok());
+        assert!(reg.unregister("tcycle"));
+        assert!(!reg.unregister("tcycle"));
+        assert!(matches!(reg.parse("tcycle://x"), Err(Error::UnknownScheme(_))));
+        reg.register_scheme("tcycle", |_, _| Plan::Done).unwrap();
+        assert!(reg.parse("tcycle://x").is_ok());
+        assert!(reg.registered().any(|d| d.handles("tcycle")));
+    }
+
+    #[test]
+    fn registries_are_independent() {
+        let (mut a, mut b) = (Registry::new(), Registry::new());
+        let first = a.register_scheme("tsplit", |_, _| Plan::Done).unwrap();
+        let second = b.register_scheme("tsplit", |_, _| Plan::fail(Error::Message("b".into()))).unwrap();
+        // Same settings: one leaked definition, two handlers.
+        assert!(std::ptr::eq(first, second));
+        assert!(matches!(crate::parse("tsplit://x"), Err(Error::UnknownScheme(_))));
+        let fake = FakeTransport::new();
+        let send = |r: &Registry| r.parse("tsplit://x").unwrap().send(&Message::new("m"), &fake, &Asset::default());
+        assert!(send(&a).is_success());
+        assert!(!send(&b).is_success());
+    }
+
+    #[test]
+    fn config_entries_use_the_registry() {
+        let mut m = Mercurio::new();
+        m.registry_mut().register_scheme("tcfg", |_, _| Plan::Done).unwrap();
+        let yaml = "template:\n  - host: box\nurls:\n  - tcfg://plain\n  - tcfg://${HOST}\n";
+        assert_eq!(m.add_config_text(yaml, None).unwrap(), 2);
+        assert_eq!(m.pending().len(), 1);
+        assert_eq!(m.notify(&Message::new("x")).status(), crate::Status::Success);
+        // Another notifier does not know the scheme.
+        assert_eq!(Mercurio::new().add_config_text("tcfg://plain", None).unwrap_or(0), 0);
     }
 
     #[test]
     fn declared_format_converts_input() {
         let seen = Arc::new(Mutex::new(String::new()));
         let log = seen.clone();
+        let mut reg = Registry::new();
         CustomScheme::new("thtml", move |msg, _| {
             *log.lock().unwrap() = format!("{:?}:{}", msg.format, msg.body);
             Plan::Done
         })
         .name("HTML hook")
         .formats(&[NotifyFormat::Html])
-        .register()
+        .register(&mut reg)
         .unwrap();
-        let t = crate::parse("thtml://").unwrap();
+        let t = reg.parse("thtml://").unwrap();
         assert_eq!(t.service().name, "HTML hook");
         let mut msg = Message::new("**hi**");
         msg.format = Some(NotifyFormat::Markdown);
@@ -373,11 +452,13 @@ mod tests {
 
     #[test]
     fn full_service_definitions() {
-        register(&ECHO).unwrap();
-        assert!(register(&ECHO).is_err());
-        let t = crate::parse("techos://anything?overflow=truncate").unwrap();
+        let mut reg = Registry::new();
+        reg.register(&ECHO).unwrap();
+        assert!(reg.register(&ECHO).is_err());
+        let t = reg.parse("techos://anything?overflow=truncate").unwrap();
         assert_eq!(t.service().id, "echo");
-        assert!(std::ptr::eq(crate::service_for_scheme("techo").unwrap(), &ECHO));
+        assert!(std::ptr::eq(reg.service_for_scheme("techo").unwrap(), &ECHO));
+        assert!(crate::service_for_scheme("techo").is_none());
         let fake = FakeTransport::new();
         // `?overflow=truncate` cuts the body to the 5 characters the limits allow.
         assert!(t.send(&Message::new("123456789"), &fake, &Asset::default()).is_success());

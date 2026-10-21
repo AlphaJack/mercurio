@@ -6,9 +6,10 @@ use std::sync::Arc;
 use super::model::{AssetValue, Config, ConfigService, Parsed};
 use super::template::{self, Placeholders, TemplateError, TemplateVars};
 use crate::error::{Error, Result};
+use crate::registry::{Handler, Registry, custom_notify};
 use crate::service::ServiceDef;
 use crate::tag::{Tag, parse_tags};
-use crate::target::{Target, parse, service_for_scheme};
+use crate::target::Target;
 use crate::url::{ParseOptions, ParsedUrl, parse_url_with};
 
 pub(super) fn uses(p: &Placeholders, text: &str) -> bool {
@@ -18,11 +19,11 @@ pub(super) fn uses(p: &Placeholders, text: &str) -> bool {
 }
 
 /// Whether the URL parses structurally.
-pub(super) fn url_parses(url: &str) -> bool {
+pub(super) fn url_parses(url: &str, registry: &Registry) -> bool {
     let Some(scheme) = crate::url::scheme_of(url) else { return false };
-    match service_for_scheme(&scheme) {
+    match registry.service_for_scheme(&scheme) {
         Some(_) => parse_url_with(url, SERVICE_URL).is_some(),
-        None => crate::parse(url).is_ok(),
+        None => registry.parse(url).is_ok(),
     }
 }
 
@@ -30,7 +31,7 @@ pub(super) fn url_parses(url: &str) -> bool {
 pub(super) const SERVICE_URL: ParseOptions = ParseOptions { verify_host: false, strict_port: false, sanitize: true };
 
 /// `dropped_template`: a declared marker the URL parser discarded.
-pub(super) fn dropped(url: &str, p: Option<&Placeholders>) -> Option<String> {
+pub(super) fn dropped(url: &str, p: Option<&Placeholders>, registry: &Registry) -> Option<String> {
     let p = p?;
     let mut wanted = Vec::new();
     p.used_in(url, &mut wanted);
@@ -38,7 +39,7 @@ pub(super) fn dropped(url: &str, p: Option<&Placeholders>) -> Option<String> {
         return None;
     }
     let scheme = crate::url::scheme_of(url)?;
-    service_for_scheme(&scheme)?;
+    registry.service_for_scheme(&scheme)?;
     let parsed = parse_url_with(&url.replace("/#", "/%23"), SERVICE_URL)?;
     let have = p.used_by(&parsed);
     let mut missing: Vec<String> = wanted.into_iter().filter(|w| !have.contains(w)).collect();
@@ -49,6 +50,8 @@ pub(super) fn dropped(url: &str, p: Option<&Placeholders>) -> Option<String> {
 /// A configuration entry waiting for `${NAME}` values.
 pub struct PendingTarget {
     def: &'static ServiceDef,
+    /// The closure of a [`crate::CustomScheme`] service.
+    handler: Option<Arc<Handler>>,
     parsed: ParsedUrl,
     placeholders: Arc<Placeholders>,
     names: Vec<String>,
@@ -106,7 +109,10 @@ impl PendingTarget {
         if parsed.original.len() > template::MAX_RESOLVED_URL_LEN {
             return Err(Error::config(self.def.name, "a template built an over-sized URL"));
         }
-        let service = (self.def.parse)(&parsed)?;
+        let service = match &self.handler {
+            Some(handler) => custom_notify(&parsed, handler.clone()),
+            None => (self.def.parse)(&parsed)?,
+        };
         let mut t = Target::new(self.def, service, &parsed).with_tag_set(self.tags.clone());
         if !self.asset.is_empty() {
             t.set_asset_overrides(self.asset.clone());
@@ -115,7 +121,7 @@ impl PendingTarget {
     }
 }
 
-pub(super) fn build(parsed: Parsed, cfg: &mut Config) {
+pub(super) fn build(parsed: Parsed, cfg: &mut Config, registry: &Registry) {
     cfg.warnings.extend(parsed.warnings);
     for (k, v) in parsed.asset {
         cfg.asset.retain(|(n, _)| *n != k);
@@ -127,7 +133,7 @@ pub(super) fn build(parsed: Parsed, cfg: &mut Config) {
         if let Some(p) = &placeholders
             && uses(p, &e.url)
         {
-            let Some(def) = crate::url::scheme_of(&e.url).and_then(|s| service_for_scheme(&s)) else {
+            let Some(def) = crate::url::scheme_of(&e.url).and_then(|s| registry.service_for_scheme(&s)) else {
                 cfg.warnings.push(format!("Could not load {} ({})", crate::plan::redact_url(&e.url), e.location));
                 continue;
             };
@@ -139,6 +145,7 @@ pub(super) fn build(parsed: Parsed, cfg: &mut Config) {
             if !names.is_empty() {
                 cfg.services.push(ConfigService::Pending(Box::new(PendingTarget {
                     def,
+                    handler: registry.handler(def),
                     parsed: pu,
                     placeholders: p.clone(),
                     names,
@@ -149,7 +156,7 @@ pub(super) fn build(parsed: Parsed, cfg: &mut Config) {
                 continue;
             }
         }
-        match parse(&e.url) {
+        match registry.parse(&e.url) {
             Ok(t) => cfg.services.push(ConfigService::Ready(t.with_tag_set(tags))),
             Err(err) => cfg.warnings.push(format!(
                 "Could not load URL {} ({}): {err}",
