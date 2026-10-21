@@ -909,8 +909,42 @@ mod e2ee {
         }
     }
 
+    /// A user's cross-signing keys: `ssk` is signed by `master` (by `signer`, to fake a bad chain) and signs the devices in `signs`.
+    struct Cross {
+        user: &'static str,
+        master: SigningKey,
+        ssk: SigningKey,
+        signer: Option<SigningKey>,
+        signs: Vec<&'static str>,
+    }
+
+    impl Cross {
+        fn new(user: &'static str, signs: &[&'static str]) -> Self {
+            let env = crate::testing::test_env();
+            Cross { user, master: SigningKey::generate(env), ssk: SigningKey::generate(env), signer: None, signs: signs.to_vec() }
+        }
+
+        fn sign(key: &SigningKey, user: &str, obj: &mut Value) {
+            let mut bare = obj.clone();
+            bare.as_object_mut().unwrap().remove("signatures");
+            bare.as_object_mut().unwrap().remove("unsigned");
+            let public = b64enc(key.public());
+            obj["signatures"][user][format!("ed25519:{public}")] = json!(key.sign_b64(canonical_json(&bare).as_bytes()));
+        }
+
+        fn key_object(&self, key: &SigningKey, usage: &str) -> Value {
+            let public = b64enc(key.public());
+            json!({"user_id": self.user, "usage": [usage], "keys": {format!("ed25519:{public}"): public}})
+        }
+    }
+
     /// An encrypted room whose joined members are exactly `devs` (plus us).
     fn room_fake(devs: &[&Dev]) -> FakeTransport {
+        room_fake_cross(devs, &[])
+    }
+
+    /// [`room_fake`] where the users in `cross` publish cross-signing keys.
+    fn room_fake_cross(devs: &[&Dev], cross: &[&Cross]) -> FakeTransport {
         let fake = e2ee_fake();
         fake.on_url("/state/m.room.encryption", json_resp(json!({"algorithm": MEGOLM_ALGORITHM})));
         let mut joined = Map::new();
@@ -921,6 +955,9 @@ mod e2ee {
             joined.insert(d.user.into(), json!({}));
             let user_keys = keys.entry(d.user).or_insert_with(|| json!({}));
             user_keys[d.id] = d.acct.device_keys_payload(d.user, d.id);
+            if let Some(c) = cross.iter().find(|c| c.user == d.user && c.signs.contains(&d.id)) {
+                Cross::sign(&c.ssk, d.user, &mut user_keys[d.id]);
+            }
             let mut otk = json!({"key": b64enc(&XKey::generate(crate::testing::test_env()).public())});
             let sig = d.acct.sign(canonical_json(&otk).as_bytes());
             otk["signatures"] = json!({d.user: {format!("ed25519:{}", d.id): sig}});
@@ -928,7 +965,18 @@ mod e2ee {
             user_otks[d.id] = json!({"signed_curve25519:AAAAAQ": otk});
         }
         fake.on_url("/joined_members", json_resp(json!({"joined": joined})));
-        fake.on_url("/keys/query", json_resp(json!({"device_keys": keys})));
+        let mut masters = Map::new();
+        let mut ssks = Map::new();
+        for c in cross {
+            masters.insert(c.user.into(), c.key_object(&c.master, "master"));
+            let mut ssk = c.key_object(&c.ssk, "self_signing");
+            Cross::sign(c.signer.as_ref().unwrap_or(&c.master), c.user, &mut ssk);
+            ssks.insert(c.user.into(), ssk);
+        }
+        fake.on_url(
+            "/keys/query",
+            json_resp(json!({"device_keys": keys, "master_keys": masters, "self_signing_keys": ssks})),
+        );
         fake.on_url("/keys/claim", json_resp(json!({"one_time_keys": otks})));
         fake
     }
@@ -1080,6 +1128,46 @@ mod e2ee {
         let third = room_fake(&[&bob]);
         room_send(&dir, &third);
         assert_eq!(addressed(&req_bodies(&third, "/sendToDevice/")[0], "messages"), [format!("{BOB}/BOBDEV")]);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    // Cross-signing
+
+    #[test]
+    fn only_cross_signed_devices_get_room_keys() {
+        let dir = temp_path("cross");
+        let (signed, unsigned) = (Dev::new(BOB, "BOBDEV"), Dev::new(BOB, "BOBNEW"));
+        let cross = Cross::new(BOB, &["BOBDEV"]);
+        let fake = room_fake_cross(&[&signed, &unsigned], &[&cross]);
+        room_send(&dir, &fake);
+        assert_eq!(addressed(&req_bodies(&fake, "/sendToDevice/")[0], "messages"), [format!("{BOB}/BOBDEV")]);
+        let pin = &saved_entries(&dir)[format!("e2ee_master_{BOB}")];
+        assert_eq!(pin["v"], json!(b64enc(cross.master.public())));
+        assert!(pin["x"].is_null(), "the master key pin does not expire");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn changed_master_key_withholds_room_keys() {
+        let dir = temp_path("crossmaster");
+        let bob = Dev::new(BOB, "BOBDEV");
+        room_send(&dir, &room_fake_cross(&[&bob], &[&Cross::new(BOB, &["BOBDEV"])]));
+        expire_members(&dir);
+        let second = room_fake_cross(&[&bob], &[&Cross::new(BOB, &["BOBDEV"])]);
+        room_send(&dir, &second);
+        assert_eq!(count(&second, "/keys/claim") + count(&second, "/sendToDevice/"), 0, "{:?}", paths(&second));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn self_signing_key_must_be_signed_by_the_master_key() {
+        let dir = temp_path("crossssk");
+        let bob = Dev::new(BOB, "BOBDEV");
+        let mut cross = Cross::new(BOB, &["BOBDEV"]);
+        cross.signer = Some(SigningKey::generate(crate::testing::test_env()));
+        let fake = room_fake_cross(&[&bob], &[&cross]);
+        room_send(&dir, &fake);
+        assert_eq!(count(&fake, "/keys/claim") + count(&fake, "/sendToDevice/"), 0, "{:?}", paths(&fake));
         std::fs::remove_dir_all(&dir).ok();
     }
 }
