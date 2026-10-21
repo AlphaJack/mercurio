@@ -155,7 +155,7 @@ fn parse(raw: &ParsedUrl) -> Result<Box<dyn Notify>> {
 /// Auth headers; `None` values are dropped by requests, non-strings make it raise.
 type AuthHeaders = Vec<(&'static str, Value)>;
 
-fn post(api_url: &str, path: &str, auth: &AuthHeaders, ua: &str, payload: &Value) -> Plan {
+fn post(api_url: &str, path: &str, auth: &AuthHeaders, ua: &str, payload: &Value, text: &str) -> Plan {
     let mut req = Request::post(format!("{api_url}/{path}"));
     for (k, v) in auth {
         match v {
@@ -166,23 +166,23 @@ fn post(api_url: &str, path: &str, auth: &AuthHeaders, ua: &str, payload: &Value
             }
         }
     }
-    let req = req.header("User-Agent", ua).json(payload);
+    let req = req.header("User-Agent", ua).json_text(payload, text);
     Plan::send_expect(req, &[200])
 }
 
 impl RocketChat {
-    fn sends(&self, base: &Value, auth: &AuthHeaders, ua: &str, path: &str, webhook: bool) -> Vec<Plan> {
+    fn sends(&self, base: &Value, text: &str, auth: &AuthHeaders, ua: &str, path: &str, webhook: bool) -> Vec<Plan> {
         let mut plans = Vec::new();
         let named = self.users.iter().map(|u| format!("@{u}")).chain(self.channels.iter().map(|c| format!("#{c}")));
         for t in named {
             let mut p = base.clone();
             p["channel"] = json!(t);
-            plans.push(post(&self.api_url, path, auth, ua, &p).target(t));
+            plans.push(post(&self.api_url, path, auth, ua, &p, text).target(t));
         }
         for r in &self.rooms {
             let mut p = base.clone();
             p[if webhook { "channel" } else { "roomId" }] = json!(r);
-            plans.push(post(&self.api_url, path, auth, ua, &p).target(r.clone()));
+            plans.push(post(&self.api_url, path, auth, ua, &p, text).target(r.clone()));
         }
         plans
     }
@@ -191,7 +191,7 @@ impl RocketChat {
 impl Notify for RocketChat {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let ua = ctx.app_id().to_string();
-        let mut payload = json!({"text": msg.body});
+        let mut payload = json!({"text": crate::http::TEXT});
         if self.avatar
             && let Some(img) = ctx.asset.image_url(msg.kind, ImageSize::Xy128)
         {
@@ -200,15 +200,15 @@ impl Notify for RocketChat {
         match self.mode {
             Mode::Webhook => {
                 let path = format!("hooks/{}", self.webhook.as_ref().map_or("", Secret::expose));
-                let plans = self.sends(&payload, &Vec::new(), &ua, &path, true);
-                if plans.is_empty() { post(&self.api_url, &path, &Vec::new(), &ua, &payload) } else { Plan::all(plans) }
+                let plans = self.sends(&payload, msg.body, &Vec::new(), &ua, &path, true);
+                if plans.is_empty() { post(&self.api_url, &path, &Vec::new(), &ua, &payload, msg.body) } else { Plan::all(plans) }
             }
             Mode::Token => {
                 let auth: AuthHeaders = vec![
                     ("X-User-Id", json!(self.user.as_deref().unwrap_or(""))),
                     ("X-Auth-Token", json!(self.password.as_ref().map_or("", Secret::expose))),
                 ];
-                Plan::all(self.sends(&payload, &auth, &ua, "api/v1/chat.postMessage", false))
+                Plan::all(self.sends(&payload, msg.body, &auth, &ua, "api/v1/chat.postMessage", false))
             }
             Mode::Basic => {
                 let user = self.user.clone().unwrap_or_default();
@@ -216,6 +216,8 @@ impl Notify for RocketChat {
                 let login = Request::post(format!("{}/api/v1/login", self.api_url))
                     .form(&[("username", user.as_str()), ("password", pass.as_str())]);
                 let api_url = self.api_url.clone();
+                // The login continuation outlives this call, so it owns the text.
+                let text = msg.body.to_string();
                 let this = Sends {
                     users: self.users.clone(),
                     channels: self.channels.clone(),
@@ -255,7 +257,7 @@ impl Notify for RocketChat {
                         users: this.users,
                         avatar: false,
                     };
-                    let sends = rc.sends(&payload, &auth, &ua, "api/v1/chat.postMessage", false);
+                    let sends = rc.sends(&payload, &text, &auth, &ua, "api/v1/chat.postMessage", false);
                     let mut plans: Vec<Plan> = sends.into_iter().map(|p| p.context("post")).collect();
                     let mut logout = Request::post(format!("{api_url}/api/v1/logout"));
                     let mut valid = true;
