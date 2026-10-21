@@ -42,6 +42,7 @@ pub type Handler = dyn Fn(&Prepared<'_>, &Hook<'_>) -> Plan + Send + Sync;
 
 /// What a [`Handler`] gets besides the message.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub struct Hook<'a> {
     /// The URL this target was built from.
     pub url: &'a ParsedUrl,

@@ -43,6 +43,7 @@ impl fmt::Display for Status {
 
 /// One delivery attempt of one URL.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct Attempt {
     /// What happened to each target in this attempt.
     pub delivery: Delivery,
@@ -71,6 +72,7 @@ impl Attempt {
 
 /// Result of [`crate::Mercurio::notify`]: one entry per URL.
 #[derive(Debug, Clone, Default)]
+#[non_exhaustive]
 pub struct Report {
     /// One entry per URL notified, in the order they were added.
     pub entries: Vec<ReportEntry>,
@@ -78,6 +80,7 @@ pub struct Report {
 
 /// What happened to one URL.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ReportEntry {
     /// Redacted label like `tgram:// (Telegram)`.
     pub label: String,
