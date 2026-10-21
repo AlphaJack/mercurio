@@ -22,7 +22,7 @@
 //! # Ok(()) }
 //! ```
 //!
-//! `AsyncMercurio` works on any runtime and spawns nothing. One `notify` call sends to its targets concurrently inside the calling task (at most 128 sends in flight across the process), so it uses one thread; spawn several calls to use more cores. [`AsyncMercurio::new`] does its I/O on tokio and reqwest ([`TokioTransport`], feature `transport-tokio`); [`AsyncMercurio::with_transport`] takes any [`AsyncTransport`].
+//! `AsyncMercurio` works on any runtime and spawns nothing. One `notify` call sends to its targets concurrently inside the calling task (at most 128 sends in flight across the process), so it uses one thread; spawn several calls to use more cores. [`AsyncMercurio::new`] does its I/O on tokio and rustls with an in-house HTTP/1.1 client ([`TokioTransport`], feature `transport-tokio`); [`AsyncMercurio::with_transport`] takes any [`AsyncTransport`].
 //!
 //! `notify` never panics and never returns early: every URL gets a [`ReportEntry`] in the [`Report`], with one [`Outcome`] per target and every [`Attempt`] made (more than one with `?retry=`). [`Report::status`] sums it up as a [`Status`].
 //!

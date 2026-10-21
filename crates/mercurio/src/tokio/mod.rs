@@ -1,34 +1,29 @@
-//! [`TokioTransport`]: the I/O of [`crate::AsyncMercurio`] on tokio and reqwest (feature `transport-tokio`).
+//! [`TokioTransport`]: the I/O of [`crate::AsyncMercurio`] on tokio and rustls (feature `transport-tokio`).
 //!
-//! The only module that names tokio, reqwest or tokio-rustls. It gives the same results as `BlockingTransport` (feature `transport-blocking`): rustls with ring, the Mozilla roots or `SSL_CERT_FILE`, HTTP/1.1, at most 10 redirects (the last 3xx is returned), 16 MiB bodies, `HTTP(S)_PROXY` / `NO_PROXY` from the environment and the same error classes.
+//! The only module that names tokio or tokio-rustls; HTTP is the in-house client of `client`. It gives the same results as `BlockingTransport` (feature `transport-blocking`): rustls with ring, the Mozilla roots or `SSL_CERT_FILE`, HTTP/1.1, at most 10 redirects (the last 3xx is returned), 16 MiB bodies, `HTTP(S)_PROXY` / `NO_PROXY` from the environment and the same error classes.
 
+mod client;
 mod conn;
+mod uri;
 
-use std::collections::BTreeMap;
 use std::fmt;
 use std::io;
 use std::path::Path;
-use std::sync::{Mutex, PoisonError};
 use std::time::Duration;
 
 use tokio::io::AsyncWriteExt;
 
 use crate::error::{Error, Result};
-use crate::http::{MAX_REDIRECTS, Method, Request, Response};
+use crate::http::{Request, Response};
 use crate::transport::{
     AsyncConn, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, DatagramTarget, Endpoint, FileOp,
     FileOutput, file_meta, staging, unbound_addr,
 };
 
-/// A reqwest client per (verify TLS, follow redirects, connect timeout, read timeout).
-type ClientKey = (bool, bool, Duration, Duration);
-
-/// Network, process and file I/O on tokio; HTTP through reqwest. Needs a tokio runtime with I/O and time enabled.
+/// Network, process and file I/O on tokio; HTTP through the in-house client. Needs a tokio runtime with I/O and time enabled.
 pub struct TokioTransport {
     user_agent: String,
-    /// The caller's client, used for every request (see [`TokioTransport::with_client`]).
-    client: Option<reqwest::Client>,
-    clients: Mutex<BTreeMap<ClientKey, reqwest::Client>>,
+    client: client::Client,
 }
 
 impl fmt::Debug for TokioTransport {
@@ -51,65 +46,12 @@ impl TokioTransport {
 
     /// A transport with a custom default `User-Agent`.
     pub fn with_user_agent(ua: impl Into<String>) -> Self {
-        Self { user_agent: ua.into(), client: None, clients: Mutex::default() }
-    }
-
-    /// A transport sending every HTTP request through `client`: its TLS, proxy, redirect and timeout settings apply instead of the URL's (`?verify=`, `?cto=`, `?rto=`, redirects).
-    pub fn with_client(client: reqwest::Client) -> Self {
-        Self { client: Some(client), ..Self::new() }
-    }
-
-    fn client(&self, req: &Request) -> Result<reqwest::Client> {
-        if let Some(c) = &self.client {
-            return Ok(c.clone());
-        }
-        let key = (req.verify_tls, req.follow_redirects, req.connect_timeout, req.read_timeout);
-        let mut clients = self.clients.lock().unwrap_or_else(PoisonError::into_inner);
-        if let Some(c) = clients.get(&key) {
-            return Ok(c.clone());
-        }
-        let tls = crate::net::tls_config(req.verify_tls).map_err(|e| Error::transport(format!("bad request: {e}")))?;
-        let follow = req.follow_redirects;
-        let client = reqwest::Client::builder()
-            .tls_backend_preconfigured((*tls).clone())
-            .http1_only()
-            .connect_timeout(req.connect_timeout)
-            .read_timeout(req.read_timeout)
-            .user_agent(self.user_agent.as_str())
-            .redirect(reqwest::redirect::Policy::custom(move |a| {
-                if !follow || a.previous().len() >= MAX_REDIRECTS as usize { a.stop() } else { a.follow() }
-            }))
-            .build()
-            .map_err(|e| Error::transport(format!("bad request: {}", chain(&e))))?;
-        clients.insert(key, client.clone());
-        Ok(client)
+        let user_agent = ua.into();
+        Self { client: client::Client::new(user_agent.clone()), user_agent }
     }
 
     async fn send(&self, req: &Request) -> Result<Response> {
-        let method = reqwest::Method::from_bytes(req.method.as_str().as_bytes())
-            .map_err(|e| Error::transport(format!("bad request: {e}")))?;
-        let mut builder = self.client(req)?.request(method, &req.url);
-        for (k, v) in &req.headers {
-            builder = builder.header(k, v);
-        }
-        let mut res = builder.body(req.body.clone()).send().await.map_err(|e| map_error(e, false))?;
-        let status = res.status().as_u16();
-        let headers = res
-            .headers()
-            .iter()
-            .map(|(k, v)| (k.as_str().to_string(), String::from_utf8_lossy(v.as_bytes()).into_owned()))
-            .collect();
-        let mut body = Vec::new();
-        let limit = if req.max_body == 0 { u64::MAX } else { req.max_body };
-        if req.method != Method::Head {
-            while let Some(chunk) = res.chunk().await.map_err(|e| map_error(e, true))? {
-                if (body.len() + chunk.len()) as u64 > limit {
-                    return Err(crate::http::body_too_large(req.max_body));
-                }
-                body.extend_from_slice(&chunk);
-            }
-        }
-        Ok(Response { status, headers, body })
+        self.client.send(req).await
     }
 
     async fn datagram(dg: &Datagram) -> Result<()> {
@@ -247,35 +189,6 @@ async fn write_atomic(path: &Path, data: &[u8], private: bool) -> io::Result<()>
         tokio::fs::remove_file(&tmp).await.ok();
     }
     written
-}
-
-/// The error and its sources, without the request URL (it may hold secrets).
-fn chain(e: &reqwest::Error) -> String {
-    let mut out = e.to_string();
-    let mut source = std::error::Error::source(e);
-    while let Some(s) = source {
-        out = format!("{out}: {s}");
-        source = s.source();
-    }
-    out
-}
-
-/// The same [`Error`] classes as `BlockingTransport`: nothing sent is [`Error::Transport`], possibly received is [`Error::Unconfirmed`].
-fn map_error(e: reqwest::Error, reading_body: bool) -> Error {
-    let e = e.without_url();
-    if e.is_builder() {
-        Error::transport(format!("bad request: {}", chain(&e)))
-    } else if e.is_connect() && e.is_timeout() {
-        Error::Transport("timed out (connect)".into())
-    } else if e.is_connect() {
-        Error::Transport(chain(&e))
-    } else if e.is_timeout() {
-        Error::Unconfirmed(format!("timed out ({})", if reading_body { "receive body" } else { "receive response" }))
-    } else if e.is_request() || e.is_body() || e.is_decode() {
-        Error::Unconfirmed(chain(&e))
-    } else {
-        Error::Transport(chain(&e))
-    }
 }
 
 impl AsyncTransport for TokioTransport {

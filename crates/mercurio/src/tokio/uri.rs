@@ -1,0 +1,434 @@
+//! URLs of the native HTTP client: parsing, `Location` resolution and the proxy settings of the environment.
+
+use crate::crypto::b64;
+
+/// An absolute `http` or `https` URL, with its path and query percent-encoded the way a browser sends them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct Url {
+    pub(super) tls: bool,
+    /// Lower-case; an IPv6 address has no brackets.
+    pub(super) host: String,
+    pub(super) port: u16,
+    /// Starts with `/`; includes the query.
+    pub(super) target: String,
+    /// The `user:password@` part, percent-decoded.
+    pub(super) userinfo: Option<(String, String)>,
+}
+
+impl Url {
+    pub(super) fn parse(s: &str) -> Result<Self, String> {
+        let (scheme, rest) = s.split_once("://").ok_or("not an absolute URL")?;
+        let tls = if scheme.eq_ignore_ascii_case("https") {
+            true
+        } else if scheme.eq_ignore_ascii_case("http") {
+            false
+        } else {
+            return Err(format!("unsupported scheme {scheme}"));
+        };
+        let rest = rest.split('#').next().unwrap_or_default();
+        let end = rest.find(['/', '?']).unwrap_or(rest.len());
+        let (authority, tail) = rest.split_at(end);
+        let (userinfo, hostport) = match authority.rsplit_once('@') {
+            Some((u, h)) => (Some(u), h),
+            None => (None, authority),
+        };
+        let default_port = if tls { 443 } else { 80 };
+        let (host, port) = split_host_port(hostport, default_port)?;
+        let userinfo = userinfo.map(|u| {
+            let (user, pass) = u.split_once(':').unwrap_or((u, ""));
+            (crate::url::unquote(user), crate::url::unquote(pass))
+        });
+        Ok(Self { tls, host, port, target: target(tail), userinfo })
+    }
+
+    /// `host[:port]` as the `Host` header and the authority of a proxied request write it.
+    pub(super) fn authority(&self) -> String {
+        let host = if self.host.contains(':') { format!("[{}]", self.host) } else { self.host.clone() };
+        if self.port == if self.tls { 443 } else { 80 } { host } else { format!("{host}:{}", self.port) }
+    }
+
+    /// Same host and port (the scheme may differ): what decides whether credentials follow a redirect.
+    pub(super) fn same_host_port(&self, other: &Self) -> bool {
+        (&self.host, self.port) == (&other.host, other.port)
+    }
+
+    /// The `Referer` a redirect from `self` to `next` carries: `self` without credentials, none from `https` to `http`.
+    pub(super) fn referer_for(&self, next: &Self) -> Option<String> {
+        (!self.tls || next.tls)
+            .then(|| format!("{}://{}{}", if self.tls { "https" } else { "http" }, self.authority(), self.target))
+    }
+
+    /// The URL a `Location` header points to, `None` when it is not an `http(s)` URL.
+    pub(super) fn join(&self, location: &str) -> Option<Self> {
+        let location = location.trim();
+        let scheme = if self.tls { "https" } else { "http" };
+        let origin = format!("{scheme}://{}", self.authority());
+        if let Some((s, _)) = location.split_once("://")
+            && s.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.'))
+        {
+            return Self::parse(location).ok();
+        }
+        let joined = if location.starts_with("//") {
+            format!("{scheme}:{location}")
+        } else if location.starts_with('/') {
+            format!("{origin}{location}")
+        } else if location.starts_with('?') {
+            let path = self.target.split('?').next().unwrap_or("/");
+            format!("{origin}{path}{location}")
+        } else if location.starts_with('#') || location.is_empty() {
+            format!("{origin}{}", self.target)
+        } else {
+            let path = self.target.split('?').next().unwrap_or("/");
+            let dir = path.rfind('/').map_or("/", |i| path.split_at(i + 1).0);
+            format!("{origin}{dir}{location}")
+        };
+        Self::parse(&joined).ok()
+    }
+}
+
+fn split_host_port(hostport: &str, default_port: u16) -> Result<(String, u16), String> {
+    let (host, port) = if let Some(inner) = hostport.strip_prefix('[') {
+        let (host, after) = inner.split_once(']').ok_or("unterminated IPv6 address")?;
+        (host, after.strip_prefix(':').unwrap_or(after))
+    } else {
+        hostport.rsplit_once(':').unwrap_or((hostport, ""))
+    };
+    if host.is_empty() {
+        return Err("no host".into());
+    }
+    let host = if host.is_ascii() { host.to_string() } else { idna(host)? };
+    let host = host.as_str();
+    if host.bytes().any(|b| b.is_ascii_control() || matches!(b, b' ' | b'%' | b'\\' | b'@' | b'[' | b']')) {
+        return Err(format!("invalid host {host}"));
+    }
+    if !hostport.starts_with('[') && host.contains(':') {
+        return Err(format!("invalid host {host}"));
+    }
+    let port = if port.is_empty() { default_port } else { port.parse().map_err(|_| format!("invalid port {port}"))? };
+    Ok((host.to_ascii_lowercase(), port))
+}
+
+/// A Unicode host name as its ASCII (Punycode) form: labels are lower-cased, and those with non-ASCII letters become `xn--…`.
+fn idna(host: &str) -> Result<String, String> {
+    host.to_lowercase()
+        .split('.')
+        .map(
+            |label| {
+                if label.is_ascii() { Some(label.to_string()) } else { punycode(label).map(|p| format!("xn--{p}")) }
+            },
+        )
+        .collect::<Option<Vec<_>>>()
+        .map(|labels| labels.join("."))
+        .ok_or_else(|| format!("invalid host {host}"))
+}
+
+/// RFC 3492 Punycode encoding of one label.
+fn punycode(label: &str) -> Option<String> {
+    const BASE: u32 = 36;
+    const TMIN: u32 = 1;
+    const TMAX: u32 = 26;
+    fn adapt(delta: u32, points: u32, first: bool) -> u32 {
+        let mut delta = if first { delta / 700 } else { delta / 2 };
+        delta += delta / points;
+        let mut k = 0;
+        while delta > ((BASE - TMIN) * TMAX) / 2 {
+            delta /= BASE - TMIN;
+            k += BASE;
+        }
+        k + (BASE - TMIN + 1) * delta / (delta + 38)
+    }
+    /// 0 to 25 are `a` to `z`, 26 to 35 are `0` to `9`.
+    fn digit(d: u32) -> char {
+        let d = u8::try_from(d).unwrap_or(0);
+        char::from(if d < 26 { b'a' + d } else { b'0' + d - 26 })
+    }
+    let input: Vec<u32> = label.chars().map(u32::from).collect();
+    let mut out: String = label.chars().filter(char::is_ascii).collect();
+    let basic = u32::try_from(out.len()).ok()?;
+    if basic > 0 {
+        out.push('-');
+    }
+    let (mut n, mut delta, mut bias, mut handled) = (128u32, 0u32, 72u32, basic);
+    while (handled as usize) < input.len() {
+        let m = input.iter().copied().filter(|&c| c >= n).min()?;
+        delta = delta.checked_add((m - n).checked_mul(handled + 1)?)?;
+        n = m;
+        for &c in &input {
+            if c < n {
+                delta = delta.checked_add(1)?;
+            }
+            if c == n {
+                let mut q = delta;
+                let mut k = BASE;
+                loop {
+                    let t = if k <= bias {
+                        TMIN
+                    } else if k >= bias + TMAX {
+                        TMAX
+                    } else {
+                        k - bias
+                    };
+                    if q < t {
+                        break;
+                    }
+                    out.push(digit(t + (q - t) % (BASE - t)));
+                    q = (q - t) / (BASE - t);
+                    k += BASE;
+                }
+                out.push(digit(q));
+                bias = adapt(delta, handled + 1, handled == basic);
+                delta = 0;
+                handled += 1;
+            }
+        }
+        delta = delta.checked_add(1)?;
+        n = n.checked_add(1)?;
+    }
+    Some(out)
+}
+
+/// The path and query of `tail` (what follows the authority): `\` is `/`, dot segments are resolved, unsafe bytes are percent-encoded.
+fn target(tail: &str) -> String {
+    let (path, query) = match tail.split_once('?') {
+        Some((p, q)) => (p, Some(q)),
+        None => (tail, None),
+    };
+    let mut out = String::with_capacity(tail.len() + 1);
+    out.push_str(&remove_dot_segments(&path.replace('\\', "/")));
+    if let Some(q) = query {
+        out.push('?');
+        out.push_str(q);
+    }
+    escape(&out)
+}
+
+fn remove_dot_segments(path: &str) -> String {
+    let mut stack: Vec<&str> = Vec::new();
+    let mut parts = path.split('/').skip(1).peekable();
+    let mut trailing = path.is_empty();
+    while let Some(part) = parts.next() {
+        let last = parts.peek().is_none();
+        match part {
+            "." => trailing = last,
+            ".." => {
+                stack.pop();
+                trailing = last;
+            }
+            _ => {
+                stack.push(part);
+                trailing = false;
+            }
+        }
+    }
+    let mut out = String::from("/");
+    out.push_str(&stack.join("/"));
+    if trailing && !stack.is_empty() {
+        out.push('/');
+    }
+    out
+}
+
+/// Percent-encode what must not appear raw in a request target; existing escapes stay as they are.
+fn escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for b in s.bytes() {
+        if b <= b' ' || b >= 0x7f || matches!(b, b'"' | b'<' | b'>' | b'`' | b'{' | b'}') {
+            out.push_str(&format!("%{b:02X}"));
+        } else {
+            out.push(char::from(b));
+        }
+    }
+    out
+}
+
+/// A forward proxy from the environment: HTTP or HTTPS, optionally with Basic credentials.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct Proxy {
+    /// `https://` proxy: TLS to the proxy itself.
+    pub(super) tls: bool,
+    pub(super) host: String,
+    pub(super) port: u16,
+    /// The `Proxy-Authorization` value.
+    pub(super) auth: Option<String>,
+}
+
+impl Proxy {
+    fn parse(s: &str) -> Option<Self> {
+        let s = s.trim();
+        let s = if s.contains("://") { s.to_string() } else { format!("http://{s}") };
+        let url = Url::parse(&s).ok()?;
+        let auth = url.userinfo.map(|(u, p)| format!("Basic {}", b64(format!("{u}:{p}").as_bytes())));
+        Some(Self { tls: url.tls, host: url.host, port: url.port, auth })
+    }
+}
+
+/// `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (either case), read once. Under CGI (`REQUEST_METHOD` set) only the lower-case `http_proxy` counts, since a client can set `HTTP_PROXY` through a `Proxy:` header.
+#[derive(Debug, Default, Clone)]
+pub(super) struct ProxyEnv {
+    http: Option<Proxy>,
+    https: Option<Proxy>,
+    no_proxy: Vec<String>,
+}
+
+impl ProxyEnv {
+    pub(super) fn from_env() -> Self {
+        Self::from_lookup(|name| std::env::var(name).ok())
+    }
+
+    pub(super) fn from_lookup(get: impl Fn(&str) -> Option<String>) -> Self {
+        let var = |upper: &str| {
+            let lower = upper.to_ascii_lowercase();
+            [upper, lower.as_str()].into_iter().find_map(|n| get(n).filter(|v| !v.trim().is_empty()))
+        };
+        let all = var("ALL_PROXY").and_then(|v| Proxy::parse(&v));
+        let http = if get("REQUEST_METHOD").is_some() { get("http_proxy") } else { var("HTTP_PROXY") };
+        Self {
+            http: http.and_then(|v| Proxy::parse(&v)).or_else(|| all.clone()),
+            https: var("HTTPS_PROXY").and_then(|v| Proxy::parse(&v)).or(all),
+            no_proxy: var("NO_PROXY")
+                .map(|v| v.split(',').map(|e| e.trim().to_ascii_lowercase()).filter(|e| !e.is_empty()).collect())
+                .unwrap_or_default(),
+        }
+    }
+
+    /// The proxy `url` goes through, if any.
+    pub(super) fn for_url(&self, url: &Url) -> Option<&Proxy> {
+        let proxy = if url.tls { self.https.as_ref() } else { self.http.as_ref() }?;
+        (!self.excluded(&url.host)).then_some(proxy)
+    }
+
+    fn excluded(&self, host: &str) -> bool {
+        let ip = host.parse::<std::net::IpAddr>().ok();
+        self.no_proxy.iter().any(|entry| {
+            if let Some(matched) = ip.and_then(|ip| ip_matches(ip, entry)) {
+                return matched;
+            }
+            let entry = entry.trim_start_matches("*.").trim_start_matches('.');
+            entry == "*" || host == entry || host.strip_suffix(entry).is_some_and(|p| p.ends_with('.'))
+        })
+    }
+}
+
+/// Whether `ip` is the address or in the `addr/prefix` range `entry`; `None` when `entry` is not an address.
+fn ip_matches(ip: std::net::IpAddr, entry: &str) -> Option<bool> {
+    use std::net::IpAddr;
+    let (addr, prefix) = match entry.split_once('/') {
+        Some((a, p)) => (a, Some(p.parse::<u32>().ok()?)),
+        None => (entry, None),
+    };
+    let net: IpAddr = addr.trim_matches(['[', ']']).parse().ok()?;
+    Some(match (ip, net) {
+        (IpAddr::V4(a), IpAddr::V4(b)) => {
+            let bits = prefix.unwrap_or(32).min(32);
+            let mask = u32::MAX.checked_shl(32 - bits).unwrap_or(0);
+            u32::from(a) & mask == u32::from(b) & mask
+        }
+        (IpAddr::V6(a), IpAddr::V6(b)) => {
+            let bits = prefix.unwrap_or(128).min(128);
+            let mask = u128::MAX.checked_shl(128 - bits).unwrap_or(0);
+            u128::from(a) & mask == u128::from(b) & mask
+        }
+        (IpAddr::V4(_) | IpAddr::V6(_), IpAddr::V4(_) | IpAddr::V6(_)) => false,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn url(s: &str) -> Url {
+        Url::parse(s).unwrap()
+    }
+
+    #[test]
+    fn parses_and_normalizes() {
+        let u = url("HTTPS://User:p%40ss@Example.COM:8443/a b/./c/../d?x=1 2&y=é#frag");
+        assert_eq!((u.tls, u.host.as_str(), u.port), (true, "example.com", 8443));
+        assert_eq!(u.target, "/a%20b/d?x=1%202&y=%C3%A9");
+        assert_eq!(u.userinfo, Some(("User".into(), "p@ss".into())));
+        assert_eq!(u.authority(), "example.com:8443");
+
+        assert_eq!(url("http://h").target, "/");
+        assert_eq!(url("http://h?q=1").target, "/?q=1");
+        assert_eq!(url("http://h/a/b/").target, "/a/b/");
+        assert_eq!(url("http://h/a/b/..").target, "/a/");
+        assert_eq!(url("http://h/%7Efoo").target, "/%7Efoo");
+        let v6 = url("http://[::1]:80/x");
+        assert_eq!((v6.host.as_str(), v6.port, v6.authority().as_str()), ("::1", 80, "[::1]"));
+        assert_eq!(url("https://h:443/").authority(), "h");
+    }
+
+    #[test]
+    fn rejects_what_it_cannot_send() {
+        for bad in ["ftp://h/", "h/path", "http://", "http://h:99999/", "http://h:x/", "http://a b/"] {
+            assert!(Url::parse(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn internationalized_hosts() {
+        assert_eq!(url("http://München.de/").host, "xn--mnchen-3ya.de");
+        assert_eq!(url("http://bücher.example/").host, "xn--bcher-kva.example");
+        assert_eq!(url("http://例え.テスト/").host, "xn--r8jz45g.xn--zckzah");
+    }
+
+    #[test]
+    fn referer_and_credentials_on_redirects() {
+        let a = url("https://u:p@a.test/x?t=1");
+        assert_eq!(a.referer_for(&url("https://b.test/")).as_deref(), Some("https://a.test/x?t=1"));
+        assert_eq!(a.referer_for(&url("http://b.test/")), None);
+        assert!(a.same_host_port(&url("https://a.test:443/y")));
+        assert!(!a.same_host_port(&url("http://a.test/y")), "the port changes with the scheme");
+    }
+
+    #[test]
+    fn joins_locations() {
+        let base = url("http://a.test:8080/x/y/z?q=1");
+        let join = |l: &str| base.join(l).map(|u| format!("{}{}", u.authority(), u.target));
+        assert_eq!(join("/abs").as_deref(), Some("a.test:8080/abs"));
+        assert_eq!(join("rel").as_deref(), Some("a.test:8080/x/y/rel"));
+        assert_eq!(join("../up").as_deref(), Some("a.test:8080/x/up"));
+        assert_eq!(join("?n=2").as_deref(), Some("a.test:8080/x/y/z?n=2"));
+        assert_eq!(join("//b.test/p").as_deref(), Some("b.test/p"));
+        assert_eq!(join("https://c.test/p?q").as_deref(), Some("c.test/p?q"));
+        assert_eq!(join("ftp://c.test/"), None);
+    }
+
+    #[test]
+    fn proxy_environment() {
+        let env = ProxyEnv::from_lookup(|n| match n {
+            "http_proxy" => Some("http://u:p@proxy.test:3128".into()),
+            "ALL_PROXY" => Some("other.test:1080".into()),
+            "NO_PROXY" => Some("localhost, .internal.test,10.0.0.1,192.168.0.0/16,::1".into()),
+            _ => None,
+        });
+        let http = env.for_url(&url("http://example.com/")).unwrap();
+        assert_eq!((http.host.as_str(), http.port), ("proxy.test", 3128));
+        assert_eq!(http.auth.as_deref(), Some("Basic dTpw"));
+        let https = env.for_url(&url("https://example.com/")).unwrap();
+        assert_eq!((https.host.as_str(), https.port), ("other.test", 1080));
+        for skipped in [
+            "http://localhost/",
+            "http://a.internal.test/",
+            "http://internal.test/",
+            "http://10.0.0.1/",
+            "http://192.168.4.2/",
+            "http://[::1]/",
+        ] {
+            assert!(env.for_url(&url(skipped)).is_none(), "{skipped}");
+        }
+        assert!(env.for_url(&url("http://notinternal.test/")).is_some());
+        assert!(env.for_url(&url("http://10.0.0.2/")).is_some());
+        assert!(ProxyEnv::default().for_url(&url("http://x/")).is_none());
+
+        let cgi = ProxyEnv::from_lookup(|n| match n {
+            "REQUEST_METHOD" => Some("GET".into()),
+            "HTTP_PROXY" => Some("evil.test:80".into()),
+            _ => None,
+        });
+        assert!(cgi.for_url(&url("http://example.com/")).is_none(), "HTTP_PROXY is ignored under CGI");
+        let tls = ProxyEnv::from_lookup(|n| (n == "HTTPS_PROXY").then(|| "https://p.test".into()));
+        let p = tls.for_url(&url("https://example.com/")).unwrap();
+        assert_eq!((p.tls, p.port), (true, 443));
+    }
+}
