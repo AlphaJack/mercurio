@@ -291,6 +291,13 @@ const SIGN_FAILED: &str =
 /// Largest private key read (Apprise's `max_pgp_private_key_size`).
 const MAX_PRIVATE_KEY: u64 = 32_000;
 
+/// A key pair generated during a send, armored, to be written to the storage folder.
+struct NewKey {
+    email: String,
+    public: String,
+    secret: String,
+}
+
 /// Why encryption failed, as Apprise words it.
 const ENCRYPT_FAILED: &str =
     "Unable to encrypt email via PGP; supply a public key via pgppub= or place one in the cache directory";
@@ -620,9 +627,14 @@ impl Email {
         None
     }
 
+    /// The first private key that could be read, without a warning when there is none (the Autocrypt header is optional).
+    fn private_key_quiet<'a>(&self, ctx: &Context<'a>) -> Option<&'a [u8]> {
+        self.private_key_specs(ctx).iter().find_map(|spec| read_local_file(ctx, spec, MAX_PRIVATE_KEY))
+    }
+
     /// The first private key that could be read.
     fn private_key<'a>(&self, ctx: &Context<'a>) -> Option<&'a [u8]> {
-        let key = self.private_key_specs(ctx).iter().find_map(|spec| read_local_file(ctx, spec, MAX_PRIVATE_KEY));
+        let key = self.private_key_quiet(ctx);
         if key.is_none() {
             log::warn!("{}", if self.pgp_prv.is_some() { "PGP Private Key could not be accessed" } else { "No PGP private key found" });
         }
@@ -630,7 +642,8 @@ impl Email {
     }
 
     /// `prepare_emails`: one message per `To` target.
-    fn prepare(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Result<Vec<Envelope>> {
+    fn prepare(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Result<(Vec<Envelope>, Option<NewKey>)> {
+        let mut new_key: Option<NewKey> = None;
         let format = if self.flavor == Flavor::DeltaChat { NotifyFormat::Text } else { msg.format };
         let subject = match (self.flavor, self.pgp) {
             // A signed message must not show its content in the subject either.
@@ -727,41 +740,15 @@ impl Email {
                 base = Part::multi(if cid_refs.is_empty() { "mixed" } else { "related" }, parts);
             }
 
-            match self.pgp {
-                Pgp::None => {}
-                Pgp::Sign => {
-                    // Signed, then encrypted too when the recipient's key is at hand.
-                    base = self.signed(base, ctx)?;
-                    if let Some(key) = self.public_key(ctx, to_addr) {
-                        let content = super::mime::render_part_alone(&base, ctx.env().as_ref());
-                        if let Ok(enc) = self.encrypted(&key, &content, ctx) {
-                            base = enc;
-                        }
-                    }
-                }
-                Pgp::Encrypt => {
-                    // The From, To and Subject travel inside the encryption too.
-                    let inner = super::mime::render_part_alone(&base, ctx.env().as_ref());
-                    let protected = format!(
-                        "From: {}\r\nTo: {}\r\nSubject: {}\r\n",
-                        self.from_addr,
-                        to_addr,
-                        header_value(&subject)
-                    );
-                    let content = match inner.split_once("\r\n\r\n") {
-                        Some((head, body)) => format!("{head}\r\n{protected}\r\n{body}"),
-                        None => inner,
-                    };
-                    let key = self.public_key(ctx, to_addr).ok_or_else(|| {
-                        log::warn!("{}", if self.pgp_pub.is_some() { "PGP Public Key could not be accessed" } else { "No PGP public key found" });
-                        Error::Service(ENCRYPT_FAILED.into())
-                    })?;
-                    base = self.encrypted(&key, &content, ctx)?;
-                }
-            }
+            let (protected, autocrypt) = self.protect(base, ctx, to_addr, &subject, &mut new_key)?;
+            base = protected;
 
             let mut headers: Vec<(String, String)> = Vec::new();
-            let mut autocrypt_seen = false;
+            // Our own Autocrypt header comes first and replaces one from `?+Autocrypt=`.
+            let mut autocrypt_seen = autocrypt.is_some();
+            if let Some(value) = autocrypt {
+                headers.push(("Autocrypt".into(), value));
+            }
             for (k, v) in &extra {
                 let name: String = k.chars().filter(|c| c.is_ascii_graphic() && *c != ':').collect();
                 if name.is_empty() {
@@ -792,7 +779,108 @@ impl Email {
             recipients.extend(bcc.iter().map(|a| a.to_string()));
             out.push(Envelope { from: self.from_addr.clone(), recipients, data: render_owned(&headers, base, ctx.env().as_ref()) });
         }
-        Ok(out)
+        Ok((out, new_key))
+    }
+
+    /// PGP for one recipient: `base` signed and/or encrypted as `?pgp=` says, and the Autocrypt header advertising our key. A key pair is generated (into `new_key`, once) when encrypting to oneself or advertising needs one and `pgp_autogen` allows it.
+    #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
+    fn protect<'a>(
+        &self,
+        base: Part<'a>,
+        ctx: &Context<'_>,
+        to_addr: &str,
+        subject: &str,
+        new_key: &mut Option<NewKey>,
+    ) -> Result<(Part<'a>, Option<String>)> {
+        use std::borrow::Cow;
+        // Apprise generates keys only into its storage folder and never next to an explicit `?pgppub=`.
+        let autogen = ctx.asset.pgp_autogen && self.pgp_pub.is_none() && ctx.store.path().is_some();
+        let base = match self.pgp {
+            Pgp::None => return Ok((base, None)),
+            Pgp::Sign => {
+                // Signed, then encrypted too when the recipient's key is at hand.
+                let signed = self.signed(base, ctx)?;
+                match self.public_key(ctx, to_addr) {
+                    Some(key) => {
+                        let content = super::mime::render_part_alone(&signed, ctx.env().as_ref());
+                        self.encrypted(&key, &content, ctx).unwrap_or(signed)
+                    }
+                    None => signed,
+                }
+            }
+            Pgp::Encrypt => {
+                // The From, To and Subject travel inside the encryption too.
+                let inner = super::mime::render_part_alone(&base, ctx.env().as_ref());
+                let protected =
+                    format!("From: {}\r\nTo: {}\r\nSubject: {}\r\n", self.from_addr, to_addr, header_value(subject));
+                let content = match inner.split_once("\r\n\r\n") {
+                    Some((head, body)) => format!("{head}\r\n{protected}\r\n{body}"),
+                    None => inner,
+                };
+                let key = match self.public_key(ctx, to_addr) {
+                    Some(key) => key,
+                    // A message to oneself may use a new key.
+                    None if autogen && to_addr.eq_ignore_ascii_case(&self.from_addr) => {
+                        let generated = self.generate(ctx, new_key).ok_or_else(|| Error::Service(ENCRYPT_FAILED.into()))?;
+                        Cow::Owned(generated.public.clone().into_bytes())
+                    }
+                    None => {
+                        log::warn!("{}", if self.pgp_pub.is_some() { "PGP Public Key could not be accessed" } else { "No PGP public key found" });
+                        return Err(Error::Service(ENCRYPT_FAILED.into()));
+                    }
+                };
+                self.encrypted(&key, &content, ctx)?
+            }
+        };
+        let secret = match self.private_key_quiet(ctx) {
+            Some(key) => Some(Cow::Borrowed(key)),
+            None if autogen => self.generate(ctx, new_key).map(|g| Cow::Owned(g.secret.clone().into_bytes())),
+            None => None,
+        };
+        let autocrypt = secret.and_then(|key| super::pgp::autocrypt_header(&self.from_addr, &key));
+        Ok((base, autocrypt))
+    }
+
+    /// The key pair generated for this send (Ed25519 and Curve25519, named after the app id and the sender), made once.
+    #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
+    fn generate<'k>(&self, ctx: &Context<'_>, new_key: &'k mut Option<NewKey>) -> Option<&'k NewKey> {
+        if new_key.is_none() {
+            let g = super::pgp::generate(ctx.app_id(), &self.from_addr, ctx.env().as_ref())?;
+            *new_key = Some(NewKey { email: self.from_addr.clone(), public: g.public, secret: g.secret.to_string() });
+        }
+        new_key.as_ref()
+    }
+
+    #[cfg(not(any(feature = "service-email-pgp", feature = "service-deltachat-pgp")))]
+    fn protect<'a>(
+        &self,
+        base: Part<'a>,
+        _: &Context<'_>,
+        _: &str,
+        _: &str,
+        _: &mut Option<NewKey>,
+    ) -> Result<(Part<'a>, Option<String>)> {
+        match self.pgp {
+            Pgp::None => Ok((base, None)),
+            Pgp::Sign | Pgp::Encrypt => Err(Error::Unsupported("PGP is not compiled in".into())),
+        }
+    }
+
+    /// Write a generated key pair as Apprise names it, `<local>-pub.asc` and `<local>-prv.asc` in the storage folder; a failure is only logged.
+    fn write_new_key(key: NewKey, ctx: &Context<'_>) -> Plan {
+        let Some(dir) = ctx.store.path() else { return Plan::Done };
+        let prefix = key.email.split('@').next().unwrap_or("").to_lowercase();
+        let write = |name: String, data: String, private: bool| {
+            let path = dir.join(name);
+            Plan::file(FileOp::WriteAtomic { path: path.clone(), data: data.into_bytes(), private }, move |res| {
+                match res {
+                    Ok(_) => log::info!("Wrote PGP Key {}", path.display()),
+                    Err(e) => log::warn!("Error writing PGP file {}: {e}", path.display()),
+                }
+                Plan::Done
+            })
+        };
+        Plan::chain([write(format!("{prefix}-pub.asc"), key.public, false), write(format!("{prefix}-prv.asc"), key.secret, true)])
     }
 
     /// RFC 3156 `multipart/signed`: `base` as rendered, then its detached signature.
@@ -868,10 +956,11 @@ impl Notify for Email {
             }
             Pgp::Sign | Pgp::Encrypt => {}
         }
-        let messages = match self.prepare(msg, ctx) {
+        let (messages, new_key) = match self.prepare(msg, ctx) {
             Ok(m) => m,
             Err(e) => return Plan::Fail(e),
         };
+        let keygen = new_key.map_or(Plan::Done, |k| Self::write_new_key(k, ctx));
         let security = match self.mode {
             Mode::Insecure => Security::Insecure,
             Mode::Ssl => Security::Ssl,
@@ -887,15 +976,17 @@ impl Notify for Email {
         let mut ep = Endpoint::new(self.smtp_host.clone(), self.port, self.mode == Mode::Ssl);
         ep.connect_timeout = SMTP_TIMEOUT;
         ep.read_timeout = SMTP_TIMEOUT;
-        Plan::socket(ep, move |conn, transport| {
+        let send = Plan::socket(ep, move |conn, transport| {
             let machine = session(job, conn.is_tls());
             Box::pin(crate::machine::drive(machine, conn, transport))
-        })
+        });
+        Plan::chain([keygen, send])
     }
 
     fn files(&self, ctx: &Context<'_>) -> Vec<FileOp> {
         let mut specs = Vec::new();
-        if self.pgp == Pgp::Sign {
+        if self.pgp != Pgp::None {
+            // Encryption reads our key too, for the Autocrypt header.
             specs.extend(self.private_key_specs(ctx));
         }
         if self.pgp != Pgp::None {
@@ -912,7 +1003,7 @@ impl Notify for Email {
 
     fn fetches(&self, ctx: &Context<'_>) -> Vec<crate::http::Request> {
         let mut out = Vec::new();
-        if let (Some(spec), Pgp::Sign) = (&self.pgp_prv, self.pgp) {
+        if let (Some(spec), Pgp::Sign | Pgp::Encrypt) = (&self.pgp_prv, self.pgp) {
             out.extend(remote_fetches(ctx, spec, MAX_PRIVATE_KEY));
         }
         if let (Some(spec), Pgp::Sign | Pgp::Encrypt) = (&self.pgp_pub, self.pgp) {

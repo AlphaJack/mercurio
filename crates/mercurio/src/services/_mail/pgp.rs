@@ -11,7 +11,9 @@ use crate::crypto;
 use crate::env::Env;
 
 mod encrypt;
+mod keys;
 pub use encrypt::encrypt;
+pub use keys::{autocrypt_header, generate};
 
 /// Why a key could not sign.
 #[derive(Debug, PartialEq, Eq)]
@@ -50,6 +52,10 @@ const TAG_SECRET_KEY: u8 = 5;
 const ALGO_RSA: u8 = 1;
 const ALGO_RSA_SIGN: u8 = 3;
 const ALGO_EDDSA: u8 = 22;
+/// ECDH (GnuPG's `cv25519` subkeys).
+const ALGO_ECDH: u8 = 18;
+/// The curve OID of Curve25519 in GnuPG's ECDH encoding.
+const CV25519_OID: &[u8] = &[0x2b, 0x06, 0x01, 0x04, 0x01, 0x97, 0x55, 0x01, 0x05, 0x01];
 /// The curve OID of Ed25519 in that encoding.
 const ED25519_OID: &[u8] = &[0x2b, 0x06, 0x01, 0x04, 0x01, 0xda, 0x47, 0x0f, 0x01];
 /// Hash algorithm: SHA-256.
@@ -370,21 +376,20 @@ fn subpacket(out: &mut Vec<u8>, kind: u8, data: &[u8]) {
     out.extend_from_slice(data);
 }
 
-/// A detached, armored signature over `data` (SHA-256, binary document) with the key's primary key, as Apprise signs, and its `micalg` label.
-pub fn sign(key: &[u8], data: &[u8], env: &dyn Env) -> Result<(String, &'static str), SignError> {
-    let key = secret_key(key)?;
-    let created = u32::try_from(env.unix_time()).unwrap_or(u32::MAX);
+/// A v4 signature packet of `sig_type` over `prefix` (the signed data, or the keys and user ID a certification covers), SHA-256: creation time, `hashed` subpackets and the issuer fingerprint in the hashed area, the issuer key ID in the unhashed one.
+fn signature_packet(key: &Key, sig_type: u8, hashed_extra: &[u8], prefix: &[u8], created: u32) -> Result<Vec<u8>, SignError> {
     let mut hashed_sub = Vec::new();
     subpacket(&mut hashed_sub, 2, &created.to_be_bytes());
+    hashed_sub.extend_from_slice(hashed_extra);
     subpacket(&mut hashed_sub, 33, &[[4].as_slice(), &key.fingerprint].concat());
     let mut unhashed_sub = Vec::new();
     subpacket(&mut unhashed_sub, 16, key.fingerprint.get(12..).unwrap_or_default());
 
-    let mut hashed = vec![4, SIG_BINARY, key.algo, HASH_SHA256];
+    let mut hashed = vec![4, sig_type, key.algo, HASH_SHA256];
     hashed.extend_from_slice(&u16::try_from(hashed_sub.len()).unwrap_or(0).to_be_bytes());
     hashed.extend_from_slice(&hashed_sub);
     let trailer_len = u32::try_from(hashed.len()).unwrap_or(0);
-    let signed = [data, &hashed, &[4, 0xff], &trailer_len.to_be_bytes()].concat();
+    let signed = [prefix, &hashed, &[4, 0xff], &trailer_len.to_be_bytes()].concat();
     let digest = crypto::sha256(&signed);
 
     let mut body = hashed;
@@ -408,18 +413,33 @@ pub fn sign(key: &[u8], data: &[u8], env: &dyn Env) -> Result<(String, &'static 
             put_mpi(&mut body, &sig);
         }
     }
+    Ok(packet(TAG_SIGNATURE, &body))
+}
 
-    let mut packet = vec![0xc0 | TAG_SIGNATURE];
-    match u16::try_from(body.len()) {
-        Ok(l @ 0..=191) => packet.push(l.to_be_bytes()[1]),
-        Ok(l) => {
-            let l = l - 192;
-            packet.extend_from_slice(&[(l / 256 + 192).to_be_bytes()[1], (l % 256).to_be_bytes()[1]]);
-        }
-        Err(_) => return Err(SignError::Failed),
-    }
-    packet.extend_from_slice(&body);
+/// A detached, armored signature over `data` (SHA-256, binary document) with the key's primary key, as Apprise signs, and its `micalg` label.
+pub fn sign(key: &[u8], data: &[u8], env: &dyn Env) -> Result<(String, &'static str), SignError> {
+    let key = secret_key(key)?;
+    let created = u32::try_from(env.unix_time()).unwrap_or(u32::MAX);
+    let packet = signature_packet(&key, SIG_BINARY, &[], data, created)?;
     Ok((armor("SIGNATURE", &packet), "pgp-sha256"))
+}
+
+/// A new-format packet with the shortest length encoding.
+fn packet(tag: u8, body: &[u8]) -> Vec<u8> {
+    let mut out = vec![0xc0 | tag];
+    match body.len() {
+        l @ 0..=191 => out.push(u8::try_from(l).unwrap_or(0)),
+        l @ 192..=8383 => {
+            let l = l - 192;
+            out.extend_from_slice(&[u8::try_from(l / 256 + 192).unwrap_or(0), u8::try_from(l % 256).unwrap_or(0)]);
+        }
+        l => {
+            out.push(255);
+            out.extend_from_slice(&u32::try_from(l).unwrap_or(u32::MAX).to_be_bytes());
+        }
+    }
+    out.extend_from_slice(body);
+    out
 }
 
 /// ASCII armor with CRLF line endings: 64-character base64 lines and the CRC-24 checksum.

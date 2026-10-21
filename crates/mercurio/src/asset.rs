@@ -79,6 +79,8 @@ pub struct Asset {
     pub timezone: Option<String>,
     /// `:shortcode:` emoji (Apprise's `interpret_emojis`): `None` (default) lets each URL turn them on with `?emojis=yes`; `Some(true)` turns them on unless a URL says `?emojis=no`; `Some(false)` turns them off for every URL.
     pub interpret_emojis: Option<bool>,
+    /// Generate a PGP key pair in the storage folder when e-mail encryption needs one and none exists (Apprise's `pgp_autogen`).
+    pub pgp_autogen: bool,
 }
 
 /// When a persistent store reaches the disk (Apprise's `PersistentStoreMode`).
@@ -159,6 +161,7 @@ impl Default for Asset {
             storage_salt: Vec::new(),
             storage_mode: StorageMode::Auto,
             timezone: None,
+            pgp_autogen: true,
             interpret_emojis: None,
         }
     }

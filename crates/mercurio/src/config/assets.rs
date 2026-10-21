@@ -8,6 +8,10 @@ use crate::asset::Asset;
 use crate::parse::parse_bool;
 
 pub(super) fn apply_asset_value(a: &mut Asset, key: &str, v: &AssetValue) {
+    if let (AssetValue::Flag(f), "pgp_autogen") = (v, key) {
+        a.pgp_autogen = *f;
+        return;
+    }
     let AssetValue::Text(t) = v else { return };
     match key {
         "app_id" => a.app_id = t.clone(),
@@ -86,6 +90,12 @@ mod spec_tests {
     fn asset_keys_match_the_loader() {
         for key in ASSET_KEYS {
             let mut a = Asset::default();
+            if key.flag && !key.effect.is_empty() {
+                apply_asset_value(&mut a, key.name, &AssetValue::Flag(false));
+                assert_ne!(a, Asset::default(), "{} is not applied", key.name);
+                assert_eq!(asset_value(&a, key.name).as_deref(), Some("no"), "{}", key.name);
+                continue;
+            }
             apply_asset_value(&mut a, key.name, &AssetValue::Text("x1".into()));
             if key.effect.is_empty() {
                 assert_eq!(a, Asset::default(), "{} has no effect but changed the asset", key.name);
