@@ -30,6 +30,8 @@ pub(crate) struct AlertJob {
     pub batches: Vec<(usize, Option<Value>)>,
     /// Payload for the other actions (`{"source", "note", "user"?}`).
     pub note: Value,
+    /// The message text: the payloads hold [`crate::http::TEXT`] where it goes, so it exists once here.
+    pub text: String,
     /// Message piece index (delivery tracking is per piece).
     pub piece: usize,
 }
@@ -60,7 +62,7 @@ impl AlertJob {
         for (k, v) in &self.headers {
             req = req.header(*k, v.as_str());
         }
-        req.body(serde_json::to_vec(body).unwrap_or_default(), None)
+        req.body(crate::http::json_with_text(body, &self.text), None)
     }
 
     pub(crate) fn plan(self, ctx: &Context<'_>) -> Plan {

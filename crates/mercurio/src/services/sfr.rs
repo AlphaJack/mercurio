@@ -103,13 +103,13 @@ impl Notify for Sfr {
         Plan::all(self.targets.iter().map(|t| {
             let message = json!({
                 "media": self.media,
-                "textMsg": msg.body,
+                "textMsg": crate::http::TEXT,
                 "to": t,
                 "from": self.sender,
                 "timeout": self.timeout,
                 "ttsVoice": self.voice,
-            })
-            .to_string();
+            });
+            let message = String::from_utf8(crate::http::json_with_text(&message, msg.body)).unwrap_or_default();
             let req =
                 Request::post(NOTIFY_URL).query(&[("authenticate", auth.as_str()), ("messageUnitaire", &message)]);
             Plan::http(req, |res| match res {

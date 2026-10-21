@@ -89,7 +89,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 impl Notify for Synology {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let mut payload = json!({"text": msg.body});
+        let mut payload = json!({"text": crate::http::TEXT});
         if let Some(f) = &self.file_url {
             payload["file_url"] = json!(f);
         }
@@ -100,7 +100,7 @@ impl Notify for Synology {
             .header("Content-Type", "application/x-www-form-urlencoded")
             .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())))
             .query(&params)
-            .form(&[("payload", payload.to_string())]);
+            .form(&[("payload", String::from_utf8(crate::http::json_with_text(&payload, msg.body)).unwrap_or_default())]);
         req = req.basic_auth_opt(self.user.as_deref(), self.password.as_ref().map(Secret::expose));
         Plan::send(req)
     }
