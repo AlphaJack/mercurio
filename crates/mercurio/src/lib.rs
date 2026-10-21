@@ -241,6 +241,7 @@ mod parse;
 mod plan;
 mod prepare;
 mod registry;
+mod semaphore;
 #[path = "service.rs"]
 mod service_def;
 mod services;

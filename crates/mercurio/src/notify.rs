@@ -6,8 +6,6 @@ use std::fmt;
 use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
 
-use async_lock::Semaphore;
-
 use crate::asset::Asset;
 #[cfg(feature = "transport-blocking")]
 use crate::blocking::BlockingTransport;
@@ -18,6 +16,7 @@ use crate::message::Message;
 use crate::plan::{Delivery, Outcome};
 use crate::registry::Registry;
 use crate::report::{Attempt, Report, ReportEntry};
+use crate::semaphore::Semaphore;
 use crate::tag::TagFilter;
 use crate::target::Target;
 use crate::transport::{Blocking, Transport};

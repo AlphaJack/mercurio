@@ -2,7 +2,6 @@
 //!
 //! The login session lives as long as the parsed URL (a non-persistent store entry): later sends only look up the client sessions and post. [`Target::close`](crate::Target::close) logs out.
 
-use md5::{Digest, Md5};
 use serde_json::{Map, Value, json};
 
 use crate::util::scalar_text;
@@ -114,7 +113,7 @@ impl Emby {
                 json!({
                     "Username": self.user,
                     "pw": pw,
-                    "passwordMd5": crate::crypto::hex(&Md5::digest(pw.as_bytes())),
+                    "passwordMd5": crate::crypto::hex(&crate::crypto::md5(pw.as_bytes())),
                     "password": crate::crypto::hex(&crate::crypto::sha1(pw.as_bytes())),
                 })
             }
@@ -248,7 +247,7 @@ mod tests {
 
     #[test]
     fn digests() {
-        assert_eq!(crate::crypto::hex(&Md5::digest(b"l2gpass")), "6e91367d1f17ac820620de2c47d76da4");
+        assert_eq!(crate::crypto::hex(&crate::crypto::md5(b"l2gpass")), "6e91367d1f17ac820620de2c47d76da4");
         let e = Emby { name: "Emby", base: "http://h:8096".into(), user: "l2g".into(), password: None, modal: false, id: Vec::new() };
         assert_eq!(
             e.auth_header("Mercurio", true),
