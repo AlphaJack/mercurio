@@ -10,7 +10,7 @@ use mercurio::__private::parse_url_unverified;
 use mercurio::__private::yaml::{self, Yaml};
 use mercurio::service::ParsedUrl;
 use mercurio::testing::FakeTransport;
-use mercurio::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService};
+use mercurio::{Config, ConfigFormat, ConfigOptions, config::AssetValue, config::ConfigService};
 use mercurio::{Tag, TagFilter, TemplateVars};
 use serde_json::{Map, Value, json};
 

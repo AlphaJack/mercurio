@@ -481,7 +481,7 @@ fn query_pairs(q: &str) -> crate::url::Pairs {
 ///
 /// ```
 /// use mercurio::testing::FakeTransport;
-/// use mercurio::{AttachSource, AttachmentSet, Asset, transport::Response};
+/// use mercurio::{attachment::AttachSource, AttachmentSet, Asset, transport::Response};
 ///
 /// let mut set = AttachmentSet::new();
 /// set.add("https://example.com/report?name=report.csv")?;
