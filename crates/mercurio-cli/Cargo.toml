@@ -28,7 +28,7 @@ axum = { version = "0.8", default-features = false, features = ["tokio", "matche
 tower = { version = "0.5", default-features = false, features = ["util", "limit", "load-shed"] }
 tower-http = { version = "0.7", default-features = false, features = ["timeout", "catch-panic", "normalize-path"] }
 hyper = { version = "1", features = ["server", "http1"] }
-hyper-util = { version = "0.1", features = ["tokio", "server-graceful"] }
+hyper-util = { version = "0.1", features = ["tokio", "http1", "server", "server-graceful"] }
 http-body-util = "0.1"
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
 log = "0.4"

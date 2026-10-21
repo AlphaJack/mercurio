@@ -35,7 +35,6 @@ futures-util = { version = "0.3", default-features = false, features = ["alloc"]
 async-lock = "3"
 tokio = { version = "1.54", optional = true, default-features = false, features = ["net", "time", "fs", "process", "io-util"] }
 tokio-rustls = { version = "0.26", optional = true, default-features = false, features = ["ring", "tls12"] }
-reqwest = { version = "0.13", optional = true, default-features = false, features = ["rustls-no-provider"] }
 saphyr-parser = "0.2"
 html-escape = "0.3.0"
 quick-xml = "0.42"
@@ -231,8 +230,8 @@ all-services = [
 # The IANA time zone database inside the binary (about 256 KiB), so `?tz=` zones resolve where the host has no `/usr/share/zoneinfo`, as in a `scratch` image. A system copy is still preferred when there is one.
 bundle-timezones = ["jiff/tzdb-bundle-always"]
 
-# Tokio transport: `TokioTransport` and `AsyncMercurio::new` (tokio + reqwest).
-transport-tokio = ["dep:tokio", "dep:tokio-rustls", "dep:reqwest"]
+# Tokio transport: `TokioTransport` and `AsyncMercurio::new` (tokio + rustls).
+transport-tokio = ["dep:tokio", "dep:tokio-rustls"]
 # Blocking transport: `BlockingTransport` and `Mercurio::new` (ureq).
 transport-blocking = ["dep:ureq"]
 
