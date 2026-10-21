@@ -4,7 +4,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `?pgp=sign` (feature `service-email-pgp`) signs only with an Ed25519 key in GnuPG's encoding, while Apprise also signs with RSA and other keys: mercurio's OpenPGP is its own, built on `ring`, and covers just that key type.
+//! - `?pgp=sign` (feature `service-email-pgp`) signs with Ed25519 keys (GnuPG's encoding) and RSA keys of 2048 to 8192 bits, while Apprise also accepts DSA, ECDSA and smaller RSA keys: mercurio's OpenPGP is its own, built on `ring`, and covers those two.
 //! - `?pgp=encrypt` and `?wkd=yes` are validated like Apprise, but delivery fails with `Unsupported`; signed mail does not yet carry the Autocrypt header or get encrypted when a recipient key exists. *todo*
 //! - `?reply=` with several targets raised on the second target in Apprise, while mercurio sends it.
 
@@ -51,7 +51,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("inline", "Inline Attachments").bool(false),
         Param::new("mode", "Secure Mode").choice(&["starttls", "ssl", "insecure"]).default("starttls").inferred(),
         Param::new("name", "From Name"),
-        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("`sign` needs an Ed25519 key; without the `service-email-pgp` feature a PGP mode fails with `Unsupported`").inferred(),
+        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("`sign` needs an Ed25519 or RSA (2048 to 8192 bits) key; without the `service-email-pgp` feature a PGP mode fails with `Unsupported`").inferred(),
         Param::new("pgpprv", "PGP Private Key Path").secret().note("path, `file://` or `http(s)://`; default: the storage folder"),
         Param::new("reply", "Reply To").list(", "),
         Param::new("smtp", "SMTP Server"),

@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - PGP works as for `email` (feature `service-deltachat-pgp`): `?pgp=sign` with an Ed25519 key and the subject `Chat:`; `?pgp=encrypt` still fails with `Unsupported`. *todo*
+//! - PGP works as for `email` (feature `service-deltachat-pgp`): `?pgp=sign` with an Ed25519 or RSA key and the subject `Chat:`; `?pgp=encrypt` still fails with `Unsupported`. *todo*
 
 use crate::service::{Limits, Notify, Param, ServiceDef};
 use crate::services::_mail::email::{Email, Flavor};
@@ -48,7 +48,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("inline", "Inline Attachments").bool(false),
         Param::new("mode", "Secure Mode").choice(&["starttls", "ssl", "insecure"]).default("starttls").inferred(),
         Param::new("name", "From Name"),
-        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("`sign` needs an Ed25519 key; without the `service-deltachat-pgp` feature a PGP mode fails with `Unsupported`"),
+        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("`sign` needs an Ed25519 or RSA (2048 to 8192 bits) key; without the `service-deltachat-pgp` feature a PGP mode fails with `Unsupported`"),
         Param::new("pgpprv", "PGP Private Key Path").secret().note("path, `file://` or `http(s)://`; default: the storage folder"),
         Param::new("reply", "Reply To").list(", "),
         Param::new("smtp", "SMTP Server"),
