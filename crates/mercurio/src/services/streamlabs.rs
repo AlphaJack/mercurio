@@ -109,7 +109,7 @@ impl Notify for Streamlabs {
             body.insert("type".into(), json!(self.alert_type.to_lowercase()));
             body.insert("message".into(), json!(if has_title { msg.title } else { msg.body }));
             if has_title {
-                body.insert("user_message".into(), json!(msg.body));
+                body.insert("user_message".into(), json!(crate::http::TEXT));
             }
             for (key, value) in [
                 ("image_href", &self.image_href),
@@ -133,7 +133,7 @@ impl Notify for Streamlabs {
         let req = ctx
             .post(url)
             .header("Authorization", format!("Bearer {}", self.access_token.expose()))
-            .json(&Value::Object(body));
+            .json_text(&Value::Object(body), msg.body);
         Plan::send_expect(req, &[200])
     }
 }

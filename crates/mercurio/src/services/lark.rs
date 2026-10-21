@@ -45,7 +45,7 @@ impl Notify for Lark {
         let text = if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\n{}", msg.title, msg.body) };
         let req = ctx.post(format!("https://open.larksuite.com/open-apis/bot/v2/hook/{}", self.token.expose()))
             .header("Content-Type", "application/json")
-            .json(&json!({"msg_type": "text", "content": {"text": text}}));
+            .json_text(&json!({"msg_type": "text", "content": {"text": crate::http::TEXT}}), &text);
         Plan::send_expect(req, &[200])
     }
 }

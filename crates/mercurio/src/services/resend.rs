@@ -152,7 +152,7 @@ impl Notify for Resend {
             "subject": if msg.title.is_empty() { "<no subject>" } else { msg.title },
         });
         let key = if msg.format == NotifyFormat::Text { "text" } else { "html" };
-        base[key] = json!(msg.body);
+        base[key] = json!(crate::http::TEXT);
         if !msg.attachments.is_empty() {
             base["attachments"] = attachments_json(msg.attachments, "dat", |name, data, _| json!({
                         "content": data,
@@ -180,7 +180,7 @@ impl Notify for Resend {
                 .post(NOTIFY_URL)
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", self.apikey.expose()))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200, 202]).target(target.clone())
         });
         Plan::all(plans.collect::<Vec<_>>())

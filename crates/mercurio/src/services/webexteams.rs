@@ -104,7 +104,7 @@ impl Notify for WebexTeams {
             WebexTeams::Webhook { token } => {
                 let req = ctx.post(format!("{NOTIFY_URL}/{}", token.expose()))
                     .header("Content-Type", "application/json")
-                    .json(&json!({ text_key: msg.body }));
+                    .json_text(&json!({ text_key: crate::http::TEXT }), msg.body);
                 Plan::send_expect(req, &[200, 204])
             }
             WebexTeams::Bot { access_token, targets } => {
@@ -117,7 +117,7 @@ impl Notify for WebexTeams {
                     let plan = if msg.attachments.is_empty() {
                         let req = base
                             .header("Content-Type", "application/json")
-                            .json(&json!({"roomId": room, text_key: msg.body}));
+                            .json_text(&json!({"roomId": room, text_key: crate::http::TEXT}), msg.body);
                         Plan::send_expect(req, &[200])
                     } else {
                         Plan::chain(msg.attachments.iter().enumerate().map(|(i, a)| {

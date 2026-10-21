@@ -117,7 +117,7 @@ impl Notify for GroupMe {
         let post = {
             let ua = ua.clone();
             move |attachments: Vec<Value>| {
-                let mut payload = json!({"bot_id": bot_id, "text": body});
+                let mut payload = json!({"bot_id": bot_id, "text": crate::http::TEXT});
                 let uploaded = !attachments.is_empty();
                 if uploaded {
                     payload["attachments"] = Value::Array(attachments);
@@ -125,7 +125,7 @@ impl Notify for GroupMe {
                 let req = Request::post(BOT_URL)
                     .header("User-Agent", ua)
                     .header("Content-Type", "application/json; charset=utf-8")
-                    .json(&payload);
+                    .json_text(&payload, &body);
                 let send = Plan::http(req, |res| match res {
                     Ok(r) if r.status == 200 || r.status == 202 => Plan::Done,
                     Ok(r) => Plan::Fail(r.http_error_with(error_reason(r.status))),

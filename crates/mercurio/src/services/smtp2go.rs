@@ -118,7 +118,7 @@ impl Notify for Smtp2Go {
             });
         }
         let key = if msg.format == NotifyFormat::Html { "html_body" } else { "text_body" };
-        base[key] = json!(msg.body);
+        base[key] = json!(crate::http::TEXT);
 
         let mut plans = Vec::new();
         for batch in self.targets.chunks(self.batch_size()) {
@@ -149,7 +149,7 @@ impl Notify for Smtp2Go {
                 let h: Vec<Value> = self.headers.iter().map(|(k, v)| json!({"header": k, "value": v})).collect();
                 payload["custom_headers"] = Value::Array(h);
             }
-            let req = ctx.post(NOTIFY_URL).header("Accept", "application/json").json(&payload);
+            let req = ctx.post(NOTIFY_URL).header("Accept", "application/json").json_text(&payload, msg.body);
             let label = if batch.len() <= 3 {
                 batch.iter().map(|(_, e)| e.as_str()).collect::<Vec<_>>().join(", ")
             } else {

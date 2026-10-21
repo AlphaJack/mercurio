@@ -66,7 +66,7 @@ impl Notify for Signl4 {
         let mut payload = Map::new();
         let title = if msg.title.is_empty() { ctx.app_desc() } else { msg.title };
         payload.insert("title".into(), json!(title));
-        payload.insert("body".into(), json!(msg.body));
+        payload.insert("body".into(), json!(crate::http::TEXT));
         payload.insert("X-S4-SourceSystem".into(), json!(ctx.app_id()));
         let mut opt = |k: &str, v: &Option<String>| {
             if let Some(v) = v {
@@ -87,7 +87,7 @@ impl Notify for Signl4 {
         opt("X-S4-ExternalID", &self.external_id);
         opt("X-S4-Status", &self.status);
         let req = Request::post(format!("https://connect.signl4.com/webhook/{}/", self.secret.expose()))
-            .json(&Value::Object(payload));
+            .json_text(&Value::Object(payload), msg.body);
         Plan::send_expect(req, &[200, 201, 202])
     }
 }

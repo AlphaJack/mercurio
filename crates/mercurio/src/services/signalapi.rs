@@ -159,7 +159,7 @@ impl Notify for SignalApi {
         let message = message.trim_end();
         let text_mode = if msg.format == NotifyFormat::Markdown { "styled" } else { "normal" };
         let mut payload = json!({
-            "message": message,
+            "message": crate::http::TEXT,
             "number": self.source,
             "text_mode": text_mode,
             "recipients": [],
@@ -171,7 +171,7 @@ impl Notify for SignalApi {
         Plan::all(self.targets.chunks(batch_size).map(|chunk| {
             let mut p = payload.clone();
             p["recipients"] = json!(chunk);
-            let mut req = ctx.post(&self.url).json(&p);
+            let mut req = ctx.post(&self.url).json_text(&p, message);
             req = req.basic_auth_opt(self.user.as_deref(), self.password.as_ref().map(Secret::expose));
             Plan::send_expect(req, &[200, 201]).target(chunk.join(","))
         }))

@@ -187,12 +187,12 @@ fn post(req: Request, st: Shared, label: String) -> Plan {
 }
 
 impl Kook {
-    fn json_req(&self, url: &str, payload: &Value, ctx: &Context<'_>, bot: bool) -> Request {
+    fn json_req(&self, url: &str, payload: &Value, text: &str, ctx: &Context<'_>, bot: bool) -> Request {
         let mut req = ctx.post(url);
         if bot {
             req = req.header("Authorization", format!("Bot {}", self.token.expose()));
         }
-        req.header("Content-Type", "application/json").body(serde_json::to_vec(payload).unwrap_or_default(), None)
+        req.header("Content-Type", "application/json").body(crate::http::json_with_text(payload, text), None)
     }
 
     fn endpoints(&self) -> Vec<(String, String)> {
@@ -249,7 +249,6 @@ impl Notify for Kook {
     }
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let body = msg.body.to_string();
         let kind = if msg.format == NotifyFormat::Markdown { TYPE_KMARKDOWN } else { TYPE_TEXT };
 
         if self.mode == Mode::Webhook {
@@ -257,7 +256,7 @@ impl Notify for Kook {
                 return Plan::Fail(Error::Message("Kook webhooks do not support attachments".into()));
             }
             let url = format!("{API}/incoming/{}", quote(self.token.expose(), "!#$%&'()*+,/:;=?@[]~"));
-            let req = self.json_req(&url, &json!({"type": kind, "content": body}), ctx, false);
+            let req = self.json_req(&url, &json!({"type": kind, "content": crate::http::TEXT}), msg.body, ctx, false);
             return Plan::http(req, |res| match check(res) {
                 Ok(()) => Plan::Done,
                 Err((e, _)) => Plan::Fail(e),
@@ -273,8 +272,8 @@ impl Notify for Kook {
         let mut plans: Vec<Plan> = targets
             .iter()
             .map(|(endpoint, tid)| {
-                let payload = json!({"type": kind, "target_id": tid, "content": body});
-                post(self.json_req(endpoint, &payload, ctx, true), st.clone(), tid.clone())
+                let payload = json!({"type": kind, "target_id": tid, "content": crate::http::TEXT});
+                post(self.json_req(endpoint, &payload, msg.body, ctx, true), st.clone(), tid.clone())
             })
             .collect();
 
@@ -283,7 +282,7 @@ impl Notify for Kook {
             let reqs: Arc<Vec<(String, String, Request)>> = Arc::new(
                 targets
                     .iter()
-                    .map(|(e, t)| (e.clone(), t.clone(), self.json_req(e, &Value::Null, ctx, true)))
+                    .map(|(e, t)| (e.clone(), t.clone(), self.json_req(e, &Value::Null, "", ctx, true)))
                     .collect(),
             );
             let upload =

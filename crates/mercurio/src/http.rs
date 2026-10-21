@@ -91,6 +91,20 @@ pub(crate) fn json_with_text(value: &Value, text: &str) -> Vec<u8> {
     write_json_text(&mut out, value, text).map(|()| out).unwrap_or_default()
 }
 
+/// A size for the JSON of `value`: its text and a little for the structure around it.
+fn json_size_hint(value: &Value) -> usize {
+    fn texts(v: &Value) -> usize {
+        match v {
+            Value::String(s) => s.len(),
+            Value::Array(a) => a.iter().map(texts).sum(),
+            Value::Object(m) => m.values().map(texts).sum(),
+            Value::Null | Value::Bool(_) | Value::Number(_) => 0,
+        }
+    }
+    let n = texts(value);
+    n + n / 64 + 256
+}
+
 /// The length [`json_with_text`] would produce, without building it.
 pub(crate) fn json_text_len(value: &Value, text: &str) -> usize {
     struct Count(usize);
@@ -257,7 +271,9 @@ impl Request {
 
     /// JSON body with `Content-Type: application/json` (unless already set).
     pub fn json(mut self, value: &Value) -> Self {
-        self.body = serde_json::to_vec(value).unwrap_or_default().into();
+        // Sized from the text in the value, so a large message does not regrow the buffer by doubling.
+        let mut out = Vec::with_capacity(json_size_hint(value));
+        self.body = if serde_json::to_writer(&mut out, value).is_ok() { out } else { Vec::new() }.into();
         if self.header_value("content-type").is_none() {
             self = self.header("Content-Type", "application/json");
         }

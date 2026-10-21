@@ -95,10 +95,10 @@ impl Notify for MailerSend {
             "subject": if msg.title.is_empty() { "<no subject>" } else { msg.title },
         });
         if msg.format == NotifyFormat::Html {
-            base["html"] = json!(msg.body);
+            base["html"] = json!(crate::http::TEXT);
             base["text"] = json!(html_to_text(msg.body));
         } else {
-            base["text"] = json!(msg.body);
+            base["text"] = json!(crate::http::TEXT);
             base["html"] = json!(text_to_html(msg.body));
         }
         if !msg.attachments.is_empty() {
@@ -128,7 +128,7 @@ impl Notify for MailerSend {
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .header("Authorization", format!("Bearer {}", self.apikey.expose()))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200, 202]).target(target.clone())
         });
         Plan::all(plans.collect::<Vec<_>>())

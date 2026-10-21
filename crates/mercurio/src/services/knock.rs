@@ -114,7 +114,7 @@ impl Notify for Knock {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let mut data = Map::new();
         data.insert("title".into(), json!(msg.title));
-        data.insert("body".into(), json!(msg.body));
+        data.insert("body".into(), json!(crate::http::TEXT));
         data.insert("type".into(), json!(msg.kind.as_str()));
         for (k, v) in &self.data {
             data.insert(k.clone(), json!(v));
@@ -129,7 +129,7 @@ impl Notify for Knock {
                 .header("Accept", "application/json")
                 .bearer(self.api_key.expose())
                 .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send(req).target(labels.join(", "))
         });
         Plan::all(plans.collect::<Vec<_>>())

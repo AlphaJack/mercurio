@@ -130,7 +130,7 @@ impl Notify for GoAlert {
         };
         let mut payload = Map::new();
         payload.insert("summary".into(), json!(summary));
-        payload.insert("details".into(), json!(msg.body));
+        payload.insert("details".into(), json!(crate::http::TEXT));
         if close {
             payload.insert("action".into(), json!("close"));
         }
@@ -147,7 +147,7 @@ impl Notify for GoAlert {
                 .post(&self.url)
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {key}"))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200, 201, 202, 204]).target(mask(key))
         }))
     }
