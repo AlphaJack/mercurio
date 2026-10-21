@@ -228,8 +228,3 @@ on its page (see the [service list](services/index.md)), taken from the
   - Pushed (`pushed://`): the API host `api.pushed.co` no longer resolves.
   - Pushjet (`pjet://`, `pjets://`): the project is abandoned and its
     domain redirects to an unrelated site.
-
-## Later
-
-- Upload the notify-type image instead of sending its URL (`image=yes`,
-  Telegram).

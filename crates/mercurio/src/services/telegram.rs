@@ -4,7 +4,6 @@
 //!
 //! # Differences with Apprise
 //!
-//! - `?image=yes` posts the notify-type image by URL instead of uploading Apprise's bundled PNG. *intentional*
 //! - HTML that Apprise's parser rejects is sent unreduced. *intentional*
 
 use std::sync::Arc;
@@ -63,6 +62,8 @@ pub static SERVICE: ServiceDef = ServiceDef {
 const NOTIFY_URL: &str = "https://api.telegram.org/bot";
 const CAPTION_MAXLEN: usize = 1024;
 const PHOTO_MAX_BYTES: usize = 10_000_000;
+/// The notify-type image read from `image_path_mask`.
+const IMAGE_MAX_BYTES: u64 = PHOTO_MAX_BYTES as u64;
 const FILE_MAX_BYTES: usize = 50_000_000;
 const MEDIA_GROUP_MIN: usize = 2;
 const MEDIA_GROUP_MAX: usize = 10;
@@ -279,12 +280,30 @@ struct Job {
     kind: NotifyType,
     attachments: Vec<Attachment>,
     image_url: Option<String>,
+    /// `?image=yes`: the notify-type image to upload, `(file name, bytes)`.
+    image: Option<(String, bytes::Bytes)>,
     color: String,
     app_desc: String,
     app_url: String,
     first_piece: bool,
     /// The Rich Message template, or why it could not be loaded.
     template: std::result::Result<String, &'static str>,
+}
+
+/// The image Apprise's `image_path` gives for `kind`: the bundled PNG, the `image_path_mask` file (read by [`Notify::files`]), or none when the mask is empty.
+fn notify_image(ctx: &Context<'_>, kind: NotifyType) -> Option<(String, bytes::Bytes)> {
+    let file = ctx.asset.icon_file(kind, "png")?;
+    let name = std::path::Path::new(&file.path).file_name().map_or_else(|| "image.png".into(), |n| n.to_string_lossy().into_owned());
+    match file.bundled {
+        Some(b) => Some((name, bytes::Bytes::from_static(b))),
+        None => match ctx.read(&file.path, IMAGE_MAX_BYTES) {
+            Some(b) => Some((name, bytes::Bytes::copy_from_slice(b))),
+            None => {
+                log::warn!("Telegram: could not read the image {}; sending without it.", file.path);
+                None
+            }
+        },
+    }
 }
 
 fn status_ok(res: &Result<Response>) -> bool {
@@ -473,20 +492,24 @@ impl Job {
         Request::post(self.url("sendMediaGroup")).header("User-Agent", &self.app_id).multipart(form)
     }
 
-    /// Image of the notify type, sent by URL; its outcome is ignored.
+    /// The notify-type image, uploaded as a photo before the message; a failure is only logged, as in Apprise.
     fn image_plan(&self, chat: &Chat) -> Option<Plan> {
-        if !self.cfg.include_image || !self.first_piece {
+        if !self.first_piece {
             return None;
         }
-        let url = self.image_url.clone()?;
-        let mut payload = json!({"chat_id": chat.id.json(), "photo": url});
+        let (name, data) = self.image.clone()?;
+        let mut form = crate::http::Multipart::with_env(self.env.as_ref()).text("chat_id", chat.id.text());
         if let Some(t) = chat.thread() {
-            payload["message_thread_id"] = json!(t);
+            form = form.text("message_thread_id", t.to_string());
         }
-        let req = Request::post(self.url("SendPhoto"))
-            .header("User-Agent", &self.app_id)
-            .body(payload.to_string().into_bytes(), Some("application/json"));
-        Some(Plan::http(req, |_| Plan::Done))
+        let req = Request::post(self.url("SendPhoto")).header("User-Agent", &self.app_id).multipart(form.file("photo", name, "", data));
+        let target = chat.id.text();
+        Some(Plan::http(req, move |res| {
+            if !status_ok(&res) {
+                log::warn!("Failed to send Telegram attachment to {target}.");
+            }
+            Plan::Done
+        }))
     }
 
     fn run(self: Arc<Self>, targets: Vec<Chat>) -> Plan {
@@ -734,8 +757,20 @@ impl Notify for Telegram {
         }
     }
 
-    fn files(&self, _: &Context<'_>) -> Vec<FileOp> {
-        template_files(self.template.as_ref())
+    fn files(&self, ctx: &Context<'_>) -> Vec<FileOp> {
+        let mut ops = template_files(self.template.as_ref());
+        if self.include_image {
+            // The message's type is not known yet: read the image of every type (usually one file).
+            for kind in [NotifyType::Info, NotifyType::Success, NotifyType::Warning, NotifyType::Failure] {
+                if let Some(f) = ctx.asset.icon_file(kind, "png").filter(|f| f.bundled.is_none()) {
+                    let op = FileOp::Read { path: f.path.into(), max: IMAGE_MAX_BYTES };
+                    if !ops.contains(&op) {
+                        ops.push(op);
+                    }
+                }
+            }
+        }
+        ops
     }
 
     fn fetches(&self, ctx: &Context<'_>) -> Vec<Request> {
@@ -776,6 +811,7 @@ impl Notify for Telegram {
             kind: msg.kind,
             attachments: attachments.to_vec(),
             image_url: ctx.asset.image_url(msg.kind, ImageSize::Xy256),
+            image: if self.include_image { notify_image(ctx, msg.kind) } else { None },
             color: ctx.asset.color(msg.kind).to_string(),
             app_desc: ctx.app_desc().to_string(),
             app_url: ctx.app_url().to_string(),
@@ -815,6 +851,46 @@ mod tests {
     use super::*;
     use crate::testing::FakeTransport;
     use crate::{Asset, Message};
+
+    fn contains(hay: &[u8], needle: &[u8]) -> bool {
+        hay.windows(needle.len()).any(|w| w == needle)
+    }
+
+    #[test]
+    fn notify_image_is_uploaded() {
+        let target = crate::parse("tgram://123456789:abcdefg/12345?image=yes").unwrap();
+        // The bundled PNG, before the message.
+        let fake = FakeTransport::new();
+        assert!(target.send(&Message::new("b"), &fake, &Asset::default()).is_success());
+        let reqs = fake.requests();
+        assert!(reqs[0].url.ends_with("/SendPhoto") && reqs[1].url.ends_with("/sendMessage"));
+        assert!(contains(&reqs[0].body, crate::asset::ICON_PNG));
+        assert!(contains(&reqs[0].body, b"filename=\"icon.png\""));
+
+        // The `image_path_mask` file of the message's type.
+        let fake = FakeTransport::new();
+        fake.file("/img/warning.png", b"WARNPNG".to_vec());
+        let asset = Asset { image_path_mask: Some("/img/{TYPE}.png".into()), ..Asset::default() };
+        let msg = Message::new("b").kind(NotifyType::Warning);
+        assert!(target.send(&msg, &fake, &asset).is_success());
+        let reqs = fake.requests();
+        assert!(contains(&reqs[0].body, b"WARNPNG") && contains(&reqs[0].body, b"filename=\"warning.png\""));
+
+        // A file that cannot be read, or an empty mask: no image, the message still goes out.
+        for mask in ["/img/missing-{TYPE}.png", ""] {
+            let fake = FakeTransport::new();
+            let asset = Asset { image_path_mask: Some(mask.into()), ..Asset::default() };
+            assert!(target.send(&Message::new("b"), &fake, &asset).is_success());
+            let urls: Vec<String> = fake.requests().iter().map(|r| r.url.clone()).collect();
+            assert!(urls.len() == 1 && urls[0].ends_with("/sendMessage"), "{urls:?}");
+        }
+
+        // A refused photo does not fail the notification.
+        let fake = FakeTransport::new();
+        fake.on_url("/SendPhoto", Response::new(400, "{}"));
+        assert!(target.send(&Message::new("b"), &fake, &Asset::default()).is_success());
+        assert_eq!(fake.requests().len(), 2);
+    }
 
     #[test]
     fn rich_template_from_file() {
