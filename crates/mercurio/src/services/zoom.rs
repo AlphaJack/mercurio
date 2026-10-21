@@ -98,11 +98,11 @@ impl Notify for Zoom {
             if !msg.title.is_empty() {
                 content.insert("head".into(), json!({"text": msg.title}));
             }
-            content.insert("body".into(), json!([{"type": "message", "text": msg.body}]));
+            content.insert("body".into(), json!([{"type": "message", "text": crate::http::TEXT}]));
             ctx.post(format!("{base}?format=full"))
                 .header("Authorization", self.token.expose())
                 .header("Content-Type", "application/json")
-                .json(&json!({"content": content}))
+                .json_text(&json!({"content": content}), msg.body)
         } else {
             let text = if msg.title.is_empty() { msg.body.to_string() } else { format!("{}: {}", msg.title, msg.body) };
             ctx.post(format!("{base}?format=message"))

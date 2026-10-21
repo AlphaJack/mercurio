@@ -56,7 +56,7 @@ impl Notify for Stackfield {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let req = ctx.post(format!("https://www.stackfield.com/apiwh/{}", self.token.expose()))
             .header("Content-Type", "application/json")
-            .json(&json!({"Title": msg.body}));
+            .json_text(&json!({"Title": crate::http::TEXT}), msg.body);
         Plan::send_expect(req, &[200])
     }
 }

@@ -266,7 +266,7 @@ impl Fcm {
             Color::Rgb(c) => Some(format!("#{c}")),
         };
         let data: Map<String, Value> = self.data.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
-        let mut message = json!({"notification": {"title": msg.title, "body": msg.body}});
+        let mut message = json!({"notification": {"title": msg.title, "body": crate::http::TEXT}});
         if let Some(c) = color {
             message["android"] = json!({"notification": {"color": c}});
         }
@@ -323,7 +323,7 @@ impl Notify for Fcm {
             .targets
             .iter()
             .map(|r| {
-                let req = ctx.post(&url).json(&self.payload(r, msg, ctx));
+                let req = ctx.post(&url).json_text(&self.payload(r, msg, ctx), msg.body);
                 (r.clone(), req)
             })
             .collect();

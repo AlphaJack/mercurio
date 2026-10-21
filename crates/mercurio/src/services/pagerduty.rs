@@ -125,7 +125,7 @@ impl Notify for PagerDuty {
             NotifyType::Failure => "critical",
         });
         let mut inner = json!({
-            "summary": msg.body,
+            "summary": crate::http::TEXT,
             "severity": severity,
             "source": self.source.as_deref().unwrap_or(ctx.app_id()),
             "component": self.component,
@@ -165,7 +165,7 @@ impl Notify for PagerDuty {
         let req = ctx.post(url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Token token={}", self.apikey.expose()))
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200, 201, 202])
     }
 }

@@ -46,10 +46,10 @@ impl Notify for Spike {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let payload = json!({
             "message": if msg.title.is_empty() { msg.body } else { msg.title },
-            "description": msg.body,
+            "description": crate::http::TEXT,
         });
         let req = ctx.post(format!("{NOTIFY_URL}{}", self.token.expose()))
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200])
     }
 }

@@ -85,7 +85,7 @@ impl Notify for Pushy {
         Plan::all(
             targets
                 .map(|(label, target)| {
-                    let mut notification = json!({"body": msg.body});
+                    let mut notification = json!({"body": crate::http::TEXT});
                     if !msg.title.is_empty() {
                         notification["title"] = json!(msg.title);
                     }
@@ -97,10 +97,10 @@ impl Notify for Pushy {
                     }
                     let payload = json!({
                         "to": target,
-                        "data": {"message": msg.body},
+                        "data": {"message": crate::http::TEXT},
                         "notification": notification,
                     });
-                    let req = ctx.post(&url).header("Accepts", "application/json").json(&payload);
+                    let req = ctx.post(&url).header("Accepts", "application/json").json_text(&payload, msg.body);
                     Plan::send_check(req, |r| {
                         let success = match r.json() {
                             Some(Value::Object(m)) => m.get("success").is_some_and(json_has_value),

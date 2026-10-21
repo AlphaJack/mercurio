@@ -151,7 +151,7 @@ impl Workflows {
                 "weight": "Bolder", "size": "Large", "id": "title",
             }));
         }
-        body.push(json!({"type": "TextBlock", "text": msg.body, "style": "default", "wrap": self.wrap, "id": "body"}));
+        body.push(json!({"type": "TextBlock", "text": crate::http::TEXT, "style": "default", "wrap": self.wrap, "id": "body"}));
 
         let mut seen: Vec<String> = Vec::new();
         let mut entities = Vec::new();
@@ -263,7 +263,7 @@ impl Notify for Workflows {
                 ("sig", self.signature.expose()),
             ])
             .header("User-Agent", ctx.app_id())
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200, 202])
     }
 }

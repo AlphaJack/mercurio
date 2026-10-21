@@ -121,7 +121,7 @@ impl Notify for BulkSms {
             |(_, to)| {
                 let mut payload = json!({
                     "to": to,
-                    "body": msg.body,
+                    "body": crate::http::TEXT,
                     "routingGroup": self.route,
                     "encoding": if self.unicode { "UNICODE" } else { "TEXT" },
                     "deliveryReports": "ERRORS",
@@ -132,7 +132,7 @@ impl Notify for BulkSms {
                 let req = ctx
                     .post("https://api.bulksms.com/v1/messages")
                     .basic_auth(user, Some(password.expose()))
-                    .json(&payload);
+                    .json_text(&payload, msg.body);
                 Plan::send_check(req, |r| expect(r, &[201, 200]))
             },
         )

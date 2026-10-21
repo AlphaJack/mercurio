@@ -105,9 +105,9 @@ impl HumHub {
         }
     }
 
-    fn plan_container(&self, id: &str, payload: &Value, attachments: &[Attachment], ctx: &Context<'_>) -> Plan {
+    fn plan_container(&self, id: &str, payload: &Value, text: &str, attachments: &[Attachment], ctx: &Context<'_>) -> Plan {
         let message_key = format!("message:{id}");
-        let req = self.auth(ctx.post(format!("{}/api/v1/post/container/{id}", self.base))).json(payload);
+        let req = self.auth(ctx.post(format!("{}/api/v1/post/container/{id}", self.base))).json_text(payload, text);
         let base = self.base.clone();
         let no_attachments = attachments.is_empty();
         let attachments = attachments.to_vec();
@@ -167,9 +167,9 @@ impl HumHub {
 
 impl Notify for HumHub {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let payload = json!({"data": {"message": msg.body}});
+        let payload = json!({"data": {"message": crate::http::TEXT}});
         Plan::all(
-            self.targets.iter().map(|id| self.plan_container(id, &payload, msg.attachments, ctx).target(id.clone())),
+            self.targets.iter().map(|id| self.plan_container(id, &payload, msg.body, msg.attachments, ctx).target(id.clone())),
         )
     }
 

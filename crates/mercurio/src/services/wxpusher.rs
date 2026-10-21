@@ -95,7 +95,7 @@ impl Notify for WxPusher {
         };
         let payload = json!({
             "appToken": self.token.expose(),
-            "content": msg.body,
+            "content": crate::http::TEXT,
             "summary": msg.title,
             "contentType": content_type,
             "topicIds": self.topics,
@@ -104,7 +104,7 @@ impl Notify for WxPusher {
         });
         let req = ctx.post("https://wxpusher.zjiecode.com/api/send/message")
             .header("Accept", "application/json")
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_check(req, check)
     }
 

@@ -42,7 +42,7 @@ impl Notify for TechulusPush {
         let req = ctx.post(NOTIFY_URL)
             .header("Content-Type", "application/json")
             .header("x-api-key", self.apikey.expose())
-            .json(&json!({"title": msg.title, "body": msg.body}));
+            .json_text(&json!({"title": msg.title, "body": crate::http::TEXT}), msg.body);
         Plan::send_expect(req, &[200, 204])
     }
 }

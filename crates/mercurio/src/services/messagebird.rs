@@ -101,8 +101,8 @@ impl Notify for MessageBird {
         let url = format!("https://{}.platform.bird.com/v1/sms/messages", self.region);
         let from = format!("+{}", self.source);
         per_target(self.targets.clone(), String::clone, |target| {
-            let body = json!({"from": from, "to": format!("+{target}"), "text": msg.body, "category": self.category});
-            let req = ctx.post(&url).header("Authorization", format!("Bearer {}", self.apikey.expose())).json(&body);
+            let body = json!({"from": from, "to": format!("+{target}"), "text": crate::http::TEXT, "category": self.category});
+            let req = ctx.post(&url).header("Authorization", format!("Bearer {}", self.apikey.expose())).json_text(&body, msg.body);
             Plan::send_check(req, |r| expect(r, &[200, 201, 202]))
         })
     }

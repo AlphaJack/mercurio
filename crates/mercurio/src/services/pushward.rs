@@ -109,7 +109,7 @@ impl Notify for PushWard {
         } else {
             ctx.app_id()
         };
-        let mut payload = json!({"title": title, "body": msg.body, "level": level});
+        let mut payload = json!({"title": title, "body": crate::http::TEXT, "level": level});
         if let Some(img) = ctx.asset.image_url(msg.kind, ImageSize::Xy128) {
             payload["icon_url"] = json!(img);
         }
@@ -121,7 +121,7 @@ impl Notify for PushWard {
         let req = ctx.post(NOTIFY_URL)
             .header("Content-Type", "application/json; charset=utf-8")
             .header("Authorization", format!("Bearer {}", self.apikey.expose()))
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200, 201])
     }
 }

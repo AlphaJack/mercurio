@@ -116,12 +116,12 @@ fn check(res: Result<Response>) -> Result<()> {
 type Failed = Arc<Mutex<HashSet<String>>>;
 
 impl OneBot {
-    fn request(&self, action: &str, payload: &Value, ctx: &Context<'_>) -> Request {
+    fn request(&self, action: &str, payload: &Value, text: &str, ctx: &Context<'_>) -> Request {
         let mut req = ctx.post(format!("{}/{action}", self.base)).header("Content-Type", "application/json");
         if let Some(t) = &self.token {
             req = req.header("Authorization", format!("Bearer {}", t.expose()));
         }
-        req.body(serde_json::to_vec(payload).unwrap_or_default(), None)
+        req.body(crate::http::json_with_text(payload, text), None)
     }
 
     fn target_list(&self) -> Vec<(&'static str, &'static str, String)> {
@@ -164,9 +164,9 @@ impl Notify for OneBot {
         let mut plans = Vec::new();
         if !msg.body.is_empty() {
             for (action, field, id) in &targets {
-                let payload = payload(field, id, json!([{"type": "text", "data": {"text": msg.body}}]));
+                let payload = payload(field, id, json!([{"type": "text", "data": {"text": crate::http::TEXT}}]));
                 let key = format!("{field}:{id}");
-                plans.push(post(self.request(action, &payload, ctx), key, failed.clone()).target(label(field, id)));
+                plans.push(post(self.request(action, &payload, msg.body, ctx), key, failed.clone()).target(label(field, id)));
             }
         }
         for att in msg.attachments {
@@ -189,7 +189,7 @@ impl Notify for OneBot {
                 .iter()
                 .map(|(action, field, id)| {
                     let payload = payload(field, id, json!([segment]));
-                    (format!("{field}:{id}"), label(field, id), self.request(action, &payload, ctx))
+                    (format!("{field}:{id}"), label(field, id), self.request(action, &payload, msg.body, ctx))
                 })
                 .collect();
             for (key, lbl, req) in reqs {

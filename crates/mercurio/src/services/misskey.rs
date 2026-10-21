@@ -71,9 +71,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 impl Notify for Misskey {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let payload = json!({"i": self.token.expose(), "text": msg.body, "visibility": self.visibility});
+        let payload = json!({"i": self.token.expose(), "text": crate::http::TEXT, "visibility": self.visibility});
         let req = ctx.post(format!("{}/api/notes/create", self.api_url))
-            .json(&payload);
+            .json_text(&payload, msg.body);
         Plan::send_expect(req, &[200])
     }
 }

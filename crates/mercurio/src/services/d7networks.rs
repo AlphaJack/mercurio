@@ -94,14 +94,14 @@ impl Notify for D7Networks {
                 "message_globals": globals,
                 "messages": [{
                     "recipients": recipients,
-                    "content": msg.body,
+                    "content": crate::http::TEXT,
                     "data_coding": if self.unicode { "unicode" } else { "auto" },
                 }],
             });
             let req = ctx.post("https://api.d7networks.com/messages/v1/send")
                 .header("Accept", "application/json")
                 .bearer(self.token.expose())
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_check(req, |r| expect(r, &[201, 200]))
         })
     }

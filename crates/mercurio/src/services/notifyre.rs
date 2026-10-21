@@ -144,19 +144,19 @@ impl Notify for Notifyre {
                 "clientReference": self.reference,
                 "documents": documents,
                 "header": self.header,
-                "subject": msg.body,
+                "subject": crate::http::TEXT,
                 "campaignName": campaign,
                 "scheduledDate": null,
             })
         } else {
             json!({
-                "body": msg.body,
+                "body": crate::http::TEXT,
                 "recipients": self.targets.iter().map(|t| json!({"type": "mobile_number", "value": t})).collect::<Vec<_>>(),
                 "from": source,
                 "campaignName": campaign,
             })
         };
-        Plan::send_check(req.json(&payload), check)
+        Plan::send_check(req.json_text(&payload, msg.body), check)
     }
 
     fn limits(&self, _title: &str, _body: &str, _format: crate::NotifyFormat, _ctx: &Context<'_>) -> Option<Limits> {

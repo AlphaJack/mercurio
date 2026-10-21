@@ -105,10 +105,10 @@ impl Notify for Sinch {
             targets.push(self.source.clone());
         }
         per_target(targets, String::clone, |target| {
-            let payload = json!({"body": msg.body, "from": self.source, "to": [target]});
+            let payload = json!({"body": crate::http::TEXT, "from": self.source, "to": [target]});
             let req = ctx.post(&url)
                 .header("Authorization", format!("Bearer {}", self.api_token.expose()))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_check(req, |r| expect(r, &[201, 200]))
         })
     }

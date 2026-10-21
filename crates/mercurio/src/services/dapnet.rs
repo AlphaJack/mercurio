@@ -98,7 +98,7 @@ impl Notify for Dapnet {
         let size = if self.batch { BATCH_SIZE } else { 1 };
         Plan::all(self.targets.chunks(size).map(|chunk| {
             let payload = json!({
-                "text": msg.body,
+                "text": crate::http::TEXT,
                 "callSignNames": chunk,
                 "transmitterGroupNames": self.txgroups,
                 "emergency": self.emergency,
@@ -106,7 +106,7 @@ impl Notify for Dapnet {
             let req = ctx.post(NOTIFY_URL)
                 .header("Content-Type", "application/json; charset=utf-8")
                 .basic_auth(&self.user, Some(self.password.expose()))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             Plan::send_expect(req, &[201]).target(chunk.join(","))
         }))
     }

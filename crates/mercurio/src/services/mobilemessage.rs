@@ -126,7 +126,7 @@ impl Notify for MobileMessage {
             let messages: Vec<Value> = chunk
                 .iter()
                 .map(|t| {
-                    let mut e = json!({"to": t, "message": msg.body, "sender": self.source});
+                    let mut e = json!({"to": t, "message": crate::http::TEXT, "sender": self.source});
                     if let Some(r) = &self.reference {
                         e["custom_ref"] = json!(r);
                     }
@@ -139,7 +139,7 @@ impl Notify for MobileMessage {
                 .header("Accept", "application/json")
                 .header("Idempotency-Key", ctx.env().uuid4())
                 .basic_auth(&self.user, Some(self.password.expose()))
-                .json(&payload);
+                .json_text(&payload, msg.body);
             let targets: Vec<String> = chunk.to_vec();
             Plan::http(req, move |res| {
                 let fail_all = |e: Error| Plan::all(targets.iter().map(|t| Plan::Fail(e.clone()).target(t.clone())));

@@ -231,7 +231,7 @@ impl Notify for Lametric {
         });
         let req = match &self.mode {
             Mode::Cloud { app_id, app_ver, token } => {
-                let payload = json!({"frames": [{"icon": icon, "text": msg.body, "index": 0}]});
+                let payload = json!({"frames": [{"icon": icon, "text": crate::http::TEXT, "index": 0}]});
                 ctx.post(format!(
                     "https://developer.lametric.com/api/v1/dev/widget/update/com.lametric.{app_id}/{app_ver}"
                 ))
@@ -239,14 +239,14 @@ impl Notify for Lametric {
                 .header("Accept", "application/json")
                 .header("Cache-Control", "no-cache")
                 .header("X-Access-Token", token.expose())
-                .json(&payload)
+                .json_text(&payload, msg.body)
             }
             Mode::Device { url, user, password } => {
                 let mut payload = json!({
                     "priority": self.priority,
                     "icon_type": self.icon_type,
                     "lifetime": 120000,
-                    "model": {"cycles": self.cycles, "frames": [{"icon": icon, "text": msg.body}]},
+                    "model": {"cycles": self.cycles, "frames": [{"icon": icon, "text": crate::http::TEXT}]},
                 });
                 if let Some((category, id)) = self.sound {
                     payload["model"]["sound"] = json!({"category": category, "id": id, "repeat": 1});
@@ -255,7 +255,7 @@ impl Notify for Lametric {
                     .header("Accept", "application/json")
                     .header("Cache-Control", "no-cache")
                     .basic_auth(user, password.as_ref().map(Secret::expose))
-                    .json(&payload)
+                    .json_text(&payload, msg.body)
             }
         };
         Plan::send_expect(req, &[200, 201])

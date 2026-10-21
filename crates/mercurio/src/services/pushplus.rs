@@ -123,7 +123,7 @@ impl Notify for Pushplus {
             let mut payload = json!({
                 "token": self.token.expose(),
                 "title": if msg.title.is_empty() { msg.body } else { msg.title },
-                "content": msg.body,
+                "content": crate::http::TEXT,
                 "template": template,
                 "channel": self.channel,
             });
@@ -136,7 +136,7 @@ impl Notify for Pushplus {
                 payload["webhook"] = json!(w);
             }
             let req = ctx.post("https://www.pushplus.plus/send")
-                .json(&payload);
+                .json_text(&payload, msg.body);
             let plan = Plan::send_check(req, check);
             match topic {
                 Some(t) => plan.target(t.clone()),

@@ -78,13 +78,13 @@ impl Notify for ParsePlatform {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let payload = json!({
             "where": {"deviceType": {"$in": self.devices}},
-            "data": {"title": msg.title, "alert": msg.body},
+            "data": {"title": msg.title, "alert": crate::http::TEXT},
         });
         let req = ctx.post(&self.url)
             .header("Content-Type", "application/json")
             .header("X-Parse-Application-Id", self.app_id.expose())
             .header("X-Parse-Master-Key", self.master_key.expose())
-            .body(serde_json::to_vec(&payload).unwrap_or_default(), None);
+            .body(crate::http::json_with_text(&payload, msg.body), None);
         Plan::send_expect(req, &[200])
     }
 }

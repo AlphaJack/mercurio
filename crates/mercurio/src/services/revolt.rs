@@ -145,7 +145,7 @@ impl Notify for Revolt {
             let image_url = self.icon_url.clone().or_else(|| ctx.asset.image_url(msg.kind, ImageSize::Xy256));
             let mut embed = json!({
                 "title": if msg.title.is_empty() { Value::Null } else { json!(truncate_chars(msg.title, TITLE_MAXLEN)) },
-                "description": msg.body,
+                "description": crate::http::TEXT,
                 "colour": ctx.asset.color(msg.kind),
                 "replies": null,
             });
@@ -161,7 +161,7 @@ impl Notify for Revolt {
                 if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\n{}", msg.title, msg.body) };
             json!({"content": content})
         };
-        let body = serde_json::to_vec(&payload).unwrap_or_default();
+        let body = crate::http::json_with_text(&payload, msg.body);
         let state = Arc::new(Mutex::new(RateLimit { remaining: 1, reset: Instant::now() }));
         Plan::all(self.targets.iter().map(|channel| {
             let req = ctx
