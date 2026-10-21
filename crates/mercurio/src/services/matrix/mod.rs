@@ -17,7 +17,7 @@
 //! - **Encryption state.** Apprise treats a `200` with an empty `m.room.encryption` state as unencrypted, while mercurio treats the room as encrypted. *intentional*
 //! - **Failed state lookup or E2EE setup.** Apprise falls back to plaintext, while mercurio fails the room. *intentional*
 //! - **Room keys.** Apprise shares the Megolm key once per session, while mercurio re-shares it with new devices and rotates it when a member leaves. *intentional*
-//! - **Device verification.** Cross-signing is not checked; devices are trusted on first use. *todo*
+//! - **Device verification.** Apprise shares room keys with every device whose keys are self-signed, while mercurio pins each device's keys on first use and, for users who publish cross-signing keys, pins their master key and shares only with devices their self-signing key signed. A changed master key or a device that is not cross-signed gets no room keys, with a warning. *intentional*
 //! - **Stored state.** Apprise stores the Olm account and Megolm sessions in plain text, while mercurio seals them with AES-256-GCM under a key derived from the URL's password or access token (never stored). After a password change the old state no longer opens and the device starts over with new keys. *intentional*
 
 mod server;

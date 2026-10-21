@@ -7,7 +7,10 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
-use super::e2ee::{MEGOLM_ALGORITHM, MegolmSession, OLM_ALGORITHM, OlmAccount, verify_device_keys, verify_signed_otk};
+use super::e2ee::{
+    MEGOLM_ALGORITHM, MegolmSession, OLM_ALGORITHM, OlmAccount, cross_signing_key, verify_device_keys, verify_signed_by,
+    verify_signed_otk,
+};
 use super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value, quote_path};
 use super::sizing::{MATRIX_EVENT_BYTE_LIMIT, MATRIX_EVENT_SAFETY_MARGIN};
 use crate::Plan;
@@ -426,6 +429,7 @@ fn room_members(s: Session, room_id: &str, k: K<Result<(Members, bool), &'static
                     let entry = out.entry(uid.clone()).or_default();
                     let Some(devices) = devices.as_object() else { continue };
                     let mut pins = Pins::load(&s, uid);
+                    let cross = cross_signing(&s, resp, uid);
                     for (dev_id, info) in devices {
                         if !verify_device_keys(info, uid, dev_id) {
                             log::debug!(
@@ -443,6 +447,9 @@ fn room_members(s: Session, room_id: &str, k: K<Result<(Members, bool), &'static
                         let (curve, ed) = (key("curve25519"), key("ed25519"));
                         let is_me = Some(uid.as_str()) == s.user_id.as_deref()
                             && Some(dev_id.as_str()) == s.device_id.as_deref();
+                        if !is_me && !cross.admits(info, uid, dev_id) {
+                            continue;
+                        }
                         if !is_me && !pins.check(uid, dev_id, &curve, &ed) {
                             continue;
                         }
@@ -455,6 +462,65 @@ fn room_members(s: Session, room_id: &str, k: K<Result<(Members, bool), &'static
             k(s, Ok((out, true)))
         })
     })
+}
+
+/// What a user's cross-signing keys allow.
+enum CrossSigning {
+    /// No master key published: devices are only pinned on first use.
+    Absent,
+    /// Devices must carry a signature of this self-signing key.
+    Trusted(String),
+    /// The master key changed, or the self-signing key is missing or not signed by it: no device gets room keys.
+    Untrusted,
+}
+
+impl CrossSigning {
+    /// `true` when the device `info` may get room keys as far as cross-signing goes.
+    fn admits(&self, info: &Value, uid: &str, dev_id: &str) -> bool {
+        match self {
+            CrossSigning::Absent => true,
+            CrossSigning::Untrusted => false,
+            CrossSigning::Trusted(ssk) if verify_signed_by(info, uid, ssk) => true,
+            CrossSigning::Trusted(_) => {
+                log::warn!("Matrix E2EE: device {uid} / {dev_id} is not cross-signed; not sharing room keys with it.");
+                false
+            }
+        }
+    }
+}
+
+/// The cross-signing state of `uid` in a `/keys/query` answer. The master key is pinned on first use (`e2ee_master_{uid}`, no expiry).
+fn cross_signing(s: &Session, resp: &Map<String, Value>, uid: &str) -> CrossSigning {
+    let Some(master) =
+        resp.get("master_keys").and_then(|m| m.get(uid)).and_then(|m| cross_signing_key(m, uid, "master"))
+    else {
+        return CrossSigning::Absent;
+    };
+    let pin = format!("e2ee_master_{uid}");
+    match s.store.get(&pin) {
+        Some(Value::String(pinned)) if pinned != master => {
+            log::warn!(
+                "Matrix E2EE: the cross-signing master key of {uid} differs from the one first seen; \
+                 not sharing room keys with their devices."
+            );
+            return CrossSigning::Untrusted;
+        }
+        Some(Value::String(_)) => {}
+        _ => {
+            s.store.set(&pin, json!(master), None);
+        }
+    }
+    let ssk = resp.get("self_signing_keys").and_then(|m| m.get(uid));
+    match ssk.and_then(|o| cross_signing_key(o, uid, "self_signing").filter(|_| verify_signed_by(o, uid, &master))) {
+        Some(ssk) => CrossSigning::Trusted(ssk),
+        None => {
+            log::warn!(
+                "Matrix E2EE: the self-signing key of {uid} is missing or not signed by their master key; \
+                 not sharing room keys with their devices."
+            );
+            CrossSigning::Untrusted
+        }
+    }
 }
 
 /// Trust on first use: the keys each device of a user presented when first seen (`device -> {"curve25519", "ed25519"}`), kept without expiry.
