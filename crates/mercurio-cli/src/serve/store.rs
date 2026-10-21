@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use mercurio::ConfigFormat;
 use serde_json::{Value, json};
@@ -100,7 +100,17 @@ impl Stamp {
         let (inode, changed) = (0, (0, 0));
         Stamp { modified: m.modified().ok(), len: m.len(), inode, changed }
     }
+
+    /// Whether a later write would surely move the stamp: a file modified within the last
+    /// [`RACY_WINDOW`] can be written again within the same clock tick (Windows ticks every ~16 ms and has no
+    /// inode or change time to fall back on), so its stamp does not yet prove the content.
+    fn settled(&self) -> bool {
+        self.modified.is_some_and(|t| t.elapsed().is_ok_and(|age| age >= RACY_WINDOW))
+    }
 }
+
+/// How long after its last modification a file's [`Stamp`] is trusted, wide enough for coarse file times (FAT: 2 s).
+const RACY_WINDOW: Duration = Duration::from_secs(2);
 
 /// Decoded files by key, each with the [`Stamp`] it was read at.
 #[derive(Default)]
@@ -113,7 +123,7 @@ struct Cache {
 
 impl Cache {
     fn config(&self, key: &str, stamp: Stamp, fmt: ConfigFormat) -> Option<String> {
-        self.configs.get(key).filter(|(s, _, f)| *s == stamp && *f == fmt).map(|(_, c, _)| c.clone())
+        self.configs.get(key).filter(|(s, _, f)| *s == stamp && *f == fmt && stamp.settled()).map(|(_, c, _)| c.clone())
     }
 
     fn set_config(&mut self, key: &str, stamp: Stamp, content: &str, fmt: ConfigFormat) {
@@ -135,7 +145,7 @@ impl Cache {
     }
 
     fn login(&self, key: &str, stamp: Stamp) -> Option<AuthRecord> {
-        self.logins.get(key).filter(|(s, _)| *s == stamp).map(|(_, r)| r.clone())
+        self.logins.get(key).filter(|(s, _)| *s == stamp && stamp.settled()).map(|(_, r)| r.clone())
     }
 }
 
