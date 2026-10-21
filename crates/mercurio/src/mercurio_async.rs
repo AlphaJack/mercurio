@@ -10,7 +10,7 @@ use futures_util::future::join_all;
 use crate::config::template::TemplateVars;
 use crate::config::{Config, ConfigFormat, ConfigOptions, PendingTarget};
 use crate::error::{Error, Result};
-use crate::notify::{Core, Escalation, Mercurio, SEND_PERMITS, Selection, lanes, throttle_wait};
+use crate::notify::{Core, Escalation, Mercurio, NotifyOptions, SEND_PERMITS, Selection, lanes, throttle_wait};
 use crate::report::{Report, ReportEntry};
 use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking};
@@ -175,21 +175,19 @@ impl AsyncMercurio {
 
     /// Send `msg` to every target (see [`Mercurio::notify`]).
     pub async fn notify(&self, msg: &Message) -> Report {
-        self.notify_with(msg, &TagFilter::all(), &TemplateVars::new()).await
+        self.notify_with(msg, NotifyOptions::new()).await
     }
 
-    /// Send to the targets matching `filter`.
-    pub async fn notify_tagged(&self, msg: &Message, filter: &TagFilter) -> Report {
-        self.notify_with(msg, filter, &TemplateVars::new()).await
+    /// Send `msg` with [`NotifyOptions`]: a tag filter, template values, a progress callback (see [`Mercurio::notify_with`]).
+    pub async fn notify_with(&self, msg: &Message, opts: NotifyOptions<'_>) -> Report {
+        let (all, none) = (TagFilter::all(), TemplateVars::new());
+        let filter = opts.filter.unwrap_or(&all);
+        let vars = opts.vars.unwrap_or(&none);
+        let on_entry = opts.on_entry.unwrap_or(&|_| {});
+        self.send_selected(msg, filter, vars, on_entry).await
     }
 
-    /// Send to the targets matching `filter`, filling templates from `vars` (see [`Mercurio::notify_with`]).
-    pub async fn notify_with(&self, msg: &Message, filter: &TagFilter, vars: &TemplateVars) -> Report {
-        self.notify_with_progress(msg, filter, vars, &|_| {}).await
-    }
-
-    /// [`AsyncMercurio::notify_with`], calling `on_entry` with each URL's entry as soon as it is final, so a caller can report progress (e.g. stream it). Entries of template URLs that could not be resolved come last.
-    pub async fn notify_with_progress(
+    async fn send_selected(
         &self,
         msg: &Message,
         filter: &TagFilter,
@@ -331,16 +329,10 @@ mod tests {
 
         let mut m = notifier(&fake);
         pollster::block_on(m.add_config_text(yaml, None)).unwrap();
-        let report = pollster::block_on(m.notify_with_progress(
-            &Message::new("b"),
-            &TagFilter::all(),
-            &TemplateVars::new(),
-            &record,
-        ));
+        let report = pollster::block_on(m.notify_with(&Message::new("b"), NotifyOptions::new().on_entry(&record)));
         let mut blocking = Mercurio::with_transport(fake.clone());
         blocking.add_config_text(yaml, None).unwrap();
-        let report2 =
-            blocking.notify_with_progress(&Message::new("b"), &TagFilter::all(), &TemplateVars::new(), &record);
+        let report2 = blocking.notify_with(&Message::new("b"), NotifyOptions::new().on_entry(&record));
 
         let seen = seen.into_inner().unwrap();
         assert_eq!(seen.len(), 6, "{seen:?}");

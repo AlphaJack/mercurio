@@ -163,7 +163,7 @@
 //! ```
 //! use std::sync::Arc;
 //! use mercurio::testing::FakeTransport;
-//! use mercurio::{Mercurio, Message, TagFilter};
+//! use mercurio::{Mercurio, Message, NotifyOptions, TagFilter};
 //!
 //! let yaml = "
 //! version: 1
@@ -179,11 +179,11 @@
 //! assert_eq!(m.add_config_text(yaml, None)?, 3);
 //!
 //! // "devops" matches the devops entry; `always` joins every tagged run.
-//! let report = m.notify_tagged(&Message::new("deploy failed"), &TagFilter::parse("devops"));
+//! let report = m.notify_with(&Message::new("deploy failed"), NotifyOptions::new().tags(&TagFilter::parse("devops")));
 //! assert_eq!(report.entries.len(), 2);
 //!
 //! // Without a tag (the CLI default) only untagged entries are notified.
-//! let report = m.notify_tagged(&Message::new("fyi"), &TagFilter::untagged());
+//! let report = m.notify_with(&Message::new("fyi"), NotifyOptions::new().tags(&TagFilter::untagged()));
 //! assert_eq!(report.entries.len(), 1);
 //! # Ok::<(), mercurio::Error>(())
 //! ```
@@ -273,7 +273,7 @@ pub use http::{MAX_BODY, Method, Multipart, Request, Response, body_too_large};
 #[doc(hidden)]
 pub use http::{MultipartPart, multipart_parts, parse_multipart};
 pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode, Prepared};
-pub use notify::{Mercurio, Selection};
+pub use notify::{Mercurio, NotifyOptions, Selection};
 pub use plan::{Delivery, Outcome, Plan, redact_url};
 pub use registry::{CustomScheme, Handler, Hook, Registry};
 pub use report::{Attempt, Report, ReportEntry, Status};

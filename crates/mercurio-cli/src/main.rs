@@ -763,7 +763,7 @@ async fn cmd_notify(urls: &[String], o: &Opts) -> Result<u8, u8> {
         }
     }
 
-    let report = selected.notify_with(&msg, &filter, &vars).await;
+    let report = selected.notify_with(&msg, mercurio::NotifyOptions::new().tags(&filter).vars(&vars)).await;
     selected.close().await;
     let total = report.entries.len();
     let ok = report.entries.iter().filter(|e| e.delivery.is_success()).count();

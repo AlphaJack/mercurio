@@ -106,7 +106,10 @@ impl Job {
             Arc::new(move |level, message| on_log(LogEntry::new(level_name(level), message, None)))
         };
         let on_entry = |entry: &mercurio::ReportEntry| entry_logs(entry).into_iter().for_each(|l| on_log(l));
-        let send = self.notifier.notify_with_progress(&self.message, &self.filter, &self.vars, &on_entry);
+        let send = self.notifier.notify_with(
+            &self.message,
+            mercurio::NotifyOptions::new().tags(&self.filter).vars(&self.vars).on_entry(&on_entry),
+        );
         crate::logging::capture(sink, send).await
     }
 

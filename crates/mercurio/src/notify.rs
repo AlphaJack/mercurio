@@ -46,14 +46,14 @@ fn max_parallel() -> usize {
 /// assert!(report.is_success());
 /// ```
 ///
-/// Configuration files add tagged targets; [`Mercurio::notify_tagged`] selects them by tag:
+/// Configuration files add tagged targets; [`Mercurio::notify_with`] selects them by tag:
 ///
 /// ```no_run
-/// use mercurio::{Mercurio, Message, TagFilter};
+/// use mercurio::{Mercurio, Message, NotifyOptions, TagFilter};
 ///
 /// let mut m = Mercurio::new();
 /// m.add_config("~/.config/apprise/apprise.yml").unwrap();
-/// m.notify_tagged(&Message::new("deployed"), &TagFilter::parse("devops"));
+/// m.notify_with(&Message::new("deployed"), NotifyOptions::new().tags(&TagFilter::parse("devops")));
 /// ```
 pub struct Mercurio {
     core: Core,
@@ -258,6 +258,58 @@ impl Drop for Mercurio {
     }
 }
 
+/// Which targets a `notify_with` call sends to and how it reports progress. The default sends to every target, fills templates from their defaults and `APPRISE_TEMPLATE_*` values, and reports nothing until the call returns.
+///
+/// ```
+/// use mercurio::{NotifyOptions, TagFilter, TemplateVars};
+///
+/// let filter = TagFilter::parse("devops");
+/// let vars = TemplateVars::new().with("host", "example.com");
+/// let opts = NotifyOptions::new().tags(&filter).vars(&vars).on_entry(&|e| eprintln!("{}: {}", e.label, e.status()));
+/// # let _ = opts;
+/// ```
+#[derive(Clone, Copy, Default)]
+pub struct NotifyOptions<'a> {
+    pub(crate) filter: Option<&'a TagFilter>,
+    pub(crate) vars: Option<&'a TemplateVars>,
+    pub(crate) on_entry: Option<&'a (dyn Fn(&ReportEntry) + Sync)>,
+}
+
+impl fmt::Debug for NotifyOptions<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NotifyOptions")
+            .field("filter", &self.filter)
+            .field("vars", &self.vars.is_some())
+            .field("on_entry", &self.on_entry.is_some())
+            .finish()
+    }
+}
+
+impl<'a> NotifyOptions<'a> {
+    /// Every target, default template values, no progress callback.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Send only to the targets matching `filter` (default [`TagFilter::all`]).
+    pub fn tags(mut self, filter: &'a TagFilter) -> Self {
+        self.filter = Some(filter);
+        self
+    }
+
+    /// Fill `${NAME}` templates from `vars` first. Template entries that can not be built appear as failed entries.
+    pub fn vars(mut self, vars: &'a TemplateVars) -> Self {
+        self.vars = Some(vars);
+        self
+    }
+
+    /// Call `on_entry` with each URL's entry as soon as it is final, so a caller can report progress (e.g. stream it). Entries of template URLs that could not be resolved come last. The blocking notifier calls it from the sending thread.
+    pub fn on_entry(mut self, on_entry: &'a (dyn Fn(&ReportEntry) + Sync)) -> Self {
+        self.on_entry = Some(on_entry);
+        self
+    }
+}
+
 /// Targets chosen by a tag filter, with pending template entries resolved.
 #[derive(Debug, Default)]
 pub struct Selection<'a> {
@@ -388,20 +440,15 @@ impl Mercurio {
 
     /// Send `msg` to every target; template entries use their defaults and `APPRISE_TEMPLATE_*` values. Never panics; failures are in the report.
     pub fn notify(&self, msg: &Message) -> Report {
-        self.notify_with(msg, &TagFilter::all(), &TemplateVars::new())
+        self.notify_with(msg, NotifyOptions::new())
     }
 
-    /// Send to the targets matching `filter`.
-    pub fn notify_tagged(&self, msg: &Message, filter: &TagFilter) -> Report {
-        self.notify_with(msg, filter, &TemplateVars::new())
-    }
-
-    /// Send to the targets matching `filter`, filling templates from `vars`. Template entries that can not be built appear as failed entries.
+    /// Send `msg` with [`NotifyOptions`]: a tag filter, template values, a progress callback.
     ///
     /// ```
     /// use std::sync::Arc;
     /// use mercurio::testing::FakeTransport;
-    /// use mercurio::{Mercurio, Message, TagFilter, TemplateVars};
+    /// use mercurio::{Mercurio, Message, NotifyOptions, TemplateVars};
     ///
     /// let yaml = "
     /// version: 1
@@ -414,16 +461,19 @@ impl Mercurio {
     /// let mut m = Mercurio::with_transport(fake.clone());
     /// m.add_config_text(yaml, None)?;
     /// let vars = TemplateVars::new().with("host", "example.com");
-    /// m.notify_with(&Message::new("hi"), &TagFilter::all(), &vars);
+    /// m.notify_with(&Message::new("hi"), NotifyOptions::new().vars(&vars));
     /// assert_eq!(fake.last_request().unwrap().url, "http://example.com/hook");
     /// # Ok::<(), mercurio::Error>(())
     /// ```
-    pub fn notify_with(&self, msg: &Message, filter: &TagFilter, vars: &TemplateVars) -> Report {
-        self.notify_with_progress(msg, filter, vars, &|_| {})
+    pub fn notify_with(&self, msg: &Message, opts: NotifyOptions<'_>) -> Report {
+        let (all, none) = (TagFilter::all(), TemplateVars::new());
+        let filter = opts.filter.unwrap_or(&all);
+        let vars = opts.vars.unwrap_or(&none);
+        let on_entry = opts.on_entry.unwrap_or(&|_| {});
+        self.send_selected(msg, filter, vars, on_entry)
     }
 
-    /// [`Mercurio::notify_with`], calling `on_entry` with each URL's entry as soon as it is final (from the sending thread), so a caller can report progress. Entries of template URLs that could not be resolved come last.
-    pub fn notify_with_progress(
+    fn send_selected(
         &self,
         msg: &Message,
         filter: &TagFilter,
@@ -587,7 +637,8 @@ mod tests {
         // Both chains deliver at priority 1: priority 2 never runs.
         let fake = Arc::new(FakeTransport::new());
         fake.default_response(crate::Response::new(200, b"{}".to_vec()));
-        let r = notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("ops, db"));
+        let r =
+            notifier(&fake).notify_with(&Message::new("b"), NotifyOptions::new().tags(&TagFilter::parse("ops, db")));
         assert!(r.is_success());
         assert_eq!(paths(&fake), ["http://localhost/a1", "http://localhost/b1"]);
         assert_eq!(r.entries.len(), 2);
@@ -596,7 +647,8 @@ mod tests {
         let fake = Arc::new(FakeTransport::new());
         fake.default_response(crate::Response::new(200, b"{}".to_vec()));
         fake.on_url("/a1", crate::Response::new(500, b"{}".to_vec()));
-        let r = notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("ops, db"));
+        let r =
+            notifier(&fake).notify_with(&Message::new("b"), NotifyOptions::new().tags(&TagFilter::parse("ops, db")));
         assert_eq!(paths(&fake), ["http://localhost/a1", "http://localhost/b1", "http://localhost/a2"]);
         assert!(r.is_success(), "a later group made up for a1");
         assert_eq!(r.status(), Status::Success);
@@ -607,7 +659,7 @@ mod tests {
         // Every group of a chain fails: the call fails.
         let fake = Arc::new(FakeTransport::new());
         fake.default_response(crate::Response::new(500, b"{}".to_vec()));
-        let r = notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("ops"));
+        let r = notifier(&fake).notify_with(&Message::new("b"), NotifyOptions::new().tags(&TagFilter::parse("ops")));
         assert_eq!(r.entries.len(), 2);
         assert!(r.entries.iter().all(|e| !e.escalated));
         assert_eq!(r.status(), Status::Failure);
@@ -615,7 +667,7 @@ mod tests {
         // An exact priority sends one flat round.
         let fake = Arc::new(FakeTransport::new());
         fake.default_response(crate::Response::new(200, b"{}".to_vec()));
-        notifier(&fake).notify_tagged(&Message::new("b"), &TagFilter::parse("2:ops"));
+        notifier(&fake).notify_with(&Message::new("b"), NotifyOptions::new().tags(&TagFilter::parse("2:ops")));
         assert_eq!(paths(&fake), ["http://localhost/a2"]);
     }
 
@@ -626,10 +678,10 @@ mod tests {
         fake.default_response(crate::Response::new(500, b"{}".to_vec()));
         let mut m = Mercurio::with_transport(fake.clone());
         m.add("json://localhost/x?tag=ops&wait=0").unwrap();
-        m.notify_tagged(&Message::new("b"), &TagFilter::parse("ops:2"));
+        m.notify_with(&Message::new("b"), NotifyOptions::new().tags(&TagFilter::parse("ops:2")));
         assert_eq!(fake.requests().len(), 3, "one attempt plus two retries");
         let before = fake.requests().len();
-        m.notify_tagged(&Message::new("b"), &TagFilter::parse("ops"));
+        m.notify_with(&Message::new("b"), NotifyOptions::new().tags(&TagFilter::parse("ops")));
         assert_eq!(fake.requests().len() - before, 1, "no suffix: the URL's retry (none)");
     }
 
