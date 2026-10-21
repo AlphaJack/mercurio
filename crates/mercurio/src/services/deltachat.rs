@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - PGP works as for `email` (feature `service-deltachat-pgp`), with the subject `Chat:` when signing and `Chat: Encrypted message` when encrypting; `?wkd=yes`, the Autocrypt header and key generation are missing. *todo*
+//! - PGP works as for `email` (feature `service-deltachat-pgp`), with the subject `Chat:` when signing and `Chat: Encrypted message` when encrypting; the Autocrypt header and key generation are missing. *todo*
 
 use crate::service::{Limits, Notify, Param, ServiceDef};
 use crate::services::_mail::email::{Email, Flavor};

@@ -569,7 +569,7 @@ pub trait Notify: Send + Sync + fmt::Debug {
         Vec::new()
     }
 
-    /// HTTP requests [`Notify::plan`] needs answered first (a remote template). Like [`Notify::files`], they run on the transport right before each `plan` call; `plan` finds the responses with [`Context::fetched`].
+    /// HTTP requests [`Notify::plan`] needs answered first (a remote template). Like [`Notify::files`], they run on the transport right before each `plan` call, after the file reads (so `ctx` already holds their results); `plan` finds the responses with [`Context::fetched`].
     fn fetches(&self, _ctx: &Context<'_>) -> Vec<Request> {
         Vec::new()
     }
