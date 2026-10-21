@@ -410,7 +410,7 @@ struct Part {
     name: String,
     filename: Option<String>,
     content_type: Option<String>,
-    data: Vec<u8>,
+    data: Bytes,
 }
 
 impl Default for Multipart {
@@ -443,7 +443,7 @@ impl Multipart {
             name: name.into(),
             filename: None,
             content_type: None,
-            data: value.into().into_bytes(),
+            data: Bytes::from(value.into().into_bytes()),
         });
         self
     }
@@ -454,7 +454,7 @@ impl Multipart {
         name: impl Into<String>,
         filename: impl Into<String>,
         content_type: impl Into<String>,
-        data: impl Into<Vec<u8>>,
+        data: impl Into<Bytes>,
     ) -> Self {
         self.parts.push(Part {
             name: name.into(),
@@ -467,7 +467,9 @@ impl Multipart {
 
     /// `(content_type, body)`.
     pub fn finish(self) -> (String, Vec<u8>) {
-        let mut body = Vec::new();
+        // Sized for the data and a head per part, so the body is written once, without regrowing.
+        let mut body =
+            Vec::with_capacity(self.parts.iter().map(|p| p.data.len() + 256 + p.name.len()).sum::<usize>() + 64);
         for p in &self.parts {
             body.extend_from_slice(format!("--{}\r\n", self.boundary).as_bytes());
             let mut disp = format!("Content-Disposition: form-data; name=\"{}\"", escape_quotes(&p.name));

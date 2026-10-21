@@ -280,7 +280,7 @@ impl Notify for Mattermost {
                     .enumerate()
                     .map(|(i, a)| {
                         let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
-                        (name, a.data.clone(), a.mime.clone(), ctx.env().random_hex(16))
+                        (name, a.data.to_vec(), a.mime.clone(), ctx.env().random_hex(16))
                     })
                     .collect();
                 let body = msg.body.to_string();
