@@ -227,6 +227,7 @@ impl From<Result<Plan>> for Plan {
 
 /// Outcome for one target (or for the whole URL when the service has no per-target split).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Outcome {
     /// Target label set with [`Plan::target`]; `None` for the URL as a whole.
     pub target: Option<String>,
@@ -236,6 +237,7 @@ pub struct Outcome {
 
 /// Every outcome of one plan.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Delivery {
     /// Outcomes in the order they were recorded.
     pub outcomes: Vec<Outcome>,

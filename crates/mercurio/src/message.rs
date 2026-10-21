@@ -253,6 +253,7 @@ impl Message {
 
 /// One piece of a message as handed to a service, after title merging and overflow handling.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub struct Prepared<'a> {
     /// Title of this piece (empty when merged into the body).
     pub title: &'a str,

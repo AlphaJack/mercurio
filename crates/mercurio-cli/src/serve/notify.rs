@@ -174,7 +174,9 @@ pub fn filter_level(logs: Vec<LogEntry>, level: u8) -> Vec<LogEntry> {
 }
 
 fn entry_logs(e: &mercurio::ReportEntry) -> Vec<LogEntry> {
-    report_logs(&Report { entries: vec![e.clone()] })
+    let mut report = Report::default();
+    report.entries.push(e.clone());
+    report_logs(&report)
 }
 
 /// One Server-Sent Event.

@@ -312,6 +312,7 @@ impl<'a> NotifyOptions<'a> {
 
 /// Targets chosen by a tag filter, with pending template entries resolved.
 #[derive(Debug, Default)]
+#[non_exhaustive]
 pub struct Selection<'a> {
     /// Ready targets that matched.
     pub targets: Vec<&'a Target>,
