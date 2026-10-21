@@ -1,6 +1,5 @@
 ---
 source: crates/mercurio/tests/it/services.rs
-assertion_line: 17
 ---
 attach_png_html:
   events:
@@ -1791,7 +1790,7 @@ path_target_quoted:
   valid: true
 pgp_encrypt:
   errors:
-    - "unsupported: PGP signing/encryption of e-mail is not supported"
+    - "unsupported: PGP encryption of e-mail is not supported yet"
   events: []
   ok: false
   valid: true
@@ -1905,7 +1904,7 @@ pgp_none:
   valid: true
 pgp_sign_prefix:
   errors:
-    - "unsupported: PGP signing/encryption of e-mail is not supported"
+    - "service error: Unable to sign email via PGP; supply a private key via pgpprv= or place one in the cache directory"
   events: []
   ok: false
   valid: true
@@ -2487,7 +2486,7 @@ user_param:
   valid: true
 wkd_implies_encrypt:
   errors:
-    - "unsupported: PGP signing/encryption of e-mail is not supported"
+    - "unsupported: PGP encryption of e-mail is not supported yet"
   events: []
   ok: false
   valid: true

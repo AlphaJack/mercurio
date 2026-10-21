@@ -6,6 +6,7 @@ use std::time::Duration;
 use regex::Regex;
 
 use super::mime::{Part, formataddr, header_value, render_owned};
+use super::super::_keys::{local_file_ops, read_local_file, remote_fetches};
 use super::smtp::{Envelope, Job, Security, session};
 use crate::convert::html_to_text;
 use crate::error::{Error, Result};
@@ -13,7 +14,7 @@ use crate::message::{NotifyFormat, Prepared};
 use crate::parse::{is_email, is_hostname, is_ipaddr, parse_emails};
 use crate::plan::Plan;
 use crate::service::{Context, Notify, Secret, ServiceDef};
-use crate::transport::Endpoint;
+use crate::transport::{Endpoint, FileOp};
 use crate::url::{ParsedUrl, unquote};
 
 /// SMTP without TLS.
@@ -274,8 +275,17 @@ pub struct Email {
     names: Vec<(String, Name)>,
     headers: Vec<(String, String)>,
     pgp: Pgp,
+    /// `?pgpprv=`: the private key's path or URL.
+    pgp_prv: Option<String>,
     inline: bool,
 }
+
+/// Why signing failed, as Apprise words it.
+const SIGN_FAILED: &str =
+    "Unable to sign email via PGP; supply a private key via pgpprv= or place one in the cache directory";
+
+/// Largest private key read (Apprise's `max_pgp_private_key_size`).
+const MAX_PRIVATE_KEY: u64 = 32_000;
 
 /// `re.split(r"[\s@]+", user)[0]`.
 fn user_prefix(user: &str) -> &str {
@@ -293,6 +303,17 @@ fn set_name(names: &mut Vec<(String, Name)>, addr: &str, name: Name) {
         Some(entry) => entry.1 = name,
         None => names.push((addr.to_string(), name)),
     }
+}
+
+/// Private key file names in the storage folder, best first (Apprise's `_prv_key_candidates`).
+fn private_key_names(from: &str) -> Vec<String> {
+    let mut names = Vec::new();
+    if !from.is_empty() {
+        names.push(format!("{}-prv.asc", from.to_lowercase()));
+        names.push(format!("{}-prv.asc", from.split('@').next().unwrap_or("").to_lowercase()));
+    }
+    names.extend(["pgp-private.asc", "pgp-prv.asc", "private.asc", "prv.asc"].map(String::from));
+    names
 }
 
 /// `prefix match` over `PGP_MODES` ("e", "en", ... are accepted).
@@ -484,6 +505,7 @@ impl Email {
             names,
             headers,
             pgp,
+            pgp_prv: def.text(u, "pgpprv"),
             inline,
         })
     }
@@ -504,12 +526,40 @@ impl Email {
         if excerpt.is_empty() { "Chat:".into() } else { format!("Chat: {excerpt}") }
     }
 
+    /// Whether this build signs and encrypts for this flavor.
+    fn pgp_built(&self) -> bool {
+        match self.flavor {
+            Flavor::Email => cfg!(feature = "service-email-pgp"),
+            Flavor::DeltaChat => cfg!(feature = "service-deltachat-pgp"),
+        }
+    }
+
+    /// Private key files to look at: `?pgpprv=`, else Apprise's names in the storage folder.
+    fn private_key_specs(&self, ctx: &Context<'_>) -> Vec<String> {
+        if let Some(spec) = &self.pgp_prv {
+            return vec![spec.clone()];
+        }
+        let Some(dir) = ctx.store.path() else { return Vec::new() };
+        private_key_names(&self.from_addr).iter().map(|n| dir.join(n).display().to_string()).collect()
+    }
+
+    /// The first private key that could be read.
+    fn private_key<'a>(&self, ctx: &Context<'a>) -> Option<&'a [u8]> {
+        let key = self.private_key_specs(ctx).iter().find_map(|spec| read_local_file(ctx, spec, MAX_PRIVATE_KEY));
+        if key.is_none() {
+            log::warn!("{}", if self.pgp_prv.is_some() { "PGP Private Key could not be accessed" } else { "No PGP private key found" });
+        }
+        key
+    }
+
     /// `prepare_emails`: one message per `To` target.
-    fn prepare(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Vec<Envelope> {
+    fn prepare(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Result<Vec<Envelope>> {
         let format = if self.flavor == Flavor::DeltaChat { NotifyFormat::Text } else { msg.format };
-        let subject = match self.flavor {
-            Flavor::DeltaChat => Self::chat_subject(msg.body),
-            Flavor::Email => msg.title.to_string(),
+        let subject = match (self.flavor, self.pgp) {
+            // A signed message must not show its content in the subject either.
+            (Flavor::DeltaChat, Pgp::Sign) => "Chat:".to_string(),
+            (Flavor::DeltaChat, Pgp::None | Pgp::Encrypt) => Self::chat_subject(msg.body),
+            (Flavor::Email, _) => msg.title.to_string(),
         };
         let subject: String = subject.split_whitespace().collect::<Vec<_>>().join(" ");
         let msgid_host = if self.smtp_host.is_empty() {
@@ -580,10 +630,7 @@ impl Email {
             }
 
             let mut base = if format == NotifyFormat::Html {
-                Part::Multi {
-                    subtype: "alternative",
-                    parts: vec![Part::text("plain", html_to_text(&body)), Part::text("html", &*body)],
-                }
+                Part::multi("alternative", vec![Part::text("plain", html_to_text(&body)), Part::text("html", &*body)])
             } else {
                 Part::text("plain", &*body)
             };
@@ -598,7 +645,11 @@ impl Email {
                     };
                     parts.push(part);
                 }
-                base = Part::Multi { subtype: if cid_refs.is_empty() { "mixed" } else { "related" }, parts };
+                base = Part::multi(if cid_refs.is_empty() { "mixed" } else { "related" }, parts);
+            }
+
+            if self.pgp == Pgp::Sign {
+                base = self.signed(base, ctx)?;
             }
 
             let mut headers: Vec<(String, String)> = Vec::new();
@@ -633,7 +684,36 @@ impl Email {
             recipients.extend(bcc.iter().map(|a| a.to_string()));
             out.push(Envelope { from: self.from_addr.clone(), recipients, data: render_owned(&headers, base, ctx.env().as_ref()) });
         }
-        out
+        Ok(out)
+    }
+
+    /// RFC 3156 `multipart/signed`: `base` as rendered, then its detached signature.
+    #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
+    fn signed<'a>(&self, base: Part<'a>, ctx: &Context<'_>) -> Result<Part<'a>> {
+        let failed = || Error::Service(SIGN_FAILED.into());
+        let key = self.private_key(ctx).ok_or_else(failed)?;
+        let content = super::mime::render_part_alone(&base, ctx.env().as_ref());
+        let (signature, micalg) = super::pgp::sign(key, content.as_bytes(), ctx.env().as_ref()).map_err(|e| {
+            log::warn!("{}", e.warning());
+            failed()
+        })?;
+        let sig_part = Part::Leaf {
+            headers: vec![
+                ("Content-Type".into(), "application/pgp-signature".into()),
+                ("Content-Disposition".into(), "attachment; filename=\"signature.asc\"".into()),
+            ],
+            content: super::mime::Content::Encoded(signature),
+        };
+        Ok(Part::Multi {
+            subtype: "signed",
+            params: format!("; micalg=\"{micalg}\"; protocol=\"application/pgp-signature\""),
+            parts: vec![Part::Raw(content), sig_part],
+        })
+    }
+
+    #[cfg(not(any(feature = "service-email-pgp", feature = "service-deltachat-pgp")))]
+    fn signed<'a>(&self, _: Part<'a>, _: &Context<'_>) -> Result<Part<'a>> {
+        Err(Error::Unsupported("PGP signing of e-mail is not compiled in".into()))
     }
 }
 
@@ -642,9 +722,19 @@ impl Notify for Email {
         if self.targets.is_empty() {
             return Plan::Fail(Error::Message("there are no Email recipients to notify".into()));
         }
-        if self.pgp != Pgp::None {
-            return Plan::Fail(Error::Unsupported("PGP signing/encryption of e-mail is not supported".into()));
+        match self.pgp {
+            Pgp::None => {}
+            Pgp::Sign | Pgp::Encrypt if !self.pgp_built() => {
+                let feature = if self.flavor == Flavor::Email { "service-email-pgp" } else { "service-deltachat-pgp" };
+                return Plan::Fail(Error::Unsupported(format!("PGP needs the `{feature}` feature")));
+            }
+            Pgp::Sign => {}
+            Pgp::Encrypt => return Plan::Fail(Error::Unsupported("PGP encryption of e-mail is not supported yet".into())),
         }
+        let messages = match self.prepare(msg, ctx) {
+            Ok(m) => m,
+            Err(e) => return Plan::Fail(e),
+        };
         let security = match self.mode {
             Mode::Insecure => Security::Insecure,
             Mode::Ssl => Security::Ssl,
@@ -655,7 +745,7 @@ impl Notify for Email {
             helo: "localhost".into(),
             user: self.user.clone(),
             password: self.password.clone(),
-            messages: self.prepare(msg, ctx),
+            messages,
         };
         let mut ep = Endpoint::new(self.smtp_host.clone(), self.port, self.mode == Mode::Ssl);
         ep.connect_timeout = SMTP_TIMEOUT;
@@ -664,6 +754,20 @@ impl Notify for Email {
             let machine = session(job, conn.is_tls());
             Box::pin(crate::machine::drive(machine, conn, transport))
         })
+    }
+
+    fn files(&self, ctx: &Context<'_>) -> Vec<FileOp> {
+        if self.pgp != Pgp::Sign {
+            return Vec::new();
+        }
+        self.private_key_specs(ctx).iter().flat_map(|s| local_file_ops(s)).collect()
+    }
+
+    fn fetches(&self, ctx: &Context<'_>) -> Vec<crate::http::Request> {
+        match (&self.pgp_prv, self.pgp) {
+            (Some(spec), Pgp::Sign) => remote_fetches(ctx, spec, MAX_PRIVATE_KEY),
+            _ => Vec::new(),
+        }
     }
 
 }

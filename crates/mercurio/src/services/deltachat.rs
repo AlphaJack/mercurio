@@ -2,7 +2,7 @@
 //!
 //! # Differences with Apprise
 //!
-//! - PGP modes are rejected at send time, as for `email`. *todo*
+//! - PGP works as for `email` (feature `service-deltachat-pgp`): `?pgp=sign` with an Ed25519 key and the subject `Chat:`; `?pgp=encrypt` still fails with `Unsupported`. *todo*
 
 use crate::service::{Limits, Notify, Param, ServiceDef};
 use crate::services::_mail::email::{Email, Flavor};
@@ -48,7 +48,8 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("inline", "Inline Attachments").bool(false),
         Param::new("mode", "Secure Mode").choice(&["starttls", "ssl", "insecure"]).default("starttls").inferred(),
         Param::new("name", "From Name"),
-        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("validated, but a URL with a PGP mode fails at send time with `Unsupported` (mercurio has no OpenPGP)"),
+        Param::new("pgp", "PGP Security Mode").choice(&["no", "sign", "encrypt"]).default("no").note("`sign` needs an Ed25519 key; without the `service-deltachat-pgp` feature a PGP mode fails with `Unsupported`"),
+        Param::new("pgpprv", "PGP Private Key Path").secret().note("path, `file://` or `http(s)://`; default: the storage folder"),
         Param::new("reply", "Reply To").list(", "),
         Param::new("smtp", "SMTP Server"),
         Param::new("to", "To Email"),

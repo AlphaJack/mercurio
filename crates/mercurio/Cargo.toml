@@ -51,6 +51,8 @@ poly1305 = { version = "0.9", optional = true }
 curve25519-dalek = { version = "5", optional = true, default-features = false }
 p256 = { version = "0.14", optional = true, default-features = false, features = ["arithmetic"] }
 zeroize = { version = "1.8", optional = true }
+pgp = { version = "0.21", optional = true, default-features = false }
+rand_core = { version = "0.6", optional = true, features = ["std"] }
 thiserror = "2"
 
 [dev-dependencies]
@@ -82,11 +84,13 @@ all-services = [
   "service-dapnet",
   "service-dbus",
   "service-deltachat",
+  "service-deltachat-pgp",
   "service-dingtalk",
   "service-discord",
   "service-dot",
   "service-eighthundredcom",
   "service-email",
+  "service-email-pgp",
   "service-emby",
   "service-enigma2",
   "service-evolution",
@@ -252,11 +256,15 @@ service-d7networks = []
 service-dapnet = []
 service-dbus = []
 service-deltachat = []
+# OpenPGP signing and encryption (`?pgp=`) for Delta Chat.
+service-deltachat-pgp = ["service-deltachat", "dep:pgp", "dep:rand_core"]
 service-dingtalk = []
 service-discord = []
 service-dot = []
 service-eighthundredcom = []
 service-email = []
+# OpenPGP signing and encryption (`?pgp=`) for e-mail.
+service-email-pgp = ["service-email", "dep:pgp", "dep:rand_core"]
 service-emby = []
 service-enigma2 = []
 service-evolution = []

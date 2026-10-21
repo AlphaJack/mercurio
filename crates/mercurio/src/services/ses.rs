@@ -281,7 +281,7 @@ fn raw_message(
             let filename = if a.name.is_empty() { format!("file{:03}.dat", no + 1) } else { a.name.clone() };
             parts.push(Part::file(&a.mime, &a.data, "attachment", &filename, None));
         }
-        Part::Multi { subtype: "mixed", parts }
+        Part::multi("mixed", parts)
     };
     render(headers, &tree, env)
 }

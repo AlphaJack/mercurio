@@ -6,6 +6,12 @@ all-features = true
 [advisories]
 # Every RustSec advisory fails, including unmaintained crates.
 unmaintained = "all"
+ignore = [
+  # Marvin: rsa's private-key operations leak timing. rpgp (service-email-pgp,
+  # service-deltachat-pgp) depends on rsa, but mercurio refuses RSA private keys
+  # and only signs with Ed25519; RSA public-key encryption is not affected.
+  { id = "RUSTSEC-2023-0071", reason = "RSA private keys are never used: PGP signs with Ed25519 only" },
+]
 
 [licenses]
 # Permissive licenses compatible with Apache-2.0.
