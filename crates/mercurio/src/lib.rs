@@ -31,7 +31,7 @@
 //! 1. **Parse.** [`parse()`] splits a URL into a [`ParsedUrl`] (lenient: tokens may contain `:`, `/` or `@`), finds the [`ServiceDef`] for the scheme ([`service_for_scheme`]) and calls its parser. The parser validates the URL and returns a typed [`Notify`] value, wrapped in a [`Target`].
 //! 2. **Prepare.** [`Target::prepare`] runs the message pipeline: payload cap, escapes, format conversion ([`NotifyFormat`]), title merging and overflow handling ([`OverflowMode`]: `upstream`, `truncate`, `split`). The result is one or more [`Prepared`] pieces.
 //! 3. **Plan.** [`Notify::plan`] turns each piece into a [`Plan`]: HTTP requests with continuations that inspect the responses, socket sessions, datagrams, local commands. No I/O happens here ([`Target::plan`] does steps 2 and 3).
-//! 4. **Execute.** [`Target::deliver_async`] walks the plan on an [`AsyncTransport`] ([`TokioTransport`] by default) and [`Target::deliver`] on a blocking [`Transport`] (`BlockingTransport`, [`testing::FakeTransport`] in tests, or your own), both with `?retry=` / `?wait=` handling based on [`ErrorClass`].
+//! 4. **Execute.** [`Target::send_async`] walks the plan on an [`AsyncTransport`] ([`TokioTransport`] by default) and [`Target::send`] on a blocking [`Transport`] (`BlockingTransport`, [`testing::FakeTransport`] in tests, or your own), both with `?retry=` / `?wait=` handling based on [`ErrorClass`]. [`Target::send_attempts`] and [`Target::send_attempts_async`] return every attempt.
 //!
 //! Around this core:
 //!

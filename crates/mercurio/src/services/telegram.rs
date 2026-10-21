@@ -923,7 +923,7 @@ mod tests {
         let limited = r#"{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 7","parameters":{"retry_after":7}}"#;
         fake.respond(429, limited);
         fake.respond(200, r#"{"ok":true}"#);
-        let attempts = target.deliver(&Message::new("b"), &fake, &Asset::default());
+        let attempts = target.send_attempts(&Message::new("b"), &fake, &Asset::default());
         assert_eq!(attempts.len(), 2);
         assert!(attempts[1].delivery.is_success(), "{attempts:?}");
         assert!(fake.sleeps().contains(&Duration::from_secs(7)), "{:?}", fake.sleeps());
