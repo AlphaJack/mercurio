@@ -5,5 +5,3 @@ pub mod mime;
 #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
 pub mod pgp;
 pub mod smtp;
-#[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
-pub mod wkd;

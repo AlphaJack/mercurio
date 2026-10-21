@@ -349,7 +349,7 @@ mod e2ee {
 
     #[test]
     fn vault_seals_opens_and_migrates() {
-        use super::super::vault;
+        use super::super::e2ee::vault;
         let store = crate::store::PersistentStore::memory().shared();
         let s = vault_session("pw", store.clone());
         let secret = json!({"ed25519": "private-signing-key"});
@@ -374,6 +374,7 @@ mod e2ee {
     use serde_json::{Map, Value, json};
 
     use super::super::e2ee::tests::{aes_cbc_decrypt, pb_fields};
+    use super::super::e2ee::keys::verify_ed25519;
     use super::super::e2ee::*;
     use super::super::sas::Sas;
     use super::*;
