@@ -38,7 +38,6 @@ saphyr-parser = "0.2"
 html-escape = "0.3.0"
 quick-xml = "0.42"
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
-aes-gcm = { version = "0.11", optional = true, default-features = false, features = ["aes", "alloc"] }
 blake2 = { version = "0.11", optional = true, default-features = false }
 argon2 = { version = "0.6", optional = true, default-features = false, features = ["alloc"] }
 chacha20poly1305 = { version = "0.11", optional = true, default-features = false, features = ["alloc"] }
@@ -46,7 +45,6 @@ aes = { version = "0.9", optional = true }
 salsa20 = { version = "0.11", optional = true, default-features = false }
 poly1305 = { version = "0.9", optional = true }
 curve25519-dalek = { version = "5", optional = true, default-features = false }
-p256 = { version = "0.14", optional = true, default-features = false, features = ["arithmetic"] }
 zeroize = { version = "1.8", optional = true }
 
 [dev-dependencies]
@@ -238,7 +236,7 @@ testing = []
 service-africastalking = []
 service-appriseapi = []
 service-aprs = []
-service-bark = ["dep:aes-gcm"]
+service-bark = ["dep:aes"]
 service-blink1 = []
 service-bluesky = []
 service-brevo = []
@@ -383,7 +381,7 @@ service-trigv = []
 service-twilio = []
 service-twist = []
 service-twitter = []
-service-vapid = ["dep:p256"]
+service-vapid = []
 service-viber = []
 service-voipms = []
 service-vonage = []

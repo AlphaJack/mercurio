@@ -2,8 +2,9 @@
 //!
 //! With `?key=` every payload is encrypted with AES-GCM (16, 24 or 32 byte ASCII key, fresh 12 character IV per request) the way the Bark app expects.
 
-use aes_gcm::aead::{Aead, KeyInit};
-use aes_gcm::{Aes128Gcm, Aes256Gcm, AesGcm, Nonce};
+use aes::Aes192;
+use aes::cipher::{BlockCipherEncrypt, KeyInit};
+use ring::aead;
 use serde_json::{Value, json};
 
 use crate::env::Env;
@@ -89,8 +90,6 @@ const SOUNDS: &[&str] = &[
 ];
 
 const LEVELS: &[&str] = &["active", "timeSensitive", "passive", "critical"];
-
-type Aes192Gcm = AesGcm<aes_gcm::aes::Aes192, aes_gcm::aead::consts::U12>;
 
 #[derive(Debug)]
 struct Bark {
@@ -182,27 +181,92 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }))
 }
 
-/// AES-GCM encrypt with a 16/24/32 byte key; ciphertext has the tag appended.
+/// AES-GCM encrypt with a 16/24/32 byte key; ciphertext has the tag appended. AES-128 and AES-256 go through `ring`; `ring` has no AES-192, so that one is [`aes192_gcm_seal`].
 fn aes_gcm_encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Option<Vec<u8>> {
-    let nonce = &Nonce::try_from(iv).ok()?;
-    match key.len() {
-        16 => Aes128Gcm::new_from_slice(key).ok()?.encrypt(nonce, plaintext).ok(),
-        24 => Aes192Gcm::new_from_slice(key).ok()?.encrypt(nonce, plaintext).ok(),
-        32 => Aes256Gcm::new_from_slice(key).ok()?.encrypt(nonce, plaintext).ok(),
-        _ => None,
-    }
+    let iv: [u8; 12] = iv.try_into().ok()?;
+    let alg = match key.len() {
+        16 => &aead::AES_128_GCM,
+        32 => &aead::AES_256_GCM,
+        24 => return Some(aes192_gcm_seal(&Aes192::new_from_slice(key).ok()?, &iv, plaintext)),
+        _ => return None,
+    };
+    let key = aead::LessSafeKey::new(aead::UnboundKey::new(alg, key).ok()?);
+    let mut out = plaintext.to_vec();
+    key.seal_in_place_append_tag(aead::Nonce::assume_unique_for_key(iv), aead::Aad::empty(), &mut out).ok()?;
+    Some(out)
 }
 
-/// Inverse of [`aes_gcm_encrypt`] (tests).
+/// GCM over the AES-192 block cipher; the tag is appended.
+fn aes192_gcm_seal(cipher: &Aes192, iv: &[u8; 12], plaintext: &[u8]) -> Vec<u8> {
+    let encrypt = |block: [u8; 16]| {
+        let mut b = block.into();
+        cipher.encrypt_block(&mut b);
+        <[u8; 16]>::from(b)
+    };
+    gcm_seal(encrypt, iv, plaintext)
+}
+
+/// GCM (NIST SP 800-38D) with a 96-bit IV and no associated data over the block cipher `encrypt`; the tag is appended.
+fn gcm_seal(encrypt: impl Fn([u8; 16]) -> [u8; 16], iv: &[u8; 12], plaintext: &[u8]) -> Vec<u8> {
+    let h = u128::from_be_bytes(encrypt([0; 16]));
+    let mut counter = [0u8; 16];
+    counter[..12].copy_from_slice(iv);
+    counter[15] = 1;
+    let tag_mask = encrypt(counter);
+    let mut out = Vec::with_capacity(plaintext.len() + 16);
+    let mut ghash = 0u128;
+    let mut n: u32 = 1;
+    for chunk in plaintext.chunks(16) {
+        n = n.wrapping_add(1);
+        counter[12..].copy_from_slice(&n.to_be_bytes());
+        let stream = encrypt(counter);
+        let mut block = [0u8; 16];
+        for ((c, p), k) in block.iter_mut().zip(chunk).zip(stream) {
+            *c = p ^ k;
+        }
+        out.extend_from_slice(&block[..chunk.len()]);
+        for b in block.iter_mut().skip(chunk.len()) {
+            *b = 0;
+        }
+        ghash = gf128_mul(ghash ^ u128::from_be_bytes(block), h);
+    }
+    let lengths = u128::from(plaintext.len() as u64 * 8);
+    ghash = gf128_mul(ghash ^ lengths, h);
+    out.extend_from_slice(&(ghash ^ u128::from_be_bytes(tag_mask)).to_be_bytes());
+    out
+}
+
+/// Multiplication in GF(2^128) with GCM's bit order (SP 800-38D, algorithm 1), without branches or table lookups on the operands.
+fn gf128_mul(x: u128, y: u128) -> u128 {
+    const R: u128 = 0xe1 << 120;
+    let (mut z, mut v) = (0u128, y);
+    for i in 0..128 {
+        z ^= v & ((x >> (127 - i)) & 1).wrapping_neg();
+        v = (v >> 1) ^ (R & (v & 1).wrapping_neg());
+    }
+    z
+}
+
+/// Inverse of [`aes_gcm_encrypt`] (tests), through `ring` for AES-128/256 and by re-sealing for AES-192.
 #[cfg(test)]
 fn aes_gcm_decrypt(key: &[u8], iv: &[u8], ciphertext: &[u8]) -> Option<Vec<u8>> {
-    let nonce = &Nonce::try_from(iv).ok()?;
-    match key.len() {
-        16 => Aes128Gcm::new_from_slice(key).ok()?.decrypt(nonce, ciphertext).ok(),
-        24 => Aes192Gcm::new_from_slice(key).ok()?.decrypt(nonce, ciphertext).ok(),
-        32 => Aes256Gcm::new_from_slice(key).ok()?.decrypt(nonce, ciphertext).ok(),
-        _ => None,
-    }
+    let iv: [u8; 12] = iv.try_into().ok()?;
+    let alg = match key.len() {
+        16 => &aead::AES_128_GCM,
+        32 => &aead::AES_256_GCM,
+        24 => {
+            // CTR is its own inverse: sealing the ciphertext gives the plaintext back; the tag is then checked by sealing that.
+            let (ct, tag) = ciphertext.split_at(ciphertext.len().checked_sub(16)?);
+            let cipher = Aes192::new_from_slice(key).ok()?;
+            let plain = aes192_gcm_seal(&cipher, &iv, ct);
+            let plain = plain.get(..ct.len())?.to_vec();
+            return (aes192_gcm_seal(&cipher, &iv, &plain).get(ct.len()..)? == tag).then_some(plain);
+        }
+        _ => return None,
+    };
+    let key = aead::LessSafeKey::new(aead::UnboundKey::new(alg, key).ok()?);
+    let mut buf = ciphertext.to_vec();
+    key.open_in_place(aead::Nonce::assume_unique_for_key(iv), aead::Aad::empty(), &mut buf).ok().map(|p| p.to_vec())
 }
 
 /// Compact JSON object keeping the payload's insertion order.
@@ -308,6 +372,49 @@ mod tests {
         // NIST GCM test case 2 (AES-128, zero key/IV, one zero block).
         let ct = aes_gcm_encrypt(&[0u8; 16], &[0u8; 12], &[0u8; 16]).unwrap();
         assert_eq!(crate::crypto::hex(&ct), "0388dace60b6a392f328c2b971b2fe78ab6e47d42cec13bdf53a67b21257bddf");
+    }
+
+    #[test]
+    fn aes192_gcm_known_answers() {
+        // The GCM specification's test cases 7, 8 and 9 (AES-192, no AAD).
+        let zero = Aes192::new_from_slice(&[0u8; 24]).unwrap();
+        assert_eq!(crate::crypto::hex(&aes192_gcm_seal(&zero, &[0; 12], b"")), "cd33b28ac773f74ba00ed1f312572435");
+        assert_eq!(
+            crate::crypto::hex(&aes192_gcm_seal(&zero, &[0; 12], &[0; 16])),
+            "98e7247c07f0fe411c267e4384b0f6002ff58d80033927ab8ef4d4587514f0fb"
+        );
+        let key = crate::crypto::unhex("feffe9928665731c6d6a8f9467308308feffe9928665731c");
+        let iv: [u8; 12] = crate::crypto::unhex("cafebabefacedbaddecaf888").try_into().unwrap();
+        let plain = crate::crypto::unhex(
+            "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+        );
+        assert_eq!(
+            crate::crypto::hex(&aes192_gcm_seal(&Aes192::new_from_slice(&key).unwrap(), &iv, &plain)),
+            "3980ca0b3c00e841eb06fac4872a2757859e1ceaa6efd984628593b40ca1e19c7d773d00c144c525ac619d18c84a3f4718e2448b2fe324d9ccda2710acade256\
+             9924a7c8587336bfb118024db8674a14"
+        );
+    }
+
+    #[test]
+    fn gcm_matches_ring_on_every_length() {
+        // The in-house GCM over AES-128 against ring's, for every length across a few blocks (partial last blocks included).
+        let key = [7u8; 16];
+        let cipher = aes::Aes128::new_from_slice(&key).unwrap();
+        for len in 0..70 {
+            let plain: Vec<u8> = (0..len).map(|i| i as u8).collect();
+            let ours = gcm_seal_with(&cipher, &[9; 12], &plain);
+            assert_eq!(ours, aes_gcm_encrypt(&key, &[9; 12], &plain).unwrap(), "length {len}");
+        }
+    }
+
+    /// [`gcm_seal`] over AES-128, to check it against ring.
+    fn gcm_seal_with(cipher: &aes::Aes128, iv: &[u8; 12], plaintext: &[u8]) -> Vec<u8> {
+        let encrypt = |block: [u8; 16]| {
+            let mut b = block.into();
+            cipher.encrypt_block(&mut b);
+            <[u8; 16]>::from(b)
+        };
+        gcm_seal(encrypt, iv, plaintext)
     }
 
     #[test]
