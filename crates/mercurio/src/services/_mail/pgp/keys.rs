@@ -203,7 +203,7 @@ pub fn autocrypt_header(email: &str, secret: &[u8]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{secret_key, sign};
+    use super::super::sign::{secret_key, sign};
     use super::*;
 
     #[test]

@@ -613,10 +613,10 @@ impl Email {
         if let Some(b64) = ctx.store.get_str(&cache) {
             return crate::crypto::b64_decode(&b64);
         }
-        let (advanced, direct) = super::wkd::urls(to)?;
+        let (advanced, direct) = super::pgp::wkd::urls(to)?;
         let key = [advanced, direct]
             .iter()
-            .find_map(|url| ctx.fetched(url).ok().filter(|b| !b.is_empty() && b.len() <= super::wkd::MAX_RESPONSE))?
+            .find_map(|url| ctx.fetched(url).ok().filter(|b| !b.is_empty() && b.len() <= super::pgp::wkd::MAX_RESPONSE))?
             .to_vec();
         ctx.store.remember(&cache, serde_json::json!(crate::crypto::b64(&key)), Some(WKD_CACHE));
         Some(key)
@@ -1026,7 +1026,7 @@ impl Email {
             if self.local_public_key(ctx, to).is_some() || ctx.store.get(&Self::wkd_cache_key(to)).is_some() {
                 continue;
             }
-            for url in super::wkd::urls(to).into_iter().flat_map(|(a, d)| [a, d]) {
+            for url in super::pgp::wkd::urls(to).into_iter().flat_map(|(a, d)| [a, d]) {
                 out.push(crate::http::Request::get(url).header("User-Agent", ctx.app_id()));
             }
         }
