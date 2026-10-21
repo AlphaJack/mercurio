@@ -199,9 +199,120 @@ fn uncompressed(point: Vec<u8>) -> Option<Vec<u8>> {
     if point.len() != 33 || !matches!(point[0], 2 | 3) {
         return Some(point);
     }
-    use p256::elliptic_curve::sec1::ToSec1Point;
-    let key = p256::PublicKey::from_sec1_bytes(&point).ok()?;
-    Some(key.to_sec1_point(false).as_bytes().to_vec())
+    let x = point.get(1..)?;
+    let y = p256_y(x.try_into().ok()?, point[0] & 1)?;
+    let mut out = Vec::with_capacity(65);
+    out.push(4);
+    out.extend_from_slice(x);
+    out.extend_from_slice(&y);
+    Some(out)
+}
+
+/// A 256-bit number as four 64-bit limbs, least significant first.
+type U256 = [u64; 4];
+
+/// The P-256 field prime p = 2^256 - 2^224 + 2^192 + 2^96 - 1.
+const P: U256 = [0xffff_ffff_ffff_ffff, 0x0000_0000_ffff_ffff, 0x0000_0000_0000_0000, 0xffff_ffff_0000_0001];
+/// The curve constant b of y^2 = x^3 - 3x + b.
+const B: U256 = [0x3bce_3c3e_27d2_604b, 0x651d_06b0_cc53_b0f6, 0xb3eb_bd55_7698_86bc, 0x5ac6_35d8_aa3a_93e7];
+
+/// (p + 1) / 4.
+const SQRT_EXP: U256 = [0, 0x0000_0000_4000_0000, 0x4000_0000_0000_0000, 0x3fff_ffff_c000_0000];
+
+/// The y with the given parity of the P-256 point with this `x`, `None` when no point has it. Public keys only, so plain (not constant-time) arithmetic is fine.
+fn p256_y(x: &[u8; 32], parity: u8) -> Option<[u8; 32]> {
+    let x = u256_from_be(x);
+    if !lt(&x, &P) {
+        return None;
+    }
+    let three_x = add_mod(&add_mod(&x, &x), &x);
+    let rhs = add_mod(&sub_mod(&mul_mod(&mul_mod(&x, &x), &x), &three_x), &B);
+    // p = 3 (mod 4), so a square root of rhs, if there is one, is rhs^((p + 1) / 4).
+    let mut y = pow_mod(&rhs, &SQRT_EXP);
+    if mul_mod(&y, &y) != rhs {
+        return None;
+    }
+    if (y[0] & 1) as u8 != parity & 1 {
+        y = sub_mod(&[0; 4], &y);
+    }
+    Some(u256_to_be(&y))
+}
+
+fn u256_from_be(b: &[u8; 32]) -> U256 {
+    let (words, _) = b.as_chunks::<8>();
+    std::array::from_fn(|i| u64::from_be_bytes(words[3 - i]))
+}
+
+fn u256_to_be(n: &U256) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    for (chunk, limb) in out.as_chunks_mut::<8>().0.iter_mut().zip(n.iter().rev()) {
+        *chunk = limb.to_be_bytes();
+    }
+    out
+}
+
+fn lt(a: &U256, b: &U256) -> bool {
+    a.iter().rev().cmp(b.iter().rev()) == std::cmp::Ordering::Less
+}
+
+/// `a + b` and the carry out.
+fn add(a: &U256, b: &U256) -> (U256, bool) {
+    let mut out = [0; 4];
+    let mut carry = false;
+    for i in 0..4 {
+        let (s, c1) = a[i].overflowing_add(b[i]);
+        let (s, c2) = s.overflowing_add(u64::from(carry));
+        out[i] = s;
+        carry = c1 || c2;
+    }
+    (out, carry)
+}
+
+/// `a - b` and the borrow out.
+fn sub(a: &U256, b: &U256) -> (U256, bool) {
+    let mut out = [0; 4];
+    let mut borrow = false;
+    for i in 0..4 {
+        let (d, b1) = a[i].overflowing_sub(b[i]);
+        let (d, b2) = d.overflowing_sub(u64::from(borrow));
+        out[i] = d;
+        borrow = b1 || b2;
+    }
+    (out, borrow)
+}
+
+/// `(a + b) mod p` for `a, b < p`.
+fn add_mod(a: &U256, b: &U256) -> U256 {
+    let (s, carry) = add(a, b);
+    if carry || !lt(&s, &P) { sub(&s, &P).0 } else { s }
+}
+
+fn sub_mod(a: &U256, b: &U256) -> U256 {
+    let (d, borrow) = sub(a, b);
+    if borrow { add(&d, &P).0 } else { d }
+}
+
+/// `a * b mod p` by double-and-add over the bits of `b`.
+fn mul_mod(a: &U256, b: &U256) -> U256 {
+    let mut r = [0; 4];
+    for bit in (0..256).rev() {
+        r = add_mod(&r, &r);
+        if b[bit / 64] >> (bit % 64) & 1 == 1 {
+            r = add_mod(&r, a);
+        }
+    }
+    r
+}
+
+fn pow_mod(base: &U256, exp: &U256) -> U256 {
+    let mut r = [1, 0, 0, 0];
+    for bit in (0..256).rev() {
+        r = mul_mod(&r, &r);
+        if exp[bit / 64] >> (bit % 64) & 1 == 1 {
+            r = mul_mod(&r, base);
+        }
+    }
+    r
 }
 
 fn valid_p256_point(point: &[u8]) -> bool {
@@ -672,6 +783,18 @@ mod tests {
         assert!(!crate::parse(url).unwrap().send(&crate::Message::new("b"), &fake, &crate::Asset::default()).is_success());
     }
 
+
+    #[test]
+    fn expands_points_ring_generates() {
+        let rng = ring_rng();
+        for _ in 0..32 {
+            let key = EphemeralPrivateKey::generate(&ECDH_P256, &rng).unwrap();
+            let full = key.compute_public_key().unwrap().as_ref().to_vec();
+            let mut compressed = vec![2 + (full[64] & 1)];
+            compressed.extend_from_slice(&full[1..33]);
+            assert_eq!(uncompressed(compressed), Some(full));
+        }
+    }
 
     #[test]
     fn compressed_p256dh_is_expanded() {
