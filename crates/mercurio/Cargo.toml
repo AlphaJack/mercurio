@@ -398,3 +398,6 @@ service-xmpp = []
 service-youlmk = []
 service-zoom = []
 service-zulip = []
+
+[package.metadata.cargo-semver-checks.lints]
+struct_marked_non_exhaustive = "allow"

@@ -183,6 +183,7 @@ impl Kind {
 
 /// A URL path token (`{host}`) or query parameter a service reads. Declared in [`ServiceDef::tokens`] and [`ServiceDef::params`] with the `const` builder methods; `mercurio services --json` and the book pages show them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Param {
     /// Token name without braces or query key. For a prefixed parameter (`+name=value`) the name of the group.
     pub key: &'static str,
