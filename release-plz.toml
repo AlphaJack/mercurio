@@ -9,6 +9,9 @@ semver_check = true
 name = "mercurio-cli"
 git_tag_enable = true
 git_tag_name = "v{{ version }}"
+git_release_enable = true
+git_release_name = "v{{ version }}"
+git_release_draft = true
 
 # Setting commit_parsers replaces release-plz's defaults, so they are restated below the skip rule.
 [changelog]

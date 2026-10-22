@@ -16,6 +16,8 @@ targets = [
 install-path = "CARGO_HOME"
 install-updater = false
 checksum = "sha256"
+# release-plz drafts the release with the changelog; dist uploads to it and publishes it.
+create-release = false
 # The systemd unit and its settings ship next to the binary (manual installs and the AUR package use them).
 include = ["packaging/systemd/mercurio.service", "packaging/systemd/mercurio.env"]
 # steps injected into every build-local-artifacts job (sccache etc.)
