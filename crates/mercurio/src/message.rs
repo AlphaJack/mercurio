@@ -227,24 +227,28 @@ impl Message {
     }
 
     /// Set the title.
+    #[must_use]
     pub fn title(mut self, title: impl Into<String>) -> Self {
         self.title = title.into();
         self
     }
 
     /// Set the notification type.
+    #[must_use]
     pub fn kind(mut self, kind: NotifyType) -> Self {
         self.kind = kind;
         self
     }
 
     /// Declare the body markup; services convert it to what they accept.
+    #[must_use]
     pub fn format(mut self, format: NotifyFormat) -> Self {
         self.format = Some(format);
         self
     }
 
     /// Add an attachment.
+    #[must_use]
     pub fn attach(mut self, attachment: Attachment) -> Self {
         self.attachments.push(attachment);
         self

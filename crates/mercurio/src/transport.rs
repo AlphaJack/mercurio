@@ -391,16 +391,19 @@ impl Command {
         }
     }
     /// Add one argument.
+    #[must_use]
     pub fn arg(mut self, a: impl Into<String>) -> Self {
         self.args.push(a.into());
         self
     }
     /// Add arguments.
+    #[must_use]
     pub fn args<I: IntoIterator<Item = S>, S: Into<String>>(mut self, a: I) -> Self {
         self.args.extend(a.into_iter().map(Into::into));
         self
     }
     /// A bundled file the transport writes to `path` before running the program.
+    #[must_use]
     pub fn file(mut self, path: impl Into<String>, bytes: &'static [u8]) -> Self {
         self.files.push((path.into(), bytes));
         self

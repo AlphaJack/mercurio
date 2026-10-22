@@ -86,18 +86,21 @@ impl AsyncMercurio {
     }
 
     /// Send to targets one after another instead of concurrently.
+    #[must_use]
     pub fn sequential(mut self) -> Self {
         self.sequential = true;
         self
     }
 
     /// Replace the [`Asset`] (branding, pipeline defaults, storage).
+    #[must_use]
     pub fn asset(mut self, asset: Asset) -> Self {
         self.core.asset = asset;
         self
     }
 
     /// Options for [`AsyncMercurio::add_config`] (include depth, templates, ...). `opts.registry` replaces this notifier's [`Registry`].
+    #[must_use]
     pub fn config_options(mut self, opts: ConfigOptions) -> Self {
         self.core.config = opts;
         self

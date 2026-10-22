@@ -178,6 +178,7 @@ fn idx(kind: NotifyType) -> usize {
 
 impl Asset {
     /// Persist stores under `path` in `mode` (builder style).
+    #[must_use]
     pub fn with_storage(mut self, path: impl Into<PathBuf>) -> Self {
         self.storage_path = Some(path.into());
         self

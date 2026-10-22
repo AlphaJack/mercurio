@@ -171,6 +171,7 @@ impl TagFilter {
     }
 
     /// Disable the `always` rule: services tagged `always` are no longer selected by every filter.
+    #[must_use]
     pub fn without_always(mut self) -> Self {
         self.match_always = false;
         self

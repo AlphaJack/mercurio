@@ -227,6 +227,7 @@ impl FakeTransport {
     }
 
     /// Run file operations on the real file system (still recorded) instead of the in-memory one.
+    #[must_use]
     pub fn on_disk(self) -> Self {
         self.lock().disk = true;
         self
@@ -454,6 +455,7 @@ impl ScriptedConn {
     }
 
     /// Refuse STARTTLS upgrades.
+    #[must_use]
     pub fn without_tls(mut self) -> Self {
         self.allow_tls = false;
         self

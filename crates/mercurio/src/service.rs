@@ -253,105 +253,127 @@ impl Param {
         p
     }
     /// Set the value type.
+    #[must_use]
     pub const fn kind(mut self, kind: Kind) -> Self {
         self.kind = kind;
         self
     }
     /// [`Kind::Int`].
+    #[must_use]
     pub const fn int(self) -> Self {
         self.kind(Kind::Int)
     }
     /// A TCP or UDP port: an integer from 1 to 65535.
+    #[must_use]
     pub const fn port(self) -> Self {
         self.int().range(1, u16::MAX as i64)
     }
     /// [`Kind::Float`].
+    #[must_use]
     pub const fn float(self) -> Self {
         self.kind(Kind::Float)
     }
     /// [`Kind::Bool`] with its default.
+    #[must_use]
     pub const fn bool(self, default: bool) -> Self {
         self.kind(Kind::Bool).default(if default { "yes" } else { "no" })
     }
     /// [`Kind::Email`].
+    #[must_use]
     pub const fn email(self) -> Self {
         self.kind(Kind::Email)
     }
     /// [`Kind::List`] separated by any character of `delim`.
+    #[must_use]
     pub const fn list(mut self, delim: &'static str) -> Self {
         self.delim = delim;
         self.kind(Kind::List)
     }
     /// [`Kind::Choice`] among `values`.
+    #[must_use]
     pub const fn choice(mut self, values: &'static [&'static str]) -> Self {
         self.values = values;
         self.kind(Kind::Choice)
     }
     /// [`Param::values`] without changing the kind.
+    #[must_use]
     pub const fn values(mut self, values: &'static [&'static str]) -> Self {
         self.values = values;
         self
     }
     /// [`Param::default`].
+    #[must_use]
     pub const fn default(mut self, value: &'static str) -> Self {
         self.default = value;
         self
     }
     /// [`Param::min`] and [`Param::max`].
+    #[must_use]
     pub const fn range(self, min: i64, max: i64) -> Self {
         self.min(min).max(max)
     }
     /// [`Param::min`].
+    #[must_use]
     pub const fn min(mut self, min: i64) -> Self {
         self.min = Some(min);
         self
     }
     /// [`Param::max`].
+    #[must_use]
     pub const fn max(mut self, max: i64) -> Self {
         self.max = Some(max);
         self
     }
     /// [`Param::required`].
+    #[must_use]
     pub const fn required(mut self) -> Self {
         self.required = true;
         self
     }
     /// [`Param::secret`].
+    #[must_use]
     pub const fn secret(mut self) -> Self {
         self.secret = true;
         self
     }
     /// [`Param::aliases`].
+    #[must_use]
     pub const fn aliases(mut self, keys: &'static [&'static str]) -> Self {
         self.aliases = keys;
         self
     }
     /// [`Param::pattern`].
+    #[must_use]
     pub const fn pattern(mut self, regex: &'static str) -> Self {
         self.pattern = regex;
         self
     }
     /// [`Param::prefix`].
+    #[must_use]
     pub const fn prefix(mut self, prefix: &'static str) -> Self {
         self.prefix = prefix;
         self
     }
     /// [`Param::group`].
+    #[must_use]
     pub const fn group(mut self, tokens: &'static [&'static str]) -> Self {
         self.group = tokens;
         self
     }
     /// [`Param::note`].
+    #[must_use]
     pub const fn note(mut self, note: &'static str) -> Self {
         self.note = note;
         self
     }
     /// [`Param::inferred`].
+    #[must_use]
     pub const fn inferred(mut self) -> Self {
         self.inferred = true;
         self
     }
     /// [`Param::ignored`].
+    #[must_use]
     pub const fn ignored(mut self) -> Self {
         self.ignored = true;
         self
@@ -431,6 +453,7 @@ impl<'a> Context<'a> {
     }
 
     /// This context on another clock and random source (the transport's, see [`crate::Transport::env`]).
+    #[must_use]
     pub fn with_env(self, env: &'a Arc<dyn Env>) -> Self {
         Self { env, ..self }
     }
@@ -459,11 +482,13 @@ impl<'a> Context<'a> {
     }
 
     /// This context with the results of [`Notify::files`].
+    #[must_use]
     pub fn with_files(self, files: &'a [(FileOp, Result<FileOutput>)]) -> Self {
         Self { files, ..self }
     }
 
     /// This context with the responses of [`Notify::fetches`].
+    #[must_use]
     pub fn with_fetched(self, fetched: &'a [(Request, Result<Response>)]) -> Self {
         Self { fetched, ..self }
     }
