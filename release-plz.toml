@@ -12,6 +12,8 @@ git_tag_name = "v{{ version }}"
 git_release_enable = true
 git_release_name = "v{{ version }}"
 git_release_draft = true
+# The release page is the only changelog users read: it lists the lib too.
+changelog_include = ["mercurio"]
 
 # Setting commit_parsers replaces release-plz's defaults, so they are restated below the skip rule.
 [changelog]
