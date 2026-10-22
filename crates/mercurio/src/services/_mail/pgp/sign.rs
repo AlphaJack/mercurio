@@ -4,6 +4,7 @@
 
 use ring::rand::SystemRandom;
 use ring::signature::{Ed25519KeyPair, RSA_PKCS1_SHA256, RsaKeyPair};
+use zeroize::Zeroizing;
 
 use super::*;
 use crate::env::Env;
@@ -81,26 +82,30 @@ fn der_uint(out: &mut Vec<u8>, value: &[u8]) {
 }
 
 /// PKCS#1 `RSAPrivateKey` from OpenPGP's `n, e, d, p, q, u` (`u = p⁻¹ mod q`): `p` and `q` trade places, so `u` is PKCS#1's `q⁻¹ mod p`.
-fn rsa_pkcs1(n: &[u8], e: &[u8], d: &[u8], p: &[u8], q: &[u8], u: &[u8]) -> Vec<u8> {
+///
+/// Both buffers are sized up front: a reallocation would leave a copy of the secret behind.
+fn rsa_pkcs1(n: &[u8], e: &[u8], d: &[u8], p: &[u8], q: &[u8], u: &[u8]) -> Zeroizing<Vec<u8>> {
     let (p, q) = (q, p);
-    let dp = zeroize::Zeroizing::new(big_mod(d, &minus_one(p)));
-    let dq = zeroize::Zeroizing::new(big_mod(d, &minus_one(q)));
-    let mut body = Vec::new();
-    for v in [&[0u8][..], n, e, d, p, q, &dp, &dq, u] {
+    let dp = Zeroizing::new(big_mod(d, &minus_one(p)));
+    let dq = Zeroizing::new(big_mod(d, &minus_one(q)));
+    let values = [&[0u8][..], n, e, d, p, q, &dp, &dq, u];
+    // Tag, at most 5 length bytes, a padding zero.
+    let mut body = Zeroizing::new(Vec::with_capacity(values.iter().map(|v| v.len() + 7).sum()));
+    for v in values {
         der_uint(&mut body, v);
     }
-    let mut der = vec![0x30];
+    let mut der = Zeroizing::new(Vec::with_capacity(body.len() + 6));
+    der.push(0x30);
     der_len(&mut der, body.len());
     der.extend_from_slice(&body);
-    body.iter_mut().for_each(|b| *b = 0);
     der
 }
 
 /// Read the primary key of an armored (or binary) secret key.
 pub(super) fn secret_key(data: &[u8]) -> Result<Key, SignError> {
     let bytes = match std::str::from_utf8(data).ok().and_then(dearmor) {
-        Some(b) => zeroize::Zeroizing::new(b),
-        None => zeroize::Zeroizing::new(data.to_vec()),
+        Some(b) => Zeroizing::new(b),
+        None => Zeroizing::new(data.to_vec()),
     };
     let (tag, body) = first_packet(&bytes).ok_or(SignError::Unreadable)?;
     if tag != TAG_SECRET_KEY || body.first() != Some(&4) {
@@ -140,7 +145,7 @@ pub(super) fn secret_key(data: &[u8]) -> Result<Key, SignError> {
             let (p, rest) = mpi(rest).ok_or(SignError::Unreadable)?;
             let (q, rest) = mpi(rest).ok_or(SignError::Unreadable)?;
             let (u, _) = mpi(rest).ok_or(SignError::Unreadable)?;
-            let der = zeroize::Zeroizing::new(rsa_pkcs1(n, e, d, p, q, u));
+            let der = rsa_pkcs1(n, e, d, p, q, u);
             Signer::Rsa(RsaKeyPair::from_der(&der).map_err(|_| SignError::Failed)?)
         }
         [point] => {
@@ -150,7 +155,7 @@ pub(super) fn secret_key(data: &[u8]) -> Result<Key, SignError> {
             if secret.len() > 32 {
                 return Err(SignError::Unreadable);
             }
-            let mut seed = zeroize::Zeroizing::new([0u8; 32]);
+            let mut seed = Zeroizing::new([0u8; 32]);
             seed[32 - secret.len()..].copy_from_slice(secret);
             Signer::Ed25519(Ed25519KeyPair::from_seed_and_public_key(&*seed, public).map_err(|_| SignError::Failed)?)
         }
