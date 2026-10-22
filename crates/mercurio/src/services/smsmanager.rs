@@ -90,7 +90,7 @@ impl Notify for SmsManager {
                 payload.push(("sender", s));
             }
             let req = ctx.get(NOTIFY_URL).query(&payload);
-            let label = if self.batch { format!("{} targets", chunk.len()) } else { number.clone() };
+            let label = if self.batch { format!("{} targets", chunk.len()) } else { number };
             Plan::send_expect(req, &[200]).target(label)
         }))
     }

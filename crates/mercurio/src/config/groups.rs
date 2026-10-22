@@ -116,11 +116,17 @@ pub(super) fn parse_groups(groups: &Yaml, into: &mut Vec<(String, Vec<String>)>)
         }
     };
     match groups {
-        Yaml::Map(m) => m.iter().for_each(|(k, v)| add(k, v)),
+        Yaml::Map(m) => {
+            for (k, v) in m {
+                add(k, v);
+            }
+        }
         Yaml::Seq(list) => {
             for e in list {
                 if let Yaml::Map(m) = e {
-                    m.iter().for_each(|(k, v)| add(k, v));
+                    for (k, v) in m {
+                        add(k, v);
+                    }
                 }
             }
         }

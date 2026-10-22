@@ -227,9 +227,8 @@ impl Notify for RingCentral {
             if r.status != 200 {
                 return Plan::Fail(http_err(&r));
             }
-            let content = match r.json() {
-                Some(Value::Object(m)) => m,
-                _ => return Plan::Fail(Error::Service("RingCentral login returned no access token".into())),
+            let Some(Value::Object(content)) = r.json() else {
+                return Plan::Fail(Error::Service("RingCentral login returned no access token".into()));
             };
             let expires_in = match content.get("expires_in") {
                 None => 0.0,

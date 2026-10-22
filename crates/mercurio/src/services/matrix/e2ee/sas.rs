@@ -741,7 +741,7 @@ fn fail(s: Session, v: Verifier, code: &str, reason: &str, k: VK) -> Plan {
 
 /// Validated device keys plus advertised master keys.
 fn peer_keys(s: Session, v: Verifier, user_id: String, device_id: String, k: VKeys) -> Plan {
-    let f = Fetch::post("/keys/query", json!({"device_keys": {user_id.clone(): [device_id.clone()]}}));
+    let f = Fetch::post("/keys/query", json!({"device_keys": {user_id.clone(): [device_id]}}));
     let Some(f) = bounded(&v, f, None, false) else { return k(s, v, None) };
     s.fetch(f, move |s, r| {
         let Some(resp) = r.object() else { return k(s, v, None) };
@@ -829,7 +829,7 @@ mod tests {
             "mac": {kid.clone(): peer_mac(&peer_acct.signing_key(), &kid)},
             "keys": peer_mac(&kid, "KEY_IDS"),
         });
-        let keys: Map<String, Value> = [(kid.clone(), json!(peer_acct.signing_key()))].into_iter().collect();
+        let keys: Map<String, Value> = [(kid, json!(peer_acct.signing_key()))].into_iter().collect();
         let mut tampered = content.clone();
         tampered["keys"] = json!("invalid");
         assert_eq!(sas.verify_peer_mac(&tampered, &keys), Err("SAS key list MAC does not match"));

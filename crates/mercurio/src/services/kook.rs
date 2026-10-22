@@ -287,7 +287,7 @@ impl Notify for Kook {
             );
             let upload =
                 ctx.post(format!("{API}/asset/create")).header("Authorization", format!("Bot {}", self.token.expose()));
-            let st2 = st.clone();
+            let st2 = st;
             plans.push(Plan::defer(move || {
                 if st2.has_error.load(Ordering::SeqCst) { Plan::Done } else { attach_step(atts, 0, reqs, upload, st2) }
             }));

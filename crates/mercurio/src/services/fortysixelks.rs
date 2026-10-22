@@ -53,7 +53,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         source = Some(u.host());
     }
     let mut targets = u.path_segments();
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
 
     let source = source.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
     let password = u.password().unwrap_or_default();

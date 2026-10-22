@@ -152,7 +152,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         && let Some(r) = is_email(f)
     {
         let name = if r.name.is_empty() { None } else { Some(r.name.clone()) };
-        from = Some((r.full_email.clone(), name));
+        from = Some((r.full_email, name));
     }
 
     let mode = match mode.as_deref().filter(|m| !m.is_empty()) {

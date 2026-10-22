@@ -287,7 +287,7 @@ mod tests {
         assert_eq!(body("json://localhost", &msg, &asset), (":rocket: Up".into(), "**hi** :smile:".into()));
 
         // Declared Markdown is converted for an HTML service (title kept apart).
-        let md = msg.clone().format(NotifyFormat::Markdown);
+        let md = msg.format(NotifyFormat::Markdown);
         assert_eq!(body("json://localhost?format=html", &md, &asset).1, "<p><strong>hi</strong> :smile:</p>");
     }
 }

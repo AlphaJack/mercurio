@@ -93,8 +93,16 @@ fn normalise_strings(v: &mut Value, rules: &[(Regex, String)]) {
                 *s = re.replace_all(s, rep.as_str()).into_owned();
             }
         }
-        Value::Array(a) => a.iter_mut().for_each(|x| normalise_strings(x, rules)),
-        Value::Object(m) => m.values_mut().for_each(|x| normalise_strings(x, rules)),
+        Value::Array(a) => {
+            for x in a {
+                normalise_strings(x, rules);
+            }
+        }
+        Value::Object(m) => {
+            for x in m.values_mut() {
+                normalise_strings(x, rules);
+            }
+        }
         Value::Null | Value::Bool(_) | Value::Number(_) => {}
     }
 }

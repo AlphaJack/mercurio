@@ -66,7 +66,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let country = SERVICE.text(u, "country");
     let validity = SERVICE.text(u, "validity");
     let batch = SERVICE.flag(u, "batch");
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
 
     let apikey = validate_regex(&apikey, r"^[a-z0-9]+$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid Burst SMS API Key was specified"))?;
@@ -94,7 +94,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         country,
         source,
         batch,
-        targets: full_numbers(&targets, false),
+        targets: full_numbers(&targets),
     }))
 }
 

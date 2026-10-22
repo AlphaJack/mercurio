@@ -16,7 +16,11 @@ use crate::tag::Tag;
 pub(super) fn yaml_list(v: &Yaml, out: &mut Vec<String>) {
     match v {
         Yaml::Str(s) => out.extend(crate::parse::parse_list_unsorted([s.as_str()])),
-        Yaml::Seq(items) => items.iter().for_each(|i| yaml_list(i, out)),
+        Yaml::Seq(items) => {
+            for i in items {
+                yaml_list(i, out);
+            }
+        }
         Yaml::Bool(_) | Yaml::Null => {}
         other @ (Yaml::Int(_) | Yaml::Float(_) | Yaml::Map(_)) => {
             if other.has_value() {

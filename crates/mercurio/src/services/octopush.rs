@@ -70,7 +70,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         None => None,
     };
     let mut targets = tokens;
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     let user = u.user.as_deref().filter(|s| !s.is_empty());
     let password = u.password.as_deref().filter(|s| !s.is_empty());
     let api_login = match SERVICE.text(u, "login") {
@@ -126,7 +126,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         mtype,
         purpose,
         sender,
-        targets: full_numbers(&targets, true),
+        targets: full_numbers(&targets).into_iter().map(|n| format!("+{n}")).collect(),
     }))
 }
 

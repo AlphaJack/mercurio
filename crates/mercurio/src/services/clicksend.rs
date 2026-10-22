@@ -50,13 +50,13 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         Some(k) => Some(unquote(&k)),
         None => u.password(),
     };
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     let user = u.user().unwrap_or_default();
     let password = password.unwrap_or_default();
     if user.is_empty() || password.is_empty() {
         return Err(SERVICE.err("a ClickSend user/pass was not provided"));
     }
-    Ok(Box::new(ClickSend { user, password: Secret::new(password), targets: full_numbers(&targets, false), batch }))
+    Ok(Box::new(ClickSend { user, password: Secret::new(password), targets: full_numbers(&targets), batch }))
 }
 
 impl Notify for ClickSend {

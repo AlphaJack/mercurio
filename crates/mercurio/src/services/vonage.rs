@@ -1,6 +1,6 @@
 //! Vonage, formerly Nexmo (`vonage://`, `nexmo://`): SMS through the Vonage API.
 
-use super::_sms::{expect, per_target, to_param, valid_phones};
+use super::_sms::{expect, full_numbers, per_target, to_param};
 use crate::parse::{is_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -62,7 +62,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         source = v;
     }
     let ttl = SERVICE.text(u, "ttl");
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
 
     let apikey = validate_regex(&apikey, r"^[a-z0-9]+$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid Vonage API Key was specified"))?;
@@ -74,7 +74,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let source =
         is_phone_no(&source, 10).ok_or_else(|| SERVICE.err("the Account (From) Phone # specified is invalid"))?.full;
-    let targets = valid_phones(&targets, false, 10).into_iter().map(|(_, p)| p.full).collect();
+    let targets = full_numbers(&targets);
     Ok(Box::new(Vonage { apikey: Secret::new(apikey), secret: Secret::new(secret), ttl, source, targets }))
 }
 

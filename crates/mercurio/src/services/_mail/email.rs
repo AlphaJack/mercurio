@@ -477,7 +477,7 @@ impl Email {
                 from_name = Name::AppId;
                 from_addr = format!("{}@{}", user_prefix(u), host);
             } else if let Some(r) = is_email(u) {
-                host = r.domain.clone();
+                host = r.domain;
                 from_name = Name::AppId;
                 from_addr = u.to_string();
             }
@@ -509,7 +509,7 @@ impl Email {
 
         let port = port.unwrap_or_else(|| mode.default_port());
         if smtp_host.is_empty() {
-            smtp_host = host.clone();
+            smtp_host = host;
         }
 
         let pgp = match pgp_arg.as_deref() {
@@ -775,8 +775,8 @@ impl Email {
             }
 
             let mut recipients = vec![to_addr.clone()];
-            recipients.extend(cc.iter().map(|a| a.to_string()));
-            recipients.extend(bcc.iter().map(|a| a.to_string()));
+            recipients.extend(cc.iter().map(|a| (*a).clone()));
+            recipients.extend(bcc.iter().map(|a| (*a).clone()));
             out.push(Envelope { from: self.from_addr.clone(), recipients, data: render_owned(&headers, base, ctx.env().as_ref()) });
         }
         Ok((out, new_key))

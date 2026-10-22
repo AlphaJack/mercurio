@@ -46,7 +46,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let authkey = u.host();
     let template = u.user().unwrap_or_default();
     let short_url = SERVICE.flag(u, "short_url");
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     // Later duplicates overwrite earlier values in place.
     let mut mapping: Vec<(String, String)> = Vec::new();
     for (k, v) in u.query_colon.iter() {
@@ -65,7 +65,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         template: Secret::new(template),
         authkey: Secret::new(authkey),
         short_url,
-        targets: full_numbers(&targets, false),
+        targets: full_numbers(&targets),
         mapping,
     }))
 }

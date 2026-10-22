@@ -75,7 +75,7 @@ impl Session {
         match get_str(resp, "home_server").filter(|h| !h.is_empty()) {
             Some(hs) => self.home_server = Some(hs),
             None => {
-                if !non_empty(&self.home_server)
+                if !non_empty(self.home_server.as_deref())
                     && let Some(u) = &self.user_id
                     && let Some(hs) = hs_of(u)
                 {
@@ -87,17 +87,17 @@ impl Session {
 
     pub(super) fn store_identity(&self) {
         self.store.set("access_token", json!(self.access_token), CACHE_EXPIRY);
-        if non_empty(&self.home_server) {
+        if non_empty(self.home_server.as_deref()) {
             self.store.set("home_server", json!(self.home_server), CACHE_EXPIRY);
         }
         self.store.set("user_id", json!(self.user_id), CACHE_EXPIRY);
-        if non_empty(&self.device_id) {
+        if non_empty(self.device_id.as_deref()) {
             self.store.set("device_id", json!(self.device_id), CACHE_EXPIRY);
         }
     }
 
     pub(super) fn login(self, k: K<bool>) -> Plan {
-        if non_empty(&self.access_token) {
+        if non_empty(self.access_token.as_deref()) {
             return k(self, true);
         }
         let (Some(user), Some(password)) = (self.cfg.user.clone(), self.password().map(str::to_string)) else {
@@ -117,7 +117,7 @@ impl Session {
         self.fetch(f, move |mut s, r| {
             let Some(resp) = r.object().map(|m| Value::Object(m.clone())) else { return k(s, false) };
             s.set_identity(&resp);
-            if !non_empty(&s.access_token) {
+            if !non_empty(s.access_token.as_deref()) {
                 return k(s, false);
             }
             s.store_identity();
@@ -156,19 +156,19 @@ impl Session {
             if let Some(d) = get_str(&resp, "device_id").filter(|d| !d.is_empty()) {
                 s.device_id = Some(d);
             }
-            if !non_empty(&s.home_server)
+            if !non_empty(s.home_server.as_deref())
                 && let Some(u) = &s.user_id
                 && let Some(hs) = hs_of(u)
             {
                 s.home_server = Some(hs);
             }
-            if non_empty(&s.user_id) {
+            if non_empty(s.user_id.as_deref()) {
                 s.store.set("user_id", json!(s.user_id), CACHE_EXPIRY);
             }
-            if non_empty(&s.device_id) {
+            if non_empty(s.device_id.as_deref()) {
                 s.store.set("device_id", json!(s.device_id), CACHE_EXPIRY);
             }
-            if non_empty(&s.home_server) {
+            if non_empty(s.home_server.as_deref()) {
                 s.store.set("home_server", json!(s.home_server), CACHE_EXPIRY);
             }
             k(s, ())
@@ -182,7 +182,7 @@ impl Session {
         if self.cfg.mode == Mode::T2bot
             || self.store.path().is_some()
             || token_is_password
-            || !non_empty(&self.access_token)
+            || !non_empty(self.access_token.as_deref())
         {
             return None;
         }

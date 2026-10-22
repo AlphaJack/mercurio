@@ -154,10 +154,10 @@ fn rand_url(rng: &mut Rng, schemes: &[&'static str], seeds: &[String]) -> String
         for _ in 0..1 + rng.below(3) {
             let pos = rng.below(s.len() + 1);
             match rng.below(3) {
-                0 => s.splice(pos..pos, rng.pick(ATOMS).chars()).for_each(drop),
+                0 => drop(s.splice(pos..pos, rng.pick(ATOMS).chars())),
                 1 if pos < s.len() => {
                     let end = (pos + 1 + rng.below(4)).min(s.len());
-                    s.drain(pos..end).for_each(drop);
+                    drop(s.drain(pos..end));
                 }
                 _ if pos < s.len() => s[pos] = *rng.pick(&['/', '@', ':', '?', '&', '%', '#', ' ', 'x']),
                 _ => {}

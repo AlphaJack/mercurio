@@ -498,7 +498,9 @@ impl Mercurio {
         }
         let sent = entries.len();
         let report = Core::report(entries, sel.unresolved);
-        report.entries[sent..].iter().for_each(on_entry);
+        for entry in &report.entries[sent..] {
+            on_entry(entry);
+        }
         report
     }
 
@@ -609,7 +611,7 @@ mod tests {
     fn blocking_sends_wait_for_the_shared_budget() {
         let fake = Arc::new(crate::testing::FakeTransport::new());
         fake.respond(200, "{}");
-        let mut m = Mercurio::with_transport(fake.clone());
+        let mut m = Mercurio::with_transport(fake);
         m.add("json://localhost/budget").unwrap();
         let held: Vec<_> = (0..max_parallel()).map(|_| SEND_PERMITS.acquire_blocking()).collect();
         let (tx, rx) = std::sync::mpsc::channel();

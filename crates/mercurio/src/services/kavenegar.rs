@@ -45,7 +45,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut source = u.user.clone().filter(|s| !s.is_empty());
     let mut targets = u.path_segments();
     let apikey = u.host();
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     if let Some(v) = SERVICE.text(u, "from") {
         source = Some(v);
     }
@@ -58,7 +58,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         }
         None => None,
     };
-    Ok(Box::new(Kavenegar { apikey: Secret::new(apikey), source, targets: full_numbers(&targets, false) }))
+    Ok(Box::new(Kavenegar { apikey: Secret::new(apikey), source, targets: full_numbers(&targets) }))
 }
 
 impl Notify for Kavenegar {

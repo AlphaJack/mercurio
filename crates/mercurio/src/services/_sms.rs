@@ -6,9 +6,9 @@ use crate::parse::{PhoneNo, is_phone_no, parse_phone_no};
 use crate::url::ParsedUrl;
 
 /// Phone numbers from `?to=` (unquoted) when it is set and non-empty.
-pub fn to_param(u: &ParsedUrl, prefix: bool) -> Vec<String> {
+pub fn to_param(u: &ParsedUrl) -> Vec<String> {
     match u.param_nonempty("to") {
-        Some(to) => crate::parse::parse_phone_no_unquoted([to], prefix),
+        Some(to) => crate::parse::parse_phone_no_unquoted([to], false),
         None => Vec::new(),
     }
 }
@@ -18,12 +18,9 @@ pub fn valid_phones(targets: &[String], prefix: bool, min_len: usize) -> Vec<(St
     parse_phone_no(targets, true, prefix).into_iter().filter_map(|t| is_phone_no(&t, min_len).map(|p| (t, p))).collect()
 }
 
-/// `["+"? + full ...]` for every valid number in `targets`.
-pub fn full_numbers(targets: &[String], plus: bool) -> Vec<String> {
-    valid_phones(targets, false, 10)
-        .into_iter()
-        .map(|(_, p)| if plus { format!("+{}", p.full) } else { p.full })
-        .collect()
+/// `[full ...]` for every valid number in `targets`.
+pub fn full_numbers(targets: &[String]) -> Vec<String> {
+    valid_phones(targets, false, 10).into_iter().map(|(_, p)| p.full).collect()
 }
 
 /// One plan per target, labelled with the target, all attempted.

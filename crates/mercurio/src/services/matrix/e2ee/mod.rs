@@ -641,7 +641,7 @@ pub(crate) mod tests {
         let mut tampered = dk.clone();
         tampered["keys"]["curve25519:DEV"] = json!("AAAA");
         assert!(!verify_device_keys(&tampered, "@a:hs", "DEV"));
-        let mut with_unsigned = dk.clone();
+        let mut with_unsigned = dk;
         with_unsigned["unsigned"] = json!({"device_display_name": "x"});
         assert!(verify_device_keys(&with_unsigned, "@a:hs", "DEV"));
         let fb = acct.fallback_keys_payload("@a:hs", "DEV", crate::testing::test_env());

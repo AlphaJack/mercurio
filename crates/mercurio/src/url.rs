@@ -330,7 +330,7 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
     }
     out.port = port_numeric.and_then(|p| u16::try_from(p).ok());
     if port_numeric.is_some() && out.port.is_none() {
-        out.port_raw = port_text.clone();
+        out.port_raw = port_text;
     }
 
     let mut base = String::with_capacity(out.original.len() + 8);

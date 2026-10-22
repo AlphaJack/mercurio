@@ -6,7 +6,7 @@
 
 use serde_json::json;
 
-use super::_sms::{expect, no_targets, per_target, to_param, valid_phones};
+use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
 use crate::parse::{is_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -68,7 +68,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         None if !targets.is_empty() => Some(targets.remove(0)),
         None => None,
     };
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     let batch = SERVICE.flag_strict(u, "batch");
 
     let auth_id = validate_regex(&auth_id, r"^[a-z0-9]{20,30}$", "i", true)
@@ -81,7 +81,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let targets = if targets.is_empty() {
         vec![source.clone()]
     } else {
-        valid_phones(&targets, false, 10).into_iter().map(|(_, p)| format!("+{}", p.full)).collect()
+        full_numbers(&targets).into_iter().map(|n| format!("+{n}")).collect()
     };
     Ok(Box::new(Plivo { auth_id: Secret::new(auth_id), token: Secret::new(token), source, targets, batch }))
 }
