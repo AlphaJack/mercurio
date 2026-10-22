@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.1](https://github.com/AlphaJack/mercurio/compare/v0.2.0...v0.2.1) - 2026-10-22
+
+### Fixed
+
+#### Services
+
+- wipe every copy of the PKCS#1 key built for RSA signing ([#102](https://github.com/AlphaJack/mercurio/pull/102))
+
+### Other
+
+#### Lib
+
+- drop redundant clones, for_each, match-to-unwrap and constant flags ([#103](https://github.com/AlphaJack/mercurio/pull/103))
+- mark Param #[non_exhaustive] ([#106](https://github.com/AlphaJack/mercurio/pull/106))
+- mark methods returning Self #[must_use] ([#104](https://github.com/AlphaJack/mercurio/pull/104))
 ## [0.2.0](https://github.com/AlphaJack/mercurio/compare/v0.1.1...v0.2.0) - 2026-10-21
 
 ### Added
