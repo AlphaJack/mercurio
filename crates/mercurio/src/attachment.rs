@@ -218,6 +218,7 @@ impl AttachSource {
     }
 
     /// Force the file name.
+    #[must_use]
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
@@ -230,6 +231,7 @@ impl AttachSource {
     }
 
     /// Override the cache policy.
+    #[must_use]
     pub fn with_cache(mut self, cache: Cache) -> Self {
         self.cache = Some(cache);
         self
@@ -514,12 +516,14 @@ impl AttachmentSet {
     }
 
     /// Restrict what may be added. `None` (default) allows everything.
+    #[must_use]
     pub fn location(mut self, location: Location) -> Self {
         self.location = Some(location);
         self
     }
 
     /// Cache policy for sources added from now on, overriding their `?cache=`.
+    #[must_use]
     pub fn cache(mut self, cache: Cache) -> Self {
         self.cache = Some(cache);
         self

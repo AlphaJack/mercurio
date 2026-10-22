@@ -291,18 +291,21 @@ impl<'a> NotifyOptions<'a> {
     }
 
     /// Send only to the targets matching `filter` (default [`TagFilter::all`]).
+    #[must_use]
     pub fn tags(mut self, filter: &'a TagFilter) -> Self {
         self.filter = Some(filter);
         self
     }
 
     /// Fill `${NAME}` templates from `vars` first. Template entries that can not be built appear as failed entries.
+    #[must_use]
     pub fn vars(mut self, vars: &'a TemplateVars) -> Self {
         self.vars = Some(vars);
         self
     }
 
     /// Call `on_entry` with each URL's entry as soon as it is final, so a caller can report progress (e.g. stream it). Entries of template URLs that could not be resolved come last. The blocking notifier calls it from the sending thread.
+    #[must_use]
     pub fn on_entry(mut self, on_entry: &'a (dyn Fn(&ReportEntry) + Sync)) -> Self {
         self.on_entry = Some(on_entry);
         self
@@ -351,18 +354,21 @@ impl Mercurio {
     }
 
     /// Replace the [`Asset`] (branding, pipeline defaults, storage).
+    #[must_use]
     pub fn asset(mut self, asset: Asset) -> Self {
         self.core.asset = asset;
         self
     }
 
     /// Send to targets one after another instead of in parallel threads.
+    #[must_use]
     pub fn sequential(mut self) -> Self {
         self.sequential = true;
         self
     }
 
     /// Options for [`Mercurio::add_config`] (include depth, templates, ...). `opts.registry` replaces this notifier's [`Registry`].
+    #[must_use]
     pub fn config_options(mut self, opts: ConfigOptions) -> Self {
         self.core.config = opts;
         self

@@ -181,12 +181,14 @@ impl TemplateVars {
     ///
     /// On an invalid or repeated name; use [`TemplateVars::set`] to get the error instead.
     #[expect(clippy::expect_used, reason = "documented public builder contract: the fallible form is `set`")]
+    #[must_use]
     pub fn with(mut self, name: &str, value: impl Into<String>) -> Self {
         self.set(name, value).expect("valid template variable name");
         self
     }
 
     /// Replace the process environment with `env` (`{}` disables lookups).
+    #[must_use]
     pub fn environment(mut self, env: BTreeMap<String, String>) -> Self {
         self.env = Some(env);
         self.use_env = true;
@@ -194,6 +196,7 @@ impl TemplateVars {
     }
 
     /// Do not consult the environment.
+    #[must_use]
     pub fn no_environment(mut self) -> Self {
         self.use_env = false;
         self

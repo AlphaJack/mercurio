@@ -207,6 +207,7 @@ impl Request {
     }
 
     /// Read at most `bytes` of the response body (see [`Request::max_body`]; 0 reads any size).
+    #[must_use]
     pub fn max_body(mut self, bytes: u64) -> Self {
         self.max_body = bytes;
         self
@@ -234,12 +235,14 @@ impl Request {
     }
 
     /// Append a header (does not replace).
+    #[must_use]
     pub fn header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.push((name.into(), value.into()));
         self
     }
 
     /// Set a header, replacing any with the same name (case-insensitive).
+    #[must_use]
     pub fn set_header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         let name = name.into();
         self.headers.retain(|(k, _)| !k.eq_ignore_ascii_case(&name));
@@ -248,12 +251,14 @@ impl Request {
     }
 
     /// Remove every header named `name` (case-insensitive).
+    #[must_use]
     pub fn remove_header(mut self, name: &str) -> Self {
         self.headers.retain(|(k, _)| !k.eq_ignore_ascii_case(name));
         self
     }
 
     /// Apply several headers with `set_header` semantics (e.g. `?+Header=` overrides).
+    #[must_use]
     pub fn headers<'a, I>(mut self, headers: I) -> Self
     where
         I: IntoIterator<Item = (&'a str, &'a str)>,
@@ -270,6 +275,7 @@ impl Request {
     }
 
     /// JSON body with `Content-Type: application/json` (unless already set).
+    #[must_use]
     pub fn json(mut self, value: &Value) -> Self {
         // Sized from the text in the value, so a large message does not regrow the buffer by doubling.
         let mut out = Vec::with_capacity(json_size_hint(value));
@@ -290,6 +296,7 @@ impl Request {
     }
 
     /// Form body (`application/x-www-form-urlencoded`).
+    #[must_use]
     pub fn form<K: AsRef<str>, V: AsRef<str>>(mut self, pairs: &[(K, V)]) -> Self {
         self.body = form_urlencode(pairs.iter()).into_bytes().into();
         if self.header_value("content-type").is_none() {
@@ -299,6 +306,7 @@ impl Request {
     }
 
     /// Raw body with a content type.
+    #[must_use]
     pub fn body(mut self, body: impl Into<Bytes>, content_type: Option<&str>) -> Self {
         self.body = body.into();
         if let Some(ct) = content_type {
@@ -308,12 +316,14 @@ impl Request {
     }
 
     /// Text body with no content type change.
+    #[must_use]
     pub fn text(mut self, body: impl Into<String>) -> Self {
         self.body = Bytes::from(body.into().into_bytes());
         self
     }
 
     /// Multipart body.
+    #[must_use]
     pub fn multipart(mut self, form: Multipart) -> Self {
         let (ct, body) = form.finish();
         self.body = body.into();
@@ -321,6 +331,7 @@ impl Request {
     }
 
     /// Append query parameters, `application/x-www-form-urlencoded` encoded.
+    #[must_use]
     pub fn query<K: AsRef<str>, V: AsRef<str>>(mut self, pairs: &[(K, V)]) -> Self {
         if pairs.is_empty() {
             return self;
@@ -336,6 +347,7 @@ impl Request {
     }
 
     /// HTTP basic authentication.
+    #[must_use]
     pub fn basic_auth(self, user: &str, password: Option<&str>) -> Self {
         use base64::Engine;
         let creds = format!("{}:{}", user, password.unwrap_or(""));
@@ -344,6 +356,7 @@ impl Request {
     }
 
     /// HTTP basic authentication when a user is set.
+    #[must_use]
     pub fn basic_auth_opt(self, user: Option<&str>, password: Option<&str>) -> Self {
         match user {
             Some(user) => self.basic_auth(user, password),
@@ -352,11 +365,13 @@ impl Request {
     }
 
     /// `Authorization: Bearer <token>`.
+    #[must_use]
     pub fn bearer(self, token: &str) -> Self {
         self.set_header("Authorization", format!("Bearer {token}"))
     }
 
     /// Set connect and read timeouts.
+    #[must_use]
     pub fn timeouts(mut self, connect: Duration, read: Duration) -> Self {
         self.connect_timeout = connect;
         self.read_timeout = read;
@@ -364,12 +379,14 @@ impl Request {
     }
 
     /// Turn TLS certificate verification on or off.
+    #[must_use]
     pub fn verify(mut self, verify: bool) -> Self {
         self.verify_tls = verify;
         self
     }
 
     /// Follow redirects or not.
+    #[must_use]
     pub fn redirects(mut self, follow: bool) -> Self {
         self.follow_redirects = follow;
         self
@@ -405,6 +422,7 @@ impl Response {
     }
 
     /// Add a header (builder style).
+    #[must_use]
     pub fn with_header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.push((name.into(), value.into()));
         self
@@ -521,6 +539,7 @@ impl Multipart {
     }
 
     /// Add a text field.
+    #[must_use]
     pub fn text(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         self.parts.push(Part {
             name: name.into(),
@@ -532,6 +551,7 @@ impl Multipart {
     }
 
     /// File part. An empty `content_type` omits the part's `Content-Type` header.
+    #[must_use]
     pub fn file(
         mut self,
         name: impl Into<String>,

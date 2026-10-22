@@ -237,12 +237,14 @@ impl CustomScheme {
     }
 
     /// Display name (default `Custom - <scheme>`).
+    #[must_use]
     pub fn name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
     }
 
     /// Formats the handler accepts; the first is the default and other inputs are converted to it. Default: text, HTML and Markdown, all passed through unconverted.
+    #[must_use]
     pub fn formats(mut self, formats: &'static [NotifyFormat]) -> Self {
         if !formats.is_empty() {
             self.formats = formats;
@@ -251,6 +253,7 @@ impl CustomScheme {
     }
 
     /// Whether attachments reach the handler (default `true`).
+    #[must_use]
     pub fn attachments(mut self, yes: bool) -> Self {
         self.attachments = yes;
         self

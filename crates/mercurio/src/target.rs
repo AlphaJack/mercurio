@@ -185,12 +185,14 @@ impl Target {
     }
 
     /// Add routing tags (deduplicated, sorted, lower-cased).
+    #[must_use]
     pub fn with_tags<I: IntoIterator<Item = S>, S: Into<String>>(self, tags: I) -> Self {
         let parsed: Vec<Tag> = tags.into_iter().map(|t| Tag::parse(&t.into())).collect();
         self.with_tag_set(parsed)
     }
 
     /// Add parsed tags (keeps priorities such as `2:endpoint`).
+    #[must_use]
     pub fn with_tag_set(mut self, tags: impl IntoIterator<Item = Tag>) -> Self {
         for t in tags {
             if !t.name.is_empty() && !self.tag_set.contains(&t) {
@@ -315,6 +317,7 @@ impl Target {
     }
 
     /// Use `store` instead of the built-in one (call before the first send).
+    #[must_use]
     pub fn with_store(self, store: StoreRef) -> Self {
         self.storage.store.set(store).ok();
         self

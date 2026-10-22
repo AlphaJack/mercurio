@@ -111,6 +111,7 @@ impl Error {
     }
 
     /// Name the step that failed: displayed as `"{context}: {self}"`. Classification, status and `Retry-After` are unchanged.
+    #[must_use]
     pub fn context(self, context: impl Into<String>) -> Self {
         Error::Context { context: context.into(), source: Box::new(self) }
     }
