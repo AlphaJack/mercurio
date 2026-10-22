@@ -73,8 +73,8 @@ fn mode_detect(s: &str) -> Option<(Option<String>, String)> {
     Some((caps.get(1).map(|m| m.as_str().to_string()), caps[2].to_string()))
 }
 
-fn is_whatsapp(mode: &Option<String>) -> bool {
-    mode.as_deref().and_then(|m| m.chars().next()).is_some_and(|c| c.to_lowercase().eq(['w']))
+fn is_whatsapp(mode: Option<&str>) -> bool {
+    mode.and_then(|m| m.chars().next()).is_some_and(|c| c.to_lowercase().eq(['w']))
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -114,7 +114,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     let invalid_source = || SERVICE.err("the Account (From) Phone # or Short-code specified is invalid");
     let (mode, phoneno) = mode_detect(&source).ok_or_else(invalid_source)?;
-    let default_mode = if is_whatsapp(&mode) { Mode::WhatsApp } else { Mode::Text };
+    let default_mode = if is_whatsapp(mode.as_deref()) { Mode::WhatsApp } else { Mode::Text };
     if method == Method::Call && default_mode == Mode::WhatsApp {
         return Err(SERVICE.err("the notification method Call is not valid along message mode Whatsapp"));
     }
@@ -131,7 +131,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut out = Vec::new();
     for entry in parse_phone_no(&targets, true, true) {
         let (m, phoneno) = mode_detect(&entry).ok_or_else(|| SERVICE.err("an invalid target was specified"))?;
-        let mode = if is_whatsapp(&m) { Mode::WhatsApp } else { default_mode };
+        let mode = if is_whatsapp(m.as_deref()) { Mode::WhatsApp } else { default_mode };
         let Some(p) = is_phone_no(&phoneno, 10) else { continue };
         if (short || method == Method::Call) && mode == Mode::WhatsApp {
             continue;

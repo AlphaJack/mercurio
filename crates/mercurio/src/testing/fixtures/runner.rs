@@ -83,8 +83,16 @@ fn mask_version(v: &mut Value) {
             });
             *s = masked.into_owned();
         }
-        Value::Array(a) => a.iter_mut().for_each(mask_version),
-        Value::Object(m) => m.values_mut().for_each(mask_version),
+        Value::Array(a) => {
+            for x in a {
+                mask_version(x);
+            }
+        }
+        Value::Object(m) => {
+            for x in m.values_mut() {
+                mask_version(x);
+            }
+        }
         Value::String(_) | Value::Null | Value::Bool(_) | Value::Number(_) => {}
     }
 }

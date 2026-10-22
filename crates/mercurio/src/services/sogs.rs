@@ -216,7 +216,7 @@ mod tests {
         let s = Sogs {
             base: "https://example.com".into(),
             server_key: crate::crypto::unhex(&pk),
-            seed: Secret::new(seed.clone()),
+            seed: Secret::new(seed),
             key,
             rooms: vec!["room".into()],
         };

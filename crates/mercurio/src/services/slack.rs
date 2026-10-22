@@ -129,7 +129,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let (mut token_a, mut token_b, mut token_c): (Option<String>, Option<String>, Option<String>) = (None, None, None);
     let mut targets: Vec<String>;
     if wf_mode.is_some_and(Mode::is_workflow) {
-        let mut parts = vec![token.clone()];
+        let mut parts = vec![token];
         parts.extend(entries);
         workflow_path = Some(parts.join("/"));
         targets = Vec::new();
@@ -684,7 +684,7 @@ impl Notify for Slack {
                     None => return Plan::Fail(Error::Message("the Slack template could not be applied".into())),
                 },
                 None => {
-                    json!({"text": if msg.title.is_empty() { body.clone() } else { format!("{}: {body}", msg.title) }})
+                    json!({"text": if msg.title.is_empty() { body } else { format!("{}: {body}", msg.title) }})
                 }
             };
             let req = self.request(Method::Post, &self.url, &ua, Some(&payload));

@@ -500,7 +500,11 @@ pub fn references(v: &Yaml, out: &mut Vec<String>) {
                 }
             }
         }
-        Yaml::Seq(items) => items.iter().for_each(|i| references(i, out)),
+        Yaml::Seq(items) => {
+            for i in items {
+                references(i, out);
+            }
+        }
         Yaml::Map(m) => {
             for (k, v) in m {
                 if let Yaml::Str(ks) = k

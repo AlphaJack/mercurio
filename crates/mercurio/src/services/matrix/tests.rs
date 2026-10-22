@@ -363,7 +363,7 @@ mod e2ee {
         assert_eq!(vault::get(&s, "e2ee_megolm_!r"), None);
         // A plain value from an older version is read, then sealed.
         store.set("e2ee_megolm_!old", secret.clone(), None);
-        assert_eq!(vault::get(&s, "e2ee_megolm_!old"), Some(secret.clone()));
+        assert_eq!(vault::get(&s, "e2ee_megolm_!old"), Some(secret));
         assert_eq!(store.get("e2ee_megolm_!old").unwrap()["sealed"], 1);
         // Another password: the state does not open and is dropped.
         let other = vault_session("changed", store.clone());

@@ -39,7 +39,7 @@ impl Server {
         // Public and locked callers may only send to a tag they know.
         let tag_only = req.role.get() != Role::Admin && self.configuration_is_locked(Some(key)).await;
         let tag = payload::notify_tag(req, &content);
-        if tag_only && !tag.as_ref().is_ok_and(payload::tag_is_specific) {
+        if tag_only && !tag.as_ref().is_ok_and(|t| payload::tag_is_specific(t.as_ref())) {
             return Reply::error(req, 400, "A specific tag other than 'all' is required for this configuration");
         }
         let Ok(tag) = tag else {

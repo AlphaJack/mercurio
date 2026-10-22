@@ -478,8 +478,8 @@ pub fn notify_tag(req: &Req, c: &Content) -> Result<Option<TagGroups>, ()> {
 }
 
 /// Every token names a tag other than `all`.
-pub fn tag_is_specific(groups: &Option<TagGroups>) -> bool {
-    groups.as_ref().is_some_and(|g: &TagGroups| {
+pub fn tag_is_specific(groups: Option<&TagGroups>) -> bool {
+    groups.is_some_and(|g: &TagGroups| {
         !g.is_empty()
             && g.iter().flatten().all(|t| {
                 let name = mercurio::Tag::parse(t).name;

@@ -425,7 +425,7 @@ impl Job {
             return self.retry_items(chat, no, end, caption);
         }
         let req = self.media_group_request(&chat, no, end, &kinds, &caption);
-        let job = self.clone();
+        let job = self;
         Plan::http(req, move |res| match res {
             Ok(r) if r.status == 200 => job.album_plan(chat, end, Vec::new()),
             Ok(r) if r.status == 400 => job.retry_items(chat, no, end, caption),
@@ -457,7 +457,7 @@ impl Job {
             }
             .context("attachment"));
         }
-        let job = self.clone();
+        let job = self;
         plans.push(Plan::defer(move || job.album_plan(chat, end, Vec::new())));
         Plan::chain(plans)
     }
@@ -837,7 +837,7 @@ impl Notify for Telegram {
             })
             .context("owner lookup");
         }
-        job.clone().run(self.targets.clone())
+        job.run(self.targets.clone())
     }
 
     fn url_identifier(&self) -> UrlIdentifier {

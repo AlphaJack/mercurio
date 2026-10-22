@@ -211,8 +211,8 @@ pub(super) fn get_str(v: &Value, key: &str) -> Option<String> {
     v.get(key).and_then(Value::as_str).map(str::to_string)
 }
 
-fn non_empty(s: &Option<String>) -> bool {
-    s.as_deref().is_some_and(|s| !s.is_empty())
+fn non_empty(s: Option<&str>) -> bool {
+    s.is_some_and(|s| !s.is_empty())
 }
 
 /// The homeserver part of a user id.
@@ -324,7 +324,7 @@ impl Session {
             s.user_id = get("user_id");
             s.access_token = get("access_token");
             s.device_id = get("device_id");
-            if !non_empty(&s.home_server)
+            if !non_empty(s.home_server.as_deref())
                 && let Some(u) = &s.user_id
             {
                 s.home_server = hs_of(u);

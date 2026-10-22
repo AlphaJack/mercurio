@@ -123,12 +123,10 @@ impl Loader<'_> {
         match &src.kind {
             SourceKind::Memory(text) => Some((text.clone(), src.format.unwrap_or(ConfigFormat::Text))),
             SourceKind::File(path) => {
-                let meta = match self.transport.file(&FileOp::Stat { path: path.clone() }).await {
-                    Ok(FileOutput::Meta(Some(m))) => m,
-                    _ => {
-                        warnings.push(format!("File is not accessible: {}", path.display()));
-                        return None;
-                    }
+                let Ok(FileOutput::Meta(Some(meta))) = self.transport.file(&FileOp::Stat { path: path.clone() }).await
+                else {
+                    warnings.push(format!("File is not accessible: {}", path.display()));
+                    return None;
                 };
                 if meta.len as usize > MAX_BUFFER_SIZE {
                     warnings.push(format!(
@@ -137,12 +135,11 @@ impl Loader<'_> {
                     ));
                     return None;
                 }
-                let bytes = match self.transport.file(&FileOp::Read { path: path.clone(), max: 0 }).await {
-                    Ok(FileOutput::Bytes(b)) => b,
-                    _ => {
-                        warnings.push(format!("File can not be opened for read: {}", path.display()));
-                        return None;
-                    }
+                let Ok(FileOutput::Bytes(bytes)) =
+                    self.transport.file(&FileOp::Read { path: path.clone(), max: 0 }).await
+                else {
+                    warnings.push(format!("File can not be opened for read: {}", path.display()));
+                    return None;
                 };
                 let Ok(text) = String::from_utf8(bytes) else {
                     warnings.push(format!("File not using expected encoding (utf-8) : {}", path.display()));
@@ -226,12 +223,9 @@ impl Loader<'_> {
                         (inc.clone(), s)
                     }
                 };
-                let child = match Source::parse(&url, None) {
-                    Ok(c) => c,
-                    Err(_) => {
-                        cfg.warnings.push(format!("Unparseable include URL {}", crate::plan::redact_url(&url)));
-                        continue;
-                    }
+                let Ok(child) = Source::parse(&url, None) else {
+                    cfg.warnings.push(format!("Unparseable include URL {}", crate::plan::redact_url(&url)));
+                    continue;
                 };
                 if schema == "file" && !src.schemas().contains(&"file") && !self.opts.insecure_includes {
                     cfg.warnings.push(format!(

@@ -41,7 +41,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
     let apikey = u.host();
     let mut source = u.user.as_deref().filter(|s| !s.is_empty()).map(unquote);
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     if let Some(v) = SERVICE.text(u, "from") {
         source = Some(v);
     }

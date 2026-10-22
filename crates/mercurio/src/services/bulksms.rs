@@ -54,7 +54,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = vec![u.host()];
     targets.extend(u.path_segments());
     let source = SERVICE.text(u, "from");
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     let unicode = SERVICE.flag_strict(u, "unicode");
     let batch = SERVICE.flag_strict(u, "batch");
     let route = SERVICE.text(u, "route");

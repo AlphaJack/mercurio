@@ -68,7 +68,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     };
     targets.extend(u.path_segments());
     let sender = SERVICE.text(u, "from");
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     let mode = SERVICE.text(u, "mode");
     let batch = SERVICE.flag_strict(u, "batch");
 

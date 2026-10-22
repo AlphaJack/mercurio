@@ -167,9 +167,8 @@ fn fetch(r: R, path: &'static str, payload: Option<Vec<(String, String)>>, login
         }
         let again = req.clone();
         Plan::http(req, move |res| {
-            let resp = match res {
-                Ok(resp) => resp,
-                Err(_) => return k(r, Fetched { ok: false, status: None, content: json!({}) }),
+            let Ok(resp) = res else {
+                return k(r, Fetched { ok: false, status: None, content: json!({}) });
             };
             let content = resp.json().unwrap_or_else(|| json!({}));
             let retry = resp.status != 200
@@ -445,7 +444,7 @@ fn post_all(r: R) -> Plan {
             .target(name),
         );
     }
-    let r2 = r.clone();
+    let r2 = r;
     plans.push(Plan::defer(move || if r2.with(|s| s.aborted) { Plan::Done } else { finish(r2, None) }));
     Plan::all(plans)
 }

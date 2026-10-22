@@ -60,7 +60,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     targets.extend(u.path_segments());
     let batch = SERVICE.flag(u, "batch");
     let unicode = SERVICE.flag(u, "unicode");
-    targets.extend(to_param(u, false));
+    targets.extend(to_param(u));
     let source = u.text("from").or_else(|| u.text("source")).map(|s| s.trim().to_string());
 
     let token = token
@@ -71,7 +71,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         source: source.filter(|s| !s.is_empty()),
         unicode,
         batch,
-        targets: full_numbers(&targets, false),
+        targets: full_numbers(&targets),
     }))
 }
 

@@ -29,14 +29,14 @@ impl Session {
     }
 
     pub(super) fn after_auth(self) -> Plan {
-        if !non_empty(&self.user_id) {
+        if !non_empty(self.user_id.as_deref()) {
             return self.whoami(Box::new(|s, ()| s.after_identity()));
         }
         self.after_identity()
     }
 
     pub(super) fn after_identity(mut self) -> Plan {
-        if !non_empty(&self.home_server) {
+        if !non_empty(self.home_server.as_deref()) {
             self.home_server = Some(self.cfg.host.clone());
         }
         if self.cfg.rooms.is_empty() && self.cfg.users.is_empty() {

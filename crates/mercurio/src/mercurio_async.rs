@@ -211,7 +211,9 @@ impl AsyncMercurio {
         }
         let sent = entries.len();
         let report = Core::report(entries, sel.unresolved);
-        report.entries[sent..].iter().for_each(on_entry);
+        for entry in &report.entries[sent..] {
+            on_entry(entry);
+        }
         report
     }
 
@@ -316,7 +318,7 @@ mod tests {
         let urls: Vec<_> = fake.requests().iter().map(|r| r.url.clone()).collect();
         assert_eq!(urls, ["http://localhost/a", "http://localhost/b"]);
         assert!(!m.sequential);
-        assert!(AsyncMercurio::from(Mercurio::with_transport(fake.clone()).sequential()).sequential);
+        assert!(AsyncMercurio::from(Mercurio::with_transport(fake).sequential()).sequential);
     }
 
     #[test]
@@ -330,7 +332,7 @@ mod tests {
         let mut m = notifier(&fake);
         pollster::block_on(m.add_config_text(yaml, None)).unwrap();
         let report = pollster::block_on(m.notify_with(&Message::new("b"), NotifyOptions::new().on_entry(&record)));
-        let mut blocking = Mercurio::with_transport(fake.clone());
+        let mut blocking = Mercurio::with_transport(fake);
         blocking.add_config_text(yaml, None).unwrap();
         let report2 = blocking.notify_with(&Message::new("b"), NotifyOptions::new().on_entry(&record));
 

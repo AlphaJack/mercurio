@@ -105,7 +105,11 @@ impl Job {
             let on_log = on_log.clone();
             Arc::new(move |level, message| on_log(LogEntry::new(level_name(level), message, None)))
         };
-        let on_entry = |entry: &mercurio::ReportEntry| entry_logs(entry).into_iter().for_each(|l| on_log(l));
+        let on_entry = |entry: &mercurio::ReportEntry| {
+            for l in entry_logs(entry) {
+                on_log(l);
+            }
+        };
         let send = self.notifier.notify_with(
             &self.message,
             mercurio::NotifyOptions::new().tags(&self.filter).vars(&self.vars).on_entry(&on_entry),

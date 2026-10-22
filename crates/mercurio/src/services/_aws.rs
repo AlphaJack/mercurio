@@ -54,7 +54,7 @@ impl AwsSigner<'_> {
 
         let mut headers = vec![
             ("Content-Type".to_string(), content_type.to_string()),
-            ("X-Amz-Date".to_string(), amzdate.clone()),
+            ("X-Amz-Date".to_string(), amzdate),
         ];
         if let Some(t) = self.session_token {
             headers.push(("X-Amz-Security-Token".to_string(), t.to_string()));
