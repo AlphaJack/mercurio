@@ -256,7 +256,7 @@ fn xml_unescape(s: &str) -> String {
 }
 
 fn attr<'a>(tag: &'a str, key: &str) -> Option<&'a str> {
-    let re = regex::Regex::new(&format!(r#"\s{key}=['"]([^'"]*)['"]"#)).unwrap();
+    let re = crate::re::Regex::new(&format!(r#"\s{key}=['"]([^'"]*)['"]"#)).unwrap();
     re.captures(tag).map(|c| c.get(1).unwrap().as_str())
 }
 

@@ -25,7 +25,9 @@ webpki-roots = { version = "1", optional = true }
 ring = "0.17"
 # Exact float parsing: store checksums hash expiry times read back from cache.json.
 serde_json = { version = "1", features = ["float_roundtrip"] }
-regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-perl"] }
+regex = { version = "1", optional = true, default-features = false, features = ["std", "perf", "unicode-case", "unicode-perl"] }
+# The regex engine without `regex-unicode`.
+regex-lite = "0.1.9"
 base64 = "0.23"
 jiff = "0.2"
 emojis = { version = "0.9", optional = true, default-features = false }
@@ -52,10 +54,13 @@ zeroize = { version = "1.8", optional = true }
 mercurio = { path = ".", default-features = false, features = ["testing", "transport-blocking"] }
 insta = { version = "1.49.0", features = ["yaml"] }
 tokio = { version = "1.54", features = ["rt", "macros", "net", "io-util", "time"] }
+# `tests/it/regex_engines.rs` compares both engines.
+regex = "1"
+regex-lite = "0.1.9"
 
 [features]
-# Every service, the async API on tokio, the bundled time zones and root certificates, YAML configuration, Markdown rendering, emoji shortcodes and HTML conversion.
-default = ["all-services", "transport-tokio", "bundle-timezones", "bundle-certificates", "config-yaml", "markdown", "emojis", "html"]
+# Every service, the async API on tokio, the bundled time zones and root certificates, YAML configuration, Markdown rendering, emoji shortcodes, HTML conversion and the Unicode-aware `regex` engine.
+default = ["all-services", "transport-tokio", "bundle-timezones", "bundle-certificates", "config-yaml", "markdown", "emojis", "html", "regex-unicode"]
 # Every `service-*` feature.
 all-services = [
   "service-africastalking",
@@ -227,6 +232,9 @@ bundle-timezones = ["jiff/tzdb-bundle-always"]
 
 # Mozilla's root certificates inside the binary (`webpki-roots`), used when `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` is unset. Without it, the system's PEM bundle at the usual Linux paths is read instead.
 bundle-certificates = ["dep:webpki-roots", "ureq?/rustls-webpki-roots"]
+
+# The `regex` crate (Unicode-aware `\s`, `\d`, `\w` and case folding, faster matching) in place of `regex-lite` (smaller, ASCII-only classes).
+regex-unicode = ["dep:regex"]
 
 # YAML configuration files (`saphyr-parser`). Without it, YAML configuration fails to load and TEXT configuration still works.
 config-yaml = ["dep:saphyr-parser"]

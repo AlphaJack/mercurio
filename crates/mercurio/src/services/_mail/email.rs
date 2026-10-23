@@ -3,7 +3,7 @@
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use regex::Regex;
+use crate::re::Regex;
 
 use super::mime::{Part, formataddr, header_value, render_owned};
 use super::super::_keys::{local_file_ops, read_local_file, remote_fetches};

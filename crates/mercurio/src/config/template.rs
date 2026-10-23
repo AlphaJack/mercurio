@@ -39,7 +39,7 @@ fn terr(message: String, variable: Option<&str>) -> TemplateError {
 }
 
 /// `TEMPLATE_VAR_RE`.
-pub(crate) fn var_re() -> &'static regex::Regex {
+pub(crate) fn var_re() -> &'static crate::re::Regex {
     crate::regex!(r"\$\{(?P<name>[A-Za-z0-9_]{1,32})\}")
 }
 
@@ -274,7 +274,7 @@ pub struct Placeholders {
     names: Vec<String>,
     schema: TemplateSchema,
     /// Placeholder regex, compiled on first use (it depends only on `nonce`).
-    pattern: std::sync::OnceLock<Option<regex::Regex>>,
+    pattern: std::sync::OnceLock<Option<crate::re::Regex>>,
 }
 
 impl Placeholders {
@@ -337,9 +337,9 @@ impl Placeholders {
     }
 
     /// `None` only if the pattern failed to compile, which an escaped nonce cannot cause.
-    fn pattern(&self) -> Option<&regex::Regex> {
+    fn pattern(&self) -> Option<&crate::re::Regex> {
         self.pattern
-            .get_or_init(|| regex::Regex::new(&format!("a{}t[0-9]{{1,10}}z", regex::escape(&self.nonce))).ok())
+            .get_or_init(|| crate::re::Regex::new(&format!("a{}t[0-9]{{1,10}}z", crate::re::escape(&self.nonce))).ok())
             .as_ref()
     }
 
@@ -379,7 +379,7 @@ impl Placeholders {
             return text.to_string();
         };
         pattern
-            .replace_all(text, |c: &regex::Captures| match self.name_of(&c[0]) {
+            .replace_all(text, |c: &crate::re::Captures| match self.name_of(&c[0]) {
                 Some(n) => format!("${{{}}}", n.to_uppercase()),
                 None => c[0].to_string(),
             })
@@ -391,7 +391,7 @@ impl Placeholders {
             return text.to_string();
         };
         pattern
-            .replace_all(text, |c: &regex::Captures| {
+            .replace_all(text, |c: &crate::re::Captures| {
                 self.name_of(&c[0]).and_then(|n| values.get(n)).cloned().unwrap_or_else(|| c[0].to_string())
             })
             .into_owned()

@@ -269,8 +269,8 @@ fn parse_native(url: &str) -> Option<String> {
 
 /// Replace every case-insensitive occurrence of `needle` with the literal `repl`.
 fn sub_literal_ci(body: &str, needle: &str, repl: &str) -> Option<String> {
-    let re = regex::Regex::new(&format!("(?i){}", regex::escape(needle))).ok()?;
-    Some(re.replace_all(body, regex::NoExpand(repl)).into_owned())
+    let re = crate::re::Regex::new(&format!("(?i){}", crate::re::escape(needle))).ok()?;
+    Some(re.replace_all(body, crate::re::NoExpand(repl)).into_owned())
 }
 
 /// `_re_formatting_rules.sub(...)`; `None` on the unmapped `"\r*\n"` (KeyError).

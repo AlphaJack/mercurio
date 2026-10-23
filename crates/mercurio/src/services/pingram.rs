@@ -382,11 +382,22 @@ impl Notify for Pingram {
 mod tests {
     use super::match_id;
 
+    #[cfg(feature = "regex-unicode")]
     #[test]
     fn ids_accept_non_ascii_input() {
         assert_eq!(match_id("jörg").as_deref(), Some("jörg"));
         assert_eq!(match_id("\u{A0}@bob\u{2003}").as_deref(), Some("bob"));
         assert_eq!(match_id("user\u{663}").as_deref(), Some("user\u{663}"));
         assert_eq!(match_id("a b"), None);
+    }
+
+    /// `regex-lite` classes are ASCII-only.
+    #[cfg(not(feature = "regex-unicode"))]
+    #[test]
+    fn ids_are_ascii_only() {
+        assert_eq!(match_id("jörg"), None);
+        assert_eq!(match_id("\u{A0}@bob\u{2003}"), None);
+        assert_eq!(match_id("user\u{663}"), None);
+        assert_eq!(match_id(" @bob\t").as_deref(), Some("bob"));
     }
 }

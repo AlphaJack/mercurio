@@ -23,7 +23,7 @@ bundle-timezones = ["mercurio/bundle-timezones"]
 bundle-certificates = ["mercurio/bundle-certificates"]
 
 [dependencies]
-mercurio = { workspace = true, features = ["transport-tokio", "config-yaml", "markdown", "emojis", "html"] }
+mercurio = { workspace = true, features = ["transport-tokio", "config-yaml", "markdown", "emojis", "html", "regex-unicode"] }
 tokio = { version = "1.54", default-features = false, features = ["rt-multi-thread", "fs", "net", "signal", "macros", "time", "sync"] }
 axum = { version = "0.8", default-features = false, features = ["tokio", "matched-path"] }
 tower = { version = "0.5", default-features = false, features = ["util", "limit", "load-shed"] }

@@ -104,9 +104,9 @@ pub fn json_escape(s: &str) -> String {
 
 /// `re.sub(f, text)`: every match replaced by `f(captures)`; `None` from `f` aborts.
 pub fn replace_all(
-    re: &regex::Regex,
+    re: &crate::re::Regex,
     text: &str,
-    mut f: impl FnMut(&regex::Captures<'_>) -> Option<String>,
+    mut f: impl FnMut(&crate::re::Captures<'_>) -> Option<String>,
 ) -> Option<String> {
     let mut out = String::with_capacity(text.len());
     let mut last = 0;

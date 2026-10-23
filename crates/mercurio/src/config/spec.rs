@@ -209,7 +209,7 @@ mod tests {
 
     /// The string literals `re` captures in `src`.
     fn literals(re: &str, src: &str) -> BTreeSet<String> {
-        regex::Regex::new(re).unwrap().captures_iter(src).map(|c| c[1].to_string()).collect()
+        crate::re::Regex::new(re).unwrap().captures_iter(src).map(|c| c[1].to_string()).collect()
     }
 
     /// Every top-level key the loader reads is in [`TOP_LEVEL`], and every key there is read.

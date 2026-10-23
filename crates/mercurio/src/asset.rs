@@ -216,7 +216,7 @@ impl Asset {
 
     fn substitute(&self, mask: &str, kind: NotifyType, size: ImageSize, ext: Option<&str>) -> String {
         let re = crate::regex!(r"(?i)\{(THEME|TYPE|XY|EXTENSION)\}");
-        re.replace_all(mask, |c: &regex::Captures| match c[1].to_ascii_uppercase().as_str() {
+        re.replace_all(mask, |c: &crate::re::Captures| match c[1].to_ascii_uppercase().as_str() {
             "THEME" => self.theme.clone(),
             "TYPE" => kind.as_str().to_string(),
             "XY" => size.as_str().to_string(),

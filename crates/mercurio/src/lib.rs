@@ -241,6 +241,7 @@ mod net;
 mod parse;
 mod plan;
 mod prepare;
+mod re;
 mod registry;
 mod semaphore;
 #[path = "service.rs"]
@@ -360,9 +361,9 @@ pub mod __private {
     }
     pub use crate::message::guess_mime;
     pub use crate::parse::{parse_bool, parse_urls};
+    pub use crate::re::Regex;
     pub use crate::time::utc_parts;
     pub use crate::url::{parse_url_unverified, unquote, unquote_plus};
-    pub use regex::Regex;
 }
 
 /// The Rust code blocks of the documentation book (`docs/book/src`) run as doc-tests, so `cargo test --doc` keeps the book's examples compiling. `build.rs` lists every page.

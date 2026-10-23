@@ -14,6 +14,7 @@ mod fuzz;
 mod loopback;
 mod params;
 mod protocols;
+mod regex_engines;
 mod scripted;
 // The snapshots record Markdown rendered by each service.
 #[cfg(feature = "markdown")]

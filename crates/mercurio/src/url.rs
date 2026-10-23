@@ -178,7 +178,7 @@ pub fn parse_url_with(url: &str, opts: ParseOptions) -> Option<ParsedUrl> {
 }
 
 /// Optional `scheme://`, then everything up to `?` (host and path), then the query string.
-fn url_parts(url: &str) -> Option<regex::Captures<'_>> {
+fn url_parts(url: &str) -> Option<crate::re::Captures<'_>> {
     let re = regex!(r"^\s*(?:(?P<schema>[^:\s]+):[/\\]+)?(?:(?P<path>[^?]+)(?:\?(?P<query>.+))?)?\s*$");
     re.captures(url)
 }
@@ -696,6 +696,8 @@ mod tests {
         }
     }
 
+    // The reference is a Unicode-aware regex; `regex-lite` classes are ASCII-only.
+    #[cfg(feature = "regex-unicode")]
     #[test]
     fn scheme_of_matches_the_regex() {
         let re = regex!(r"^\s*([a-zA-Z0-9]{1,32})://");

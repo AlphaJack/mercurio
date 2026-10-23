@@ -4,7 +4,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use regex::Regex;
+use crate::re::Regex;
 use serde_json::{Value, json};
 
 use super::events::{Comparator, Log};
