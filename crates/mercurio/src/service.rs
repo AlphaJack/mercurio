@@ -443,7 +443,7 @@ pub struct Context<'a> {
     /// The clock and random source of this send.
     env: &'a Arc<dyn Env>,
     /// The URL's `?tz=`.
-    tz: Option<&'a jiff::tz::TimeZone>,
+    tz: Option<&'a crate::time::Zone>,
 }
 
 impl<'a> Context<'a> {
@@ -470,12 +470,12 @@ impl<'a> Context<'a> {
     }
 
     /// This context with the URL's time zone.
-    pub(crate) fn with_tz(self, tz: Option<&'a jiff::tz::TimeZone>) -> Self {
+    pub(crate) fn with_tz(self, tz: Option<&'a crate::time::Zone>) -> Self {
         Self { tz, ..self }
     }
 
     /// The zone for dates a service writes: the URL's `?tz=`, else [`Asset::timezone`], else the machine's, as Apprise.
-    pub(crate) fn time_zone(&self) -> jiff::tz::TimeZone {
+    pub(crate) fn time_zone(&self) -> crate::time::Zone {
         self.tz
             .cloned()
             .or_else(|| self.asset.timezone.as_deref().and_then(crate::time::zone))
