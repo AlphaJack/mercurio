@@ -1,7 +1,9 @@
 use super::fold::fold_url;
+#[cfg(feature = "config-yaml")]
 use super::template::TemplateVars;
 use super::yaml::Yaml;
 use super::*;
+#[cfg(feature = "config-yaml")]
 use crate::Asset;
 use crate::testing::FakeTransport;
 
@@ -37,6 +39,7 @@ fn text_tags_and_groups() {
     assert!(r[1].1.is_empty());
 }
 
+#[cfg(feature = "config-yaml")]
 #[test]
 fn yaml_basic() {
     let c = load(
@@ -50,6 +53,7 @@ fn yaml_basic() {
     assert_eq!(r[2].1, vec!["g", "y"]);
 }
 
+#[cfg(feature = "config-yaml")]
 #[test]
 fn yaml_template() {
     let c = load("template:\n  - target\n  - host: localhost\nurls:\n  - json://${HOST}/${TARGET}:\n      tag: t\n");
@@ -76,6 +80,7 @@ fn fold() {
     assert_eq!(w.len(), 1);
 }
 
+#[cfg(feature = "config-yaml")]
 #[test]
 fn asset_timezone() {
     let load = |yaml: &str| Config::from_text(yaml, None, &FakeTransport::new(), &ConfigOptions::default()).unwrap();

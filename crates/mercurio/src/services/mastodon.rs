@@ -578,6 +578,7 @@ impl Job {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "markdown")]
     #[test]
     fn mentions() {
         assert_eq!(find_mentions("hi @abc, and @x@host.com. email@miss"), vec!["@abc", "@x@host.com."]);

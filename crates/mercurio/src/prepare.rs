@@ -84,9 +84,14 @@ pub fn prepare<'m>(
 
     // The body stays borrowed until a conversion changes it: it can be megabytes.
     let (mut title, mut body) = (msg.title.clone(), Cow::Borrowed(msg.body.as_str()));
+    #[cfg(feature = "emojis")]
     if opts.emojis {
         title = convert::emoji::apply(&title);
         body = convert::emoji::apply(&body).into();
+    }
+    #[cfg(not(feature = "emojis"))]
+    if opts.emojis {
+        log::warn!("emoji shortcodes are sent as written: this build lacks the Cargo feature `emojis`");
     }
     // Same format in and out converts to an identical copy: keep the borrowed body.
     if let Some(input) = input_format.filter(|&input| input != format) {
@@ -225,6 +230,7 @@ pub fn apply_overflow<'m>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "markdown")]
     use crate::asset::Asset;
 
     fn bodies<'a>(c: &'a [Chunk<'_>]) -> Vec<(&'a str, &'a str)> {
@@ -276,6 +282,7 @@ mod tests {
         assert_eq!(resolve_format(&[Text, Markdown], Some(Html), Some(Html)), Text);
     }
 
+    #[cfg(feature = "markdown")]
     #[test]
     fn pipeline_conversion() {
         let msg = Message::new("**hi** :smile:").title(":rocket: Up");

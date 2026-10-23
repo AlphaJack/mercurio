@@ -937,6 +937,7 @@ mod tests {
         assert!(matches!(err.root(), Error::Http { status: 429, .. }), "{err:?}");
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn html_keeps_line_breaks_in_text() {
         // Single line breaks inside a paragraph survive.

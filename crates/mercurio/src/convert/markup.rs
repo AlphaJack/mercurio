@@ -1,9 +1,11 @@
 //! Markdown to a service's own markup (Slack `mrkdwn`, Telegram Markdown, WhatsApp, ...), rendered from `pulldown-cmark` events.
 
+#[cfg(feature = "markdown")]
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
 /// How a service writes each Markdown construct.
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(not(feature = "markdown"), expect(dead_code, reason = "only the Markdown renderer reads the styling"))]
 pub struct Markup {
     pub bold: (&'static str, &'static str),
     pub italic: (&'static str, &'static str),
@@ -39,6 +41,7 @@ impl Markup {
 
     /// Standard Markdown, normalised (used where a service reads Markdown).
     #[cfg(test)]
+    #[cfg(feature = "markdown")]
     pub const MARKDOWN: Markup = Markup {
         bold: ("**", "**"),
         italic: ("*", "*"),
@@ -69,6 +72,7 @@ pub fn same(s: &str) -> String {
 }
 
 /// Render `markdown` with `m`. Paragraphs are separated by a blank line, soft breaks stay line breaks, lists use `- ` / `1. `, quotes `> `, tables become ` | `-separated lines and raw HTML is escaped as text.
+#[cfg(feature = "markdown")]
 #[expect(clippy::wildcard_enum_match_arm, reason = "events and tags a dialect does not style are skipped")]
 pub fn render(markdown: &str, m: &Markup) -> String {
     let mut out = String::with_capacity(markdown.len());
@@ -218,6 +222,14 @@ pub fn render(markdown: &str, m: &Markup) -> String {
     out.trim_end().to_string()
 }
 
+/// Without the `markdown` feature: `markdown` as literal text, escaped for `m`.
+#[cfg(not(feature = "markdown"))]
+pub fn render(markdown: &str, m: &Markup) -> String {
+    super::markdown_unavailable();
+    (m.escape)(markdown)
+}
+
+#[cfg(feature = "markdown")]
 fn heading_level(level: HeadingLevel) -> usize {
     level as usize
 }
@@ -289,6 +301,7 @@ pub fn sections(markdown: &str, name_max: usize, value_max: usize) -> (String, V
 mod tests {
     use super::*;
 
+    #[cfg(feature = "markdown")]
     const SLACK: Markup = Markup {
         bold: ("*", "*"),
         italic: ("_", "_"),
@@ -302,12 +315,14 @@ mod tests {
         escape_code: same,
     };
 
+    #[cfg(feature = "markdown")]
     #[test]
     fn inline_styles_and_links() {
         assert_eq!(render("**b** *i* ~~s~~ `c` [l](https://x)", &SLACK), "*b* _i_ ~s~ `c` <https://x|l>");
         assert_eq!(render("a & <b>", &SLACK), "a &amp; &lt;b&gt;");
     }
 
+    #[cfg(feature = "markdown")]
     #[test]
     fn blocks() {
         assert_eq!(
@@ -319,6 +334,7 @@ mod tests {
         assert_eq!(render("```rust\nfn x() {}\n```", &SLACK), "```rust\nfn x() {}\n```");
     }
 
+    #[cfg(feature = "markdown")]
     #[test]
     fn normalised_markdown() {
         assert_eq!(render("__b__ _i_", &Markup::MARKDOWN), "**b** *i*");

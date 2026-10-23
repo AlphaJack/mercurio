@@ -523,6 +523,7 @@ pub fn references(v: &Yaml, out: &mut Vec<String>) {
 }
 
 #[cfg(test)]
+#[cfg(feature = "config-yaml")]
 mod tests {
     use super::*;
 

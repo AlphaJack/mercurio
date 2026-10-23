@@ -324,6 +324,7 @@ mod tests {
         assert!(AsyncMercurio::from(Mercurio::with_transport(fake).sequential()).sequential);
     }
 
+    #[cfg(feature = "config-yaml")]
     #[test]
     fn progress_sees_every_entry_once() {
         let fake = Arc::new(FakeTransport::new());
