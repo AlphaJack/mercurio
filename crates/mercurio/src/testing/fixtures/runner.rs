@@ -77,7 +77,7 @@ fn mask_version(v: &mut Value) {
     match v {
         Value::String(s) if s.contains(env!("CARGO_PKG_VERSION")) => {
             let re = crate::regex!(r"(^|[^0-9.])([0-9]+\.[0-9]+\.[0-9]+)($|[^0-9.])");
-            let masked = re.replace_all(s, |c: &regex::Captures<'_>| {
+            let masked = re.replace_all(s, |c: &crate::re::Captures<'_>| {
                 let ver = if &c[2] == env!("CARGO_PKG_VERSION") { "<version>" } else { &c[2] };
                 format!("{}{ver}{}", &c[1], &c[3])
             });
@@ -440,7 +440,7 @@ fn mask_path(path: &str, ignore: &[String]) -> String {
     let mut path = path.to_string();
     for rule in ignore {
         if let Some(re) = rule.strip_prefix("path~") {
-            match regex::Regex::new(re) {
+            match crate::re::Regex::new(re) {
                 Ok(re) => path = re.replace_all(&path, IGNORED).into_owned(),
                 Err(e) => panic!("ignore {rule:?}: {e}"),
             }

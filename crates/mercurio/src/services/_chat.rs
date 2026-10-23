@@ -93,8 +93,8 @@ pub fn apply_template_json(template: &str, tokens: &[(String, String)]) -> Optio
     if tokens.is_empty() {
         return Some(template.to_string());
     }
-    let alts: Vec<String> = tokens.iter().map(|(k, _)| regex::escape(k)).collect();
-    let re = regex::Regex::new(&format!(r"(?i)\{{\{{\s*({})\s*\}}\}}", alts.join("|"))).ok()?;
+    let alts: Vec<String> = tokens.iter().map(|(k, _)| crate::re::escape(k)).collect();
+    let re = crate::re::Regex::new(&format!(r"(?i)\{{\{{\s*({})\s*\}}\}}", alts.join("|"))).ok()?;
     crate::util::replace_all(&re, template, |c| {
         let key = c[0].strip_prefix("{{")?.strip_suffix("}}")?.trim();
         // Later duplicates win.

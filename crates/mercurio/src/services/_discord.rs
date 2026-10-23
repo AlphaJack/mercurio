@@ -254,11 +254,11 @@ fn apply_template(content: &str, tokens: &[(String, String)]) -> std::result::Re
     if tokens.is_empty() {
         return Ok(content.to_string());
     }
-    let alts: Vec<String> = tokens.iter().map(|(k, _)| regex::escape(k)).collect();
+    let alts: Vec<String> = tokens.iter().map(|(k, _)| crate::re::escape(k)).collect();
     let pattern = format!(r"(?i)\{{\{{\s*({})\s*\}}\}}", alts.join("|"));
-    let re = regex::Regex::new(&pattern).map_err(|e| e.to_string())?;
+    let re = crate::re::Regex::new(&pattern).map_err(|e| e.to_string())?;
     let mut missing = None;
-    let out = re.replace_all(content, |c: &regex::Captures| {
+    let out = re.replace_all(content, |c: &crate::re::Captures| {
         let m = c.get(0).map_or("", |m| m.as_str());
         let key = m.get(2..m.len().saturating_sub(2)).unwrap_or("").trim();
         match tokens.iter().find(|(k, _)| k == key) {
@@ -584,7 +584,7 @@ impl Notify for Discord {
 }
 
 /// `parse_native_url` for Discord-style webhook URLs: `{scheme}://{id}/{token}/{params}`.
-pub fn native_webhook(url: &str, re: &regex::Regex, scheme: &str) -> Option<String> {
+pub fn native_webhook(url: &str, re: &crate::re::Regex, scheme: &str) -> Option<String> {
     let c = re.captures(url)?;
     Some(format!(
         "{scheme}://{}/{}/{}",

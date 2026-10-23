@@ -646,6 +646,8 @@ mod tests {
         assert_eq!(t.last(), Some(&Token::Text("<x 1 < 2".into())));
     }
 
+    // The reference is a Unicode-aware regex; `regex-lite` classes are ASCII-only.
+    #[cfg(feature = "regex-unicode")]
     #[test]
     fn attributes_match_the_regex_grammar() {
         let re = crate::regex!(r#"([^\s=/"'>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?"#);

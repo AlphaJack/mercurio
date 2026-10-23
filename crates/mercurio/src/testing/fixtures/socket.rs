@@ -37,7 +37,7 @@ fn qp_decode(s: &str) -> Vec<u8> {
 
 /// RFC 2047 decoding (B and Q), whitespace between adjacent words dropped, then every whitespace run collapsed (as in the fixtures).
 fn decode_header(v: &str) -> String {
-    let re = regex::Regex::new(r"=\?([^?]+)\?([bBqQ])\?([^?]*)\?=").unwrap();
+    let re = crate::re::Regex::new(r"=\?([^?]+)\?([bBqQ])\?([^?]*)\?=").unwrap();
     let mut out = String::new();
     let mut last = 0;
     let mut prev_word = false;

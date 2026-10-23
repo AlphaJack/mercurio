@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, LazyLock, Mutex};
 
-use regex::Regex;
+use crate::re::Regex;
 
 use crate::url::unquote;
 
@@ -516,13 +516,25 @@ mod tests {
         assert!(cached <= MAX_CACHED_REGEXES, "{cached}");
     }
 
-    /// `\s`, `\d`, `\w` and `(?i)` must stay Unicode-aware: an ASCII-only engine (such as `regex_lite`) silently changes matching on non-ASCII input.
+    /// With `regex-unicode`, `\s`, `\d`, `\w` and `(?i)` are Unicode-aware.
+    #[cfg(feature = "regex-unicode")]
     #[test]
     fn regex_classes_are_unicode() {
         assert!(regex!(r"^\s+$").is_match("\u{A0}\u{2003}\u{3000}"));
         assert!(regex!(r"^\d$").is_match("\u{663}"));
         assert!(regex!(r"^\w+$").is_match("éж"));
         assert!(regex!(r"^(?i)é$").is_match("É"));
+    }
+
+    /// Without `regex-unicode`, `regex-lite` matches the same classes in ASCII only.
+    #[cfg(not(feature = "regex-unicode"))]
+    #[test]
+    fn regex_classes_are_ascii() {
+        assert!(!regex!(r"^\s+$").is_match("\u{A0}\u{2003}\u{3000}"));
+        assert!(!regex!(r"^\d$").is_match("\u{663}"));
+        assert!(!regex!(r"^\w+$").is_match("éж"));
+        assert!(!regex!(r"^(?i)é$").is_match("É"));
+        assert!(regex!(r"^\s+\d\w+$").is_match(" \t1a_"));
     }
 
     #[test]
@@ -533,6 +545,8 @@ mod tests {
         assert!(!parse_bool("disabled", true));
     }
 
+    // The reference is a Unicode-aware regex; `regex-lite` classes are ASCII-only.
+    #[cfg(feature = "regex-unicode")]
     #[test]
     fn delimited_matches_the_regex() {
         let re = regex!(r"[\[\];,\s]+");

@@ -38,7 +38,7 @@ const DEFAULT_GROUP: &str = "group.all";
 const PRIORITY_MAP: &[(&str, i64)] =
     &[("l", -2), ("m", -1), ("n", 0), ("h", 1), ("e", 2), ("-2", -2), ("-1", -1), ("0", 0), ("1", 1), ("2", 2)];
 
-fn group_re() -> &'static regex::Regex {
+fn group_re() -> &'static crate::re::Regex {
     crate::regex!(r"(?i)^(group\.)?(?P<name>(all|android|chrome|windows10|phone|tablet|pc))")
 }
 

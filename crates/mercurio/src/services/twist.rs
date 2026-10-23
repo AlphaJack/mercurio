@@ -45,11 +45,11 @@ pub static SERVICE: ServiceDef = ServiceDef {
 const API: &str = "https://api.twist.com/api/v3/";
 const FORM_CT: &str = "application/x-www-form-urlencoded; charset=utf-8";
 
-fn is_channel(s: &str) -> Option<regex::Captures<'_>> {
+fn is_channel(s: &str) -> Option<crate::re::Captures<'_>> {
     crate::regex!(r"^#?(?P<name>((?P<workspace>[A-Za-z0-9_-]+):)?(?P<channel>[^\s]{1,64}))$").captures(s)
 }
 
-fn is_channel_id(s: &str) -> Option<regex::Captures<'_>> {
+fn is_channel_id(s: &str) -> Option<crate::re::Captures<'_>> {
     crate::regex!(r"^(?P<name>((?P<workspace>[0-9]+):)?(?P<channel>[0-9]+))$").captures(s)
 }
 
