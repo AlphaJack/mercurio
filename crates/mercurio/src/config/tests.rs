@@ -81,6 +81,7 @@ fn fold() {
 }
 
 #[cfg(feature = "config-yaml")]
+#[cfg(feature = "timezones")]
 #[test]
 fn asset_timezone() {
     let load = |yaml: &str| Config::from_text(yaml, None, &FakeTransport::new(), &ConfigOptions::default()).unwrap();

@@ -64,7 +64,7 @@ pub struct Target {
     /// The URL sets `?redirect=`, which wins over [`Asset::http_redirects`].
     redirect_set: bool,
     /// `?tz=`, when the URL has a valid one.
-    tz: Option<jiff::tz::TimeZone>,
+    tz: Option<crate::time::Zone>,
     /// `?emojis=`, when the URL has it.
     emojis: Option<bool>,
     retry: u32,

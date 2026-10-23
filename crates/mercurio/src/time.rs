@@ -1,4 +1,4 @@
-//! The UTC date formats services send (RFC 3339, RFC 2822, AWS and syslog stamps), without a date crate.
+//! The UTC date formats services send (RFC 3339, RFC 2822, AWS and syslog stamps), without a date crate; local times in IANA zones through `jiff` (feature `timezones`).
 
 const SECS_PER_DAY: u64 = 86_400;
 /// Days in a 400-year Gregorian cycle.
@@ -71,16 +71,51 @@ pub fn parse_rfc3339(s: &str) -> Option<f64> {
     Some(secs as f64 + frac)
 }
 
-/// The time zone `name` names, looked up as Apprise does: the UTC family (`utc`, `z`, `gmt`, `etc/utc`, ...), an exact IANA name, the same name in any case, or its location alone (`paris`, `argentina/salta`). `None` when nothing matches.
-pub fn zone(name: &str) -> Option<jiff::tz::TimeZone> {
+/// A time zone: an IANA zone with the `timezones` feature, UTC only without it.
+#[cfg(feature = "timezones")]
+pub type Zone = jiff::tz::TimeZone;
+
+/// A time zone: UTC only, as this build lacks the `timezones` feature.
+#[cfg(not(feature = "timezones"))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Zone;
+
+#[cfg(not(feature = "timezones"))]
+impl Zone {
+    /// The IANA name, as `jiff` names its UTC zone.
+    pub fn iana_name(&self) -> Option<&str> {
+        Some("UTC")
+    }
+}
+
+/// The UTC zone.
+#[cfg(feature = "timezones")]
+pub const UTC: Zone = jiff::tz::TimeZone::UTC;
+/// The UTC zone.
+#[cfg(not(feature = "timezones"))]
+pub const UTC: Zone = Zone;
+
+/// The time zone `name` names, looked up as Apprise does: the UTC family (`utc`, `z`, `gmt`, `etc/utc`, ...), an exact IANA name, the same name in any case, or its location alone (`paris`, `argentina/salta`). `None` when nothing matches; without the `timezones` feature, anything but the UTC family.
+pub fn zone(name: &str) -> Option<Zone> {
     let raw = name.trim();
     if raw.is_empty() {
         return None;
     }
     let lowered = raw.to_lowercase();
     if ["utc", "z", "gmt", "etc/utc", "etc/gmt", "gmt0", "utc0"].contains(&lowered.as_str()) {
-        return Some(jiff::tz::TimeZone::UTC);
+        return Some(UTC);
     }
+    iana_zone(raw, &lowered)
+}
+
+#[cfg(not(feature = "timezones"))]
+fn iana_zone(raw: &str, _lowered: &str) -> Option<Zone> {
+    log::warn!("time zone {raw}: only UTC is available, as this build lacks the Cargo feature `timezones`");
+    None
+}
+
+#[cfg(feature = "timezones")]
+fn iana_zone(raw: &str, lowered: &str) -> Option<Zone> {
     if let Ok(tz) = jiff::tz::TimeZone::get(raw) {
         return Some(tz);
     }
@@ -96,13 +131,23 @@ pub fn zone(name: &str) -> Option<jiff::tz::TimeZone> {
     None
 }
 
-/// The machine's time zone (Apprise's default), UTC when it cannot be found.
-pub fn local_zone() -> jiff::tz::TimeZone {
-    jiff::tz::TimeZone::try_system().unwrap_or(jiff::tz::TimeZone::UTC)
+/// The machine's time zone (Apprise's default), UTC when it cannot be found or without the `timezones` feature.
+pub fn local_zone() -> Zone {
+    #[cfg(feature = "timezones")]
+    return jiff::tz::TimeZone::try_system().unwrap_or(UTC);
+    #[cfg(not(feature = "timezones"))]
+    UTC
 }
 
 /// RFC 2822 date in `tz`, e.g. `Fri, 16 Oct 2026 14:00:00 +0200` (e-mail `Date:`).
-pub fn rfc2822_in(secs: u64, tz: &jiff::tz::TimeZone) -> String {
+#[cfg(not(feature = "timezones"))]
+pub fn rfc2822_in(secs: u64, _tz: &Zone) -> String {
+    rfc2822_utc(secs)
+}
+
+/// RFC 2822 date in `tz`, e.g. `Fri, 16 Oct 2026 14:00:00 +0200` (e-mail `Date:`).
+#[cfg(feature = "timezones")]
+pub fn rfc2822_in(secs: u64, tz: &Zone) -> String {
     match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
         Ok(ts) => ts.to_zoned(tz.clone()).strftime("%a, %d %b %Y %H:%M:%S %z").to_string(),
         Err(_) => rfc2822_utc(secs),
@@ -110,7 +155,15 @@ pub fn rfc2822_in(secs: u64, tz: &jiff::tz::TimeZone) -> String {
 }
 
 /// The wall-clock `(month, day, hour, minute, second)` of `secs` in `tz`.
-pub fn local_parts(secs: u64, tz: &jiff::tz::TimeZone) -> (u32, u32, u32, u32, u32) {
+#[cfg(not(feature = "timezones"))]
+pub fn local_parts(secs: u64, _tz: &Zone) -> (u32, u32, u32, u32, u32) {
+    let (_, mo, d, h, mi, s) = utc_parts(secs);
+    (mo, d, h, mi, s)
+}
+
+/// The wall-clock `(month, day, hour, minute, second)` of `secs` in `tz`.
+#[cfg(feature = "timezones")]
+pub fn local_parts(secs: u64, tz: &Zone) -> (u32, u32, u32, u32, u32) {
     match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
         Ok(ts) => {
             let dt = ts.to_zoned(tz.clone()).datetime();
@@ -128,6 +181,7 @@ pub fn local_parts(secs: u64, tz: &jiff::tz::TimeZone) -> (u32, u32, u32, u32, u
 mod tests {
     use super::*;
 
+    #[cfg(feature = "timezones")]
     #[test]
     fn zones() {
         assert_eq!(zone("UTC0"), Some(jiff::tz::TimeZone::UTC));

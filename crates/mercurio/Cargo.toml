@@ -29,7 +29,7 @@ regex = { version = "1", optional = true, default-features = false, features = [
 # The regex engine without `regex-unicode`.
 regex-lite = "0.1.9"
 base64 = "0.23"
-jiff = "0.2"
+jiff = { version = "0.2", optional = true }
 emojis = { version = "0.9", optional = true, default-features = false }
 log = "0.4"
 pollster = "1"
@@ -59,8 +59,8 @@ regex = "1"
 regex-lite = "0.1.9"
 
 [features]
-# Every service, the async API on tokio, the bundled time zones and root certificates, YAML configuration, Markdown rendering, emoji shortcodes, HTML conversion and the Unicode-aware `regex` engine.
-default = ["all-services", "transport-tokio", "bundle-timezones", "bundle-certificates", "config-yaml", "markdown", "emojis", "html", "regex-unicode"]
+# Every service, the async API on tokio, IANA time zones, the bundled time zone database and root certificates, YAML configuration, Markdown rendering, emoji shortcodes, HTML conversion and the Unicode-aware `regex` engine.
+default = ["all-services", "transport-tokio", "timezones", "bundle-timezones", "bundle-certificates", "config-yaml", "markdown", "emojis", "html", "regex-unicode"]
 # Every `service-*` feature.
 all-services = [
   "service-africastalking",
@@ -227,8 +227,11 @@ all-services = [
   "service-zulip",
 ]
 
+# IANA time zones (`jiff`) for `?tz=`, the `timezone` asset and the machine's zone, used in e-mail `Date:` and syslog timestamps. Without it, only UTC: other zone names are rejected and those dates are written in UTC.
+timezones = ["dep:jiff"]
+
 # The IANA time zone database inside the binary (about 256 KiB), so `?tz=` zones resolve where the host has no `/usr/share/zoneinfo`, as in a `scratch` image. A system copy is still preferred when there is one.
-bundle-timezones = ["jiff/tzdb-bundle-always"]
+bundle-timezones = ["timezones", "jiff/tzdb-bundle-always"]
 
 # Mozilla's root certificates inside the binary (`webpki-roots`), used when `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` is unset. Without it, the system's PEM bundle at the usual Linux paths is read instead.
 bundle-certificates = ["dep:webpki-roots", "ureq?/rustls-webpki-roots"]
