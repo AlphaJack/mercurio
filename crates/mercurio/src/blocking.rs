@@ -46,9 +46,15 @@ impl BlockingTransport {
     fn agent(&self, verify: bool) -> &ureq::Agent {
         let cell = if verify { &self.verified } else { &self.unverified };
         cell.get_or_init(|| {
-            let mut tls = ureq::tls::TlsConfig::builder().disable_verification(!verify);
-            if let Some(certs) = crate::net::ca_bundle() {
-                let certs: Vec<_> = certs.iter().map(|c| ureq::tls::Certificate::from_der(c).to_owned()).collect();
+            let provider = std::sync::Arc::new(rustls::crypto::ring::default_provider());
+            let mut tls = ureq::tls::TlsConfig::builder()
+                .unversioned_rustls_crypto_provider(provider)
+                .disable_verification(!verify);
+            // Without a bundle, ureq's own Mozilla roots (feature `bundle-certificates`); without those, an empty set fails every handshake.
+            let certs = crate::net::ca_bundle();
+            if certs.is_some() || cfg!(not(feature = "bundle-certificates")) {
+                let certs: Vec<_> =
+                    certs.unwrap_or_default().iter().map(|c| ureq::tls::Certificate::from_der(c).to_owned()).collect();
                 tls = tls.root_certs(ureq::tls::RootCerts::new_with_certs(&certs));
             }
             let tls = tls.build();

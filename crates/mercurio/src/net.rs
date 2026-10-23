@@ -8,28 +8,63 @@ use rustls::{ClientConfig, RootCertStore};
 
 use crate::error::{Error, Result};
 
-/// Root certificates from the PEM bundle named by `SSL_CERT_FILE` (or `REQUESTS_CA_BUNDLE`), read once: both transports build their clients from it, so a changed bundle takes a restart. The bundle replaces the Mozilla roots; `None` when neither is set or the file has no usable certificate.
+/// Root certificates from the PEM bundle named by `SSL_CERT_FILE` (or `REQUESTS_CA_BUNDLE`), read once: both transports build their clients from it, so a changed bundle takes a restart. The bundle replaces the Mozilla roots; `None` when neither is set or the file has no usable certificate. Without the `bundle-certificates` feature, an unset variable falls back to the system bundle (`SYSTEM_BUNDLES`).
 pub(crate) fn ca_bundle() -> Option<&'static [CertificateDer<'static>]> {
     static BUNDLE: OnceLock<Option<Vec<CertificateDer<'static>>>> = OnceLock::new();
     BUNDLE
         .get_or_init(|| {
-            let (var, path) = ["SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"]
+            let named = ["SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"]
                 .into_iter()
-                .find_map(|var| std::env::var_os(var).filter(|p| !p.is_empty()).map(|p| (var, p)))?;
+                .find_map(|var| std::env::var_os(var).filter(|p| !p.is_empty()).map(|p| (var, p)));
+            let Some((var, path)) = named else { return system_bundle() };
             let certs: Vec<_> = match CertificateDer::pem_file_iter(&path) {
                 Ok(it) => it.filter_map(std::result::Result::ok).collect(),
                 Err(e) => {
-                    log::warn!("{var}: cannot read {}: {e}; using the bundled roots", path.to_string_lossy());
-                    return None;
+                    log::warn!("{var}: cannot read {}: {e}; using the {FALLBACK} roots", path.to_string_lossy());
+                    return system_bundle();
                 }
             };
             if certs.is_empty() {
-                log::warn!("{var}: no certificate in {}; using the bundled roots", path.to_string_lossy());
-                return None;
+                log::warn!("{var}: no certificate in {}; using the {FALLBACK} roots", path.to_string_lossy());
+                return system_bundle();
             }
             Some(certs)
         })
         .as_deref()
+}
+
+#[cfg(feature = "bundle-certificates")]
+const FALLBACK: &str = "bundled";
+#[cfg(not(feature = "bundle-certificates"))]
+const FALLBACK: &str = "system";
+
+#[cfg(feature = "bundle-certificates")]
+fn system_bundle() -> Option<Vec<CertificateDer<'static>>> {
+    None
+}
+
+/// Where Linux distributions keep their PEM bundle (Go's `crypto/x509` list), tried in order.
+#[cfg(not(feature = "bundle-certificates"))]
+const SYSTEM_BUNDLES: &[&str] = &[
+    "/etc/ssl/certs/ca-certificates.crt",
+    "/etc/pki/tls/certs/ca-bundle.crt",
+    "/etc/ssl/ca-bundle.pem",
+    "/etc/pki/tls/cacert.pem",
+    "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+    "/etc/ssl/cert.pem",
+];
+
+/// The first `SYSTEM_BUNDLES` file with a certificate; with none, every verified TLS connection fails.
+#[cfg(not(feature = "bundle-certificates"))]
+fn system_bundle() -> Option<Vec<CertificateDer<'static>>> {
+    let found = SYSTEM_BUNDLES.iter().find_map(|path| {
+        let certs: Vec<_> = CertificateDer::pem_file_iter(path).ok()?.filter_map(std::result::Result::ok).collect();
+        (!certs.is_empty()).then_some(certs)
+    });
+    if found.is_none() {
+        log::error!("no root certificates: set SSL_CERT_FILE, or build with the Cargo feature `bundle-certificates`");
+    }
+    found
 }
 
 /// `host` as a TLS server name.
@@ -37,7 +72,7 @@ pub(crate) fn server_name(host: &str) -> Result<ServerName<'static>> {
     ServerName::try_from(host.to_string()).map_err(|e| Error::transport(format!("invalid TLS server name {host}: {e}")))
 }
 
-/// Client TLS config: Mozilla roots (or [`ca_bundle`]); no verification when asked.
+/// Client TLS config: [`ca_bundle`], else the Mozilla roots (feature `bundle-certificates`); no verification when asked.
 pub fn tls_config(verify: bool) -> std::result::Result<Arc<ClientConfig>, rustls::Error> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     let builder = ClientConfig::builder_with_provider(provider.clone()).with_safe_default_protocol_versions()?;
@@ -47,7 +82,10 @@ pub fn tls_config(verify: bool) -> std::result::Result<Arc<ClientConfig>, rustls
             Some(certs) => {
                 roots.add_parsable_certificates(certs.iter().cloned());
             }
+            #[cfg(feature = "bundle-certificates")]
             None => roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned()),
+            #[cfg(not(feature = "bundle-certificates"))]
+            None => {}
         }
         builder.with_root_certificates(roots).with_no_client_auth()
     } else {

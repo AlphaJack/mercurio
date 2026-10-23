@@ -1,5 +1,6 @@
 //! Helpers shared by `sns` and `ses`: AWS Signature Version 4 for their form-encoded query APIs and a flattener for their XML replies.
 
+#[cfg(feature = "service-sns")]
 use std::collections::BTreeMap;
 
 use crate::Result;
@@ -90,6 +91,7 @@ pub fn aws_check(res: Result<Response>) -> Result<Response> {
 }
 
 /// Text of the leaf elements named in `keep` (tag -> key). `None` when the document is not well-formed XML (callers then keep only their defaults).
+#[cfg(feature = "service-sns")]
 pub fn flatten_xml(xml: &str, keep: &[(&str, &str)]) -> Option<BTreeMap<String, String>> {
     use quick_xml::events::Event;
     let kept = |tag: &str| keep.iter().find(|(t, _)| *t == tag).map(|(_, k)| k.to_string());
@@ -140,12 +142,14 @@ pub fn flatten_xml(xml: &str, keep: &[(&str, &str)]) -> Option<BTreeMap<String, 
 }
 
 /// An open element while flattening.
+#[cfg(feature = "service-sns")]
 struct XmlEl {
     tag: String,
     text: String,
     leaf: bool,
 }
 
+#[cfg(feature = "service-sns")]
 impl XmlEl {
     /// Validate a start tag: a well-formed name and a single root element.
     fn open(tag: &str, stack: &mut [XmlEl], root_seen: &mut bool) -> Option<String> {
@@ -266,6 +270,7 @@ mod tests {
         assert_eq!(aws_region("us-east"), None);
     }
 
+    #[cfg(feature = "service-sns")]
     #[test]
     fn xml() {
         let keep = [("TopicArn", "topic_arn"), ("RequestId", "request_id"), ("Message", "error_message")];

@@ -135,6 +135,7 @@ pub fn html_to_text(body: &str) -> String {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "html")]
     #[test]
     fn html_to_text_examples() {
         assert_eq!(html_to_text("Mercurio Body"), "Mercurio Body");

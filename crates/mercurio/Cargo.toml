@@ -19,25 +19,25 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 bytes = "1"
-ureq = { version = "3.4", optional = true, default-features = false, features = ["rustls"] }
+ureq = { version = "3.4", optional = true, default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
-webpki-roots = "1"
+webpki-roots = { version = "1", optional = true }
 ring = "0.17"
 # Exact float parsing: store checksums hash expiry times read back from cache.json.
 serde_json = { version = "1", features = ["float_roundtrip"] }
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-perl"] }
 base64 = "0.23"
 jiff = "0.2"
-emojis = { version = "0.9", default-features = false }
+emojis = { version = "0.9", optional = true, default-features = false }
 log = "0.4"
 pollster = "1"
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
 tokio = { version = "1.54", optional = true, default-features = false, features = ["net", "time", "fs", "process", "io-util"] }
 tokio-rustls = { version = "0.26", optional = true, default-features = false, features = ["ring", "tls12"] }
-saphyr-parser = "0.2"
-html-escape = "0.3.0"
-quick-xml = "0.42"
-pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+saphyr-parser = { version = "0.2", optional = true }
+html-escape = { version = "0.3.0", optional = true }
+quick-xml = { version = "0.42", optional = true }
+pulldown-cmark = { version = "0.13", optional = true, default-features = false, features = ["html"] }
 blake2 = { version = "0.11", optional = true, default-features = false }
 argon2 = { version = "0.6", optional = true, default-features = false, features = ["alloc"] }
 chacha20poly1305 = { version = "0.11", optional = true, default-features = false, features = ["alloc"] }
@@ -54,8 +54,8 @@ insta = { version = "1.49.0", features = ["yaml"] }
 tokio = { version = "1.54", features = ["rt", "macros", "net", "io-util", "time"] }
 
 [features]
-# Every service, the async API on tokio and the bundled time zones.
-default = ["all-services", "transport-tokio", "bundle-timezones"]
+# Every service, the async API on tokio, the bundled time zones and root certificates, YAML configuration, Markdown rendering, emoji shortcodes and HTML conversion.
+default = ["all-services", "transport-tokio", "bundle-timezones", "bundle-certificates", "config-yaml", "markdown", "emojis", "html"]
 # Every `service-*` feature.
 all-services = [
   "service-africastalking",
@@ -225,6 +225,21 @@ all-services = [
 # The IANA time zone database inside the binary (about 256 KiB), so `?tz=` zones resolve where the host has no `/usr/share/zoneinfo`, as in a `scratch` image. A system copy is still preferred when there is one.
 bundle-timezones = ["jiff/tzdb-bundle-always"]
 
+# Mozilla's root certificates inside the binary (`webpki-roots`), used when `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` is unset. Without it, the system's PEM bundle at the usual Linux paths is read instead.
+bundle-certificates = ["dep:webpki-roots", "ureq?/rustls-webpki-roots"]
+
+# YAML configuration files (`saphyr-parser`). Without it, YAML configuration fails to load and TEXT configuration still works.
+config-yaml = ["dep:saphyr-parser"]
+
+# Markdown bodies rendered to HTML or to a service's own markup (`pulldown-cmark`). Without it, Markdown is sent as escaped plain text.
+markdown = ["dep:pulldown-cmark"]
+
+# `:shortcode:` emoji (`?emojis=yes`, `Asset::interpret_emojis`) with GitHub's gemoji table. Without it, shortcodes are sent as written.
+emojis = ["dep:emojis"]
+
+# HTML bodies converted to text or Markdown, or reduced to the tags a service accepts (`html-escape` decodes the HTML5 entities). Without it, HTML is sent as plain text.
+html = ["dep:html-escape"]
+
 # Tokio transport: `TokioTransport` and `AsyncMercurio::new` (tokio + rustls).
 transport-tokio = ["dep:tokio", "dep:tokio-rustls"]
 # Blocking transport: `BlockingTransport` and `Mercurio::new` (ureq).
@@ -363,7 +378,7 @@ service-smsc = []
 service-smseagle = []
 service-smsmanager = []
 service-smtp2go = []
-service-sns = []
+service-sns = ["dep:quick-xml"]
 service-sogs = ["dep:blake2"]
 service-sparkpost = []
 service-spike = []
@@ -394,7 +409,7 @@ service-workflows = []
 service-wpush = []
 service-wxpusher = []
 service-xml = []
-service-xmpp = []
+service-xmpp = ["dep:quick-xml"]
 service-youlmk = []
 service-zoom = []
 service-zulip = []

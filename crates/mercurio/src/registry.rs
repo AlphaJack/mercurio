@@ -297,9 +297,11 @@ mod tests {
     use std::sync::Mutex;
 
     use super::*;
+    #[cfg(feature = "markdown")]
+    use crate::NotifyFormat;
     use crate::http::Request;
     use crate::testing::FakeTransport;
-    use crate::{Mercurio, Message, NotifyFormat};
+    use crate::{Mercurio, Message};
 
     #[test]
     fn closure_service_receives_message_and_url() {
@@ -400,6 +402,7 @@ mod tests {
         assert!(!send(&b).is_success());
     }
 
+    #[cfg(feature = "config-yaml")]
     #[test]
     fn config_entries_use_the_registry() {
         let mut m = Mercurio::new();
@@ -412,6 +415,7 @@ mod tests {
         assert_eq!(Mercurio::new().add_config_text("tcfg://plain", None).unwrap_or(0), 0);
     }
 
+    #[cfg(feature = "markdown")]
     #[test]
     fn declared_format_converts_input() {
         let seen = Arc::new(Mutex::new(String::new()));

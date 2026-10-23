@@ -8,6 +8,7 @@ pub fn html_escape_noquote(s: &str) -> String {
 }
 
 /// [`html_escape_noquote`] plus `"`, for double-quoted attribute values.
+#[cfg(feature = "html")]
 pub fn html_escape_attr(s: &str) -> String {
     html_escape_noquote(s).replace('"', "&quot;")
 }

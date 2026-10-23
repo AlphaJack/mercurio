@@ -165,6 +165,7 @@
 //! use std::sync::Arc;
 //! use mercurio::testing::FakeTransport;
 //! use mercurio::{Mercurio, Message, NotifyOptions, TagFilter};
+//! # if !cfg!(feature = "config-yaml") { return Ok(()); }
 //!
 //! let yaml = "
 //! version: 1
@@ -214,7 +215,7 @@
 //!
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/features.md"))]
 //!
-//! For a slim build, disable default features and pick services: `mercurio = { version = "0.1", default-features = false, features = ["service-telegram", "service-ntfy"] }`. Add `bundle-timezones` to keep `?tz=` zones working on hosts without a system time zone database.
+//! For a slim build, disable default features and pick services: `mercurio = { version = "0.1", default-features = false, features = ["service-telegram", "service-ntfy"] }`. Add `bundle-timezones` to keep `?tz=` zones working on hosts without a system time zone database, `bundle-certificates` for hosts without a system certificate bundle and `config-yaml`, `markdown`, `html` or `emojis` to keep YAML configuration, Markdown rendering, HTML conversion or `:shortcode:` emoji.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(

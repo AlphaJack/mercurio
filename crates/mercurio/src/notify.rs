@@ -455,6 +455,7 @@ impl Mercurio {
     /// use std::sync::Arc;
     /// use mercurio::testing::FakeTransport;
     /// use mercurio::{Mercurio, Message, NotifyOptions, TemplateVars};
+    /// # if !cfg!(feature = "config-yaml") { return Ok(()); }
     ///
     /// let yaml = "
     /// version: 1
