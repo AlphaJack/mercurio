@@ -3,39 +3,7 @@
 pub mod dialect;
 #[cfg(feature = "emojis")]
 pub mod emoji;
-#[cfg(feature = "html")]
 pub mod html;
-/// Without the `html` feature: HTML is kept as text.
-#[cfg(not(feature = "html"))]
-pub mod html {
-    /// What `filter` would keep of an HTML document; unused without the `html` feature.
-    #[derive(Debug, Clone, Copy)]
-    #[expect(dead_code, reason = "only the HTML filter reads it")]
-    pub struct Filter {
-        pub tags: &'static [(&'static str, &'static str)],
-        pub attrs: &'static [(&'static str, &'static str)],
-        pub line_break: &'static str,
-        pub keep_newlines: bool,
-    }
-
-    /// `html` escaped as literal text.
-    pub fn filter(html: &str, _f: &Filter) -> String {
-        super::html_unavailable();
-        crate::util::escape_html(html, true, false)
-    }
-
-    /// `html` as written.
-    pub fn html_to_text(html: &str) -> String {
-        super::html_unavailable();
-        html.to_string()
-    }
-
-    /// `html` as literal Markdown text.
-    pub fn html_to_markdown(html: &str) -> String {
-        super::html_unavailable();
-        super::text_to_markdown(html)
-    }
-}
 #[cfg(feature = "markdown")]
 mod markdown;
 pub mod markup;
@@ -79,11 +47,6 @@ pub fn markdown_to_html_plain(content: &str) -> String {
         markdown_unavailable();
         text_to_html(content)
     }
-}
-
-#[cfg(not(feature = "html"))]
-fn html_unavailable() {
-    log::warn!("HTML is sent as plain text: this build lacks the Cargo feature `html`");
 }
 
 #[cfg(not(feature = "markdown"))]
@@ -151,7 +114,6 @@ pub fn html_to_markdown(content: &str) -> String {
 mod tests {
     use super::*;
 
-    #[cfg(feature = "html")]
     #[test]
     fn html_to_text_examples() {
         assert_eq!(html_to_text("line one\nline two   spaced"), "line one line two spaced");
