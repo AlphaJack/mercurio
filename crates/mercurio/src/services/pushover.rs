@@ -233,14 +233,19 @@ const PUSHOVER_HTML: html::Filter = html::Filter {
 };
 
 impl Notify for Arc<Pushover> {
-    /// Markdown is rendered as HTML, then HTML is reduced to the tags Pushover shows; plain text is unchanged.
+    /// Markdown is rendered as HTML, then HTML is reduced to the tags Pushover shows; plain text is unchanged. A body that reduces to nothing (a lone `---`, an `<hr>`) is sent as escaped text instead, since Pushover rejects an empty message (Apprise #1829).
     fn convert(&self, body: &str, format: NotifyFormat) -> Option<String> {
         let source = match format {
             NotifyFormat::Markdown => crate::convert::markdown_to_html(body),
             NotifyFormat::Html => body.to_string(),
             NotifyFormat::Text => return None,
         };
-        Some(html::filter(&source, &PUSHOVER_HTML))
+        let reduced = html::filter(&source, &PUSHOVER_HTML);
+        if !reduced.trim().is_empty() || body.trim().is_empty() {
+            return Some(reduced);
+        }
+        let lines: Vec<String> = body.trim().lines().map(crate::util::html_escape_noquote).collect();
+        Some(lines.join(PUSHOVER_HTML.line_break))
     }
 
     /// The filter's output is well-nested HTML.

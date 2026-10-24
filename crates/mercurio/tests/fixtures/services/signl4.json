@@ -17,5 +17,11 @@
 {"name":"http_202","url":"signl4://secret/","responses":[{"status":202}]},
 {"name":"http_204","url":"signl4://secret/","responses":[{"status":204}]},
 {"name":"conn_error","url":"signl4://secret/","responses":[{"error":true}]},
-{"name":"no_title","url":"signl4://secret/","title":""}
+{"name":"no_title","url":"signl4://secret/","title":""},
+{"name":"action_map_failure","url":"signl4://secret?action=map","title":"Disk full","body":"on host a","type":"failure"},
+{"name":"action_map_success","url":"signl4://secret?action=map","title":"Disk full","body":"cleared","type":"success"},
+{"name":"action_acknowledge_dedup","url":"signl4://secret?action=ack&dedup=disk-full"},
+{"name":"action_resolve_no_title","url":"signl4://secret?action=resolve","title":"","body":"Disk full\nmore"},
+{"name":"action_status_wins","url":"signl4://secret?action=resolve&status=new"},
+{"name":"action_invalid","url":"signl4://secret?action=close"}
 ]}

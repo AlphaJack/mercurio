@@ -5,7 +5,7 @@
 //! # Differences with Apprise
 //!
 //! - Apprise posts forms to API v1.0 with `access_token` in the body, while mercurio uses API v2.0 (Bearer header, JSON, empty options left out), since Streamlabs is disabling v1.0.
-//! - The donation `identifier` defaults to the application id and `sound_href` keeps its case (Apprise upper-cases the URL).
+//! - The donation `identifier` defaults to the application id.
 
 use serde_json::{Map, Value, json};
 
@@ -82,7 +82,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let currency = opt(u, "currency", true).unwrap_or_else(|| SERVICE.default_of("currency").into());
     let currency = validate_regex(&currency, r"^[A-Z]{3}$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid Streamlabs currency was specified"))?;
-    let name = opt(u, "name", true).unwrap_or_else(|| SERVICE.default_of("name").into());
+    let name = opt(u, "name", false).unwrap_or_else(|| SERVICE.default_of("name").into());
     let name = validate_regex(&name, r"^[^\s].{1,24}$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid Streamlabs donor was specified"))?;
     Ok(Box::new(Streamlabs {
@@ -96,7 +96,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         amount: opt(u, "amount", false).unwrap_or_else(|| SERVICE.default_of("amount").into()),
         currency,
         name,
-        identifier: opt(u, "identifier", true),
+        identifier: opt(u, "identifier", false).map(|v| v.trim().to_string()),
     }))
 }
 

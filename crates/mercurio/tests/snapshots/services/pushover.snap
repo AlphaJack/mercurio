@@ -833,6 +833,33 @@ groups_hash:
       method: POST
       url: "https://api.pushover.net/1/messages.json"
   valid: true
+html_without_text:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - "&lt;hr&gt;<br>&lt;img src='x.png'&gt;"
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
 http_401:
   errors:
     - "HTTP 401: Unauthorized - Invalid Token."
@@ -908,6 +935,60 @@ markdown_passthrough:
             - Mercurio Body
           - - sound
             - pushover
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+markdown_text_survives:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - a
+          - - sound
+            - pushover
+          - - html
+            - "1"
+          - - user
+            - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+          - - device
+            - ALL_DEVICES
+      headers:
+        Authorization: Basic YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhOg==
+        Content-Type: application/x-www-form-urlencoded
+      method: POST
+      url: "https://api.pushover.net/1/messages.json"
+  valid: true
+markup_without_text:
+  ok: true
+  requests:
+    - body:
+        form:
+          - - token
+            - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          - - priority
+            - "0"
+          - - title
+            - Mercurio Title
+          - - message
+            - "---"
+          - - sound
+            - pushover
+          - - html
+            - "1"
           - - user
             - uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
           - - device

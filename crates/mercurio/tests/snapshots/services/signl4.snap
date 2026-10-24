@@ -1,6 +1,83 @@
 ---
 source: crates/mercurio/tests/it/services.rs
 ---
+action_acknowledge_dedup:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-ExternalID: disk-full
+          X-S4-SourceSystem: Mercurio
+          X-S4-Status: acknowledged
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+action_invalid:
+  error: "SIGNL4: the SIGNL4 action specified is invalid"
+  valid: false
+action_map_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-ExternalID: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+          X-S4-SourceSystem: Mercurio
+          body: on host a
+          title: Disk full
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+action_map_success:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-ExternalID: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+          X-S4-SourceSystem: Mercurio
+          X-S4-Status: resolved
+          body: cleared
+          title: Disk full
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+action_resolve_no_title:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-ExternalID: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+          X-S4-SourceSystem: Mercurio
+          X-S4-Status: resolved
+          body: "Disk full\nmore"
+          title: Mercurio Notifications
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
+action_status_wins:
+  ok: true
+  requests:
+    - body:
+        json:
+          X-S4-ExternalID: 290283e3270d004c252950db851ba38fc611fcd068a240e56b105ee0310b4664
+          X-S4-SourceSystem: Mercurio
+          X-S4-Status: new
+          body: Mercurio Body
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://connect.signl4.com/webhook/secret/"
+  valid: true
 all:
   ok: true
   requests:

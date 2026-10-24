@@ -35,7 +35,6 @@ del_token:
   requests:
     - body:
         json:
-          value1: Mercurio Title
           value3: info
       headers:
         Content-Type: application/json

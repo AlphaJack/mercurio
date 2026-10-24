@@ -23,5 +23,10 @@
 {"name":"http_202","url":"pagerduty://somerkey@someapikey","responses":[{"status":202}]},
 {"name":"http_204","url":"pagerduty://somerkey@someapikey","responses":[{"status":204}]},
 {"name":"conn_error","url":"pagerduty://somerkey@someapikey","responses":[{"error":true}]},
-{"name":"title_body","url":"pagerduty://k@a","title":"My Title","body":"Line1\nLine2"}
+{"name":"title_body","url":"pagerduty://k@a","title":"My Title","body":"Line1\nLine2"},
+{"name":"action_trigger_dedup","url":"pagerduty://myroutekey@myapikey?dedup=disk-full"},
+{"name":"action_map_failure","url":"pagerduty://myroutekey@myapikey?action=map","title":"Disk full","body":"on host a","type":"failure"},
+{"name":"action_map_success","url":"pagerduty://myroutekey@myapikey?action=map","title":"Disk full","body":"cleared","type":"success"},
+{"name":"action_resolve_prefix","url":"pagerduty://myroutekey@myapikey?action=R&dedup=disk-full"},
+{"name":"action_invalid","url":"pagerduty://myroutekey@myapikey?action=close"}
 ]}
