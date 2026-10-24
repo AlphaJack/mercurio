@@ -7,6 +7,7 @@
 //! ## Quick start
 //!
 //! ```no_run
+//! # #[cfg(feature = "transport-tokio")] {
 //! # async fn run() -> Result<(), mercurio::Error> {
 //! use mercurio::{AsyncMercurio, Message, NotifyType};
 //!
@@ -20,6 +21,7 @@
 //! }
 //! m.close().await;
 //! # Ok(()) }
+//! # }
 //! ```
 //!
 //! `AsyncMercurio` works on any runtime and spawns nothing. One `notify` call sends to its targets concurrently inside the calling task (at most 128 sends in flight across the process), so it uses one thread; spawn several calls to use more cores. [`AsyncMercurio::new`] does its I/O on tokio and rustls with an in-house HTTP/1.1 client ([`TokioTransport`], feature `transport-tokio`); [`AsyncMercurio::with_transport`] takes any [`AsyncTransport`].
@@ -47,6 +49,7 @@
 //! A [`Target`] builds its [`Plan`] without sending anything. The plan is a plain value: inspect it or hand it to any transport. [`testing::FakeTransport`] records every request and answers from a script:
 //!
 //! ```
+//! # #[cfg(feature = "service-json")] {
 //! use mercurio::testing::FakeTransport;
 //! use mercurio::{Asset, Message, service::Plan};
 //!
@@ -65,6 +68,7 @@
 //! assert!(target.send(&msg, &fake, &Asset::default()).is_success());
 //! let req = fake.last_request().unwrap();
 //! assert!(String::from_utf8_lossy(&req.body).contains("Backup done"));
+//! # }
 //! # Ok::<(), mercurio::Error>(())
 //! ```
 //!
@@ -75,6 +79,7 @@
 //! Implement [`AsyncTransport`] (for [`AsyncMercurio`]) or [`Transport`] (for [`Mercurio`]) to add logging, tracing, metrics, a proxy or a test double. Only `http`, `file` and `sleep` are required; `connect`, `datagram` and `command` default to [`Error::Unsupported`] and `env` to [`SystemEnv`], so a wrapper forwards them to keep e-mail, chat protocols, syslog and desktop notifications working:
 //!
 //! ```no_run
+//! # #[cfg(feature = "transport-tokio")] {
 //! use std::sync::Arc;
 //! use std::time::Duration;
 //! use mercurio::{
@@ -111,6 +116,7 @@
 //!
 //! let mut m = AsyncMercurio::with_transport(Arc::new(Logged(TokioTransport::new())));
 //! m.add("mailto://user:pass@example.com")?;
+//! # }
 //! # Ok::<(), mercurio::Error>(())
 //! ```
 //!
@@ -195,6 +201,7 @@
 //! [`testing::FakeTransport`] works with the whole stack, so application code that sends notifications can be tested without accounts or a network:
 //!
 //! ```
+//! # #[cfg(feature = "service-json")] {
 //! use std::sync::Arc;
 //! use mercurio::testing::FakeTransport;
 //! use mercurio::{Mercurio, Message, Status};
@@ -206,6 +213,7 @@
 //! let report = m.notify(&Message::new("hi"));
 //! assert_eq!(report.status(), Status::Failure);
 //! assert_eq!(fake.requests().len(), 1);
+//! # }
 //! # Ok::<(), mercurio::Error>(())
 //! ```
 //!

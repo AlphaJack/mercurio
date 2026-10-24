@@ -30,6 +30,7 @@ fn detect() {
     assert_eq!(detect_format("- json://x\n"), None);
 }
 
+#[cfg(feature = "service-json")]
 #[test]
 fn text_tags_and_groups() {
     let c = load("dev, ops=json://localhost/a\nteam=dev\njson://localhost/b\nhello\n");

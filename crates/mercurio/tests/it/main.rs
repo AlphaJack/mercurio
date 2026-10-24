@@ -13,8 +13,11 @@ mod description;
 mod fuzz;
 mod loopback;
 mod params;
+// Each module drives these services' wire protocols.
+#[cfg(all(feature = "service-email", feature = "service-irc", feature = "service-mqtt", feature = "service-rsyslog"))]
 mod protocols;
 mod regex_engines;
+#[cfg(all(feature = "service-email-pgp", feature = "service-xmpp"))]
 mod scripted;
 // The snapshots record Markdown rendered by each service.
 #[cfg(feature = "markdown")]
