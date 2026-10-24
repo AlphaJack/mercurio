@@ -19,7 +19,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 bytes = "1"
-ureq = { version = "3.4", optional = true, default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 webpki-roots = { version = "1", optional = true }
 ring = "0.17"
@@ -53,7 +52,7 @@ zeroize = { version = "1.8", optional = true }
 # The integration tests use the fixture runner (`testing` feature).
 mercurio = { path = ".", default-features = false, features = ["testing", "transport-blocking"] }
 insta = { version = "1.49.0", features = ["yaml"] }
-tokio = { version = "1.54", features = ["rt", "macros", "net", "io-util", "time"] }
+tokio = { version = "1.54", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "time"] }
 # `tests/it/regex_engines.rs` compares both engines.
 regex = "1"
 regex-lite = "0.1.9"
@@ -234,7 +233,7 @@ timezones = ["dep:jiff"]
 bundle-timezones = ["timezones", "jiff/tzdb-bundle-always"]
 
 # Mozilla's root certificates inside the binary (`webpki-roots`), used when `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` is unset. Without it, the system's PEM bundle at the usual Linux paths is read instead.
-bundle-certificates = ["dep:webpki-roots", "ureq?/rustls-webpki-roots"]
+bundle-certificates = ["dep:webpki-roots"]
 
 # The `regex` crate (Unicode-aware `\s`, `\d`, `\w` and case folding, faster matching) in place of `regex-lite` (smaller, ASCII-only classes).
 regex-unicode = ["dep:regex"]
@@ -253,8 +252,8 @@ html = ["dep:html-escape"]
 
 # Tokio transport: `TokioTransport` and `AsyncMercurio::new` (tokio + rustls).
 transport-tokio = ["dep:tokio", "dep:tokio-rustls"]
-# Blocking transport: `BlockingTransport` and `Mercurio::new` (ureq).
-transport-blocking = ["dep:ureq"]
+# Blocking transport: `BlockingTransport` and `Mercurio::new` (`std::net` + rustls).
+transport-blocking = []
 
 # Compile the fixture runner (`testing::fixtures`); `testing::FakeTransport` is always available.
 testing = []

@@ -1,22 +1,20 @@
-//! URLs of the native HTTP client: parsing, `Location` resolution and the proxy settings of the environment.
-
-use crate::crypto::b64;
+//! URLs of the HTTP client: parsing, `Location` resolution, credentials and `Referer` on redirects.
 
 /// An absolute `http` or `https` URL, with its path and query percent-encoded the way a browser sends them.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Url {
-    pub(super) tls: bool,
+pub(crate) struct Url {
+    pub(crate) tls: bool,
     /// Lower-case; an IPv6 address has no brackets.
-    pub(super) host: String,
-    pub(super) port: u16,
+    pub(crate) host: String,
+    pub(crate) port: u16,
     /// Starts with `/`; includes the query.
-    pub(super) target: String,
+    pub(crate) target: String,
     /// The `user:password@` part, percent-decoded.
-    pub(super) userinfo: Option<(String, String)>,
+    pub(crate) userinfo: Option<(String, String)>,
 }
 
 impl Url {
-    pub(super) fn parse(s: &str) -> Result<Self, String> {
+    pub(crate) fn parse(s: &str) -> Result<Self, String> {
         let (scheme, rest) = s.split_once("://").ok_or("not an absolute URL")?;
         let tls = if scheme.eq_ignore_ascii_case("https") {
             true
@@ -42,24 +40,24 @@ impl Url {
     }
 
     /// `host[:port]` as the `Host` header and the authority of a proxied request write it.
-    pub(super) fn authority(&self) -> String {
+    pub(crate) fn authority(&self) -> String {
         let host = if self.host.contains(':') { format!("[{}]", self.host) } else { self.host.clone() };
         if self.port == if self.tls { 443 } else { 80 } { host } else { format!("{host}:{}", self.port) }
     }
 
-    /// Same host and port (the scheme may differ): what decides whether credentials follow a redirect.
-    pub(super) fn same_host_port(&self, other: &Self) -> bool {
-        (&self.host, self.port) == (&other.host, other.port)
+    /// Same scheme, host and port: what decides whether credentials follow a redirect (as reqwest), so they never go from `https` to `http`.
+    pub(crate) fn same_origin(&self, other: &Self) -> bool {
+        (self.tls, &self.host, self.port) == (other.tls, &other.host, other.port)
     }
 
     /// The `Referer` a redirect from `self` to `next` carries: `self` without credentials, none from `https` to `http`.
-    pub(super) fn referer_for(&self, next: &Self) -> Option<String> {
+    pub(crate) fn referer_for(&self, next: &Self) -> Option<String> {
         (!self.tls || next.tls)
             .then(|| format!("{}://{}{}", if self.tls { "https" } else { "http" }, self.authority(), self.target))
     }
 
     /// The URL a `Location` header points to, `None` when it is not an `http(s)` URL.
-    pub(super) fn join(&self, location: &str) -> Option<Self> {
+    pub(crate) fn join(&self, location: &str) -> Option<Self> {
         let location = location.trim();
         let scheme = if self.tls { "https" } else { "http" };
         let origin = format!("{scheme}://{}", self.authority());
@@ -241,97 +239,6 @@ fn escape(s: &str) -> String {
     out
 }
 
-/// A forward proxy from the environment: HTTP or HTTPS, optionally with Basic credentials.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Proxy {
-    /// `https://` proxy: TLS to the proxy itself.
-    pub(super) tls: bool,
-    pub(super) host: String,
-    pub(super) port: u16,
-    /// The `Proxy-Authorization` value.
-    pub(super) auth: Option<String>,
-}
-
-impl Proxy {
-    fn parse(s: &str) -> Option<Self> {
-        let s = s.trim();
-        let s = if s.contains("://") { s.to_string() } else { format!("http://{s}") };
-        let url = Url::parse(&s).ok()?;
-        let auth = url.userinfo.map(|(u, p)| format!("Basic {}", b64(format!("{u}:{p}").as_bytes())));
-        Some(Self { tls: url.tls, host: url.host, port: url.port, auth })
-    }
-}
-
-/// `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (either case), read once. Under CGI (`REQUEST_METHOD` set) only the lower-case `http_proxy` counts, since a client can set `HTTP_PROXY` through a `Proxy:` header.
-#[derive(Debug, Default, Clone)]
-pub(super) struct ProxyEnv {
-    http: Option<Proxy>,
-    https: Option<Proxy>,
-    no_proxy: Vec<String>,
-}
-
-impl ProxyEnv {
-    pub(super) fn from_env() -> Self {
-        Self::from_lookup(|name| std::env::var(name).ok())
-    }
-
-    pub(super) fn from_lookup(get: impl Fn(&str) -> Option<String>) -> Self {
-        let var = |upper: &str| {
-            let lower = upper.to_ascii_lowercase();
-            [upper, lower.as_str()].into_iter().find_map(|n| get(n).filter(|v| !v.trim().is_empty()))
-        };
-        let all = var("ALL_PROXY").and_then(|v| Proxy::parse(&v));
-        let http = if get("REQUEST_METHOD").is_some() { get("http_proxy") } else { var("HTTP_PROXY") };
-        Self {
-            http: http.and_then(|v| Proxy::parse(&v)).or_else(|| all.clone()),
-            https: var("HTTPS_PROXY").and_then(|v| Proxy::parse(&v)).or(all),
-            no_proxy: var("NO_PROXY")
-                .map(|v| v.split(',').map(|e| e.trim().to_ascii_lowercase()).filter(|e| !e.is_empty()).collect())
-                .unwrap_or_default(),
-        }
-    }
-
-    /// The proxy `url` goes through, if any.
-    pub(super) fn for_url(&self, url: &Url) -> Option<&Proxy> {
-        let proxy = if url.tls { self.https.as_ref() } else { self.http.as_ref() }?;
-        (!self.excluded(&url.host)).then_some(proxy)
-    }
-
-    fn excluded(&self, host: &str) -> bool {
-        let ip = host.parse::<std::net::IpAddr>().ok();
-        self.no_proxy.iter().any(|entry| {
-            if let Some(matched) = ip.and_then(|ip| ip_matches(ip, entry)) {
-                return matched;
-            }
-            let entry = entry.trim_start_matches("*.").trim_start_matches('.');
-            entry == "*" || host == entry || host.strip_suffix(entry).is_some_and(|p| p.ends_with('.'))
-        })
-    }
-}
-
-/// Whether `ip` is the address or in the `addr/prefix` range `entry`; `None` when `entry` is not an address.
-fn ip_matches(ip: std::net::IpAddr, entry: &str) -> Option<bool> {
-    use std::net::IpAddr;
-    let (addr, prefix) = match entry.split_once('/') {
-        Some((a, p)) => (a, Some(p.parse::<u32>().ok()?)),
-        None => (entry, None),
-    };
-    let net: IpAddr = addr.trim_matches(['[', ']']).parse().ok()?;
-    Some(match (ip, net) {
-        (IpAddr::V4(a), IpAddr::V4(b)) => {
-            let bits = prefix.unwrap_or(32).min(32);
-            let mask = u32::MAX.checked_shl(32 - bits).unwrap_or(0);
-            u32::from(a) & mask == u32::from(b) & mask
-        }
-        (IpAddr::V6(a), IpAddr::V6(b)) => {
-            let bits = prefix.unwrap_or(128).min(128);
-            let mask = u128::MAX.checked_shl(128 - bits).unwrap_or(0);
-            u128::from(a) & mask == u128::from(b) & mask
-        }
-        (IpAddr::V4(_) | IpAddr::V6(_), IpAddr::V4(_) | IpAddr::V6(_)) => false,
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -377,8 +284,10 @@ mod tests {
         let a = url("https://u:p@a.test/x?t=1");
         assert_eq!(a.referer_for(&url("https://b.test/")).as_deref(), Some("https://a.test/x?t=1"));
         assert_eq!(a.referer_for(&url("http://b.test/")), None);
-        assert!(a.same_host_port(&url("https://a.test:443/y")));
-        assert!(!a.same_host_port(&url("http://a.test/y")), "the port changes with the scheme");
+        assert!(a.same_origin(&url("https://a.test:443/y")));
+        assert!(!a.same_origin(&url("http://a.test/y")), "the port changes with the scheme");
+        assert!(!url("https://a.test:8443/").same_origin(&url("http://a.test:8443/")), "so does the scheme alone");
+        assert!(!url("http://a.test/").same_origin(&url("http://b.test/")));
     }
 
     #[test]
@@ -392,43 +301,5 @@ mod tests {
         assert_eq!(join("//b.test/p").as_deref(), Some("b.test/p"));
         assert_eq!(join("https://c.test/p?q").as_deref(), Some("c.test/p?q"));
         assert_eq!(join("ftp://c.test/"), None);
-    }
-
-    #[test]
-    fn proxy_environment() {
-        let env = ProxyEnv::from_lookup(|n| match n {
-            "http_proxy" => Some("http://u:p@proxy.test:3128".into()),
-            "ALL_PROXY" => Some("other.test:1080".into()),
-            "NO_PROXY" => Some("localhost, .internal.test,10.0.0.1,192.168.0.0/16,::1".into()),
-            _ => None,
-        });
-        let http = env.for_url(&url("http://example.com/")).unwrap();
-        assert_eq!((http.host.as_str(), http.port), ("proxy.test", 3128));
-        assert_eq!(http.auth.as_deref(), Some("Basic dTpw"));
-        let https = env.for_url(&url("https://example.com/")).unwrap();
-        assert_eq!((https.host.as_str(), https.port), ("other.test", 1080));
-        for skipped in [
-            "http://localhost/",
-            "http://a.internal.test/",
-            "http://internal.test/",
-            "http://10.0.0.1/",
-            "http://192.168.4.2/",
-            "http://[::1]/",
-        ] {
-            assert!(env.for_url(&url(skipped)).is_none(), "{skipped}");
-        }
-        assert!(env.for_url(&url("http://notinternal.test/")).is_some());
-        assert!(env.for_url(&url("http://10.0.0.2/")).is_some());
-        assert!(ProxyEnv::default().for_url(&url("http://x/")).is_none());
-
-        let cgi = ProxyEnv::from_lookup(|n| match n {
-            "REQUEST_METHOD" => Some("GET".into()),
-            "HTTP_PROXY" => Some("evil.test:80".into()),
-            _ => None,
-        });
-        assert!(cgi.for_url(&url("http://example.com/")).is_none(), "HTTP_PROXY is ignored under CGI");
-        let tls = ProxyEnv::from_lookup(|n| (n == "HTTPS_PROXY").then(|| "https://p.test".into()));
-        let p = tls.for_url(&url("https://example.com/")).unwrap();
-        assert_eq!((p.tls, p.port), (true, 443));
     }
 }
