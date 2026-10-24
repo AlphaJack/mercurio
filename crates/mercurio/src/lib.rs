@@ -124,7 +124,7 @@
 //!
 //! ## Blocking API
 //!
-//! [`Mercurio`] has the same targets, configuration and reports as [`AsyncMercurio`] without a runtime: `notify` blocks until every service has answered, sending on one thread per target. `Mercurio::new` uses `BlockingTransport` (`std::net` + rustls), which needs the `transport-blocking` feature:
+//! [`Mercurio`] has the same targets, configuration and reports as [`AsyncMercurio`] without a runtime: `notify` blocks until every service has answered, sending on one thread per target. `Mercurio::new` uses `BlockingTransport` (`std::net` + rustls, feature `transport-blocking`). A build without tokio keeps only that transport:
 //!
 //! ```toml
 //! mercurio = { version = "0.1", default-features = false, features = ["all-services", "transport-blocking"] }
