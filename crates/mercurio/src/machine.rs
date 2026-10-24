@@ -14,6 +14,16 @@ pub trait Protocol: Send {
     fn input(&mut self, input: Input<'_>);
 }
 
+/// A borrowed machine is driven the same way, so its result can be read after [`drive`] or [`run`] returns.
+impl<P: Protocol + ?Sized> Protocol for &mut P {
+    fn next(&mut self) -> Output {
+        (**self).next()
+    }
+    fn input(&mut self, input: Input<'_>) {
+        (**self).input(input);
+    }
+}
+
 /// What the protocol needs next.
 #[derive(Debug)]
 pub enum Output {
@@ -79,8 +89,22 @@ impl LineBuf {
 }
 
 /// Run `machine` on a real connection until it is done; waits go through `transport`.
-pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn, transport: &dyn AsyncTransport) -> Result<()> {
-    let mut buf = [0u8; crate::net::READ_CHUNK];
+pub async fn drive(machine: impl Protocol, conn: &mut dyn AsyncConn, transport: &dyn AsyncTransport) -> Result<()> {
+    pump(machine, conn, Some(transport), &mut [0u8; crate::net::READ_CHUNK]).await
+}
+
+/// [`drive`] for a machine that never asks to wait ([`Output::Sleep`] ends it with an error), reading into `buf` (the caller's, so a connection can keep one).
+#[cfg(any(feature = "transport-tokio", feature = "transport-blocking"))]
+pub async fn run(machine: impl Protocol, conn: &mut dyn AsyncConn, buf: &mut [u8]) -> Result<()> {
+    pump(machine, conn, None, buf).await
+}
+
+async fn pump(
+    mut machine: impl Protocol,
+    conn: &mut dyn AsyncConn,
+    transport: Option<&dyn AsyncTransport>,
+    buf: &mut [u8],
+) -> Result<()> {
     loop {
         match machine.next() {
             Output::Write(data) => {
@@ -92,7 +116,7 @@ pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn, transpo
                     machine.input(Input::WriteError(e));
                 }
             }
-            Output::Read => match conn.read(&mut buf).await {
+            Output::Read => match conn.read(buf).await {
                 Ok(n) => machine.input(Input::Data(&buf[..n])),
                 Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
                 Err(e) => machine.input(Input::ReadError(e)),
@@ -102,7 +126,10 @@ pub async fn drive(mut machine: impl Protocol, conn: &mut dyn AsyncConn, transpo
                 machine.input(Input::Tls(r));
             }
             Output::ChannelBinding(kind) => machine.input(Input::ChannelBinding(conn.channel_binding(kind))),
-            Output::Sleep(d) => transport.sleep(d).await,
+            Output::Sleep(d) => match transport {
+                Some(t) => t.sleep(d).await,
+                None => return Err(crate::error::Error::Unsupported("waiting inside this exchange".into())),
+            },
             Output::Done(r) => return r,
         }
     }

@@ -2,9 +2,8 @@
 //!
 //! The only module that names tokio or tokio-rustls; HTTP is the in-house client of `client`. It gives the same results as `BlockingTransport` (feature `transport-blocking`): rustls with ring, the Mozilla roots or `SSL_CERT_FILE`, HTTP/1.1, at most 10 redirects (the last 3xx is returned), 16 MiB bodies, `HTTP(S)_PROXY` / `NO_PROXY` from the environment and the same error classes.
 
-mod client;
+pub(crate) mod client;
 mod conn;
-mod uri;
 
 use std::fmt;
 use std::io;
@@ -47,7 +46,7 @@ impl TokioTransport {
     /// A transport with a custom default `User-Agent`.
     pub fn with_user_agent(ua: impl Into<String>) -> Self {
         let user_agent = ua.into();
-        Self { client: client::Client::new(user_agent.clone()), user_agent }
+        Self { client: client::Client::new(client::TokioDial::default(), user_agent.clone()), user_agent }
     }
 
     async fn send(&self, req: &Request) -> Result<Response> {

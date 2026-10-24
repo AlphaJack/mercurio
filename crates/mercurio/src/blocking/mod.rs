@@ -1,23 +1,24 @@
-//! The blocking transport (feature `transport-blocking`): [`BlockingTransport`] does HTTP with `ureq`, and [`NetConn`] streams with `std::net` + rustls.
+//! The blocking transport (feature `transport-blocking`): [`BlockingTransport`] does HTTP with the in-house client ([`crate::http1::client`]) on `std::net` + rustls, and [`NetConn`] streams the same way.
+
+pub(crate) mod client;
 
 use std::fmt;
 use std::io::{self, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs, UdpSocket};
-use std::sync::OnceLock;
 use std::time::Duration;
 
 use rustls::{ClientConnection, StreamOwned};
 
 use crate::error::{Error, Result};
-use crate::http::{MAX_REDIRECTS, Method, Request, Response};
+use crate::http::{Request, Response};
 use crate::net::{server_name, tls_config};
 use crate::transport::{Command, CommandOutput, Conn, Datagram, DatagramTarget, Endpoint, Transport, unbound_addr};
+use client::{Client, StdDial};
 
-/// Real network I/O: `ureq` + rustls (ring), Mozilla roots from `webpki-roots`.
+/// Real network I/O on `std::net` + rustls (ring): HTTP through the same client as the tokio transport.
 pub struct BlockingTransport {
     user_agent: String,
-    verified: OnceLock<ureq::Agent>,
-    unverified: OnceLock<ureq::Agent>,
+    client: Client,
 }
 
 impl fmt::Debug for BlockingTransport {
@@ -40,78 +41,15 @@ impl BlockingTransport {
 
     /// A transport with a custom default `User-Agent`.
     pub fn with_user_agent(ua: impl Into<String>) -> Self {
-        Self { user_agent: ua.into(), verified: OnceLock::new(), unverified: OnceLock::new() }
-    }
-
-    fn agent(&self, verify: bool) -> &ureq::Agent {
-        let cell = if verify { &self.verified } else { &self.unverified };
-        cell.get_or_init(|| {
-            let provider = std::sync::Arc::new(rustls::crypto::ring::default_provider());
-            let mut tls = ureq::tls::TlsConfig::builder()
-                .unversioned_rustls_crypto_provider(provider)
-                .disable_verification(!verify);
-            // Without a bundle, ureq's own Mozilla roots (feature `bundle-certificates`); without those, an empty set fails every handshake.
-            let certs = crate::net::ca_bundle();
-            if certs.is_some() || cfg!(not(feature = "bundle-certificates")) {
-                let certs: Vec<_> =
-                    certs.unwrap_or_default().iter().map(|c| ureq::tls::Certificate::from_der(c).to_owned()).collect();
-                tls = tls.root_certs(ureq::tls::RootCerts::new_with_certs(&certs));
-            }
-            let tls = tls.build();
-            ureq::Agent::config_builder()
-                .tls_config(tls)
-                .http_status_as_error(false)
-                .user_agent(&self.user_agent)
-                .max_redirects_will_error(false)
-                .build()
-                .into()
-        })
+        let user_agent = ua.into();
+        Self { client: Client::new(StdDial::default(), user_agent.clone()), user_agent }
     }
 }
 
 impl Transport for BlockingTransport {
     fn http(&self, req: &Request) -> Result<Response> {
-        use ureq::RequestExt;
-        let mut builder = ureq::http::Request::builder().method(req.method.as_str()).uri(&req.url);
-        let mut has_ua = false;
-        for (k, v) in &req.headers {
-            has_ua |= k.eq_ignore_ascii_case("user-agent");
-            builder = builder.header(k.as_str(), v.as_str());
-        }
-        if !has_ua {
-            builder = builder.header("User-Agent", self.user_agent.as_str());
-        }
-        let http_req = builder.body(req.body.as_ref()).map_err(|e| Error::transport(format!("bad request: {e}")))?;
-        let agent = self.agent(req.verify_tls);
-        let configured = http_req
-            .with_agent(agent)
-            .configure()
-            .http_status_as_error(false)
-            .timeout_connect(Some(req.connect_timeout))
-            .timeout_resolve(Some(req.connect_timeout))
-            .timeout_recv_response(Some(req.read_timeout))
-            .timeout_recv_body(Some(req.read_timeout))
-            .max_redirects(if req.follow_redirects { MAX_REDIRECTS } else { 0 });
-        let mut res = configured.run().map_err(map_ureq_error)?;
-        let status = res.status().as_u16();
-        let headers = res
-            .headers()
-            .iter()
-            .map(|(k, v)| (k.as_str().to_string(), String::from_utf8_lossy(v.as_bytes()).into_owned()))
-            .collect();
-        let body = if req.method == Method::Head {
-            Vec::new()
-        } else {
-            let limit = if req.max_body == 0 { u64::MAX } else { req.max_body };
-            res.body_mut().with_config().limit(limit).read_to_vec().map_err(|e| {
-                if matches!(e, ureq::Error::BodyExceedsLimit(_)) {
-                    crate::http::body_too_large(req.max_body)
-                } else {
-                    map_ureq_error(e)
-                }
-            })?
-        };
-        Ok(Response { status, headers, body })
+        // Every future of the blocking client is complete when polled, so this never parks.
+        pollster::block_on(self.client.send(req))
     }
 
     fn connect(&self, ep: &Endpoint) -> Result<Box<dyn Conn>> {
@@ -168,28 +106,6 @@ impl Transport for BlockingTransport {
         }
         let out = child.wait_with_output().map_err(Error::transport)?;
         Ok(CommandOutput { status: out.status.code().unwrap_or(-1), stdout: out.stdout, stderr: out.stderr })
-    }
-}
-
-/// Failures before the request left (resolve, connect) are [`Error::Transport`]; later ones are [`Error::Unconfirmed`] because the service may already have acted on the request.
-#[expect(clippy::wildcard_enum_match_arm, reason = "io::ErrorKind and ureq::Error are non-exhaustive")]
-fn map_ureq_error(e: ureq::Error) -> Error {
-    use std::io::ErrorKind;
-    use ureq::Timeout;
-    match e {
-        ureq::Error::Timeout(t @ (Timeout::Resolve | Timeout::Connect)) => Error::Transport(format!("timed out ({t})")),
-        ureq::Error::Timeout(t) => Error::Unconfirmed(format!("timed out ({t})")),
-        ureq::Error::Io(io) => match io.kind() {
-            ErrorKind::ConnectionRefused
-            | ErrorKind::NotFound
-            | ErrorKind::AddrNotAvailable
-            | ErrorKind::HostUnreachable
-            | ErrorKind::NetworkUnreachable
-            | ErrorKind::NetworkDown => Error::Transport(io.to_string()),
-            _ => Error::Unconfirmed(io.to_string()),
-        },
-        ureq::Error::Protocol(p) => Error::Unconfirmed(p.to_string()),
-        other => Error::Transport(other.to_string()),
     }
 }
 
