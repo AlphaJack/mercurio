@@ -21,6 +21,7 @@ use crate::{Asset, Message, Registry, TagFilter};
 /// It works on any async runtime and spawns nothing: the targets of one `notify` call run concurrently inside the calling task (a lane per target, or per throttled service), at most 128 sends at once across the process. One call therefore runs on one thread; to spread CPU-heavy fan-out (thousands of TLS handshakes) over several cores, spawn several calls. Every returned future is `Send`.
 ///
 /// ```
+/// # #[cfg(feature = "service-json")] {
 /// use std::sync::Arc;
 /// use mercurio::testing::FakeTransport;
 /// use mercurio::{AsyncMercurio, transport::Blocking, Message};
@@ -30,6 +31,7 @@ use crate::{Asset, Message, Registry, TagFilter};
 /// m.add("json://localhost/hook")?;
 /// let report = pollster::block_on(m.notify(&Message::new("Backup finished")));
 /// assert!(report.is_success());
+/// # }
 /// # Ok::<(), mercurio::Error>(())
 /// ```
 pub struct AsyncMercurio {
@@ -274,6 +276,7 @@ mod tests {
         AsyncMercurio::with_transport(Arc::new(Blocking(fake.clone())))
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn lanes_keep_target_order_and_throttle_waits() {
         #[derive(Debug)]
@@ -308,6 +311,7 @@ mod tests {
         assert!(sleeps.iter().all(|d| *d > Duration::from_secs(4)), "{sleeps:?}");
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn conversion_keeps_targets_and_settings() {
         let fake = Arc::new(FakeTransport::new());
@@ -355,6 +359,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn same_api_as_the_blocking_notifier() {
         let fake = Arc::new(FakeTransport::new());

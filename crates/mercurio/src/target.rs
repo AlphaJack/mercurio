@@ -505,6 +505,7 @@ mod tests {
     use super::*;
 
     /// The ids Apprise's `url_id()` gives: SHA-256 of salt, scheme, password, user, host, port, path and `s`/`i`.
+    #[cfg(feature = "service-json")]
     #[test]
     fn url_id_follows_salt_and_length() {
         let t = parse("json://user:pass@example.com:8080/a/b?x=1").unwrap();

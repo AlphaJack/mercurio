@@ -39,6 +39,7 @@ mod tests {
         req.url
     }
 
+    #[cfg(all(feature = "service-json", feature = "service-xml", feature = "service-form"))]
     #[test]
     fn encoded_slash_stays_one_segment() {
         for scheme in ["json", "xml", "form"] {

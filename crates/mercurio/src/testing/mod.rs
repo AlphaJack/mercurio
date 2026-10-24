@@ -1,6 +1,7 @@
 //! Test doubles: run any plan with zero network access.
 //!
 //! ```
+//! # #[cfg(feature = "service-json")] {
 //! use mercurio::testing::FakeTransport;
 //! use mercurio::{Message, Mercurio};
 //! use std::sync::Arc;
@@ -11,6 +12,7 @@
 //! m.add("json://localhost/hook").unwrap();
 //! assert!(m.notify(&Message::new("hi")).is_success());
 //! assert_eq!(fake.requests()[0].url, "http://localhost/hook");
+//! # }
 //! ```
 
 #[cfg(any(test, feature = "testing"))]
@@ -58,6 +60,7 @@ type Rule = (Box<dyn Fn(&Request) -> bool + Send + Sync>, Result<Response>);
 /// File operations never change the disk (unless [`FakeTransport::on_disk`]): writes, appends and removals land in an in-memory file system ([`FakeTransport::files`]); reads see it first and fall back to the disk.
 ///
 /// ```
+/// # #[cfg(feature = "service-json")] {
 /// use std::sync::Arc;
 /// use mercurio::testing::FakeTransport;
 /// use mercurio::{Error, ErrorClass, Mercurio, Message, transport::Response};
@@ -74,6 +77,7 @@ type Rule = (Box<dyn Fn(&Request) -> bool + Send + Sync>, Result<Response>);
 /// let classes: Vec<ErrorClass> = report.failures().map(|(_, o)| o.result.as_ref().unwrap_err().class()).collect();
 /// assert_eq!(classes[0], ErrorClass::Transient);
 /// assert!(matches!(classes[1], ErrorClass::RateLimited { .. }));
+/// # }
 /// # Ok::<(), mercurio::Error>(())
 /// ```
 pub struct FakeTransport {

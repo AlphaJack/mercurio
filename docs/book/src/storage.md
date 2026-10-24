@@ -120,11 +120,13 @@ namespace directory are left alone.
 to persist them:
 
 ```rust
+# #[cfg(feature = "service-json")] {
 use mercurio::{Asset, Mercurio};
 
 let dir = std::env::temp_dir().join("mercurio-book-storage");
 let mut m = Mercurio::new().asset(Asset::default().with_storage(&dir));
 m.add("json://example.com/hook")?;
+# }
 # Ok::<(), mercurio::Error>(())
 ```
 
