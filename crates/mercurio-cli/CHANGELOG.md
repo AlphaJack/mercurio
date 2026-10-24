@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.2](https://github.com/AlphaJack/mercurio/compare/v0.2.1...v0.2.2) - 2026-10-24
+
+### Added
+
+#### Lib
+
+- add timezones feature, UTC only without it ([#113](https://github.com/AlphaJack/mercurio/pull/113))
+- add regex-unicode feature, regex-lite without it ([#112](https://github.com/AlphaJack/mercurio/pull/112))
+- make heavy dependencies optional behind cargo features ([#109](https://github.com/AlphaJack/mercurio/pull/109))
+
+### Fixed
+
+#### Lib
+
+- adopt fixes for IFTTT, Pushover, Streamlabs and incident actions ([#115](https://github.com/AlphaJack/mercurio/pull/115))
+
+### Other
+
+#### Lib
+
+- one sans-IO HTTP/1.1 client for both transports, drop ureq ([#114](https://github.com/AlphaJack/mercurio/pull/114))
 ## [0.2.1](https://github.com/AlphaJack/mercurio/compare/v0.2.0...v0.2.1) - 2026-10-22
 
 ### Fixed
