@@ -1,6 +1,83 @@
 ---
 source: crates/mercurio/tests/it/services.rs
 ---
+action_invalid:
+  error: "Pager Duty: the PagerDuty action specified is invalid"
+  valid: false
+action_map_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          dedup_key: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+          event_action: trigger
+          images:
+            - alt: failure
+              src: "https://example.org/failure-128x128.png"
+          payload:
+            component: Notification
+            severity: critical
+            source: Mercurio
+            summary: "Disk full\r\non host a"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+action_map_success:
+  ok: true
+  requests:
+    - body:
+        json:
+          dedup_key: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+          event_action: resolve
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+action_resolve_prefix:
+  ok: true
+  requests:
+    - body:
+        json:
+          dedup_key: disk-full
+          event_action: resolve
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
+action_trigger_dedup:
+  ok: true
+  requests:
+    - body:
+        json:
+          client: Mercurio
+          dedup_key: disk-full
+          event_action: trigger
+          images:
+            - alt: info
+              src: "https://example.org/info-128x128.png"
+          payload:
+            component: Notification
+            severity: info
+            source: Mercurio
+            summary: "Mercurio Title\r\nMercurio Body"
+          routing_key: myroutekey
+      headers:
+        Authorization: Token token=myapikey
+        Content-Type: application/json
+      method: POST
+      url: "https://events.pagerduty.com/v2/enqueue"
+  valid: true
 all_qs:
   ok: true
   requests:

@@ -62,7 +62,8 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     // `+key=value` adds and `-key` removes payload values (see the module docs).
     let add_tokens = u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
-    let del_tokens = u.query_minus.iter().map(|(k, _)| k.to_string()).collect();
+    // Removals match without case, so `-Value1` drops `value1` (Apprise #1831).
+    let del_tokens = u.query_minus.iter().map(|(k, _)| k.to_lowercase()).collect();
     Ok(Box::new(Ifttt { webhook_id: Secret::new(webhook_id), events, add_tokens, del_tokens }))
 }
 
@@ -92,8 +93,9 @@ impl Notify for Ifttt {
         }
         let mut payload = Map::new();
         for (k, v) in raw {
+            let k = k.to_lowercase();
             if !self.del_tokens.contains(&k) {
-                payload.insert(k.to_lowercase(), v);
+                payload.insert(k, v);
             }
         }
         let payload = Value::Object(payload);

@@ -182,9 +182,9 @@ donation_options:
         json:
           amount: 10
           currency: EUR
-          identifier: ME
+          identifier: me
           message: body only
-          name: JOE
+          name: Joe
       headers:
         Authorization: Bearer IcIcArukDQtuC1is1X1UdKZjTg118Lag2vScOmso
         Content-Type: application/json

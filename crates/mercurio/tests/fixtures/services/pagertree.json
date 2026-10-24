@@ -22,5 +22,10 @@
 {"name":"blank_tid","url":"pagertree://int_xxxxxxxxxxx?tid=%20","ignore":["json:/id"]},
 {"name":"custom","url":"pagertree://int_xxxxxxxxxxx?+pagertree-token=123&:env=prod&-m=v&tid=t1"},
 {"name":"custom_override","url":"pagertree://int_xxxxxxxxxxx?:title=forced&:id=myid&+Content-Type=text/plain"},
-{"name":"no_title","url":"pagertree://int_xxxxxxxxxxx?tid=x","title":""}
+{"name":"no_title","url":"pagertree://int_xxxxxxxxxxx?tid=x","title":""},
+{"name":"action_map_failure","url":"pagertree://int_xxxxxxxxxxx?action=map","title":"Disk full","body":"on host a","type":"failure"},
+{"name":"action_map_success","url":"pagertree://int_xxxxxxxxxxx?action=map","title":"Disk full","body":"cleared","type":"success"},
+{"name":"action_resolve_no_tid","url":"pagertree://int_xxxxxxxxxxx?action=resolve","title":"","body":"Disk full\nmore"},
+{"name":"dedup_alias","url":"pagertree://int_xxxxxxxxxxx?action=acknowledge&dedup=disk-full"},
+{"name":"create_retry","url":"pagertree://int_xxxxxxxxxxx?retry=1&wait=0","responses":[{"status":500},{"status":200}],"ignore":["json:/id"]}
 ]}

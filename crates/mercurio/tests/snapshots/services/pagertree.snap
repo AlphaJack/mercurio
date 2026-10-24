@@ -13,6 +13,46 @@ ack_tid:
       method: POST
       url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
   valid: true
+action_map_failure:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: on host a
+          event_type: create
+          id: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+          meta: {}
+          tags: []
+          title: Disk full
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+action_map_success:
+  ok: true
+  requests:
+    - body:
+        json:
+          event_type: resolve
+          id: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+action_resolve_no_tid:
+  ok: true
+  requests:
+    - body:
+        json:
+          event_type: resolve
+          id: dc301aee29819d4795e137e85575b03e3a41004b604f2e41bc57eda244ea1442
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
 bad_action:
   ok: true
   requests:
@@ -85,6 +125,34 @@ conn_error:
       method: POST
       url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
   valid: true
+create_retry:
+  ok: true
+  requests:
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+    - body:
+        json:
+          description: Mercurio Body
+          event_type: create
+          id: ~
+          meta: {}
+          tags: []
+          title: Mercurio Title
+      headers:
+        Content-Type: application/json
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
 custom:
   ok: true
   requests:
@@ -111,6 +179,18 @@ custom_override:
         text: "{\"description\":\"Mercurio Body\",\"event_type\":\"create\",\"id\":\"myid\",\"meta\":{},\"tags\":[],\"title\":\"forced\"}"
       headers:
         Content-Type: text/plain
+      method: POST
+      url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
+  valid: true
+dedup_alias:
+  ok: true
+  requests:
+    - body:
+        json:
+          event_type: acknowledge
+          id: disk-full
+      headers:
+        Content-Type: application/json
       method: POST
       url: "https://api.pagertree.com/integration/int_xxxxxxxxxxx"
   valid: true

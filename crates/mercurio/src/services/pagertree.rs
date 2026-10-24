@@ -1,7 +1,10 @@
 //! PagerTree (`pagertree://`): alerts through a PagerTree integration.
+//!
+//! `?action=` sets the event: `create` (default), `acknowledge`, `resolve`, or `map`, which resolves on a success notification and creates an alert otherwise. The alert ID is `?thirdparty=` (aliases `tid`, `dedup`); without one, `create` uses a new random ID (kept across retries) and the other actions the SHA-256 of the title (or of the body's first line), so they find the alert again, as Apprise.
 
 use serde_json::{Map, Value, json};
 
+use crate::message::NotifyType;
 use crate::parse::{parse_list, validate_nonblank, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{Pairs, ParsedUrl, unquote};
@@ -20,9 +23,9 @@ pub static SERVICE: ServiceDef = ServiceDef {
         Param::new("integration", "Integration ID").required().secret(),
     ],
     params: &[
-        Param::new("action", "Action").choice(&["create", "acknowledge", "resolve"]).default("create"),
+        Param::new("action", "Action").choice(ACTIONS).default("create"),
         Param::new("tags", "Tags"),
-        Param::new("thirdparty", "Third Party ID"),
+        Param::new("thirdparty", "Third Party ID").aliases(&["tid", "dedup"]),
         Param::new("urgency", "Urgency").choice(&["silent", "low", "medium", "high", "critical"]),
         Param::new("headers", "HTTP Header").prefix("+"),
         Param::new("meta_extras", "Meta Extras").prefix("-"),
@@ -31,7 +34,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
     ..ServiceDef::DEFAULTS
 };
 
-const ACTIONS: &[&str] = &["create", "acknowledge", "resolve"];
+const ACTIONS: &[&str] = &["create", "acknowledge", "resolve", "map"];
 const URGENCIES: &[&str] = &["silent", "low", "medium", "high", "critical"];
 
 #[derive(Debug)]
@@ -60,7 +63,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let integration = param_unquoted(u, "id").or_else(|| param_unquoted(u, "integration")).unwrap_or_else(|| u.host());
     let integration = validate_regex(&integration, r"^int_[a-zA-Z0-9\-_]{7,14}$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid PagerTree Integration ID was specified"))?;
-    let thirdparty = match param_unquoted(u, "tid").or_else(|| param_unquoted(u, "thirdparty")) {
+    let thirdparty = match param_unquoted(u, "tid")
+        .or_else(|| param_unquoted(u, "thirdparty"))
+        .or_else(|| param_unquoted(u, "dedup"))
+    {
         Some(t) => Some(
             validate_nonblank(&t).ok_or_else(|| SERVICE.err("an invalid PagerTree third party ID was specified"))?,
         ),
@@ -87,9 +93,28 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 impl Notify for PagerTree {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let mut payload = Map::new();
-        payload.insert("id".into(), json!(self.thirdparty.clone().unwrap_or_else(|| ctx.env().uuid4())));
-        payload.insert("event_type".into(), json!(self.action));
-        if self.action == "create" {
+        // `map` resolves on a success notification and creates an alert otherwise.
+        let event_type = match self.action {
+            "map" if msg.kind == NotifyType::Success => "resolve",
+            "map" => "create",
+            other => other,
+        };
+        let id = self.thirdparty.clone().unwrap_or_else(|| {
+            if self.action == "create" {
+                // Each notification creates its own alert; a retry reuses the ID so it never creates a second one.
+                let key = format!("alert_id:{}", msg.index);
+                let id = ctx.memo.recall(&key).and_then(|v| v.as_str().map(str::to_string)).unwrap_or_else(|| ctx.env().uuid4());
+                ctx.memo.remember(&key, json!(id));
+                id
+            } else {
+                // Other actions need the same ID from one notification to the next: the title, or the body's first line.
+                let key = if msg.title.is_empty() { msg.body.split('\n').next().unwrap_or_default().trim() } else { msg.title };
+                crate::crypto::hex(&crate::crypto::sha256(key.as_bytes()))
+            }
+        });
+        payload.insert("id".into(), json!(id));
+        payload.insert("event_type".into(), json!(event_type));
+        if event_type == "create" {
             let title = if msg.title.is_empty() { ctx.app_desc() } else { msg.title };
             payload.insert("title".into(), json!(title));
             payload.insert("description".into(), json!(crate::http::TEXT));
@@ -108,5 +133,25 @@ impl Notify for PagerTree {
             .headers(self.headers.iter().map(|(k, v)| (k.as_str(), v.as_str())))
             .json_text(&Value::Object(payload), msg.body);
         Plan::send_expect(req, &[200, 201, 202])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use crate::testing::FakeTransport;
+    use crate::{Mercurio, Message};
+
+    #[test]
+    fn a_retried_create_keeps_its_alert_id() {
+        let fake = Arc::new(FakeTransport::new());
+        fake.respond(500, "").respond(200, "");
+        let mut m = Mercurio::with_transport(fake.clone());
+        m.add("pagertree://int_xxxxxxxxxxx?retry=1&wait=0").unwrap();
+        assert!(m.notify(&Message::new("b")).status() == crate::Status::Success);
+        let ids: Vec<_> = fake.requests().iter().map(|r| serde_json::from_slice::<serde_json::Value>(&r.body).unwrap()["id"].clone()).collect();
+        assert_eq!(ids.len(), 2);
+        assert!(ids[0].is_string() && ids[0] == ids[1], "{ids:?}");
     }
 }
