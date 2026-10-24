@@ -62,7 +62,9 @@ jobs:
           cache-targets: "false"
       # The default features compile every service.
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Clippy without default features
+        run: cargo clippy -p mercurio --all-targets --no-default-features --locked -- -D warnings
 
   test:
     runs-on: ubuntu-24.04
@@ -82,7 +84,9 @@ jobs:
         with:
           cache-targets: "false"
       - name: Test
-        run: cargo test --workspace
+        run: cargo test --workspace --locked
+      - name: Test without default features
+        run: cargo test -p mercurio --no-default-features --locked
 
   test-os:
     name: test (${{ matrix.os }})
@@ -108,7 +112,7 @@ jobs:
         with:
           cache-targets: "false"
       - name: Test
-        run: cargo test --workspace
+        run: cargo test --workspace --locked
 
   docs:
     runs-on: ubuntu-24.04
