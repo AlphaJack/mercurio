@@ -5,9 +5,7 @@ use std::net::TcpListener;
 use std::sync::mpsc;
 use std::thread;
 
-use mercurio::{
-    Mercurio, Message, transport::BlockingTransport, transport::Method, transport::Request, transport::Transport,
-};
+use mercurio::transport::{BlockingTransport, Method, Request, Transport};
 
 type Captured = (String, Vec<(String, String)>, Vec<u8>);
 
@@ -86,12 +84,13 @@ fn connection_refused_is_transport_error() {
     assert!(matches!(err, mercurio::Error::Transport(_)), "{err:?}");
 }
 
+#[cfg(feature = "service-json")]
 #[test]
 fn end_to_end_json_service() {
     let (addr, rx) = server(1, 200, "");
-    let mut m = Mercurio::new();
+    let mut m = mercurio::Mercurio::new();
     m.add(&format!("json://{addr}/hook")).unwrap();
-    let report = m.notify(&Message::new("body").title("title"));
+    let report = m.notify(&mercurio::Message::new("body").title("title"));
     assert!(report.is_success(), "{report:?}");
     let (line, _, body) = rx.recv().unwrap();
     assert_eq!(line, "POST /hook HTTP/1.1");

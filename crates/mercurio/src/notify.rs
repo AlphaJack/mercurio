@@ -602,6 +602,7 @@ mod tests {
     use crate::target::parse;
     use crate::transport::FileOp;
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn async_entry_points_are_send() {
         fn assert_send<T: Send>(_: &T) {}
@@ -614,6 +615,7 @@ mod tests {
         assert_send(&crate::AttachmentSet::default().load_async(&blocking, &asset));
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn blocking_sends_wait_for_the_shared_budget() {
         let fake = Arc::new(crate::testing::FakeTransport::new());
@@ -631,6 +633,7 @@ mod tests {
     }
 
     /// Apprise's escalation: the most urgent group first, the next only after a failure, every chain on its own.
+    #[cfg(feature = "service-json")]
     #[test]
     fn priority_groups_escalate_only_after_a_failure() {
         use crate::testing::FakeTransport;
@@ -681,6 +684,7 @@ mod tests {
         assert_eq!(paths(&fake), ["http://localhost/a2"]);
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn retry_suffix_overrides_the_url_retry() {
         use crate::testing::FakeTransport;
@@ -741,6 +745,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn throttled_service_waits_between_targets() {
         use crate::testing::FakeTransport;
@@ -781,6 +786,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn parallel_pool_sends_every_target_in_order() {
         use crate::testing::FakeTransport;
@@ -801,6 +807,7 @@ mod tests {
         assert_eq!(statuses, expected);
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn report_statuses_and_attempts() {
         use crate::testing::FakeTransport;
@@ -834,6 +841,7 @@ mod tests {
         assert_eq!((r.status(), r.entries[0].status()), (Status::Timeout, Status::Timeout));
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn asset_redirect_default_yields_to_the_url() {
         use crate::testing::FakeTransport;
@@ -863,6 +871,7 @@ mod tests {
         (r.entries[0].attempts.iter().map(Attempt::status).collect(), fake.sleeps())
     }
 
+    #[cfg(feature = "service-json")]
     #[test]
     fn retries_only_retryable_failures() {
         use crate::Response;
@@ -891,6 +900,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "service-sendpulse")]
     #[test]
     fn step_context_keeps_rate_limit_retry() {
         use crate::Response;
@@ -925,6 +935,7 @@ mod tests {
         d.outcomes.into_iter().find_map(|o| o.result.err()).expect("a failure").class()
     }
 
+    #[cfg(all(feature = "service-discord", feature = "service-pushbullet"))]
     #[test]
     fn services_carry_retry_after() {
         use crate::{ErrorClass, Response};

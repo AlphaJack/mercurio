@@ -223,6 +223,10 @@ fn nothing_panics() {
     let iters: usize = std::env::var("MERCURIO_FUZZ_ITERS").ok().and_then(|v| v.parse().ok()).unwrap_or(3000);
     let seed: u64 = std::env::var("MERCURIO_FUZZ_SEED").ok().and_then(|v| v.parse().ok()).unwrap_or(0x5EED);
     let schemes: Vec<&'static str> = mercurio::services().iter().flat_map(|d| d.schemes.iter().copied()).collect();
+    // Without services there is nothing to fuzz.
+    if schemes.is_empty() {
+        return;
+    }
     let seeds = seed_urls();
     let mut rng = Rng(seed);
     let asset = Asset::default();
