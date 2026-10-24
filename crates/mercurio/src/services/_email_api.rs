@@ -135,7 +135,6 @@ pub fn html_to_text(body: &str) -> String {
 mod tests {
     use super::*;
 
-    #[cfg(feature = "html")]
     #[test]
     fn html_to_text_examples() {
         assert_eq!(html_to_text("Mercurio Body"), "Mercurio Body");
@@ -149,7 +148,10 @@ mod tests {
         assert_eq!(html_to_text("x<hr>y"), "x\n\n---\n\ny");
         assert_eq!(html_to_text("<pre>a\n  b</pre>c"), "a\n  b\n\nc");
         assert_eq!(html_to_text("<blockquote>q</blockquote>"), "q");
+        #[cfg(feature = "html")]
         assert_eq!(html_to_text("&#65;&#x42;&copy;"), "AB©");
+        #[cfg(not(feature = "html"))]
+        assert_eq!(html_to_text("&#65;&#x42;&copy;"), "AB&copy;");
     }
 
     #[test]

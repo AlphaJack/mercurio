@@ -58,7 +58,7 @@ regex = "1"
 regex-lite = "0.1.9"
 
 [features]
-# Every service, the async API on tokio, IANA time zones, the bundled time zone database and root certificates, YAML configuration, Markdown rendering, emoji shortcodes, HTML conversion and the Unicode-aware `regex` engine.
+# Every service, the async API on tokio, IANA time zones, the bundled time zone database and root certificates, YAML configuration, Markdown rendering, emoji shortcodes, every HTML5 named entity and the Unicode-aware `regex` engine.
 default = ["all-services", "transport-tokio", "timezones", "bundle-timezones", "bundle-certificates", "config-yaml", "markdown", "emojis", "html", "regex-unicode"]
 # Every `service-*` feature.
 all-services = [
@@ -247,7 +247,7 @@ markdown = ["dep:pulldown-cmark"]
 # `:shortcode:` emoji (`?emojis=yes`, `Asset::interpret_emojis`) with GitHub's gemoji table. Without it, shortcodes are sent as written.
 emojis = ["dep:emojis"]
 
-# HTML bodies converted to text or Markdown, or reduced to the tags a service accepts (`html-escape` decodes the HTML5 entities). Without it, HTML is sent as plain text.
+# Every HTML5 named entity (`&copy;`, `&eacute;`) decoded with `html-escape`. Without it, only numeric references and `&amp;` `&lt;` `&gt;` `&quot;` `&apos;` `&nbsp;` are decoded; other entities are kept as written.
 html = ["dep:html-escape"]
 
 # Tokio transport: `TokioTransport` and `AsyncMercurio::new` (tokio + rustls).
