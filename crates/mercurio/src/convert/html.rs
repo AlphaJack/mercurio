@@ -113,8 +113,52 @@ fn flush(text: &mut String, emit: &mut impl FnMut(Token)) {
     text.clear();
 }
 
+#[cfg(feature = "html")]
 fn decode(s: &str) -> String {
     html_escape::decode_html_entities(s).into_owned()
+}
+
+/// Without the `html` feature: numeric references and the few named ones markup needs; other entities are kept as written.
+#[cfg(not(feature = "html"))]
+fn decode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some((head, tail)) = rest.split_once('&') {
+        out.push_str(head);
+        match tail.split_once(';').filter(|(e, _)| e.len() <= 32).and_then(|(e, after)| Some((entity(e)?, after))) {
+            Some((c, after)) => {
+                out.push(c);
+                rest = after;
+            }
+            None => {
+                out.push('&');
+                rest = tail;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The character `&name;` stands for: a numeric reference or one of the named entities markup needs.
+#[cfg(not(feature = "html"))]
+fn entity(name: &str) -> Option<char> {
+    Some(match name {
+        "amp" => '&',
+        "lt" => '<',
+        "gt" => '>',
+        "quot" => '"',
+        "apos" => '\'',
+        "nbsp" => '\u{a0}',
+        e => {
+            let e = e.strip_prefix('#')?;
+            let code = match e.strip_prefix(['x', 'X']) {
+                Some(h) => u32::from_str_radix(h, 16).ok()?,
+                None => e.parse().ok()?,
+            };
+            char::from_u32(code)?
+        }
+    })
 }
 
 /// Parse a start or end tag at the start of `s`; `None` when `s` is not one.
@@ -633,6 +677,13 @@ fn close_tag(out: &mut String, tag: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(not(feature = "html"))]
+    #[test]
+    fn decode_without_feature() {
+        assert_eq!(decode("a &amp; &lt;b&gt; &quot;&apos;&nbsp;&#65;&#x42;"), "a & <b> \"'\u{a0}AB");
+        assert_eq!(decode("&copy; &#xZZ; &#1114112; & x; &amp"), "&copy; &#xZZ; &#1114112; & x; &amp");
+    }
 
     #[test]
     fn tokenizes_tags_text_and_entities() {
