@@ -98,6 +98,59 @@ no_title:
         - "<image>"
   ok: true
   valid: true
+osascript_exit_1:
+  errors:
+    - "service error: osascript exited with status 1"
+  ok: false
+  valid: true
+osascript_no_title:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\-body \"q\""
+        - "-contentImage"
+        - "<image>"
+    - cmd:
+        - osascript
+        - "-e"
+        - on run argv
+        - "-e"
+        - display notification (item 1 of argv)
+        - "-e"
+        - end run
+        - "--"
+        - "-body \"q\""
+  ok: true
+  valid: true
+osascript_sound_click:
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-open"
+        - "\\http://google.com"
+        - "-sound"
+        - "\\Glass"
+        - "-contentImage"
+        - "<image>"
+    - cmd:
+        - osascript
+        - "-e"
+        - on run argv
+        - "-e"
+        - display notification (item 1 of argv) with title (item 2 of argv) sound name (item 3 of argv)
+        - "-e"
+        - end run
+        - "--"
+        - Mercurio Body
+        - Mercurio Title
+        - Glass
+  ok: true
+  valid: true
 probe_fails:
   events:
     - cmd:
@@ -119,13 +172,16 @@ probe_spawn_error:
         - terminal-notifier
         - "-version"
     - cmd:
-        - terminal-notifier
-        - "-message"
-        - "\\Mercurio Body"
-        - "-title"
-        - "\\Mercurio Title"
-        - "-contentImage"
-        - "<image>"
+        - osascript
+        - "-e"
+        - on run argv
+        - "-e"
+        - display notification (item 1 of argv) with title (item 2 of argv)
+        - "-e"
+        - end run
+        - "--"
+        - Mercurio Body
+        - Mercurio Title
   ok: true
   valid: true
 probe_v1:
@@ -186,9 +242,29 @@ send_exit_99:
   ok: false
   valid: true
 send_spawn_error:
-  errors:
-    - "transport error: scripted spawn failure"
-  ok: false
+  events:
+    - cmd:
+        - terminal-notifier
+        - "-message"
+        - "\\Mercurio Body"
+        - "-title"
+        - "\\Mercurio Title"
+        - "-sender"
+        - "\\Mercurio"
+        - "-appIcon"
+        - "\\<tmp>/mercurio/icon.png"
+    - cmd:
+        - osascript
+        - "-e"
+        - on run argv
+        - "-e"
+        - display notification (item 1 of argv) with title (item 2 of argv)
+        - "-e"
+        - end run
+        - "--"
+        - Mercurio Body
+        - Mercurio Title
+  ok: true
   valid: true
 sender_v3_ignored:
   events:
