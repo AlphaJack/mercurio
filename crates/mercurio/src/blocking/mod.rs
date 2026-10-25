@@ -92,13 +92,14 @@ impl Transport for BlockingTransport {
                 std::fs::write(path, bytes).map_err(|e| Error::transport(format!("{}: {e}", path.display())))?;
             }
         }
-        let mut child = Proc::new(&cmd.program)
-            .args(&cmd.args)
+        let mut proc = Proc::new(&cmd.program);
+        proc.args(&cmd.args)
             .stdin(if cmd.stdin.is_some() { Stdio::piped() } else { Stdio::null() })
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| Error::transport(format!("{}: {e}", cmd.program)))?;
+            .stderr(Stdio::piped());
+        #[cfg(windows)]
+        std::os::windows::process::CommandExt::creation_flags(&mut proc, crate::transport::NO_WINDOW);
+        let mut child = proc.spawn().map_err(|e| Error::transport(format!("{}: {e}", cmd.program)))?;
         if let Some(input) = &cmd.stdin
             && let Some(mut stdin) = child.stdin.take()
         {

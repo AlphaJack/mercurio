@@ -90,14 +90,15 @@ impl TokioTransport {
                     .map_err(|e| Error::transport(format!("{}: {e}", path.display())))?;
             }
         }
-        let mut child = tokio::process::Command::new(&cmd.program)
-            .args(&cmd.args)
+        let mut proc = tokio::process::Command::new(&cmd.program);
+        proc.args(&cmd.args)
             .stdin(if cmd.stdin.is_some() { Stdio::piped() } else { Stdio::null() })
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .kill_on_drop(true)
-            .spawn()
-            .map_err(|e| Error::transport(format!("{}: {e}", cmd.program)))?;
+            .kill_on_drop(true);
+        #[cfg(windows)]
+        proc.creation_flags(crate::transport::NO_WINDOW);
+        let mut child = proc.spawn().map_err(|e| Error::transport(format!("{}: {e}", cmd.program)))?;
         if let Some(input) = &cmd.stdin
             && let Some(mut stdin) = child.stdin.take()
         {

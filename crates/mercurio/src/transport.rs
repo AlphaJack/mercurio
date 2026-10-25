@@ -379,6 +379,11 @@ pub struct Command {
 /// [`Command::timeout`] unless a service sets its own.
 pub const DEFAULT_COMMAND_TIMEOUT: Duration = Duration::from_secs(10);
 
+/// `CREATE_NO_WINDOW`: a [`Command`] runs without a console window. A process with no console of its own,
+/// such as a service or a program started at login, would otherwise open one for each command.
+#[cfg(windows)]
+pub(crate) const NO_WINDOW: u32 = 0x0800_0000;
+
 impl Command {
     /// `program` without arguments or input.
     pub fn new(program: impl Into<String>) -> Self {
