@@ -2,11 +2,12 @@
 //!
 //! mercurio runs `terminal-notifier` (`brew install terminal-notifier`), looked up in the same places: `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, `/bin`, `/opt/local/bin`. Without `?version=`, the installed major version is probed once per URL with `terminal-notifier -version` (falling back to 3); version 2 gets `-sender` and `-appIcon`, version 3 `-contentImage`. Every value is prefixed with `\` so terminal-notifier reads it as plain text.
 //!
-//! There is no `osascript` fallback.
+//! When `terminal-notifier` cannot be started, mercurio shows the banner with `osascript` (`display notification`) instead. The title, body and sound pass as script arguments, never as script text; `?click=` and the image are dropped, since AppleScript has no way to show them.
 //!
 //! # Differences with Apprise
 //!
 //! - When no known path holds `terminal-notifier`, mercurio still runs it through `PATH` (Apprise gives up).
+//! - Apprise fails when `terminal-notifier` cannot be started, while mercurio falls back to `osascript`.
 //! - On other platforms delivery fails with `Unsupported` (Apprise does not load the plugin there).
 
 use std::sync::{Arc, OnceLock};
@@ -47,6 +48,9 @@ const NOTIFY_PATHS: &[&str] = &[
     "/bin/terminal-notifier",
     "/opt/local/bin/terminal-notifier",
 ];
+
+/// Fallback when `terminal-notifier` cannot be started; ships with every macOS.
+const OSASCRIPT: &str = "/usr/bin/osascript";
 
 /// Used when detection fails.
 const DEFAULT_VERSION: u8 = 3;
@@ -162,13 +166,37 @@ impl Send {
         cmd
     }
 
+    /// `display notification` through `osascript`, the values passed as `argv` so none is read as AppleScript.
+    fn osascript(&self) -> Command {
+        let mut script = "display notification (item 1 of argv)".to_string();
+        let mut args = vec![self.body.clone()];
+        if !self.title.is_empty() {
+            args.push(self.title.clone());
+            script.push_str(&format!(" with title (item {} of argv)", args.len()));
+        }
+        if let Some(s) = &self.sound {
+            args.push(s.clone());
+            script.push_str(&format!(" sound name (item {} of argv)", args.len()));
+        }
+        let mut cmd = Command::new(OSASCRIPT)
+            .args(["-e", "on run argv", "-e", script.as_str(), "-e", "end run", "--"])
+            .args(args);
+        cmd.timeout = SEND_TIMEOUT;
+        cmd
+    }
+
+    fn fallback(&self) -> Plan {
+        Plan::command(self.osascript(), |res| super::_desktop::check_exit("osascript", res))
+    }
+
     fn plan(self, version: u8) -> Plan {
-        Plan::command(self.command(version), |res| match res {
+        Plan::command(self.command(version), move |res| match res {
             Ok(out) if out.status == 0 => Plan::Done,
             Ok(out) => {
                 Plan::Fail(Error::Service(format!("failed to send macOS notification: {}", exit_reason(out.status))))
             }
-            Err(e) => Plan::Fail(e),
+            Err(e) if e.is_timeout() => Plan::Fail(e),
+            Err(_) => self.fallback(),
         })
     }
 }
@@ -199,6 +227,9 @@ impl Notify for MacOSX {
         probe.timeout = PROBE_TIMEOUT;
         let detected = self.detected.clone();
         Plan::command(probe, move |res| {
+            if res.as_ref().is_err_and(|e| !e.is_timeout()) {
+                return send.fallback();
+            }
             let v = *detected.get_or_init(|| probed_version(&res));
             send.plan(v)
         })

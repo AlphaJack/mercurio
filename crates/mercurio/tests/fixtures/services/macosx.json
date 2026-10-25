@@ -27,6 +27,9 @@
 {"name":"send_exit_3","url":"macosx://_/?version=3","responses":[{"exit":3}]},
 {"name":"send_exit_99","url":"macosx://_/?version=2","responses":[{"exit":99}]},
 {"name":"send_spawn_error","url":"macosx://_/?version=2","responses":[{"error":true}]},
+{"name":"osascript_sound_click","url":"macosx://_/?version=3&sound=Glass&click=http://google.com","responses":[{"error":true},{"exit":0}]},
+{"name":"osascript_no_title","url":"macosx://_/?version=3","title":"","body":"-body \"q\"","responses":[{"error":true},{"exit":0}]},
+{"name":"osascript_exit_1","url":"macosx://_/?version=3","responses":[{"error":true},{"exit":1}]},
 {"name":"escape_dash","url":"macosx://_/?version=2&sound=-x","title":"-title","body":"-body"},
 {"name":"multiline","url":"macosx://_/?version=3&image=no","body":"1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12"}
 ]}
