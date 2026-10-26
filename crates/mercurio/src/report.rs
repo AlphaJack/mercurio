@@ -143,4 +143,41 @@ impl Report {
     pub fn failures(&self) -> impl Iterator<Item = (&ReportEntry, &Outcome)> {
         self.entries.iter().flat_map(|e| e.delivery.outcomes.iter().filter(|o| o.result.is_err()).map(move |o| (e, o)))
     }
+
+    /// What went wrong, one `label: error` per failed outcome joined with `; ` (the target follows the label when the service splits per target); `None` when [`Report::is_success`]. Entries rescued by escalation are left out.
+    ///
+    /// ```
+    /// let report = mercurio::Report::default();
+    /// assert_eq!(report.error_summary().as_deref(), Some("no URL was notified"));
+    /// ```
+    pub fn error_summary(&self) -> Option<String> {
+        if self.is_success() {
+            return None;
+        }
+        if self.entries.is_empty() {
+            return Some("no URL was notified".into());
+        }
+        let failed: Vec<String> = self
+            .failures()
+            .filter(|(e, _)| !e.escalated)
+            .filter_map(|(e, o)| {
+                let err = o.result.as_ref().err()?;
+                Some(match &o.target {
+                    Some(t) => format!("{} {t}: {err}", e.label),
+                    None => format!("{}: {err}", e.label),
+                })
+            })
+            .collect();
+        Some(failed.join("; "))
+    }
+}
+
+/// The [`Status`], then the [`Report::error_summary`] when something failed: `success`, `partial: discord:// (Discord): HTTP 401`.
+impl fmt::Display for Report {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.error_summary() {
+            Some(summary) => write!(f, "{}: {summary}", self.status()),
+            None => write!(f, "{}", self.status()),
+        }
+    }
 }
