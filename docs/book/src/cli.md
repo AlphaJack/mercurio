@@ -92,9 +92,9 @@ $ mercurio -c alerts.yml -g all -d
 Sending to an unresolved entry fails it; entries that fail to load are
 skipped with a warning (`-v` shows them). See [Templates](config/templates.md).
 
-Output is redacted to the scheme and host. For services whose token sits in
-the host position (`tgram://BOT_TOKEN/...`) the token is printed; do not
-paste dry-run or `storage` output of such URLs in public places.
+Output is redacted to the scheme and host. For services whose secret sits in
+the host position, such as Telegram's bot token, the host is shown as `***`
+(`tgram://***/...`).
 
 ## URL check
 

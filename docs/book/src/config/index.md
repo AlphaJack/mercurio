@@ -56,7 +56,7 @@ warning, so a service that seems to be missing is explained by `-v`:
 
 ```text
 $ mercurio check -v -c alerts.yml
-WARNING - Could not load URL discord://only-a-token/... (YAML entry #3, item #1): Discord: an invalid Discord Webhook Token was specified
+WARNING - Could not load URL discord://***/... (YAML entry #3, item #1): Discord: an invalid Discord Webhook Token was specified
 ok   ntfys:// (ntfy) (template: host, topic)
 ok   json:// (JSON) (template: topic)
 ```
