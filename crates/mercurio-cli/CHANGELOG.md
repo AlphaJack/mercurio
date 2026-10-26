@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.4](https://github.com/AlphaJack/mercurio/compare/v0.2.3...v0.2.4) - 2026-10-26
+
+### Added
+
+#### Lib
+
+- keep each URL's warnings in ReportEntry::warnings ([#132](https://github.com/AlphaJack/mercurio/pull/132))
+- add Report::error_summary, Mercurio::app, and URL names in add_all errors ([#131](https://github.com/AlphaJack/mercurio/pull/131))
+- let apps set their own desktop icon with Asset::image_bytes ([#129](https://github.com/AlphaJack/mercurio/pull/129))
+- show windows:// as a WinRT toast, falling back to the balloon ([#128](https://github.com/AlphaJack/mercurio/pull/128))
+- fall back to osascript for macOS notifications ([#127](https://github.com/AlphaJack/mercurio/pull/127))
+
+### Fixed
+
+#### Lib
+
+- mask secrets in the host position of redacted URLs ([#133](https://github.com/AlphaJack/mercurio/pull/133))
+- write desktop icons to the user's own directory on Linux, accept SVG app icons there ([#130](https://github.com/AlphaJack/mercurio/pull/130))
+- run commands without a console window on Windows ([#125](https://github.com/AlphaJack/mercurio/pull/125))
 ## [0.2.3](https://github.com/AlphaJack/mercurio/compare/v0.2.2...v0.2.3) - 2026-10-24
 
 ### Added

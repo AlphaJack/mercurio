@@ -4,7 +4,7 @@ members = ["crates/mercurio", "crates/mercurio-cli", "xtask"]
 
 [workspace.package]
 description = "Apprise-compatible Rust library, CLI and HTTP server to send notifications to 150+ services via a single URL."
-version = "0.2.3"
+version = "0.2.4"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/AlphaJack/mercurio"
@@ -38,7 +38,7 @@ missing_errors_doc = "allow"
 module_name_repetitions = "allow"
 
 [workspace.dependencies]
-mercurio = { path = "crates/mercurio", version = "0.2.3", default-features = false }
+mercurio = { path = "crates/mercurio", version = "0.2.4", default-features = false }
 
 [profile.release]
 lto = "thin"
