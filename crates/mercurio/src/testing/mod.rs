@@ -29,7 +29,7 @@ use crate::env::Env;
 use crate::error::{Error, Result};
 use crate::http::{Request, Response};
 use crate::transport::{
-    Command, CommandOutput, Conn, Datagram, Endpoint, FileMeta, FileOp, FileOutput, Transport, std_file,
+    Command, CommandOutput, Conn, Datagram, Endpoint, FileMeta, FileOp, FileOutput, NativeCall, Transport, std_file,
 };
 
 /// Call `f` with a context holding the results of `ops` run on `transport`, as [`crate::Notify::files`] would see them.
@@ -94,6 +94,8 @@ struct State {
     datagrams: Vec<Datagram>,
     commands: Vec<Command>,
     command_outputs: VecDeque<Result<CommandOutput>>,
+    natives: Vec<NativeCall>,
+    native_results: VecDeque<Result<()>>,
     sleeps: Vec<Duration>,
     /// `None`: removed.
     files: BTreeMap<PathBuf, Option<Vec<u8>>>,
@@ -123,6 +125,8 @@ impl FakeTransport {
                 datagrams: Vec::new(),
                 commands: Vec::new(),
                 command_outputs: VecDeque::new(),
+                natives: Vec::new(),
+                native_results: VecDeque::new(),
                 sleeps: Vec::new(),
                 files: BTreeMap::new(),
                 file_ops: Vec::new(),
@@ -225,6 +229,17 @@ impl FakeTransport {
         self
     }
 
+    /// Every in-process OS call made, in order.
+    pub fn natives(&self) -> Vec<NativeCall> {
+        self.lock().natives.clone()
+    }
+
+    /// Queue the result of the next in-process OS call (default: success).
+    pub fn push_native_result(&self, res: Result<()>) -> &Self {
+        self.lock().native_results.push_back(res);
+        self
+    }
+
     /// Every sleep requested (throttling, retry waits); the fake never sleeps.
     pub fn sleeps(&self) -> Vec<Duration> {
         self.lock().sleeps.clone()
@@ -297,6 +312,12 @@ impl Transport for FakeTransport {
         let mut s = self.lock();
         s.commands.push(cmd.clone());
         s.command_outputs.pop_front().unwrap_or(Ok(CommandOutput { status: 0, stdout: Vec::new(), stderr: Vec::new() }))
+    }
+
+    fn native(&self, call: &NativeCall) -> Result<()> {
+        let mut s = self.lock();
+        s.natives.push(call.clone());
+        s.native_results.pop_front().unwrap_or(Ok(()))
     }
 
     fn file(&self, op: &FileOp) -> Result<FileOutput> {

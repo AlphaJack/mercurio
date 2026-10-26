@@ -3,110 +3,129 @@ source: crates/mercurio/tests/it/services.rs
 ---
 basic:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 12
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 duration_0:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 12
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 duration_1:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 1
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 duration_30:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 30
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
+  ok: true
+  valid: true
+duration_7_short:
+  events:
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 duration_invalid:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 12
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 duration_negative:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 12
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 duration_spaces:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 7
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 fails:
   errors:
-    - "service error: powershell exited with status 1"
+    - "service error: toast: service error: scripted toast failure; balloon: service error: powershell exited with status 1"
   ok: false
   valid: true
 failure_type:
   events:
-    - balloon:
-        body: B
-        duration: 12
-        title: T
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>T</text><text>B</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 image_false:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 12
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text></binding></visual></toast>"
+  ok: true
+  valid: true
+image_no:
+  events:
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text></binding></visual></toast>"
   ok: true
   valid: true
 multiline:
   events:
-    - balloon:
-        body: "1\r\n2"
-        duration: 12
-        title: Mercurio Title
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>1\r\n2</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 no_title:
   events:
-    - balloon:
-        body: Mercurio Body
-        duration: 12
-        title: ""
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
 quotes:
   events:
-    - balloon:
-        body: "a 'b' $c `d`\r\né"
-        duration: 12
-        title: "it's"
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>it's</text><text>a 'b' $c `d`\r\né</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true
-underscore:
+toast_fails_balloon:
   events:
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
     - balloon:
         body: Mercurio Body
         duration: 12
         title: Mercurio Title
+  ok: true
+  valid: true
+underscore:
+  events:
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>Mercurio Title</text><text>Mercurio Body</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
+  ok: true
+  valid: true
+xml_escape:
+  events:
+    - toast:
+        app_id: "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+        xml: "<toast duration=\"long\"><visual><binding template=\"ToastGeneric\"><text>&lt;b&gt;&amp;amp;</text><text>\"q\" 'a' &lt;i&gt;</text><image placement=\"appLogoOverride\" src=\"file:///<tmp>/mercurio/icon.png\"/></binding></visual></toast>"
   ok: true
   valid: true

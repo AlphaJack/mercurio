@@ -39,6 +39,12 @@ pub trait Transport: Send + Sync {
         Err(no_commands())
     }
 
+    /// Make an in-process OS call (a Windows toast, ...). Default: unsupported.
+    fn native(&self, call: &NativeCall) -> Result<()> {
+        let _ = call;
+        Err(no_native())
+    }
+
     /// Run a file system operation (stores, templates, key files, `file://`). Default: `std::fs`.
     fn file(&self, op: &FileOp) -> Result<FileOutput> {
         std_file(op)
@@ -70,6 +76,9 @@ impl<T: Transport + ?Sized> Transport for &T {
     fn command(&self, cmd: &Command) -> Result<CommandOutput> {
         (**self).command(cmd)
     }
+    fn native(&self, call: &NativeCall) -> Result<()> {
+        (**self).native(call)
+    }
     fn file(&self, op: &FileOp) -> Result<FileOutput> {
         (**self).file(op)
     }
@@ -94,6 +103,9 @@ impl<T: Transport + ?Sized> Transport for Arc<T> {
     fn command(&self, cmd: &Command) -> Result<CommandOutput> {
         (**self).command(cmd)
     }
+    fn native(&self, call: &NativeCall) -> Result<()> {
+        (**self).native(call)
+    }
     fn file(&self, op: &FileOp) -> Result<FileOutput> {
         (**self).file(op)
     }
@@ -115,6 +127,10 @@ fn no_datagrams() -> Error {
 
 fn no_commands() -> Error {
     Error::Unsupported("running local programs is not available with this transport".into())
+}
+
+pub(crate) fn no_native() -> Error {
+    Error::Unsupported("in-process OS calls are not available with this transport".into())
 }
 
 /// A boxed, `Send` future: what [`AsyncTransport`] and [`AsyncConn`] methods return.
@@ -143,6 +159,12 @@ pub trait AsyncTransport: Send + Sync {
     fn command<'a>(&'a self, cmd: &'a Command) -> BoxFuture<'a, Result<CommandOutput>> {
         let _ = cmd;
         Box::pin(ready(Err(no_commands())))
+    }
+
+    /// Make an in-process OS call (a Windows toast, ...). Default: unsupported.
+    fn native<'a>(&'a self, call: &'a NativeCall) -> BoxFuture<'a, Result<()>> {
+        let _ = call;
+        Box::pin(ready(Err(no_native())))
     }
 
     /// Run a file system operation (stores, templates, key files, `file://`).
@@ -208,6 +230,9 @@ impl<T: Transport> AsyncTransport for Blocking<T> {
     }
     fn command<'a>(&'a self, cmd: &'a Command) -> BoxFuture<'a, Result<CommandOutput>> {
         Box::pin(ready(self.0.command(cmd)))
+    }
+    fn native<'a>(&'a self, call: &'a NativeCall) -> BoxFuture<'a, Result<()>> {
+        Box::pin(ready(self.0.native(call)))
     }
     fn file<'a>(&'a self, op: &'a FileOp) -> BoxFuture<'a, Result<FileOutput>> {
         Box::pin(ready(self.0.file(op)))
@@ -359,6 +384,23 @@ pub struct Datagram {
     pub target: DatagramTarget,
     /// What is sent.
     pub payload: Vec<u8>,
+}
+
+/// An in-process OS call: what [`Transport::native`] makes. Service code never makes it itself, so test doubles can record it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NativeCall {
+    /// Show a Windows toast.
+    Toast(Toast),
+}
+
+/// A Windows toast: the XML payload, shown under the app with `app_id` (an AppUserModelID).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Toast {
+    /// The AppUserModelID the toast is shown under; it must be registered with Windows.
+    pub app_id: String,
+    /// The toast content (`<toast>...</toast>`).
+    pub xml: String,
 }
 
 /// A local program to run.

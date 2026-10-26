@@ -12,7 +12,9 @@ use rustls::{ClientConnection, StreamOwned};
 use crate::error::{Error, Result};
 use crate::http::{Request, Response};
 use crate::net::{server_name, tls_config};
-use crate::transport::{Command, CommandOutput, Conn, Datagram, DatagramTarget, Endpoint, Transport, unbound_addr};
+use crate::transport::{
+    Command, CommandOutput, Conn, Datagram, DatagramTarget, Endpoint, NativeCall, Transport, unbound_addr,
+};
 use client::{Client, StdDial};
 
 /// Real network I/O on `std::net` + rustls (ring): HTTP through the same client as the tokio transport.
@@ -77,6 +79,15 @@ impl Transport for BlockingTransport {
             }
             #[cfg(not(unix))]
             DatagramTarget::Unix(_) => Err(Error::Unsupported("unix sockets".into())),
+        }
+    }
+
+    fn native(&self, call: &NativeCall) -> Result<()> {
+        match call {
+            #[cfg(windows)]
+            NativeCall::Toast(toast) => crate::winrt::show(toast),
+            #[cfg(not(windows))]
+            NativeCall::Toast(_) => Err(crate::transport::no_native()),
         }
     }
 

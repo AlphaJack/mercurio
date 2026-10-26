@@ -9,13 +9,15 @@ use crate::error::{Error, Result};
 use crate::http::{DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, Request, Response};
 use crate::store::StoreRef;
 use crate::transport::{
-    AsyncConn, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp, FileOutput,
+    AsyncConn, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp, FileOutput, NativeCall,
 };
 
 /// Continuation receiving the outcome of an HTTP request.
 pub type Then = Box<dyn FnOnce(Result<Response>) -> Plan + Send>;
 /// Continuation receiving the outcome of a process run.
 pub type ThenCommand = Box<dyn FnOnce(Result<CommandOutput>) -> Plan + Send>;
+/// Continuation receiving the outcome of an in-process OS call.
+pub type ThenNative = Box<dyn FnOnce(Result<()>) -> Plan + Send>;
 /// Continuation receiving the outcome of a file operation.
 pub type ThenFile = Box<dyn FnOnce(Result<FileOutput>) -> Plan + Send>;
 /// A conversation over a connected stream (SMTP, IRC, MQTT, ...). The transport is there for its timer ([`AsyncTransport::sleep`]).
@@ -62,6 +64,8 @@ pub enum Plan {
     Datagram(Datagram),
     /// Run a local program.
     Command(Command, ThenCommand),
+    /// Make an in-process OS call, then continue with the closure.
+    Native(NativeCall, ThenNative),
     /// Run a file system operation, then continue with the closure.
     File(FileOp, ThenFile),
     /// Build the plan lazily when execution reaches it.
@@ -82,6 +86,7 @@ impl fmt::Debug for Plan {
             Plan::Socket(e, _) => write!(f, "Socket({}:{})", e.host, e.port),
             Plan::Datagram(_) => f.write_str("Datagram"),
             Plan::Command(c, _) => write!(f, "Command({})", c.program),
+            Plan::Native(call, _) => write!(f, "Native({call:?})"),
             Plan::File(op, _) => write!(f, "File({op:?})"),
             Plan::Defer(_) => f.write_str("Defer"),
             Plan::Sleep(d) => write!(f, "Sleep({d:?})"),
@@ -160,6 +165,11 @@ impl Plan {
         Plan::Command(cmd, Box::new(then))
     }
 
+    /// Make an in-process OS call, then continue with `then`.
+    pub fn native(call: NativeCall, then: impl FnOnce(Result<()>) -> Plan + Send + 'static) -> Plan {
+        Plan::Native(call, Box::new(then))
+    }
+
     /// Run a file system operation, then continue with `then`.
     pub fn file(op: FileOp, then: impl FnOnce(Result<FileOutput>) -> Plan + Send + 'static) -> Plan {
         Plan::File(op, Box::new(then))
@@ -194,6 +204,7 @@ impl Plan {
             Plan::Fail(e) => Plan::Fail(e.context(context)),
             Plan::Http(req, then) => Plan::http(req, move |res| then(res).fail_context(context)),
             Plan::Command(cmd, then) => Plan::command(cmd, move |res| then(res).fail_context(context)),
+            Plan::Native(call, then) => Plan::native(call, move |res| then(res).fail_context(context)),
             Plan::File(op, then) => Plan::file(op, move |res| then(res).fail_context(context)),
             Plan::Socket(ep, session) => Plan::socket(ep, move |c, t| {
                 Box::pin(async move { session(c, t).await.map_err(|e| e.context(context)) })
@@ -556,6 +567,11 @@ impl Runner<'_> {
             Plan::Command(cmd, then) => {
                 self.flush_step().await;
                 let res = self.transport.command(&cmd).await;
+                self.next(then(res), target).await
+            }
+            Plan::Native(call, then) => {
+                self.flush_step().await;
+                let res = self.transport.native(&call).await;
                 self.next(then(res), target).await
             }
             Plan::File(op, then) => {
