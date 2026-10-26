@@ -53,6 +53,8 @@ pub struct Asset {
     pub image_url_logo: Option<String>,
     /// Icon file for local notifiers (desktop), with the substitutions of `image_url_mask`. `None` uses the bundled icon ([`ICON_SVG`] or [`ICON_PNG`]); an empty mask sends no icon.
     pub image_path_mask: Option<String>,
+    /// The app's own icon for local notifiers, used instead of the bundled one when `image_path_mask` is unset: PNG or JPEG bytes (other formats fall back to the bundled icon, with a warning logged once), written under the temporary directory with a name taken from their content. Pass `include_bytes!("icon.png")`.
+    pub image_bytes: Option<&'static [u8]>,
     /// Extension substituted for `{EXTENSION}` when none is given (default `".png"`).
     pub default_extension: String,
     /// `#RRGGBB` colour per [`NotifyType`], in `info`, `success`, `warning`, `failure` order.
@@ -149,6 +151,7 @@ impl Default for Asset {
             image_url_mask: Some(DEFAULT_IMAGE_URL_MASK.into()),
             image_url_logo: Some(DEFAULT_IMAGE_URL_LOGO.into()),
             image_path_mask: None,
+            image_bytes: None,
             default_extension: ".png".into(),
             colors: ["#3AA3E3".into(), "#3AA337".into(), "#CACF29".into(), "#A32037".into()],
             default_color: "#888888".into(),
@@ -195,17 +198,23 @@ impl Asset {
         Some(self.substitute(mask, kind, size, ext))
     }
 
-    /// The icon file a local notifier shows for `kind`: the [`Asset::image_path_mask`] file, or the bundled icon with `ext` (`svg` or `png`) written under the temporary directory by the transport (`Command::file`). `None` when the mask is empty.
+    /// The icon file a local notifier shows for `kind`, first match wins: the [`Asset::image_path_mask`] file, the app's [`Asset::image_bytes`] when they are PNG or JPEG, or the bundled icon with `ext` (`svg` or `png`). The last two are written under the temporary directory by the transport (`Command::file`). `None` when the mask is empty.
     pub fn icon_file(&self, kind: NotifyType, ext: &str) -> Option<IconFile> {
-        match self.image_path_mask.as_deref() {
-            Some("") => None,
-            Some(mask) => Some(IconFile { path: self.substitute(mask, kind, ImageSize::Xy256, None), bundled: None }),
-            None => {
-                let bytes = if ext == "svg" { ICON_SVG } else { ICON_PNG };
-                let path = std::env::temp_dir().join("mercurio").join(format!("icon.{ext}"));
-                Some(IconFile { path: path.to_string_lossy().into_owned(), bundled: Some(bytes) })
-            }
+        let dir = std::env::temp_dir().join("mercurio");
+        let app = self.image_bytes.and_then(|b| image_ext(b).map(|e| (b, e)));
+        if self.image_bytes.is_some() && app.is_none() {
+            static WARNED: std::sync::Once = std::sync::Once::new();
+            WARNED.call_once(|| log::warn!("Asset::image_bytes is neither PNG nor JPEG; using the bundled icon."));
         }
+        let (name, bytes) = match (self.image_path_mask.as_deref(), app) {
+            (Some(""), _) => return None,
+            (Some(mask), _) => {
+                return Some(IconFile { path: self.substitute(mask, kind, ImageSize::Xy256, None), bundled: None });
+            }
+            (None, Some((b, e))) => (format!("icon-{}.{e}", crate::crypto::hex(&crate::crypto::sha256(b)[..8])), b),
+            (None, None) => (format!("icon.{ext}"), if ext == "svg" { ICON_SVG } else { ICON_PNG }),
+        };
+        Some(IconFile { path: dir.join(name).to_string_lossy().into_owned(), bundled: Some(bytes) })
     }
 
     /// Logo URL; `None` when `image_url_logo` is unset.
@@ -247,11 +256,64 @@ impl Asset {
     }
 }
 
+/// The file extension of PNG or JPEG bytes, told by their signature; `None` for anything else.
+fn image_ext(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        Some("png")
+    } else if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        Some("jpg")
+    } else {
+        None
+    }
+}
+
 /// An icon file for a local notifier ([`Asset::icon_file`]).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IconFile {
     /// Where the notifier reads it.
     pub path: String,
-    /// The bundled bytes the transport writes to `path` first; `None` for a user file.
+    /// The bytes the transport writes to `path` first (the bundled icon or [`Asset::image_bytes`]); `None` for a user file.
     pub bundled: Option<&'static [u8]>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const APP_PNG: &[u8] = b"\x89PNG\r\n\x1a\napp icon";
+
+    #[test]
+    fn icon_file_prefers_mask_then_app_icon_then_bundled() {
+        let mut a = Asset { image_bytes: Some(APP_PNG), ..Asset::default() };
+        let app = a.icon_file(NotifyType::Info, "svg").unwrap();
+        assert_eq!(app.bundled, Some(APP_PNG));
+        let name = std::path::Path::new(&app.path).file_name().unwrap().to_string_lossy().into_owned();
+        assert_eq!(name, format!("icon-{}.png", crate::crypto::hex(&crate::crypto::sha256(APP_PNG)[..8])));
+
+        a.image_path_mask = Some("/icons/{TYPE}.png".into());
+        assert_eq!(
+            a.icon_file(NotifyType::Info, "png").unwrap(),
+            IconFile { path: "/icons/info.png".into(), bundled: None }
+        );
+
+        a.image_path_mask = Some(String::new());
+        assert_eq!(a.icon_file(NotifyType::Info, "png"), None);
+
+        let bundled = Asset::default().icon_file(NotifyType::Info, "svg").unwrap();
+        assert_eq!(bundled.bundled, Some(ICON_SVG));
+        assert!(bundled.path.ends_with("icon.svg"));
+    }
+
+    #[test]
+    fn app_icon_extension_follows_its_format() {
+        let jpeg: &'static [u8] = &[0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10];
+        let a = Asset { image_bytes: Some(jpeg), ..Asset::default() };
+        let f = a.icon_file(NotifyType::Info, "png").unwrap();
+        assert!(f.path.ends_with(".jpg") && f.bundled == Some(jpeg));
+
+        // SVG (or anything else) falls back to the bundled icon.
+        let a = Asset { image_bytes: Some(b"<svg xmlns='http://www.w3.org/2000/svg'/>"), ..Asset::default() };
+        let f = a.icon_file(NotifyType::Info, "png").unwrap();
+        assert!(f.path.ends_with("icon.png") && f.bundled == Some(ICON_PNG));
+    }
 }
