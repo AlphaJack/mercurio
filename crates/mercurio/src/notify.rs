@@ -67,6 +67,8 @@ pub(crate) struct Core {
     pub(crate) pending: Vec<PendingTarget>,
     pub(crate) asset: Asset,
     pub(crate) config: ConfigOptions,
+    /// Set by `app()`: kept as [`Asset::app_id`] when the asset is replaced later.
+    pub(crate) app: Option<String>,
 }
 
 impl Core {
@@ -76,7 +78,22 @@ impl Core {
     }
 
     pub(crate) fn add_all(&mut self, urls: &str) -> Vec<Error> {
-        crate::parse::parse_urls([urls], true).iter().filter_map(|url| self.add(url).err()).collect()
+        crate::parse::parse_urls([urls], true)
+            .iter()
+            .filter_map(|url| self.add(url).err().map(|e| e.context(crate::redact_url(url))))
+            .collect()
+    }
+
+    pub(crate) fn set_app(&mut self, name: String) {
+        self.asset.app_id.clone_from(&name);
+        self.app = Some(name);
+    }
+
+    pub(crate) fn set_asset(&mut self, asset: Asset) {
+        self.asset = asset;
+        if let Some(name) = &self.app {
+            self.asset.app_id.clone_from(name);
+        }
     }
 
     pub(crate) fn add_loaded(&mut self, cfg: Config) -> usize {
@@ -353,10 +370,17 @@ impl Mercurio {
         Self { core: Core::default(), transport, sequential: false }
     }
 
-    /// Replace the [`Asset`] (branding, pipeline defaults, storage).
+    /// Replace the [`Asset`] (branding, pipeline defaults, storage). A name set with [`Mercurio::app`] is kept.
     #[must_use]
     pub fn asset(mut self, asset: Asset) -> Self {
-        self.core.asset = asset;
+        self.core.set_asset(asset);
+        self
+    }
+
+    /// Name the app sending: [`Asset::app_id`], shown as the sender or app name by desktop notifiers and many services, and sent as `User-Agent`. It survives a later [`Mercurio::asset`].
+    #[must_use]
+    pub fn app(mut self, name: impl Into<String>) -> Self {
+        self.core.set_app(name.into());
         self
     }
 
@@ -385,7 +409,7 @@ impl Mercurio {
         Ok(self)
     }
 
-    /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse.
+    /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse, each in an [`Error::Context`] naming the URL with its secrets removed ([`crate::redact_url`]): `discord://only-id/...: Discord: an invalid Discord Webhook Token was specified`. [`Error::root`] gives the parse error itself.
     pub fn add_all(&mut self, urls: &str) -> Vec<Error> {
         self.core.add_all(urls)
     }
@@ -601,6 +625,41 @@ mod tests {
     use crate::service::{Context, Notify, ServiceDef};
     use crate::target::parse;
     use crate::transport::FileOp;
+
+    #[cfg(feature = "service-json")]
+    #[test]
+    fn report_summarises_failures() {
+        let fake = Arc::new(crate::testing::FakeTransport::new());
+        let mut m = Mercurio::with_transport(fake.clone()).sequential();
+        assert!(m.add_all("json://ok.example json://down.example").is_empty());
+        fake.respond(200, "").respond(500, "");
+        let report = m.notify(&Message::new("b"));
+        let summary = report.error_summary().unwrap();
+        assert_eq!(summary, "json:// (JSON): HTTP 500 Internal server error.");
+        assert_eq!(report.to_string(), format!("partial: {summary}"));
+
+        fake.respond(200, "").respond(200, "");
+        let report = m.notify(&Message::new("b"));
+        assert_eq!((report.error_summary(), report.to_string()), (None, "success".into()));
+    }
+
+    #[test]
+    fn add_all_errors_name_the_redacted_url() {
+        let mut m = Mercurio::with_transport(Arc::new(crate::testing::FakeTransport::new()));
+        let errors = m.add_all("foo://user:secret@host/path");
+        assert_eq!(errors.len(), 1);
+        let text = errors[0].to_string();
+        assert!(text.starts_with("foo://host/...: ") && !text.contains("secret"), "{text}");
+        assert!(!matches!(errors[0].root(), Error::Context { .. }));
+    }
+
+    #[test]
+    fn app_name_survives_a_later_asset() {
+        let m = Mercurio::with_transport(Arc::new(crate::testing::FakeTransport::new()))
+            .app("Rusticlone")
+            .asset(Asset { app_desc: "backups".into(), ..Asset::default() });
+        assert_eq!((m.core.asset.app_id.as_str(), m.core.asset.app_desc.as_str()), ("Rusticlone", "backups"));
+    }
 
     #[cfg(feature = "service-json")]
     #[test]

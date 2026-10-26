@@ -94,10 +94,17 @@ impl AsyncMercurio {
         self
     }
 
-    /// Replace the [`Asset`] (branding, pipeline defaults, storage).
+    /// Replace the [`Asset`] (branding, pipeline defaults, storage). A name set with [`AsyncMercurio::app`] is kept.
     #[must_use]
     pub fn asset(mut self, asset: Asset) -> Self {
-        self.core.asset = asset;
+        self.core.set_asset(asset);
+        self
+    }
+
+    /// Name the app sending: [`Asset::app_id`], shown as the sender or app name by desktop notifiers and many services, and sent as `User-Agent`. It survives a later [`AsyncMercurio::asset`].
+    #[must_use]
+    pub fn app(mut self, name: impl Into<String>) -> Self {
+        self.core.set_app(name.into());
         self
     }
 
@@ -119,7 +126,7 @@ impl AsyncMercurio {
         Ok(self)
     }
 
-    /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse.
+    /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse, each in an [`Error::Context`] naming the URL with its secrets removed ([`crate::redact_url`]); [`Error::root`] gives the parse error itself.
     pub fn add_all(&mut self, urls: &str) -> Vec<Error> {
         self.core.add_all(urls)
     }
