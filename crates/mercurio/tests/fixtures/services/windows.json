@@ -13,5 +13,9 @@
 {"name":"image_false","url":"windows://_/?image=False"},
 {"name":"quotes","url":"windows://","title":"it's","body":"a 'b' $c `d`\né"},
 {"name":"multiline","url":"windows://","body":"1\n2\n3\n4"},
-{"name":"fails","url":"windows://","responses":[{"exit":1}]}
+{"name":"image_no","url":"windows://_/?image=no"},
+{"name":"duration_7_short","url":"windows://_/?duration=7"},
+{"name":"xml_escape","url":"windows://","title":"<b>&amp;","body":"\"q\" 'a' <i>"},
+{"name":"toast_fails_balloon","url":"windows://","responses":[{"toast":"error"},{"exit":0}]},
+{"name":"fails","url":"windows://","responses":[{"toast":"error"},{"exit":1}]}
 ]}

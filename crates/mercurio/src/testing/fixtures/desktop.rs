@@ -5,7 +5,8 @@
 //! Known, documented divergences handled here:
 //! - macosx: `argv[0]` is compared by file name (mercurio falls back to `PATH`). The `-contentImage` value is not compared (mercurio passes the image URL, the fixture a local file path).
 //! - Failure cases compare `ok` only: the point where a failing local tool stops differs from where the fixture's binding failed.
-//! - macosx off macOS and windows off Windows: every valid case must fail as unsupported (windows still checks its command builder against the expected balloon events).
+//! - macosx off macOS and windows off Windows: every valid case must fail as unsupported.
+//! - windows: each toast is recorded with its XML, then each balloon fallback with its decoded script; a `{"toast": "error"}` response fails the next toast.
 
 #![allow(dead_code, reason = "each desktop fixture is used by one optional service")]
 
@@ -16,7 +17,7 @@ use serde_json::{Value, json};
 use super::events::{Comparator, Recorder, Session};
 use crate::error::Error;
 use crate::testing::{FakeTransport, ScriptedConn};
-use crate::transport::CommandOutput;
+use crate::transport::{CommandOutput, NativeCall};
 
 fn responses(case: &Value) -> Vec<Value> {
     case.get("responses").and_then(Value::as_array).cloned().unwrap_or_default()
@@ -182,6 +183,36 @@ fn ps_literal(script: &str, key: &str) -> String {
     out
 }
 
+/// Queue toast failures (`{"toast": "error"}`) and command outputs.
+fn queue_windows(s: &mut Session, case: &Value) {
+    for r in responses(case) {
+        if r.get("toast").and_then(Value::as_str) == Some("error") {
+            s.fake.push_native_result(Err(Error::Service("scripted toast failure".into())));
+        } else if r.get("error").and_then(Value::as_bool).unwrap_or(false) {
+            s.fake.push_command_output(Err(Error::transport("scripted spawn failure")));
+        } else {
+            s.fake.push_command_output(Ok(CommandOutput {
+                status: r.get("exit").and_then(Value::as_i64).unwrap_or(0) as i32,
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            }));
+        }
+    }
+}
+
+fn windows_events(case: &Value, fake: &FakeTransport, events: &Recorder) -> Vec<Value> {
+    let tmp = std::env::temp_dir().to_string_lossy().trim_end_matches(['/', '\\']).replace('\\', "/");
+    let mut out: Vec<Value> = fake
+        .natives()
+        .into_iter()
+        .map(|call| match call {
+            NativeCall::Toast(t) => json!({"toast": {"app_id": t.app_id, "xml": t.xml.replace(&tmp, "<tmp>")}}),
+        })
+        .collect();
+    out.extend(balloon_events(case, fake, events));
+    out
+}
+
 fn balloon_events(_: &Value, fake: &FakeTransport, _: &Recorder) -> Vec<Value> {
     fake.commands()
         .into_iter()
@@ -202,8 +233,8 @@ fn balloon_events(_: &Value, fake: &FakeTransport, _: &Recorder) -> Vec<Value> {
 
 pub(super) const WINDOWS: Comparator = Comparator {
     services: &["windows"],
-    setup: queue_commands,
-    events: |s, case| balloon_events(case, &s.fake, &s.events),
+    setup: queue_windows,
+    events: |s, case| windows_events(case, &s.fake, &s.events),
     events_on_failure: false,
     ..Comparator::DEFAULT
 };

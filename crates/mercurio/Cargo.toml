@@ -33,7 +33,7 @@ emojis = { version = "0.9", optional = true, default-features = false }
 log = "0.4"
 pollster = "1"
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
-tokio = { version = "1.54", optional = true, default-features = false, features = ["net", "time", "fs", "process", "io-util"] }
+tokio = { version = "1.54", optional = true, default-features = false, features = ["net", "time", "fs", "process", "io-util", "rt"] }
 tokio-rustls = { version = "0.26", optional = true, default-features = false, features = ["ring", "tls12"] }
 saphyr-parser = { version = "0.2", optional = true }
 html-escape = { version = "0.3.0", optional = true }

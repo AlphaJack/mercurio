@@ -271,6 +271,8 @@ mod time;
 mod transport_def;
 mod url;
 mod util;
+#[cfg(all(windows, any(feature = "transport-tokio", feature = "transport-blocking")))]
+mod winrt;
 
 #[cfg(feature = "transport-blocking")]
 mod blocking;
@@ -338,7 +340,7 @@ pub mod transport {
     pub(crate) use crate::transport_def::*;
     pub use crate::transport_def::{
         AsyncConn, AsyncTransport, Blocking, BoxFuture, ChannelBinding, Command, CommandOutput, Conn, Datagram,
-        DatagramTarget, Endpoint, FileMeta, FileOp, FileOutput, Transport,
+        DatagramTarget, Endpoint, FileMeta, FileOp, FileOutput, NativeCall, Toast, Transport,
     };
 }
 

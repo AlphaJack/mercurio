@@ -16,7 +16,7 @@ use crate::error::{Error, Result};
 use crate::http::{Request, Response};
 use crate::transport::{
     AsyncConn, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, DatagramTarget, Endpoint, FileOp,
-    FileOutput, file_meta, staging, unbound_addr,
+    FileOutput, NativeCall, file_meta, staging, unbound_addr,
 };
 
 /// Network, process and file I/O on tokio; HTTP through the in-house client. Needs a tokio runtime with I/O and time enabled.
@@ -51,6 +51,20 @@ impl TokioTransport {
 
     async fn send(&self, req: &Request) -> Result<Response> {
         self.client.send(req).await
+    }
+
+    async fn native(call: &NativeCall) -> Result<()> {
+        match call {
+            #[cfg(windows)]
+            NativeCall::Toast(toast) => {
+                let toast = toast.clone();
+                tokio::task::spawn_blocking(move || crate::winrt::show(&toast))
+                    .await
+                    .map_err(|e| Error::transport(format!("toast: {e}")))?
+            }
+            #[cfg(not(windows))]
+            NativeCall::Toast(_) => Err(crate::transport::no_native()),
+        }
     }
 
     async fn datagram(dg: &Datagram) -> Result<()> {
@@ -203,6 +217,9 @@ impl AsyncTransport for TokioTransport {
     }
     fn command<'a>(&'a self, cmd: &'a Command) -> BoxFuture<'a, Result<CommandOutput>> {
         Box::pin(Self::command(cmd))
+    }
+    fn native<'a>(&'a self, call: &'a NativeCall) -> BoxFuture<'a, Result<()>> {
+        Box::pin(Self::native(call))
     }
     fn file<'a>(&'a self, op: &'a FileOp) -> BoxFuture<'a, Result<FileOutput>> {
         Box::pin(Self::file(op))

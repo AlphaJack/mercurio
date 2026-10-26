@@ -95,7 +95,7 @@ pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
 }
 
 /// Write the bundled icon to its path unless it already holds it: what [`with_icon`] has the transport do for a command.
-fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
+pub fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
     let Some((path, bytes)) = icon.and_then(|i| i.bundled.map(|b| (PathBuf::from(&i.path), b))) else {
         return Plan::Done;
     };
