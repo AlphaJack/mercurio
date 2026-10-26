@@ -81,7 +81,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         match re.captures(&t).and_then(|c| c[1].parse::<u64>().ok()) {
             Some(ch) => channels.push(ch),
             None => {
-                log::warn!("Notifiarr: dropped invalid channel ({t}) specified");
+                crate::warning!("Notifiarr: dropped invalid channel ({t}) specified");
             }
         }
     }

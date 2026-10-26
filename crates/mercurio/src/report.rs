@@ -94,6 +94,8 @@ pub struct ReportEntry {
     pub url_id: Option<String>,
     /// This entry failed, but a later priority group of its tag chain delivered, so the call still succeeds (Apprise's escalation; see [`crate::TagFilter`]).
     pub escalated: bool,
+    /// Warnings raised while this URL was delivered, each once and in order: the same text mercurio logs through `log` (an unreadable image, an icon it could not write, an option the service ignored). Delivery went on despite them.
+    pub warnings: Vec<String>,
 }
 
 impl ReportEntry {

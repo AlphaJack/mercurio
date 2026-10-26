@@ -235,7 +235,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             }
             continue;
         }
-        log::warn!("Pingram: dropped an invalid target");
+        crate::warning!("Pingram: dropped an invalid target");
     }
     if !cur.is_empty() {
         recipients.push(cur);

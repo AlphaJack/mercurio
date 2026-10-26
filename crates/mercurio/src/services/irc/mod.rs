@@ -160,7 +160,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             users.push(c["user"].to_string());
             continue;
         }
-        log::warn!("Dropped invalid IRC target ({target}).");
+        crate::warning!("Dropped invalid IRC target ({target}).");
     }
 
     Ok(Box::new(Irc {

@@ -237,7 +237,7 @@ impl Loader<'_> {
                 self.services(&child, recursion - 1, cfg).await;
             }
             if cfg.services.len() == before {
-                log::warn!("Failed to load configuration from {}", src.describe());
+                crate::warning!("Failed to load configuration from {}", src.describe());
             }
         })
     }

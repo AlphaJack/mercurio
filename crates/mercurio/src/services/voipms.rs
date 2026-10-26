@@ -77,7 +77,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     } else {
         for t in parse_phone_no(&targets, true, false) {
             let Some(r) = is_phone_no(&t, 10) else {
-                log::warn!("VoIPms: dropped invalid phone number {t:?}");
+                crate::warning!("VoIPms: dropped invalid phone number {t:?}");
                 continue;
             };
             if !r.country.is_empty() && r.country != COUNTRY_CODE {

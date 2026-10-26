@@ -133,7 +133,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             out.push(format!("#{gid}"));
             continue;
         }
-        log::warn!("WhatsApp: dropped invalid target specified");
+        crate::warning!("WhatsApp: dropped invalid target specified");
     }
 
     // `:key=value` template component mapping (insertion ordered by index key).

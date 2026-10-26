@@ -70,12 +70,12 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut phones = Vec::new();
     for target in parse_list(targets) {
         let Some(caps) = phone_re.captures(&target) else {
-            log::warn!("DingTalk: dropped invalid phone # specified");
+            crate::warning!("DingTalk: dropped invalid phone # specified");
             continue;
         };
         let digits: String = caps["phone"].chars().filter(char::is_ascii_digit).collect();
         if !(11..=14).contains(&digits.len()) {
-            log::warn!("DingTalk: dropped invalid phone # specified");
+            crate::warning!("DingTalk: dropped invalid phone # specified");
             continue;
         }
         phones.push(digits);

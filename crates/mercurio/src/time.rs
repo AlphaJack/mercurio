@@ -110,7 +110,7 @@ pub fn zone(name: &str) -> Option<Zone> {
 
 #[cfg(not(feature = "timezones"))]
 fn iana_zone(raw: &str, _lowered: &str) -> Option<Zone> {
-    log::warn!("time zone {raw}: only UTC is available, as this build lacks the Cargo feature `timezones`");
+    crate::warning!("time zone {raw}: only UTC is available, as this build lacks the Cargo feature `timezones`");
     None
 }
 

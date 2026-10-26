@@ -168,7 +168,7 @@ impl PersistentStore {
     pub fn new(path: Option<&Path>, namespace: &str) -> Self {
         let valid = is_valid_key(namespace);
         if path.is_some() && !valid {
-            log::warn!("persistent storage namespace {namespace:?} is invalid; using memory");
+            crate::warning!("persistent storage namespace {namespace:?} is invalid; using memory");
         }
         // Directories are created on the first write, so URLs that never store anything leave no trace on disk.
         Self { base: path.filter(|_| valid).map(|p| p.join(namespace)), state: Mutex::default() }
@@ -267,7 +267,7 @@ impl Store for PersistentStore {
         }
         Plan::file(FileOp::Stat { path: file.clone() }, move |stat| {
             if let Err(e) = &stat {
-                log::warn!("could not load persistent cache {}: {e}", file.display());
+                crate::warning!("could not load persistent cache {}: {e}", file.display());
             }
             if !matches!(stat, Ok(FileOutput::Meta(Some(_)))) {
                 return Plan::Done;
@@ -277,12 +277,12 @@ impl Store for PersistentStore {
                     Ok(FileOutput::Bytes(b)) => b,
                     Ok(_) => return Plan::Done,
                     Err(e) => {
-                        log::warn!("could not load persistent cache {}: {e}", file.display());
+                        crate::warning!("could not load persistent cache {}: {e}", file.display());
                         return Plan::Done;
                     }
                 };
                 let Some((disk, dropped)) = parse_cache(&bytes) else {
-                    log::warn!("corrupted persistent cache content: {}", file.display());
+                    crate::warning!("corrupted persistent cache content: {}", file.display());
                     return Plan::file(FileOp::Remove { path: file }, |_| Plan::Done);
                 };
                 let mut st = lock(&self.state);
@@ -314,7 +314,7 @@ impl Store for PersistentStore {
         }
         let Ok(data) = serde_json::to_vec(&saved) else { return Plan::Done };
         let failed = move |file: PathBuf| {
-            log::warn!("could not write persistent cache {}", file.display());
+            crate::warning!("could not write persistent cache {}", file.display());
             Plan::Done
         };
         Plan::file(FileOp::CreateDir { path: base.join(DATA_DIR), private: true }, move |res| match res {

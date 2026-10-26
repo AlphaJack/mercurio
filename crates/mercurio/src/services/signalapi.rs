@@ -93,7 +93,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             } else if let Some(c) = group.captures(&t) {
                 valid.push(format!("group.{}", &c[1]));
             } else {
-                log::warn!("Signal API: dropped an invalid phone/group");
+                crate::warning!("Signal API: dropped an invalid phone/group");
             }
         }
     }

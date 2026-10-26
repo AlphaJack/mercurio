@@ -516,11 +516,11 @@ impl Session {
             if let Some(max) = f.max_bytes
                 && r.body.len() > max
             {
-                log::warn!("Matrix response exceeded {max} bytes; discarding it.");
+                crate::warning!("Matrix response exceeded {max} bytes; discarding it.");
                 return k(self, Fetched::fail(empty(), status));
             }
             let Ok(json) = serde_json::from_slice::<Value>(&r.body) else {
-                log::warn!("Invalid response from Matrix server.");
+                crate::warning!("Invalid response from Matrix server.");
                 return k(self, Fetched::fail(empty(), status));
             };
             if status == 429 {
@@ -542,13 +542,13 @@ impl Session {
                 if let Some(d) = deadline {
                     let remaining = d.saturating_duration_since(Instant::now());
                     if remaining.is_zero() {
-                        log::warn!("Matrix server requested we throttle back, but our retry budget is exhausted.");
+                        crate::warning!("Matrix server requested we throttle back, but our retry budget is exhausted.");
                         self.throttled = retry_hint(&json);
                         return k(self, Fetched::fail(json, status));
                     }
                     wait_ms = wait_ms.min(remaining.as_secs_f64() * 1000.0);
                 }
-                log::warn!("Matrix server requested we throttle back {wait_ms}ms; retries left {}.", left - 1);
+                crate::warning!("Matrix server requested we throttle back {wait_ms}ms; retries left {}.", left - 1);
                 let wait = if wait_ms.is_finite() && wait_ms > 0.0 {
                     Duration::from_secs_f64((wait_ms / 1000.0).min(MAX_WAIT.as_secs_f64()))
                 } else {
@@ -567,7 +567,7 @@ impl Session {
             }
             if status != 200 && status != 202 {
                 if !f.ok_status.contains(&status) {
-                    log::warn!("Failed to handshake with Matrix server: error={status}.");
+                    crate::warning!("Failed to handshake with Matrix server: error={status}.");
                 }
                 return k(self, Fetched::fail(json, status));
             }

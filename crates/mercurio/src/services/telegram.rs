@@ -187,7 +187,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = Vec::new();
     for t in parse_list(&targets_raw) {
         let Some(c) = chat_re.captures(&t) else {
-            log::warn!("Telegram: dropped invalid chat/group");
+            crate::warning!("Telegram: dropped invalid chat/group");
             detect_owner = false;
             continue;
         };
@@ -200,7 +200,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             None => c["idno"].parse().ok().map(ChatId::Int),
         };
         let (Some(id), Some(topic)) = (id, chat_topic) else {
-            log::warn!("Telegram: dropped chat/group with an out-of-range id");
+            crate::warning!("Telegram: dropped chat/group with an out-of-range id");
             detect_owner = false;
             continue;
         };
@@ -299,7 +299,7 @@ fn notify_image(ctx: &Context<'_>, kind: NotifyType) -> Option<(String, bytes::B
         None => match ctx.read(&file.path, IMAGE_MAX_BYTES) {
             Some(b) => Some((name, bytes::Bytes::copy_from_slice(b))),
             None => {
-                log::warn!("Telegram: could not read the image {}; sending without it.", file.path);
+                crate::warning!("Telegram: could not read the image {}; sending without it.", file.path);
                 None
             }
         },
@@ -345,7 +345,7 @@ impl Job {
         let att = &self.attachments[att_no];
         let size = att.data.len();
         if size > FILE_MAX_BYTES {
-            log::warn!("Telegram attachment is larger than the 50 MB upload limit");
+            crate::warning!("Telegram attachment is larger than the 50 MB upload limit");
             return None;
         }
         let (mut function, mut key) = mime_lookup(&att.mime);
@@ -506,7 +506,7 @@ impl Job {
         let target = chat.id.text();
         Some(Plan::http(req, move |res| {
             if !status_ok(&res) {
-                log::warn!("Failed to send Telegram attachment to {target}.");
+                crate::warning!("Failed to send Telegram attachment to {target}.");
             }
             Plan::Done
         }))

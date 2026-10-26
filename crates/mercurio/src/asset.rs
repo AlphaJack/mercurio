@@ -204,7 +204,7 @@ impl Asset {
         let app = self.image_bytes.and_then(|b| image_ext(b, ext == "svg").map(|e| (b, e)));
         if self.image_bytes.is_some() && app.is_none() {
             static WARNED: std::sync::Once = std::sync::Once::new();
-            WARNED.call_once(|| log::warn!("Asset::image_bytes is not JPEG or PNG (or SVG, which only the D-Bus notifiers read); using the bundled icon."));
+            WARNED.call_once(|| crate::warning!("Asset::image_bytes is not JPEG or PNG (or SVG, which only the D-Bus notifiers read); using the bundled icon."));
         }
         let (name, bytes) = match (self.image_path_mask.as_deref(), app) {
             (Some(""), _) => return None,

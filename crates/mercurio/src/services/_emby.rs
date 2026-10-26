@@ -184,7 +184,7 @@ impl Emby {
             match ids {
                 Err(e) => Plan::Fail(e),
                 Ok(ids) if ids.is_empty() => {
-                    log::warn!("{}: there were no sessions to notify", self.name);
+                    crate::warning!("{}: there were no sessions to notify", self.name);
                     Plan::Done
                 }
                 Ok(ids) => Plan::all(ids.into_iter().map(|id| {

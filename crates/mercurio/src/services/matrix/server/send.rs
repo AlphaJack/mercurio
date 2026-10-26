@@ -42,7 +42,7 @@ impl Session {
         if self.cfg.rooms.is_empty() && self.cfg.users.is_empty() {
             return self.joined_rooms(Box::new(|mut s, rooms| {
                 if rooms.is_empty() {
-                    log::warn!("There were no Matrix rooms specified to notify.");
+                    crate::warning!("There were no Matrix rooms specified to notify.");
                     let e = Error::Service("there were no Matrix rooms to notify".into());
                     return s.finish(Some(e.context("room lookup")));
                 }
@@ -66,7 +66,7 @@ impl Session {
                 match room {
                     Some(r) => s.queue.push_back((user, r)),
                     None => {
-                        log::warn!("Could not find or create a DM room for Matrix user {user}.");
+                        crate::warning!("Could not find or create a DM room for Matrix user {user}.");
                         let e = Error::Service("could not find or create a direct-message room".into());
                         s.fail_target_with(user, e.context("room lookup"));
                     }
@@ -93,7 +93,7 @@ impl Session {
             room,
             Box::new(move |mut s, room_id| match room_id {
                 None => {
-                    log::warn!("Could not join Matrix room {label}.");
+                    crate::warning!("Could not join Matrix room {label}.");
                     s.fail_target_with(label, Error::Service("could not join the room".into()).context("room join"));
                     s.next_room()
                 }
@@ -113,7 +113,7 @@ impl Session {
                     Ok(false) => s.deliver_plain(label, room_id),
                     Ok(true) if s.e2ee.capable => e2ee_flow::deliver_encrypted(s, label, room_id),
                     Ok(true) => {
-                        log::warn!("Matrix room {label} is encrypted but E2EE is unavailable; message not sent.");
+                        crate::warning!("Matrix room {label} is encrypted but E2EE is unavailable; message not sent.");
                         let e = s
                             .e2ee
                             .setup_error
@@ -188,7 +188,7 @@ impl Session {
         self.fetch(Fetch::put(path, payload), move |mut s, r| {
             s.bump_txn();
             if !r.ok {
-                log::warn!("Could not send notification Matrix room {label}.");
+                crate::warning!("Could not send notification Matrix room {label}.");
                 // Keeps the failure's class: a 5xx is retried, a 4xx or a request that may have been sent is not.
                 s.fail_target_with(label, r.error("message post failed").context("send"));
             } else if target_error {

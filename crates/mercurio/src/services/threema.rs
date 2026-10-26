@@ -69,7 +69,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         } else if let Some(p) = is_phone_no(&target, 11) {
             out.push(("phone", p.full));
         } else {
-            log::warn!("Threema: dropped invalid user/email/phone specified");
+            crate::warning!("Threema: dropped invalid user/email/phone specified");
         }
     }
     Ok(Box::new(Threema { gateway_id: user, secret: Secret::new(secret), targets: out }))

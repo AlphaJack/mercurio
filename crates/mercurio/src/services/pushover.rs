@@ -115,7 +115,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         } else if let Some(c) = crate::regex!(r"(?i)^\s*(?P<device>[a-z0-9_-]{1,25})\s*$").captures(&t) {
             devices.push(c["device"].to_string());
         } else {
-            log::warn!("Pushover: dropped invalid target");
+            crate::warning!("Pushover: dropped invalid target");
         }
     }
 

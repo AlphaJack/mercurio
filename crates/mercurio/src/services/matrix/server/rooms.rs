@@ -48,7 +48,7 @@ impl Session {
             });
         }
         let Some((name, explicit_hs)) = match_room_alias(&room) else {
-            log::warn!("Ignoring illegally formed room {room} from Matrix server list.");
+            crate::warning!("Ignoring illegally formed room {room} from Matrix server list.");
             return k(self, None);
         };
         let mut home_server = explicit_hs.or_else(|| self.home_server.clone()).filter(|h| !h.is_empty());
@@ -58,7 +58,7 @@ impl Session {
             home_server = hs_of(u);
         }
         let Some(home_server) = home_server.filter(|h| !h.is_empty()) else {
-            log::warn!("Could not resolve a homeserver for Matrix room alias {room}.");
+            crate::warning!("Could not resolve a homeserver for Matrix room alias {room}.");
             return k(self, None);
         };
         let alias = format!("#{name}:{home_server}");
@@ -75,7 +75,7 @@ impl Session {
             if r.status == 404 || r.json.get("errcode").and_then(Value::as_str) == Some("M_NOT_FOUND") {
                 return s.room_create(alias, k);
             }
-            log::warn!(
+            crate::warning!(
                 "Could not join Matrix room alias {alias} (error={}). If this is a private room, ensure the \
                  user is invited or already joined. Otherwise specify the room_id (!...).",
                 r.status
@@ -147,11 +147,11 @@ impl Session {
     /// Find or create the direct-message room with `user`.
     pub(super) fn dm_room(self, user: String, k: K<Option<Value>>) -> Plan {
         let Some((local, explicit_hs)) = match_user(&user) else {
-            log::warn!("Matrix DM: invalid user identifier {user:?}.");
+            crate::warning!("Matrix DM: invalid user identifier {user:?}.");
             return k(self, None);
         };
         let Some(home_server) = explicit_hs.or_else(|| self.home_server.clone()).filter(|h| !h.is_empty()) else {
-            log::warn!("Matrix DM: no home server known for user {user:?}.");
+            crate::warning!("Matrix DM: no home server known for user {user:?}.");
             return k(self, None);
         };
         let user_id = format!("@{local}:{home_server}");
@@ -190,7 +190,7 @@ impl Session {
         }
         self.fetch(Fetch::post("/createRoom", payload), move |s, r| {
             if r.object().is_none() {
-                log::warn!("Matrix DM: failed to create room for {user_id}.");
+                crate::warning!("Matrix DM: failed to create room for {user_id}.");
                 return k(s, None);
             }
             let Some(room_id) = r.json.get("room_id").filter(|v| has_value(v)).cloned() else { return k(s, None) };

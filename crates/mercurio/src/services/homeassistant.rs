@@ -150,7 +150,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         for t in domain_service_entries(&targets) {
             match domain_service_target(&t) {
                 Some(target) => out.push(target),
-                None => log::warn!("Home Assistant: dropped invalid [domain.]service[:target] entry"),
+                None => crate::warning!("Home Assistant: dropped invalid [domain.]service[:target] entry"),
             }
         }
         Some(out)

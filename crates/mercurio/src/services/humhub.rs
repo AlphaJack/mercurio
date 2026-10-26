@@ -68,7 +68,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     for t in parse_list(&targets) {
         match positive_int(&t) {
             Some(id) => ids.push(id),
-            None => log::warn!("HumHub: dropping an invalid container id"),
+            None => crate::warning!("HumHub: dropping an invalid container id"),
         }
     }
     if ids.is_empty() {

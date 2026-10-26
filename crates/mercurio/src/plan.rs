@@ -476,7 +476,7 @@ impl Runner<'_> {
     }
 
     fn fail(&mut self, target: Option<&str>, e: Error) -> bool {
-        log::warn!("{}{}", target.map(|t| format!("{t}: ")).unwrap_or_default(), e);
+        crate::warning!("{}{}", target.map(|t| format!("{t}: ")).unwrap_or_default(), e);
         self.out.push(Outcome { target: target.map(str::to_string), result: Err(e) });
         false
     }
