@@ -1,6 +1,6 @@
 //! Windows notifications (`windows://`): a toast with the title, body and the notification type's image, falling back to a tray-icon balloon.
 //!
-//! The toast goes through WinRT (`ToastNotificationManager`) in-process, with no `windows` crate and no program to run. It is shown under PowerShell's AppUserModelID, which every Windows 10 and 11 registers, so mercurio needs no app ID of its own; Windows labels the toast "Windows PowerShell". The image is the bundled icon (or the `image_path_mask` file), shown as the app logo; `?image=no` leaves it out. `?duration=` above 7 seconds asks for a long toast (about 25 seconds), otherwise a short one (about 7 seconds).
+//! The toast goes through WinRT (`ToastNotificationManager`) in-process, with no `windows` crate and no program to run. It is shown under PowerShell's AppUserModelID, which every Windows 10 and 11 registers, so mercurio needs no app ID of its own; Windows labels the toast "Windows PowerShell". The image is the app's icon (`image_path_mask` or `image_bytes`), else the bundled one, shown as the app logo; `?image=no` leaves it out. `?duration=` above 7 seconds asks for a long toast (about 25 seconds), otherwise a short one (about 7 seconds).
 //!
 //! When the toast fails, mercurio shows a balloon instead: the sequence (tray icon, balloon tip, sleep, tear-down) runs through `powershell.exe` and `System.Windows.Forms.NotifyIcon` (`ShowBalloonTip`, `Start-Sleep`, `Dispose`) for `duration` seconds. The script travels as `-EncodedCommand` so no quoting of user text reaches the command line.
 //!
