@@ -73,12 +73,13 @@ prints the reason and makes the exit code 1:
 ```text
 $ mercurio check "json://localhost/x" "unknown://x" "discord://only"
 error: unknown://x/...: unsupported URL scheme: unknown://
-error: discord://only/...: Discord: an invalid Discord Webhook Token was specified
+error: discord://***/...: Discord: an invalid Discord Webhook Token was specified
 ok   json:// (JSON)
 ```
 
 Log lines, errors, `check` and `--dry-run` output show only the scheme and
-host (`json://localhost:8080/...`); a token in the host position
-(`tgram://BOT_TOKEN/...`) is therefore printed. In the library,
+host (`json://localhost:8080/...`). When a service puts a secret in the host
+position, such as Telegram's bot token, the host is shown as `***`
+(`tgram://***/...`). In the library,
 `Debug` output of parsed URLs is redacted the same way. `mercurio::redact_url` gives the
 redacted form for your own logs.

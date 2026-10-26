@@ -588,14 +588,55 @@ impl Runner<'_> {
     }
 }
 
-/// Strip userinfo, path and query from a URL for logging.
+/// Strip userinfo, path and query from a URL for logging, and mask the host as `***` when the service's URL templates put a secret there (Telegram's bot token, Pushover's token, Discord's webhook id): `tgram://***/...`.
 pub fn redact_url(url: &str) -> String {
     match url.split_once("://") {
         Some((scheme, rest)) => {
             let host = rest.split(['/', '?']).next().unwrap_or("");
             let host = host.rsplit('@').next().unwrap_or(host);
+            let host = if secret_host(scheme) { "***" } else { host };
             format!("{scheme}://{host}/...")
         }
         None => "<url>".into(),
+    }
+}
+
+/// Whether a compiled-in service handling `scheme` has a template whose host slot holds a secret token.
+fn secret_host(scheme: &str) -> bool {
+    let Some(def) = crate::services::ALL.iter().find(|d| d.handles(scheme)) else { return false };
+    def.templates.iter().any(|template| {
+        let rest = template.split_once("://").map_or("", |(_, r)| r);
+        let slot = rest.split(['/', '?']).next().unwrap_or("");
+        let slot = slot.rsplit('@').next().unwrap_or(slot);
+        // The host is the slot's first token; `{path}{token}` may follow it without a `/`.
+        let host = slot.strip_prefix('{').and_then(|t| t.split_once('}')).map(|(key, _)| key);
+        host.is_some_and(|key| def.tokens.iter().any(|p| p.key == key && p.secret))
+    })
+}
+
+#[cfg(test)]
+mod redact_tests {
+    use super::redact_url;
+
+    #[cfg(all(
+        feature = "service-telegram",
+        feature = "service-pushover",
+        feature = "service-discord",
+        feature = "service-ntfy",
+        feature = "service-gotify"
+    ))]
+    #[test]
+    fn secrets_in_the_host_slot_are_masked() {
+        for (url, shown) in [
+            ("tgram://123456789:AAbotTOKENsecret/12345", "tgram://***/..."),
+            ("pover://userkey@apptoken", "pover://***/..."),
+            ("discord://webhookid/webhooktoken", "discord://***/..."),
+            ("ntfys://user:pass@ntfy.sh/topic", "ntfys://ntfy.sh/..."),
+            ("gotify://host/APPTOKEN", "gotify://host/..."),
+            ("foo://user:secret@host/path", "foo://host/..."),
+            ("no scheme", "<url>"),
+        ] {
+            assert_eq!(redact_url(url), shown, "{url}");
+        }
     }
 }
