@@ -426,3 +426,4 @@ service-zulip = []
 
 [package.metadata.cargo-semver-checks.lints]
 struct_marked_non_exhaustive = "allow"
+constructible_struct_adds_field = "allow"
