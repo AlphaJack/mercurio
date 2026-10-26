@@ -116,7 +116,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         } else if let Some(c) = crate::regex!(r"^#?(?P<name>[A-Za-z0-9_-]+)\s*$").captures(&t) {
             topics.push(c["name"].to_string());
         } else {
-            log::warn!("SNS: dropped invalid phone/topic");
+            crate::warning!("SNS: dropped invalid phone/topic");
         }
     }
 

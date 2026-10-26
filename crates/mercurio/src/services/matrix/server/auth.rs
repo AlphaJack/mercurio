@@ -9,7 +9,7 @@ impl Session {
     }
 
     pub(super) fn discovery_failed(self, why: &str, k: K<bool>) -> Plan {
-        log::warn!("Matrix Well-Known {why}");
+        crate::warning!("Matrix Well-Known {why}");
         self.store.clear(&[DISCOVERY_BASE_KEY, DISCOVERY_IDENTITY_KEY]);
         k(self, false)
     }
@@ -101,7 +101,7 @@ impl Session {
             return k(self, true);
         }
         let (Some(user), Some(password)) = (self.cfg.user.clone(), self.password().map(str::to_string)) else {
-            log::warn!("Failed to login to Matrix server: token or user/pass combo is missing.");
+            crate::warning!("Failed to login to Matrix server: token or user/pass combo is missing.");
             return k(self, false);
         };
         let mut payload = if self.cfg.version == Version::V3 {

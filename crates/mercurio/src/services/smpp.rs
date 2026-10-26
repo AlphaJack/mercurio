@@ -99,7 +99,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .filter_map(|t| {
             let p = is_phone_no(&t, 10);
             if p.is_none() {
-                log::warn!("SMPP: dropped invalid phone # ({t})");
+                crate::warning!("SMPP: dropped invalid phone # ({t})");
             }
             p.map(|p| p.full)
         })

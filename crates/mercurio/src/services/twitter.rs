@@ -128,7 +128,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             Some(c) => targets.push(c["user"].to_string()),
             None => {
                 has_error = true;
-                log::warn!("Twitter: dropped invalid user");
+                crate::warning!("Twitter: dropped invalid user");
             }
         }
     }

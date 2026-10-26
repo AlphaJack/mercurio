@@ -75,7 +75,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
                     users.push(id);
                 }
             }
-            None => log::warn!("dropped invalid OneBot target"),
+            None => crate::warning!("dropped invalid OneBot target"),
         }
     }
 

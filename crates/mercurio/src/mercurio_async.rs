@@ -256,8 +256,14 @@ impl AsyncMercurio {
                     transport.sleep(gap).await;
                 }
                 let retry = filter.retry_for(t.tag_set()).map(|r| u32::try_from(r).unwrap_or(u32::MAX));
-                let attempts = t.send_attempts_with_retry(msg, transport, &self.core.asset_for(t), retry).await;
-                let entry = self.core.entry(t, attempts);
+                let (attempts, warnings) = crate::warnings::collect(t.send_attempts_with_retry(
+                    msg,
+                    transport,
+                    &self.core.asset_for(t),
+                    retry,
+                ))
+                .await;
+                let entry = self.core.entry(t, attempts, warnings);
                 on_entry(&entry);
                 done.push((i, entry));
                 last.insert(t.def.id, Instant::now());

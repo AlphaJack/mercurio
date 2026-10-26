@@ -157,7 +157,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         return Err(SERVICE.err("an invalid Fluxer Hostname was provided"));
     }
     if mode == Mode::Private && crate::regex!(r"(?i)fluxer\.app").is_match(&host) {
-        log::warn!("Fluxer mode changed to cloud mode because fluxer.app found in the host");
+        crate::warning!("Fluxer mode changed to cloud mode because fluxer.app found in the host");
         mode = Mode::Cloud;
     }
     let mut path = fullpath.map(|p| p.trim().to_string()).unwrap_or_default();

@@ -91,7 +91,7 @@ pub fn prepare<'m>(
     }
     #[cfg(not(feature = "emojis"))]
     if opts.emojis {
-        log::warn!("emoji shortcodes are sent as written: this build lacks the Cargo feature `emojis`");
+        crate::warning!("emoji shortcodes are sent as written: this build lacks the Cargo feature `emojis`");
     }
     // Same format in and out converts to an identical copy: keep the borrowed body.
     if let Some(input) = input_format.filter(|&input| input != format) {

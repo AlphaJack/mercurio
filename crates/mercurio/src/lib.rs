@@ -271,6 +271,17 @@ mod time;
 mod transport_def;
 mod url;
 mod util;
+mod warnings;
+
+/// `log::warn!`, and the message is also kept for the [`ReportEntry::warnings`] of the URL being delivered.
+macro_rules! warning {
+    ($($arg:tt)+) => {{
+        let message = format!($($arg)+);
+        log::warn!("{message}");
+        $crate::warnings::note(message);
+    }};
+}
+pub(crate) use warning;
 #[cfg(all(windows, any(feature = "transport-tokio", feature = "transport-blocking")))]
 mod winrt;
 

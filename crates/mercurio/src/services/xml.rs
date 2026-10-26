@@ -71,7 +71,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     for (k, v) in double_unquoted(&u.query_colon) {
         let key: String = k.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '-').collect();
         if key.is_empty() {
-            log::warn!("XML: ignoring invalid element name {k:?}");
+            crate::warning!("XML: ignoring invalid element name {k:?}");
             continue;
         }
         match FIELDS.iter().position(|f| *f == key) {

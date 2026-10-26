@@ -65,7 +65,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         } else if let Some(t) = topic_re.captures(&target).and_then(|c| c["topic"].parse::<u64>().ok()) {
             topics.push(t);
         } else {
-            log::warn!("WxPusher: dropped invalid user/topic specified");
+            crate::warning!("WxPusher: dropped invalid user/topic specified");
         }
     }
     Ok(Box::new(WxPusher { token: Secret::new(token), users, topics }))

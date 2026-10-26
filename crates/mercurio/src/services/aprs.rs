@@ -101,7 +101,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .filter(|t| {
             let ok = is_call_sign(t).is_some();
             if !ok {
-                log::warn!("Dropping invalid Amateur radio call sign ({t}).");
+                crate::warning!("Dropping invalid Amateur radio call sign ({t}).");
             }
             ok
         })

@@ -92,7 +92,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         } else if let Some(c) = is_user.captures(&t) {
             users.push(c[1].to_string());
         } else {
-            log::warn!("Nextcloud: ignored an invalid user/group");
+            crate::warning!("Nextcloud: ignored an invalid user/group");
         }
     }
 

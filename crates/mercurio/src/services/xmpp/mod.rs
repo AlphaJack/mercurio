@@ -105,7 +105,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     for t in parse_list(&raw) {
         match normalize_jid(&t, &host) {
             Some((jid, muc)) => targets.push((if muc { "groupchat" } else { "chat" }.to_string(), jid)),
-            None => log::warn!("dropped invalid XMPP target"),
+            None => crate::warning!("dropped invalid XMPP target"),
         }
     }
 

@@ -237,7 +237,7 @@ fn upload(
                 if crate::regex!(r"(?i)^image/").is_match(&a.mime) {
                     break (no, a);
                 }
-                log::warn!("BlueSky: ignoring unsupported attachment");
+                crate::warning!("BlueSky: ignoring unsupported attachment");
             }
         }
     };
@@ -247,7 +247,7 @@ fn upload(
     fetch(rl, req, "upload", false, move |rl, content| {
         match content.as_object().and_then(|o| o.get("blob")).filter(|b| json_has_value(b)) {
             Some(blob) => blobs.push((blob.clone(), filename)),
-            None => log::warn!("BlueSky: could not attach the file"),
+            None => crate::warning!("BlueSky: could not attach the file"),
         }
         upload(rl, s, atts, blobs, body)
     })

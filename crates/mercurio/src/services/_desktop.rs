@@ -123,7 +123,7 @@ pub fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
         let shown = path.display().to_string();
         Plan::file(FileOp::WriteAtomic { path, data: bytes.to_vec(), private: false }, move |res| {
             if let Err(e) = res {
-                log::warn!("could not write the notification icon {shown}; sending without it: {e}");
+                crate::warning!("could not write the notification icon {shown}; sending without it: {e}");
             }
             Plan::Done
         })

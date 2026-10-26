@@ -98,7 +98,7 @@ impl Core {
 
     pub(crate) fn add_loaded(&mut self, cfg: Config) -> usize {
         for w in &cfg.warnings {
-            log::warn!("{w}");
+            crate::warning!("{w}");
         }
         let n = cfg.services.len();
         for s in cfg.services {
@@ -133,7 +133,7 @@ impl Core {
         t.effective_asset(&self.asset).map_or(Cow::Borrowed(&self.asset), Cow::Owned)
     }
 
-    pub(crate) fn entry(&self, t: &Target, attempts: Vec<Attempt>) -> ReportEntry {
+    pub(crate) fn entry(&self, t: &Target, attempts: Vec<Attempt>, warnings: Vec<String>) -> ReportEntry {
         ReportEntry {
             label: t.label(),
             service: t.def.id,
@@ -141,6 +141,7 @@ impl Core {
             attempts,
             url_id: t.url_id(&self.asset_for(t)),
             escalated: false,
+            warnings,
         }
     }
 
@@ -166,6 +167,7 @@ impl Core {
                 attempts: Vec::new(),
                 url_id: None,
                 escalated: false,
+                warnings: Vec::new(),
             });
         }
         report
@@ -561,9 +563,13 @@ impl Mercurio {
         let send = |t: &Target| {
             let retry = filter.retry_for(t.tag_set()).map(|r| u32::try_from(r).unwrap_or(u32::MAX));
             let transport = Blocking(self.transport.as_ref());
-            let attempts =
-                pollster::block_on(t.send_attempts_with_retry(msg, &transport, &self.core.asset_for(t), retry));
-            let entry = self.core.entry(t, attempts);
+            let (attempts, warnings) = pollster::block_on(crate::warnings::collect(t.send_attempts_with_retry(
+                msg,
+                &transport,
+                &self.core.asset_for(t),
+                retry,
+            )));
+            let entry = self.core.entry(t, attempts, warnings);
             on_entry(&entry);
             entry
         };
@@ -625,6 +631,19 @@ mod tests {
     use crate::service::{Context, Notify, ServiceDef};
     use crate::target::parse;
     use crate::transport::FileOp;
+
+    #[cfg(all(feature = "service-telegram", feature = "service-json"))]
+    #[test]
+    fn warnings_reach_the_entry_of_their_url() {
+        let fake = Arc::new(crate::testing::FakeTransport::new());
+        let asset = Asset { image_path_mask: Some("/missing/{TYPE}.png".into()), ..Asset::default() };
+        let mut m = Mercurio::with_transport(fake.clone()).asset(asset);
+        assert!(m.add_all("tgram://123456789:abcdefg/12345?image=yes json://localhost").is_empty());
+        let report = m.notify(&Message::new("b"));
+        let warnings: Vec<_> = report.entries.iter().map(|e| e.warnings.clone()).collect();
+        assert_eq!(warnings[0], ["Telegram: could not read the image /missing/info.png; sending without it."]);
+        assert!(warnings[1].is_empty());
+    }
 
     #[cfg(feature = "service-json")]
     #[test]

@@ -81,7 +81,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             let user = &c["user"];
             users.push(if user == "all" { "@all".to_string() } else { user.to_string() });
         } else {
-            log::warn!("WeChat (WeCom): ignoring unrecognized target");
+            crate::warning!("WeChat (WeCom): ignoring unrecognized target");
         }
     }
     Ok(Box::new(WeChat { corpid, corpsecret: Secret::new(corpsecret), agentid, users, departments, tags }))

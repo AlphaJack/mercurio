@@ -51,7 +51,7 @@ pub fn markdown_to_html_plain(content: &str) -> String {
 
 #[cfg(not(feature = "markdown"))]
 fn markdown_unavailable() {
-    log::warn!("Markdown is sent as plain text: this build lacks the Cargo feature `markdown`");
+    crate::warning!("Markdown is sent as plain text: this build lacks the Cargo feature `markdown`");
 }
 
 /// Plain text to HTML: escape and turn newlines into `<br/>`.

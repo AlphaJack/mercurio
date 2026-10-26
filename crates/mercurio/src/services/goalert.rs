@@ -91,7 +91,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     for t in parse_list(&targets) {
         match integration_key(&t) {
             Some(k) => keys.push(k.to_lowercase()),
-            None => log::warn!("GoAlert: ignoring an invalid integration key"),
+            None => crate::warning!("GoAlert: ignoring an invalid integration key"),
         }
     }
 

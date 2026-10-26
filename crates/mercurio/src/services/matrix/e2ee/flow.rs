@@ -128,7 +128,7 @@ pub(in super::super) fn setup(mut s: Session, k: K<()>) -> Plan {
     let after = move |mut s: Session, ok: bool| -> Plan {
         s.e2ee.capable = ok;
         if !ok {
-            log::warn!("Matrix E2EE setup failed; encrypted rooms will not receive the message.");
+            crate::warning!("Matrix E2EE setup failed; encrypted rooms will not receive the message.");
             if s.e2ee.setup_error.is_none() {
                 s.e2ee.setup_error = Some(Error::Service("Matrix E2EE setup failed".into()));
             }
@@ -139,7 +139,7 @@ pub(in super::super) fn setup(mut s: Session, k: K<()>) -> Plan {
                 s,
                 Box::new(move |s, verified| {
                     if !verified {
-                        log::warn!(
+                        crate::warning!(
                             "Matrix E2EE automatic device verification did not complete; continuing without \
                              confirming device trust."
                         );
@@ -161,7 +161,7 @@ fn upload_keys(mut s: Session, k: K<bool>) -> Plan {
     let (Some(user_id), Some(device_id)) =
         (s.user_id.clone().filter(|u| !u.is_empty()), s.device_id.clone().filter(|d| !d.is_empty()))
     else {
-        log::warn!("Matrix E2EE: cannot upload keys without user_id and device_id; ensure login completes first.");
+        crate::warning!("Matrix E2EE: cannot upload keys without user_id and device_id; ensure login completes first.");
         return k(s, false);
     };
     let Some(acct) = s.e2ee.account.as_mut() else { return k(s, false) };
@@ -171,7 +171,7 @@ fn upload_keys(mut s: Session, k: K<bool>) -> Plan {
     });
     s.fetch(Fetch::post("/keys/upload", payload), move |mut s, r| {
         if !r.ok {
-            log::warn!("Matrix E2EE: device key upload failed.");
+            crate::warning!("Matrix E2EE: device key upload failed.");
             s.e2ee.setup_error = Some(r.error("Matrix E2EE device key upload failed").context("key upload"));
             return k(s, false);
         }
@@ -203,7 +203,7 @@ pub(in super::super) fn room_encrypted(s: Session, room_id: String, k: K<Result<
             s.store.set(&cache_key, json!(UNENCRYPTED), UNENCRYPTED_TTL);
             return k(s, Ok(false));
         }
-        log::warn!(
+        crate::warning!(
             "Matrix E2EE: could not read the encryption state of room {room_id} (error={}); not sending to it.",
             r.status
         );
@@ -312,7 +312,7 @@ fn send_to_room(s: Session, room_id: String, k: K<(Option<MegolmSession>, Option
             let (members, fresh) = match members {
                 Ok(m) => m,
                 Err(step) => {
-                    log::warn!("Matrix E2EE: failed to query room members for {room_id}.");
+                    crate::warning!("Matrix E2EE: failed to query room members for {room_id}.");
                     return k(s, (None, Some(step)));
                 }
             };
@@ -392,7 +392,7 @@ fn encrypt_and_send(
     let size = payload.to_string().len();
     let budget = MATRIX_EVENT_BYTE_LIMIT - MATRIX_EVENT_SAFETY_MARGIN;
     if size > budget {
-        log::warn!(
+        crate::warning!(
             "Matrix E2EE: encrypted event for room {room_id} is {size} bytes, over the safe {budget}-byte budget; \
              message not sent."
         );
@@ -482,7 +482,7 @@ impl CrossSigning {
             CrossSigning::Untrusted => false,
             CrossSigning::Trusted(ssk) if verify_signed_by(info, uid, ssk) => true,
             CrossSigning::Trusted(_) => {
-                log::warn!("Matrix E2EE: device {uid} / {dev_id} is not cross-signed; not sharing room keys with it.");
+                crate::warning!("Matrix E2EE: device {uid} / {dev_id} is not cross-signed; not sharing room keys with it.");
                 false
             }
         }
@@ -499,7 +499,7 @@ fn cross_signing(s: &Session, resp: &Map<String, Value>, uid: &str) -> CrossSign
     let pin = format!("e2ee_master_{uid}");
     match s.store.get(&pin) {
         Some(Value::String(pinned)) if pinned != master => {
-            log::warn!(
+            crate::warning!(
                 "Matrix E2EE: the cross-signing master key of {uid} differs from the one first seen; \
                  not sharing room keys with their devices."
             );
@@ -514,7 +514,7 @@ fn cross_signing(s: &Session, resp: &Map<String, Value>, uid: &str) -> CrossSign
     match ssk.and_then(|o| cross_signing_key(o, uid, "self_signing").filter(|_| verify_signed_by(o, uid, &master))) {
         Some(ssk) => CrossSigning::Trusted(ssk),
         None => {
-            log::warn!(
+            crate::warning!(
                 "Matrix E2EE: the self-signing key of {uid} is missing or not signed by their master key; \
                  not sharing room keys with their devices."
             );
@@ -552,7 +552,7 @@ impl Pins {
                 true
             }
             Some(_) => {
-                log::warn!(
+                crate::warning!(
                     "Matrix E2EE: device {user} / {device} presents keys that differ from the ones first seen; \
                      not sharing room keys with it."
                 );
@@ -592,7 +592,7 @@ fn share_room_key(
         .collect();
     s.fetch(Fetch::post("/keys/claim", json!({"one_time_keys": request})), move |mut s, r| {
         if !r.ok {
-            log::warn!("Matrix E2EE: failed to claim one-time keys.");
+            crate::warning!("Matrix E2EE: failed to claim one-time keys.");
             return k(s, (session, Err("key claim")));
         }
         let (messages, sent, skipped) = build_key_shares(&s, &room_id, &session, &pending, &r.json);
@@ -603,7 +603,7 @@ fn share_room_key(
         let path = format!("/sendToDevice/m.room.encrypted/{}", s.txn);
         s.fetch(Fetch::put(path, json!({"messages": messages})), move |s, r| {
             if !r.ok {
-                log::warn!("Matrix E2EE: failed to deliver room key to devices in {room_id}.");
+                crate::warning!("Matrix E2EE: failed to deliver room key to devices in {room_id}.");
                 return k(s, (session, Err("key share")));
             }
             k(s, (session, Ok((sent, skipped))))
@@ -685,7 +685,7 @@ fn build_key_shares(
         out.insert(uid.clone(), Value::Object(per_user));
     }
     if no_otk > 0 {
-        log::warn!(
+        crate::warning!(
             "Matrix E2EE: {no_otk} device(s) in {room_id} had no one-time key available; those device(s) will not \
              be able to decrypt this message."
         );
@@ -720,7 +720,7 @@ fn send_attachment(
                 _ => None,
             };
             let Some(uri) = uri else {
-                log::warn!("Matrix E2EE: media upload failed.");
+                crate::warning!("Matrix E2EE: media upload failed.");
                 return k(s, (session, Some("upload")));
             };
             file_info["url"] = uri;

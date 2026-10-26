@@ -141,7 +141,7 @@ impl Notify for GroupMe {
                 .filter(|a| {
                     let ok = a.mime.is_empty() || a.mime.starts_with("image/");
                     if !ok {
-                        log::warn!("GroupMe image service only supports images; skipping {} ({})", a.name, a.mime);
+                        crate::warning!("GroupMe image service only supports images; skipping {} ({})", a.name, a.mime);
                     }
                     ok
                 })
@@ -149,7 +149,7 @@ impl Notify for GroupMe {
                 .collect(),
             None => {
                 if !msg.attachments.is_empty() {
-                    log::warn!("GroupMe image attachments require an access token; skipping attachments");
+                    crate::warning!("GroupMe image attachments require an access token; skipping attachments");
                 }
                 Vec::new()
             }

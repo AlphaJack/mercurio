@@ -87,14 +87,14 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             if id.is_match(user) {
                 dm_users.push(user.to_string());
             } else {
-                log::warn!("dropping invalid Kook DM user ID");
+                crate::warning!("dropping invalid Kook DM user ID");
             }
         } else {
             let channel = target.strip_prefix('#').unwrap_or(&target);
             if id.is_match(channel) {
                 channels.push(channel.to_string());
             } else {
-                log::warn!("dropping invalid Kook channel ID");
+                crate::warning!("dropping invalid Kook channel ID");
             }
         }
     }

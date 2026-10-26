@@ -494,13 +494,13 @@ fn post_process(r: &mut ParsedUrl) {
     if let Some(v) = r.query.get("format") {
         r.format = NotifyFormat::parse(&v.to_lowercase());
         if r.format.is_none() {
-            log::warn!("Unsupported format specified {v:?}");
+            crate::warning!("Unsupported format specified {v:?}");
         }
     }
     if let Some(v) = r.query.get("overflow") {
         r.overflow = OverflowMode::parse(&v.to_lowercase());
         if r.overflow.is_none() {
-            log::warn!("Unsupported overflow mode specified {v:?}");
+            crate::warning!("Unsupported overflow mode specified {v:?}");
         }
     }
     if let Some(v) = r.query.get("tz") {

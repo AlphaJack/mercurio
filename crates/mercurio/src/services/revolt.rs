@@ -87,7 +87,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .filter(|t| {
             let ok = validate_regex(t, r"^[a-z0-9_-]+$", "i", true).is_some();
             if !ok {
-                log::warn!("Dropped invalid Revolt channel specified");
+                crate::warning!("Dropped invalid Revolt channel specified");
             }
             ok
         })

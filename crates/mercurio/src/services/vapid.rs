@@ -470,7 +470,7 @@ fn stored_key(ctx: &Context<'_>, dir: &Path) -> Option<(EcdsaKeyPair, Plan)> {
     let public = write("public_key.pem", "PUBLIC KEY", &spki);
     let shown = dir.display().to_string();
     let failed = move |e: Error, dir: &str| {
-        log::warn!("could not write the Vapid key pair to {dir}: {e}");
+        crate::warning!("could not write the Vapid key pair to {dir}: {e}");
         Plan::Fail(Error::Service("no Vapid/WebPush (PEM) private key could be loaded".into()))
     };
     let save = Plan::file(write("private_key.pem", "PRIVATE KEY", pkcs8.as_ref()), move |res| match res {

@@ -62,7 +62,7 @@ pub(super) fn normalize_groups(groups: &mut Vec<(String, Vec<String>)>) {
         let i = set_of(groups, &tag);
         union(&mut groups[i].1, exp);
         if get(groups, &tag).is_some_and(|v| v.is_empty()) {
-            log::warn!("The group {tag} has no tags assigned to it");
+            crate::warning!("The group {tag} has no tags assigned to it");
             groups.retain(|(n, _)| n != &tag);
         }
     }

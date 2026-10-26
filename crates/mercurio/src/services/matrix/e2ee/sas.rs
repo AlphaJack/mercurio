@@ -497,7 +497,7 @@ fn handle_event(s: Session, mut v: Verifier, event: Value, k: VK) -> Plan {
         return k(s, v, None);
     }
     if etype == EVENT_CANCEL {
-        log::warn!(
+        crate::warning!(
             "Matrix E2EE SAS verification was cancelled: {}",
             content.get("reason").and_then(Value::as_str).filter(|r| !r.is_empty()).unwrap_or("unspecified reason")
         );

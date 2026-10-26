@@ -407,7 +407,7 @@ impl Target {
             let Some(wait) = self.retry_wait(&attempts[attempts.len() - 1].delivery) else {
                 break;
             };
-            log::warn!("{}: attempt {}/{} failed; trying again", self.def.name, attempts.len(), retry + 1);
+            crate::warning!("{}: attempt {}/{} failed; trying again", self.def.name, attempts.len(), retry + 1);
             transport.sleep(wait).await;
         }
         attempts
@@ -439,13 +439,13 @@ impl Target {
                 ErrorClass::RateLimited { retry_after: ra } => retry_after = retry_after.max(ra),
                 ErrorClass::Transient => {}
                 class @ (ErrorClass::Auth | ErrorClass::InvalidTarget | ErrorClass::Unknown) => {
-                    log::warn!("{}: not retrying ({class}): {e}", self.def.name);
+                    crate::warning!("{}: not retrying ({class}): {e}", self.def.name);
                     return None;
                 }
             }
         }
         if let Some(ra) = retry_after.filter(|ra| *ra > MAX_RETRY_AFTER) {
-            log::warn!("{}: not retrying; the service asked to wait {}s", self.def.name, ra.as_secs());
+            crate::warning!("{}: not retrying; the service asked to wait {}s", self.def.name, ra.as_secs());
             return None;
         }
         Some(self.wait.max(retry_after.unwrap_or_default()))

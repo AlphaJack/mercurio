@@ -50,7 +50,7 @@ pub(in super::super) fn get(s: &Session, name: &str) -> Option<Value> {
     }
     let opened = key(s).and_then(|k| open(&k, name, &v));
     if opened.is_none() {
-        log::warn!("Matrix E2EE: the stored {name} could not be decrypted (the URL's password or token changed?); starting over");
+        crate::warning!("Matrix E2EE: the stored {name} could not be decrypted (the URL's password or token changed?); starting over");
         s.store.clear(&[name]);
     }
     opened

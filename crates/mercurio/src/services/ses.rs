@@ -140,7 +140,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         for recipient in parse_emails(&targets, true) {
             match is_email(&recipient) {
                 Some(e) => addrs.push((e.name, e.full_email)),
-                None => log::warn!("SES: dropped invalid To email"),
+                None => crate::warning!("SES: dropped invalid To email"),
             }
         }
     } else {
@@ -158,7 +158,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
                     }
                     names.insert(e.full_email, e.name);
                 }
-                None => log::warn!("SES: dropped invalid Cc/Bcc email"),
+                None => crate::warning!("SES: dropped invalid Cc/Bcc email"),
             }
         }
         set.sort();

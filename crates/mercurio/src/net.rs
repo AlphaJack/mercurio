@@ -20,12 +20,12 @@ pub(crate) fn ca_bundle() -> Option<&'static [CertificateDer<'static>]> {
             let certs: Vec<_> = match CertificateDer::pem_file_iter(&path) {
                 Ok(it) => it.filter_map(std::result::Result::ok).collect(),
                 Err(e) => {
-                    log::warn!("{var}: cannot read {}: {e}; using the {FALLBACK} roots", path.to_string_lossy());
+                    crate::warning!("{var}: cannot read {}: {e}; using the {FALLBACK} roots", path.to_string_lossy());
                     return system_bundle();
                 }
             };
             if certs.is_empty() {
-                log::warn!("{var}: no certificate in {}; using the {FALLBACK} roots", path.to_string_lossy());
+                crate::warning!("{var}: no certificate in {}; using the {FALLBACK} roots", path.to_string_lossy());
                 return system_bundle();
             }
             Some(certs)

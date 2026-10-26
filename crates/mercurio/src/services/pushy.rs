@@ -67,7 +67,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         } else if let Some(c) = device_re.captures(&t) {
             devices.push(c["device"].to_string());
         } else {
-            log::warn!("Pushy: dropped invalid topic/device specified");
+            crate::warning!("Pushy: dropped invalid topic/device specified");
         }
     }
     let badge = badge.and_then(|b| parse_int(&b)).filter(|b| *b >= 0);

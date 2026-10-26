@@ -636,7 +636,7 @@ impl Email {
     fn private_key<'a>(&self, ctx: &Context<'a>) -> Option<&'a [u8]> {
         let key = self.private_key_quiet(ctx);
         if key.is_none() {
-            log::warn!("{}", if self.pgp_prv.is_some() { "PGP Private Key could not be accessed" } else { "No PGP private key found" });
+            crate::warning!("{}", if self.pgp_prv.is_some() { "PGP Private Key could not be accessed" } else { "No PGP private key found" });
         }
         key
     }
@@ -825,7 +825,7 @@ impl Email {
                         Cow::Owned(generated.public.clone().into_bytes())
                     }
                     None => {
-                        log::warn!("{}", if self.pgp_pub.is_some() { "PGP Public Key could not be accessed" } else { "No PGP public key found" });
+                        crate::warning!("{}", if self.pgp_pub.is_some() { "PGP Public Key could not be accessed" } else { "No PGP public key found" });
                         return Err(Error::Service(ENCRYPT_FAILED.into()));
                     }
                 };
@@ -875,7 +875,7 @@ impl Email {
             Plan::file(FileOp::WriteAtomic { path: path.clone(), data: data.into_bytes(), private }, move |res| {
                 match res {
                     Ok(_) => log::info!("Wrote PGP Key {}", path.display()),
-                    Err(e) => log::warn!("Error writing PGP file {}: {e}", path.display()),
+                    Err(e) => crate::warning!("Error writing PGP file {}: {e}", path.display()),
                 }
                 Plan::Done
             })
@@ -890,7 +890,7 @@ impl Email {
         let key = self.private_key(ctx).ok_or_else(failed)?;
         let content = super::mime::render_part_alone(&base, ctx.env().as_ref());
         let (signature, micalg) = super::pgp::sign(key, content.as_bytes(), ctx.env().as_ref()).map_err(|e| {
-            log::warn!("{}", e.warning());
+            crate::warning!("{}", e.warning());
             failed()
         })?;
         let sig_part = Part::Leaf {
@@ -911,7 +911,7 @@ impl Email {
     #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
     fn encrypted<'a>(&self, key: &[u8], content: &str, ctx: &Context<'_>) -> Result<Part<'a>> {
         let armored = super::pgp::encrypt(key, content.as_bytes(), ctx.env().as_ref()).map_err(|e| {
-            log::warn!("{}", e.warning());
+            crate::warning!("{}", e.warning());
             Error::Service(ENCRYPT_FAILED.into())
         })?;
         let version = Part::Leaf {
