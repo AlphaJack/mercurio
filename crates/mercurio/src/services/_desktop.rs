@@ -66,8 +66,9 @@ pub struct DesktopNotify<'a> {
     pub timeout_ms: i32,
 }
 
-/// Write the bundled icon (unless it is already there), then call `Notify` (replaces-id `0`, no actions, `{urgency: byte, x: int32, y: int32}` hints) over a native D-Bus connection.
+/// Write the bundled icon (unless it is already there) to the user's own directory ([`user_icon`]), then call `Notify` (replaces-id `0`, no actions, `{urgency: byte, x: int32, y: int32}` hints) over a native D-Bus connection.
 pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
+    let icon = n.icon.map(|i| user_icon(i, env));
     let ep = match session_bus(env) {
         Ok(ep) => ep,
         Err(e) => return Plan::Fail(e),
@@ -81,7 +82,7 @@ pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
     }
     let call = Notification {
         app: n.app.to_string(),
-        icon: n.icon.map_or_else(String::new, |i| i.path.clone()),
+        icon: icon.as_ref().map_or_else(String::new, |i| i.path.clone()),
         summary: n.title.to_string(),
         body: n.body.to_string(),
         hints,
@@ -89,12 +90,28 @@ pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
     }
     .call();
     Plan::chain([
-        write_icon(n.icon),
+        write_icon(icon.as_ref()),
         Plan::socket(ep, move |conn, transport| Box::pin(crate::machine::drive(Call::new(call), conn, transport))),
     ])
 }
 
-/// Write the bundled icon to its path unless it already holds it: what [`with_icon`] has the transport do for a command.
+/// `icon` moved, when mercurio writes it, from the shared temporary directory to one only this user can write: `$XDG_RUNTIME_DIR/mercurio`, else `$XDG_CACHE_HOME/mercurio`, else `~/.cache/mercurio`. On a shared `/tmp`, the first user to send would own `/tmp/mercurio`, and every other user's icon write would fail there. A user's own file (`image_path_mask`) stays where it is.
+pub fn user_icon(icon: &crate::IconFile, env: &dyn Env) -> crate::IconFile {
+    let var = |name| env.var(name).filter(|v| v.starts_with('/'));
+    let dir = var("XDG_RUNTIME_DIR")
+        .or_else(|| var("XDG_CACHE_HOME"))
+        .or_else(|| var("HOME").map(|h| format!("{}/.cache", h.trim_end_matches('/'))));
+    let name = std::path::Path::new(&icon.path).file_name();
+    match (icon.bundled, dir, name) {
+        (Some(_), Some(dir), Some(name)) => crate::IconFile {
+            path: format!("{}/mercurio/{}", dir.trim_end_matches('/'), name.to_string_lossy()),
+            bundled: icon.bundled,
+        },
+        _ => icon.clone(),
+    }
+}
+
+/// Write the bundled icon to its path unless it already holds it: what [`with_icon`] has the transport do for a command. A failed write is logged and the notification goes on: the notifier shows it without the icon.
 pub fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
     let Some((path, bytes)) = icon.and_then(|i| i.bundled.map(|b| (PathBuf::from(&i.path), b))) else {
         return Plan::Done;
@@ -103,9 +120,12 @@ pub fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
         if matches!(&read, Ok(FileOutput::Bytes(b)) if b.as_slice() == bytes) {
             return Plan::Done;
         }
-        Plan::file(FileOp::WriteAtomic { path, data: bytes.to_vec(), private: false }, |res| match res {
-            Ok(_) => Plan::Done,
-            Err(e) => Plan::Fail(e),
+        let shown = path.display().to_string();
+        Plan::file(FileOp::WriteAtomic { path, data: bytes.to_vec(), private: false }, move |res| {
+            if let Err(e) = res {
+                log::warn!("could not write the notification icon {shown}; sending without it: {e}");
+            }
+            Plan::Done
         })
     })
 }
@@ -133,5 +153,25 @@ pub fn check_exit(what: &'static str, res: Result<CommandOutput>) -> Plan {
             }))
         }
         Err(e) => Plan::Fail(e),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::FixedEnv;
+
+    #[test]
+    fn user_icon_leaves_the_shared_temporary_directory() {
+        let bundled = crate::IconFile { path: "/tmp/mercurio/icon.svg".into(), bundled: Some(b"svg") };
+        let at = |env: FixedEnv| user_icon(&bundled, &env).path;
+        let env = || FixedEnv::new(0).with_var("HOME", "/home/u");
+        assert_eq!(at(env().with_var("XDG_RUNTIME_DIR", "/run/user/1000/")), "/run/user/1000/mercurio/icon.svg");
+        assert_eq!(at(env().with_var("XDG_CACHE_HOME", "/c")), "/c/mercurio/icon.svg");
+        assert_eq!(at(env().with_var("XDG_RUNTIME_DIR", "relative")), "/home/u/.cache/mercurio/icon.svg");
+        assert_eq!(at(FixedEnv::new(0)), "/tmp/mercurio/icon.svg");
+
+        let own = crate::IconFile { path: "/icons/info.svg".into(), bundled: None };
+        assert_eq!(user_icon(&own, &env().with_var("XDG_RUNTIME_DIR", "/run/user/1000")), own);
     }
 }

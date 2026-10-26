@@ -128,7 +128,8 @@ fn fails(case: &Value) -> bool {
 fn setup_bus(s: &mut Session, case: &Value, event: fn(Value) -> Value) {
     s.fake.set_env(
         crate::testing::FixedEnv::new(1_700_000_000)
-            .with_var("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus"),
+            .with_var("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
+            .with_var("XDG_RUNTIME_DIR", "/run/user/1000"),
     );
     let rec = s.events.clone();
     s.fake.push_conn(fake_bus(move |args| rec.lock().unwrap().push(event(args)), fails(case)));
