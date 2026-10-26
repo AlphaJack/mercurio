@@ -6,7 +6,7 @@ basic:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -20,7 +20,7 @@ failure_type:
     - gnome:
         app: Mercurio
         body: "T\r\nB"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -47,7 +47,7 @@ image_yes:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -56,7 +56,7 @@ multiline:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\n1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -65,7 +65,7 @@ no_title:
     - gnome:
         app: Mercurio
         body: Mercurio Body
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -74,7 +74,7 @@ priority_emergency:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 2
   ok: true
   valid: true
@@ -83,7 +83,7 @@ priority_invalid:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -92,7 +92,7 @@ priority_low:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 0
   ok: true
   valid: true
@@ -101,7 +101,7 @@ priority_moderate:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 0
   ok: true
   valid: true
@@ -110,7 +110,7 @@ quotes:
     - gnome:
         app: Mercurio
         body: "it's \"q\" \\ x\r\nline1\r\nline2\ttab é ☃"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -119,7 +119,7 @@ underscore:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -128,7 +128,7 @@ urgency_0:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 0
   ok: true
   valid: true
@@ -137,7 +137,7 @@ urgency_2:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 2
   ok: true
   valid: true
@@ -146,7 +146,7 @@ urgency_invalid:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 1
   ok: true
   valid: true
@@ -155,7 +155,7 @@ urgency_over_priority:
     - gnome:
         app: Mercurio
         body: "Mercurio Title\r\nMercurio Body"
-        icon: "<tmp>/mercurio/icon.svg"
+        icon: /run/user/1000/mercurio/icon.svg
         urgency: 2
   ok: true
   valid: true
