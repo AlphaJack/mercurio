@@ -18,5 +18,16 @@
       "matchFileNames": [".github/workflows/release.yml"],
       "enabled": false
     }
+  ],
+  "ignorePaths": [".github/workflows/release.yml"],
+  "customManagers": [
+    {
+      "description": "actionlint, and its archive's checksum",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/ci\\.yml$/"],
+      "matchStrings": ["ACTIONLINT: (?<currentValue>\\S+)\\s+ACTIONLINT_SHA256: (?<currentDigest>\\S+)"],
+      "depNameTemplate": "rhysd/actionlint",
+      "datasourceTemplate": "github-release-attachments"
+    }
   ]
 }
