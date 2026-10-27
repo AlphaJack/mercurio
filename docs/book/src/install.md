@@ -8,6 +8,12 @@ Every GitHub release ships a prebuilt `mercurio` binary with support for every s
 cargo binstall mercurio-cli
 ```
 
+## Homebrew
+
+```sh
+brew install AlphaJack/tap/mercurio
+```
+
 ## Container
 
 In server mode:

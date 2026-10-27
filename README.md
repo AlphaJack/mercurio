@@ -10,7 +10,7 @@ Apprise-compatible Rust library, CLI and HTTP server to send notifications to 15
 cargo binstall mercurio-cli
 ```
 
-Installer scripts, release archives, the container image and a systemd unit: [docs/book/src/install.md](docs/book/src/install.md).
+Homebrew, installer scripts, release archives, the container image and a systemd unit: [docs/book/src/install.md](docs/book/src/install.md).
 
 ## Usage
 
