@@ -85,7 +85,7 @@ pub fn qp_encode(text: &str) -> String {
     out
 }
 
-/// [`qp_encode`] appended to `out`.
+/// `qp_encode` appended to `out`.
 pub fn qp_encode_into(out: &mut String, text: &str) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
     let mut rest = text;
@@ -356,7 +356,7 @@ pub fn dot_stuff_owned(out: &mut Vec<u8>, message: String) {
     }
 }
 
-/// [`dot_stuff`] appended to `out`, which is grown once for the whole message.
+/// `dot_stuff` appended to `out`, which is grown once for the whole message.
 pub fn dot_stuff_into(out: &mut Vec<u8>, message: &str) {
     out.reserve(message.len() + message.len() / 64 + 16);
     for (i, line) in message.split("\r\n").enumerate() {

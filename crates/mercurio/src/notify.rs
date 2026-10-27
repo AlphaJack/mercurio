@@ -21,7 +21,7 @@ use crate::tag::TagFilter;
 use crate::target::Target;
 use crate::transport::{Blocking, Transport};
 
-/// Most sends in progress at once across every [`Mercurio`] and [`crate::AsyncMercurio`] in the process. Targets of a service with a [`ServiceDef::throttle`] go one at a time, with the throttle between them.
+/// Most sends in progress at once across every [`Mercurio`] and [`crate::AsyncMercurio`] in the process. Targets of a service with a [`ServiceDef::throttle`](crate::service::ServiceDef::throttle) go one at a time, with the throttle between them.
 const MAX_PARALLEL: usize = 128;
 
 /// The process-wide budget of [`MAX_PARALLEL`] sends, shared by both facades so that concurrent `notify` calls (the HTTP server's requests, or a blocking and an async notifier) cannot multiply it.

@@ -65,6 +65,8 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Clippy without default features
         run: cargo clippy -p mercurio --all-targets --no-default-features --locked -- -D warnings
+      - name: Rustdoc
+        run: cargo doc --workspace --lib --no-deps --all-features --document-private-items --locked
 
   test:
     runs-on: ubuntu-24.04
