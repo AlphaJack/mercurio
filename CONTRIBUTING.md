@@ -35,3 +35,5 @@ cargo xtask docs
 
 The PR title must be a conventional commit (`feat(services): gotify`, `fix(cli): ...`): PRs are squash-merged and release-plz builds the changelog and version from these titles.
 Allowed types and scopes: [pr-title.yml](.github/workflows/pr-title.yml).
+Use `feat`, `fix` and `perf` only for changes users notice: the changelog skips `build`, `chore`, `ci`, `docs`, `refactor` and `test` unless they are breaking (`!`).
+The scope becomes a changelog heading, so name what users touch: `desktop` for desktop notifications, `services` for the other notification services, `lib` for the rest of the Rust API.
