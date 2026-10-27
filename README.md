@@ -1,6 +1,6 @@
 # mercurio
 
-<img src="crates/mercurio/assets/logo.svg" alt="a talaria (winged sandal)" width="64" height="64" align="right">
+<img src="https://raw.githubusercontent.com/AlphaJack/mercurio/main/crates/mercurio/assets/logo.svg" alt="a talaria (winged sandal)" width="64" height="64" align="right">
 
 Apprise-compatible Rust library, CLI and HTTP server to send notifications to 150+ services via a single URL.
 
