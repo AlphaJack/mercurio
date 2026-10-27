@@ -33,7 +33,6 @@ jobs:
             cli
             config
             deps
-            desktop
             docs
             lib
             release
