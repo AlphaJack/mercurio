@@ -39,7 +39,7 @@ body = """
 {%- for c in commits | filter(attribute="breaking", value=false) %}
 - {{ c.message }}
 {%- endfor %}
-{%- endmacro -%}
+{%- endmacro %}
 """
 commit_parsers = [
     # The release PR bumps the version, so release-plz counts it as a change in the next release.
@@ -49,5 +49,8 @@ commit_parsers = [
     { message = "^deprecated", group = "deprecated" },
     { message = "^fix", group = "fixed" },
     { message = "^security", group = "security" },
+    # Other types are invisible to users, unless they break the API.
+    { message = "^[a-z]+(\\([^)]*\\))?!:", group = "changed" },
+    { message = "^(build|chore|ci|docs|refactor|test)", skip = true },
     { message = "^.*", group = "other" },
 ]
