@@ -1,6 +1,6 @@
 //! Sans-IO delivery plans.
 //!
-//! A service never performs I/O. It returns a [`Plan`]: a tree of HTTP requests (with continuations that look at each response), raw socket sessions, datagrams, process invocations and file operations. [`execute`] walks the tree against any [`Transport`]. Tests swap in [`crate::testing::FakeTransport`] and inspect every request without touching the network.
+//! A service never performs I/O. It returns a [`Plan`]: a tree of HTTP requests (with continuations that look at each response), raw socket sessions, datagrams, process invocations and file operations. `execute` walks the tree against any [`Transport`](crate::transport::Transport). Tests swap in [`crate::testing::FakeTransport`] and inspect every request without touching the network.
 
 use std::fmt;
 use std::time::{Duration, Instant};

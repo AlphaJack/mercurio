@@ -144,7 +144,7 @@ impl Registry {
         crate::target::service_for_scheme(scheme).or_else(|| self.lookup(scheme))
     }
 
-    /// [`crate::parse`] with this registry's services too.
+    /// [`crate::parse`](crate::parse()) with this registry's services too.
     pub fn parse(&self, url: &str) -> Result<Target> {
         crate::target::parse_with(url, self)
     }
