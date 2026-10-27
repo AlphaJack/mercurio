@@ -87,6 +87,12 @@ jobs:
         run: cargo test --workspace --locked
       - name: Test without default features
         run: cargo test -p mercurio --no-default-features --locked
+      - name: Check the systemd unit
+        run: |
+          sudo ln -s "$PWD/target/debug/mercurio" /usr/local/bin/
+          for unit in packaging/systemd/*.service; do
+            systemd-analyze verify "$unit"
+          done
 
   test-os:
     name: test (${{ matrix.os }})
