@@ -238,8 +238,29 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }))))
 }
 
-/// libsodium `crypto_pwhash` (Argon2id v1.3, opslimit 3, memlimit 64 MiB) into 64 bytes, salted with `sha256(salt)[:16]`; then HKDF-expand.
+/// The key of `password` and `salt`. Tests derive the same few keys again and again, each in a new service: there, each
+/// is derived once per process, as Argon2 takes most of their time.
 fn derive_key(password: &str, salt: &str) -> Option<([u8; 32], String)> {
+    #[cfg(any(test, feature = "testing"))]
+    {
+        type Derived = BTreeMap<(String, String), ([u8; 32], String)>;
+        static DERIVED: Mutex<Derived> = Mutex::new(BTreeMap::new());
+        let id = (password.to_owned(), salt.to_owned());
+        if let Some(k) = DERIVED.lock().ok().and_then(|d| d.get(&id).cloned()) {
+            return Some(k);
+        }
+        let k = argon2_key(password, salt)?;
+        if let Ok(mut d) = DERIVED.lock() {
+            d.insert(id, k.clone());
+        }
+        Some(k)
+    }
+    #[cfg(not(any(test, feature = "testing")))]
+    argon2_key(password, salt)
+}
+
+/// libsodium `crypto_pwhash` (Argon2id v1.3, opslimit 3, memlimit 64 MiB) into 64 bytes, salted with `sha256(salt)[:16]`; then HKDF-expand.
+fn argon2_key(password: &str, salt: &str) -> Option<([u8; 32], String)> {
     let params = Params::new(64 * 1024, 3, 1, Some(64)).ok()?;
     let argon = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
     let mut master = [0u8; 64];
