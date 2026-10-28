@@ -2,7 +2,7 @@
 
 /// One piece of HTML. Text and attribute values are entity-decoded.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Token {
+pub(crate) enum Token {
     Start { tag: String, attrs: Vec<(String, String)>, self_closing: bool },
     End(String),
     Text(String),
@@ -54,7 +54,7 @@ const PARAGRAPHS: &[&str] =
     &["p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "pre", "blockquote", "table", "hr", "dl", "figure"];
 
 /// Split `html` into tokens. Comments, doctypes and processing instructions are dropped; a `<` that does not start a tag is text.
-pub fn tokens(html: &str) -> Vec<Token> {
+pub(crate) fn tokens(html: &str) -> Vec<Token> {
     let mut out = Vec::new();
     scan(html, |t| out.push(t));
     out
@@ -350,7 +350,7 @@ impl Lines {
 }
 
 /// HTML to plain text: tags dropped, blocks and `<br>` on their own lines.
-pub fn html_to_text(html: &str) -> String {
+pub(crate) fn html_to_text(html: &str) -> String {
     let mut out = Lines::default();
     let mut hidden = 0usize;
     let mut pre = 0usize;
@@ -407,7 +407,7 @@ fn md_escape(s: &str) -> String {
 }
 
 /// HTML to CommonMark: emphasis, code, links, images, headings, lists, quotes and rules keep their meaning; other tags are dropped.
-pub fn html_to_markdown(html: &str) -> String {
+pub(crate) fn html_to_markdown(html: &str) -> String {
     let mut out = Lines::default();
     let mut hidden = 0usize;
     let mut pre = false;
@@ -475,7 +475,7 @@ pub fn html_to_markdown(html: &str) -> String {
                                 *n += 1;
                                 format!("{}. ", *n - 1)
                             }
-                            _ => "- ".to_string(),
+                            _ => "- ".to_owned(),
                         };
                         out.out.push_str(&format!("{indent}{marker}"));
                     }
@@ -554,7 +554,7 @@ pub fn html_to_markdown(html: &str) -> String {
 
 /// What [`filter`] keeps of an HTML document.
 #[derive(Debug, Clone, Copy)]
-pub struct Filter {
+pub(crate) struct Filter {
     /// `(input tag, output tag)`: tags kept, possibly renamed.
     pub tags: &'static [(&'static str, &'static str)],
     /// `(tag, attribute)`: attributes kept on kept tags.
@@ -566,7 +566,7 @@ pub struct Filter {
 }
 
 /// Rewrite `html` into the tags `f` allows. Text is escaped again and hidden elements are dropped. Every kept tag is closed. Stray closing tags are removed.
-pub fn filter(html: &str, f: &Filter) -> String {
+pub(crate) fn filter(html: &str, f: &Filter) -> String {
     let mut out = String::with_capacity(html.len());
     let mut open: Vec<&'static str> = Vec::new();
     let mut hidden = 0usize;
@@ -645,7 +645,7 @@ pub fn filter(html: &str, f: &Filter) -> String {
                     t
                 } else if f.keep_newlines && t.contains('\n') {
                     let re = crate::regex!(r"[ \t\r\x0b\x0c]*\n[\s]*");
-                    re.split(&t).map(|l| collapse_owned(l.to_string())).collect::<Vec<_>>().join(f.line_break)
+                    re.split(&t).map(|l| collapse_owned(l.to_owned())).collect::<Vec<_>>().join(f.line_break)
                 } else {
                     collapse_owned(t)
                 };

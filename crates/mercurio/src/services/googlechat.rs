@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "googlechat",
     name: "Google Chat",
     schemes: &["gchat"],
@@ -87,7 +87,7 @@ fn parse_native(url: &str) -> Option<String> {
 }
 
 /// Markdown as Google Chat markup (lists nest by four spaces).
-pub fn commonmark_to_google_chat(body: &str) -> String {
+pub(crate) fn commonmark_to_google_chat(body: &str) -> String {
     use super::_chat_markup::{ANCHOR, render};
     render(body, &crate::convert::markup::Markup { list_indent: "    ", ..ANCHOR })
 }

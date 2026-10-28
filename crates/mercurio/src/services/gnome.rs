@@ -12,7 +12,7 @@ use crate::service::{Context, Limits, Notify, Param, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "gnome",
     name: "Gnome Notification",
     schemes: &["gnome"],

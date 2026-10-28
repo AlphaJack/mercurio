@@ -441,8 +441,7 @@ fn room_members(s: Session, room_id: &str, k: K<Result<(Members, bool), &'static
                         let key = |alg: &str| {
                             keys.and_then(|k| k.get(format!("{alg}:{dev_id}")))
                                 .and_then(Value::as_str)
-                                .unwrap_or("")
-                                .to_string()
+                                .unwrap_or("").to_owned()
                         };
                         let (curve, ed) = (key("curve25519"), key("ed25519"));
                         let is_me = Some(uid.as_str()) == s.user_id.as_deref()
@@ -559,7 +558,7 @@ impl Pins {
                 false
             }
             None => {
-                self.devices.insert(device.to_string(), json!({"curve25519": curve, "ed25519": ed}));
+                self.devices.insert(device.to_owned(), json!({"curve25519": curve, "ed25519": ed}));
                 self.changed = true;
                 true
             }
@@ -647,7 +646,7 @@ fn build_key_shares(
                         continue;
                     }
                     if v.is_object() && !ed25519.is_empty() && verify_signed_otk(v, uid, dev_id, ed25519) {
-                        their_otk = v.get("key").and_then(Value::as_str).map(str::to_string);
+                        their_otk = v.get("key").and_then(Value::as_str).map(str::to_owned);
                     } else if v.is_object() {
                         log::debug!("Matrix E2EE: OTK signature invalid for {uid} / {dev_id}; skipped.");
                     }
@@ -705,7 +704,7 @@ fn send_attachment(
     let (ciphertext, mut file_info) = super::encrypt_attachment(&att.data, s.env.as_ref());
     s.with_base(move |s, base| {
         let Ok(base) = base else { return k(s, (session, Some("upload"))) };
-        let name = if att.name.is_empty() { "file".to_string() } else { att.name.clone() };
+        let name = if att.name.is_empty() { "file".to_owned() } else { att.name.clone() };
         let mut req = Request::post(format!("{base}{}/upload", s.media_prefix()))
             .header("User-Agent", s.msg.app_id.clone())
             .header("Content-Type", "application/octet-stream")

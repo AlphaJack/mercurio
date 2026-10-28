@@ -156,7 +156,7 @@ impl ServeArgs {
 const REQUESTS_PER_WORKER: usize = 128;
 
 fn int(name: &str, raw: &str, min: i64, max: i64) -> Result<i64, String> {
-    let v: i64 = raw.trim().parse().map_err(|_| format!("{name} must be a whole number"))?;
+    let v: i64 = raw.trim().parse().ok().ok_or_else(|| format!("{name} must be a whole number"))?;
     if v < min || v > max {
         return Err(format!("{name} must be between {min} and {max}"));
     }
@@ -242,7 +242,7 @@ impl Settings {
         let config_dir = PathBuf::from(if a.config_dir.is_empty() { "mercurio-config" } else { &a.config_dir });
         let stateful =
             Mode::parse(&a.stateful_mode).ok_or("APPRISE_STATEFUL_MODE must be one of: hash, simple, disabled")?;
-        let secret = a.secret_key.clone().unwrap_or_else(|| DEFAULT_SECRET_KEY.to_string());
+        let secret = a.secret_key.clone().unwrap_or_else(|| DEFAULT_SECRET_KEY.to_owned());
         let upload_max = int("APPRISE_UPLOAD_MAX_MEMORY_SIZE", &a.upload_max_memory_size, i64::MIN, i64::MAX)?
             .unsigned_abs() as usize
             * 1_048_576;
@@ -255,7 +255,7 @@ impl Settings {
             if ["text", "html", "markdown"].contains(&f.as_str()) { NotifyFormat::parse(&f) } else { None }
         });
         let required = flag(&a.auth_required, false);
-        let user = a.user.as_deref().map(|u| u.trim().to_string()).unwrap_or_default();
+        let user = a.user.as_deref().map(|u| u.trim().to_owned()).unwrap_or_default();
         let admin = match a.password.clone().filter(|p| !p.is_empty()) {
             Some(_) if user.contains(':') => return Err("APPRISE_USER cannot contain ':'".into()),
             Some(p) if required => Some((user, p)),

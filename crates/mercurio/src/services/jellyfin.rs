@@ -4,7 +4,7 @@ use crate::Result;
 use crate::service::{Notify, Param, ServiceDef};
 use crate::url::ParsedUrl;
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "jellyfin",
     name: "Jellyfin",
     schemes: &["jellyfin", "jellyfins"],

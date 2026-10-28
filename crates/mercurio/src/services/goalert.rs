@@ -7,7 +7,7 @@ use crate::service::{Context, Limits, Notify, Param, ServiceDef};
 use crate::url::{PATH_SAFE, ParsedUrl, quote, unquote};
 use crate::{Error, NotifyFormat, NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "goalert",
     name: "GoAlert",
     schemes: &["goalert", "goalerts"],
@@ -84,7 +84,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
                 .ok_or_else(|| SERVICE.err("the GoAlert action specified is invalid"))?
         }
     };
-    let dedup = SERVICE.text(u, "dedup").map(|d| d.trim().to_string());
+    let dedup = SERVICE.text(u, "dedup").map(|d| d.trim().to_owned());
     let meta = u.query_plus.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
 
     let mut keys = Vec::new();
@@ -123,9 +123,9 @@ impl Notify for GoAlert {
         }
         let close = self.action == "close" || (self.action == "map" && msg.kind == NotifyType::Success);
         let summary = if !msg.title.is_empty() {
-            msg.title.to_string()
+            msg.title.to_owned()
         } else {
-            let body = if msg.passthrough { msg.body.to_string() } else { crate::convert::markup::unescape(msg.body) };
+            let body = if msg.passthrough { msg.body.to_owned() } else { crate::convert::markup::unescape(msg.body) };
             body.chars().take(TITLE_MAXLEN).collect()
         };
         let mut payload = Map::new();

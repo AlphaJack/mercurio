@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "dapnet",
     name: "Dapnet",
     schemes: &["dapnet"],
@@ -77,7 +77,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let txgroups = match txgroups.filter(|t| !t.is_empty()) {
         Some(t) => parse_list(&t),
-        None => vec![SERVICE.default_of("txgroups").to_string()],
+        None => vec![SERVICE.default_of("txgroups").to_owned()],
     };
     let mut out: Vec<String> = Vec::new();
     for t in parse_call_sign(&targets, true) {

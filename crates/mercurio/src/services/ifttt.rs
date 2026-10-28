@@ -11,7 +11,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "ifttt",
     name: "IFTTT",
     schemes: &["ifttt"],
@@ -61,7 +61,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         return Err(SERVICE.err("you must specify at least one event you wish to trigger on"));
     }
     // `+key=value` adds and `-key` removes payload values (see the module docs).
-    let add_tokens = u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+    let add_tokens = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
     // Removals match without case, so `-Value1` drops `value1` (Apprise #1831).
     let del_tokens = u.query_minus.iter().map(|(k, _)| k.to_lowercase()).collect();
     Ok(Box::new(Ifttt { webhook_id: Secret::new(webhook_id), events, add_tokens, del_tokens }))

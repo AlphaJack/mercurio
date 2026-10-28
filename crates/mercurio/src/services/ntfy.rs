@@ -11,7 +11,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "ntfy",
     name: "ntfy",
     schemes: &["ntfy", "ntfys"],
@@ -132,10 +132,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(a) = param_unquoted(u, "attach") {
         if let Some(r) = crate::url::parse_url(&a) {
             let b = basename(r.fullpath.as_deref().unwrap_or(""));
-            filename = if b.is_empty() { None } else { Some(b.to_string()) };
+            filename = if b.is_empty() { None } else { Some(b.to_owned()) };
         }
         if let Some(f) = param_unquoted(u, "filename") {
-            filename = Some(basename(&f).to_string());
+            filename = Some(basename(&f).to_owned());
         }
         attach = Some(a);
     }
@@ -187,7 +187,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         }
     };
     if mode_s == "cloud" && !crate::regex!(r"(?i)ntfy\.sh").is_match(host_raw) {
-        targets.insert(0, host_raw.to_string());
+        targets.insert(0, host_raw.to_owned());
     } else if mode_s == "private" && is_hostname(host_raw, true, true, true).is_none() {
         return Err(SERVICE.err("an invalid ntfy hostname was specified"));
     }
@@ -270,10 +270,10 @@ struct Common<'a> {
 impl Ntfy {
     /// Publish to one topic; `None` attach sends JSON.
     fn send_one(&self, topic: &str, body: &str, title: &str, upload: Option<Upload>, common: &Common<'_>) -> Plan {
-        let mut headers: Vec<(&str, String)> = vec![("User-Agent", common.app_id.to_string())];
+        let mut headers: Vec<(&str, String)> = vec![("User-Agent", common.app_id.to_owned())];
         let mut basic: Option<(&str, Option<&str>)> = None;
         let mut url = match self.mode {
-            Mode::Cloud => CLOUD_URL.to_string(),
+            Mode::Cloud => CLOUD_URL.to_owned(),
             Mode::Private => {
                 match self.auth {
                     Auth::Basic => {
@@ -313,14 +313,14 @@ impl Ntfy {
             url.push_str(topic);
             params.push(("filename", upload.as_ref().map(|u| u.name.clone()).unwrap_or_default()));
             if !title.is_empty() {
-                params.push(("title", title.to_string()));
+                params.push(("title", title.to_owned()));
             }
             if !body.is_empty() {
-                params.push(("message", body.to_string()));
+                params.push(("message", body.to_owned()));
             }
         }
         if let Some(i) = common.image_url {
-            headers.push(("X-Icon", i.to_string()));
+            headers.push(("X-Icon", i.to_owned()));
         }
         if common.format == NotifyFormat::Markdown {
             headers.push(("X-Markdown", "yes".into()));
@@ -373,7 +373,7 @@ impl Ntfy {
                 let mut reason = r.snippet();
                 if let Some(Value::Object(j)) = r.json() {
                     if let Some(e) = j.get("error").and_then(Value::as_str) {
-                        reason = e.to_string();
+                        reason = e.to_owned();
                     }
                     if let Some(c) = j.get("code").and_then(|c| c.as_u64().or_else(|| c.as_str()?.parse().ok())) {
                         status = u16::try_from(c).unwrap_or(status);
@@ -394,7 +394,7 @@ impl Notify for Ntfy {
         let image = ctx.asset.image_url(msg.kind, ImageSize::Xy256);
         let avatar = self.avatar_url.as_deref().filter(|a| !a.is_empty());
         let image_url: Option<String> = if self.include_image && (image.is_some() || avatar.is_some()) {
-            avatar.map(str::to_string).or(image)
+            avatar.map(str::to_owned).or(image)
         } else {
             None
         };

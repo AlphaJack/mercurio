@@ -11,7 +11,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "whatsapp",
     name: "WhatsApp",
     schemes: &["whatsapp"],
@@ -77,11 +77,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         token = unquote(t);
     }
     if let Some(t) = u.param_nonempty("template") {
-        template = Some(t.to_string());
+        template = Some(t.to_owned());
     }
-    let mut language = u.param_nonempty("lang").map(str::to_string);
+    let mut language = u.param_nonempty("lang").map(str::to_owned);
     if let Some(l) = u.param_nonempty("language") {
-        language = Some(l.to_string());
+        language = Some(l.to_owned());
     }
     if let Some(f) = u.param_nonempty("from") {
         from_phone_id = unquote(f);
@@ -113,7 +113,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             let lang = match language.filter(|l| !l.is_empty()) {
                 Some(l) => validate_regex(&l, r"^[^0-9\s]+$", "i", true)
                     .ok_or_else(|| SERVICE.err("an invalid WhatsApp Template Language Code was specified"))?,
-                None => "en_US".to_string(),
+                None => "en_US".to_owned(),
             };
             Some((name, lang))
         }
@@ -143,12 +143,12 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         let caps =
             key_re.captures(&key).ok_or_else(|| SERVICE.err("an invalid Template Component ID was specified"))?;
         let (index, comp) = if let Some(id) = caps.name("id") {
-            (id.as_str().to_string(), Component::Text(val))
+            (id.as_str().to_owned(), Component::Text(val))
         } else {
             let comp = if caps["map"].eq_ignore_ascii_case("body") { Component::Body } else { Component::Type };
             let id = key_re
                 .captures(&val)
-                .and_then(|c| c.name("id").map(|m| m.as_str().to_string()))
+                .and_then(|c| c.name("id").map(|m| m.as_str().to_owned()))
                 .ok_or_else(|| SERVICE.err("an invalid Template Component Mapping was specified"))?;
             (id, comp)
         };
@@ -173,7 +173,7 @@ fn check(r: &Response) -> Result<()> {
     }
     let msg = r
         .json()
-        .and_then(|v| v.get("error").and_then(|e| e.get("message")).and_then(Value::as_str).map(str::to_string));
+        .and_then(|v| v.get("error").and_then(|e| e.get("message")).and_then(Value::as_str).map(str::to_owned));
     Err(r.http_error_with(msg.unwrap_or_else(|| r.snippet())))
 }
 

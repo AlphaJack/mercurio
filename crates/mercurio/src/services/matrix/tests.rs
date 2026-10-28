@@ -151,8 +151,8 @@ fn raw_token_uses_uuid_transaction_ids() {
     let p = paths(&fake);
     assert_eq!(p.len(), 5, "{p:?}");
     assert_eq!(p[0], "GET http://localhost/_matrix/client/v3/account/whoami");
-    let txn1 = p[2].rsplit('/').next().unwrap().to_string();
-    let txn2 = p[4].rsplit('/').next().unwrap().to_string();
+    let txn1 = p[2].rsplit('/').next().unwrap().to_owned();
+    let txn2 = p[4].rsplit('/').next().unwrap().to_owned();
     assert!(crate::parse::is_uuid(&txn1), "{txn1}");
     // A fresh UUID per event. Otherwise the homeserver drops the second one.
     assert!(crate::parse::is_uuid(&txn2), "{txn2}");
@@ -263,7 +263,7 @@ fn bare_config(password: &str, rooms: &[&str], users: &[&str]) -> super::Config 
         host: String::new(),
         port: None,
         user: None,
-        password: Some(crate::service::Secret::new(password.to_string())),
+        password: Some(crate::service::Secret::new(password.to_owned())),
         rooms: rooms.iter().map(|r| r.to_string()).collect(),
         users: users.iter().map(|u| u.to_string()).collect(),
         mode: Mode::Off,
@@ -343,8 +343,8 @@ mod e2ee {
 
     /// A session over `store` whose URL secret is `password`.
     fn vault_session(password: &str, store: crate::store::StoreRef) -> super::super::server::Session {
-        let cfg = std::sync::Arc::new(super::bare_config(password, &[], &[]));
-        super::super::server::Session::new(cfg, std::sync::Arc::new(super::bare_msg()), store, std::sync::Arc::new(crate::testing::FixedEnv::new(1_700_000_000)))
+        let cfg = std::sync::Arc::new(bare_config(password, &[], &[]));
+        super::super::server::Session::new(cfg, std::sync::Arc::new(bare_msg()), store, std::sync::Arc::new(crate::testing::FixedEnv::new(1_700_000_000)))
     }
 
     #[test]
@@ -532,7 +532,7 @@ mod e2ee {
             assert_eq!(plain["recipient"], BOB);
             assert_eq!(plain["recipient_keys"]["ed25519"], self.peer.bob.signing_key());
             let key = b64dec(plain["content"]["session_key"].as_str().unwrap()).unwrap();
-            let sid = plain["content"]["session_id"].as_str().unwrap().to_string();
+            let sid = plain["content"]["session_id"].as_str().unwrap().to_owned();
             assert!(verify_ed25519(&sid, &key[..165], &b64enc(&key[165..])), "session key signature");
             let mut ratchet = [[0u8; 32]; 4];
             for (i, r) in ratchet.iter_mut().enumerate() {
@@ -572,7 +572,7 @@ mod e2ee {
             let mut w = self.world.lock().unwrap();
             let url = req.url.clone();
             let path =
-                url.split("/_matrix/").nth(1).map(|p| p.split('?').next().unwrap().to_string()).unwrap_or_default();
+                url.split("/_matrix/").nth(1).map(|p| p.split('?').next().unwrap().to_owned()).unwrap_or_default();
             let path = crate::url::unquote(&path);
             let body: Value = serde_json::from_slice(&req.body).unwrap_or(Value::Null);
             if url.contains("/.well-known/") {
@@ -698,7 +698,7 @@ mod e2ee {
                         }
                         "key" => {
                             assert_eq!(w.sas_step, 4);
-                            let ours = c["key"].as_str().unwrap().to_string();
+                            let ours = c["key"].as_str().unwrap().to_owned();
                             // The accept commitment binds our key to the start content.
                             let mut data = ours.as_bytes().to_vec();
                             data.extend_from_slice(canonical_json(&start_content()).as_bytes());
@@ -710,8 +710,7 @@ mod e2ee {
                             let shared = self.peer.element_sas_key.exchange(&b64dec(&ours).unwrap()).unwrap();
                             let our_ed = w.uploaded_device_keys.as_ref().unwrap()["keys"]["ed25519:MERCURIO"]
                                 .as_str()
-                                .unwrap()
-                                .to_string();
+                                .unwrap().to_owned();
                             let kid = "ed25519:MERCURIO";
                             let want = mac_for(&shared, &our_ed, kid, (ME, "MERCURIO"), (ME, "ELEMENT"));
                             w.sas_peer_mac_ok = c["mac"][kid] == json!(want)
@@ -1024,7 +1023,7 @@ mod e2ee {
     fn sent_session(fake: &FakeTransport) -> String {
         let sends = req_bodies(fake, "/send/m.room.encrypted/");
         assert_eq!(sends.len(), 1, "{:?}", paths(fake));
-        sends[0]["session_id"].as_str().unwrap().to_string()
+        sends[0]["session_id"].as_str().unwrap().to_owned()
     }
 
     #[test]

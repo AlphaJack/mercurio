@@ -12,14 +12,14 @@ use super::super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value};
 use crate::Plan;
 use crate::env::Env;
 
-pub const EVENT_REQUEST: &str = "m.key.verification.request";
-pub const EVENT_READY: &str = "m.key.verification.ready";
-pub const EVENT_START: &str = "m.key.verification.start";
-pub const EVENT_ACCEPT: &str = "m.key.verification.accept";
-pub const EVENT_CANCEL: &str = "m.key.verification.cancel";
-pub const EVENT_KEY: &str = "m.key.verification.key";
-pub const EVENT_MAC: &str = "m.key.verification.mac";
-pub const EVENT_DONE: &str = "m.key.verification.done";
+pub(crate) const EVENT_REQUEST: &str = "m.key.verification.request";
+pub(crate) const EVENT_READY: &str = "m.key.verification.ready";
+pub(crate) const EVENT_START: &str = "m.key.verification.start";
+pub(crate) const EVENT_ACCEPT: &str = "m.key.verification.accept";
+pub(crate) const EVENT_CANCEL: &str = "m.key.verification.cancel";
+pub(crate) const EVENT_KEY: &str = "m.key.verification.key";
+pub(crate) const EVENT_MAC: &str = "m.key.verification.mac";
+pub(crate) const EVENT_DONE: &str = "m.key.verification.done";
 
 const METHOD: &str = "m.sas.v1";
 const KEY_AGREEMENT: &str = "curve25519-hkdf-sha256";
@@ -40,11 +40,11 @@ const POLL_MS: u64 = 2000;
 
 fn sync_filter() -> String {
     // The /sync filter, serialised with ", " and ": " separators.
-    r#"{"presence": {"types": []}, "account_data": {"types": []}, "room": {"rooms": []}}"#.to_string()
+    r#"{"presence": {"types": []}, "account_data": {"types": []}, "room": {"rooms": []}}"#.to_owned()
 }
 
 fn valid_id(v: Option<&Value>) -> Option<String> {
-    v.and_then(Value::as_str).filter(|s| !s.is_empty() && s.chars().count() <= MAX_ID_LEN).map(str::to_string)
+    v.and_then(Value::as_str).filter(|s| !s.is_empty() && s.chars().count() <= MAX_ID_LEN).map(str::to_owned)
 }
 
 /// `x` is listed in `value`: an array item, a substring or an object key.
@@ -62,7 +62,7 @@ fn bounded_str(v: Option<&Value>) -> Option<&str> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SasState {
+pub(crate) enum SasState {
     Started,
     Accepted,
     KeyReceived,
@@ -72,7 +72,7 @@ pub enum SasState {
 
 /// Responder side of one SAS verification.
 #[derive(Debug)]
-pub struct Sas {
+pub(crate) struct Sas {
     own_user: String,
     own_device: String,
     peer_user: String,
@@ -95,10 +95,10 @@ impl Drop for Sas {
     }
 }
 
-pub type SasResult<T> = std::result::Result<T, &'static str>;
+pub(crate) type SasResult<T> = Result<T, &'static str>;
 
 /// Three 13-bit numbers (1000..=9191) from 5 SAS bytes.
-pub fn decimal_from_bytes(b: &[u8; 5]) -> (u16, u16, u16) {
+pub(crate) fn decimal_from_bytes(b: &[u8; 5]) -> (u16, u16, u16) {
     let mut v: u64 = 0;
     for x in b {
         v = (v << 8) | u64::from(*x);
@@ -108,7 +108,7 @@ pub fn decimal_from_bytes(b: &[u8; 5]) -> (u16, u16, u16) {
 }
 
 impl Sas {
-    pub fn new(
+    pub(crate) fn new(
         own_user: &str,
         own_device: &str,
         peer_user: &str,
@@ -119,7 +119,7 @@ impl Sas {
         Self::with_key(own_user, own_device, peer_user, peer_device, start, XKey::generate(env))
     }
 
-    pub fn with_key(
+    pub(crate) fn with_key(
         own_user: &str,
         own_device: &str,
         peer_user: &str,
@@ -162,7 +162,7 @@ impl Sas {
             peer_user: peer_user.into(),
             peer_device: peer_device.into(),
             start: start.clone(),
-            transaction_id: txn.to_string(),
+            transaction_id: txn.to_owned(),
             sas_methods,
             key,
             public_key,
@@ -173,7 +173,7 @@ impl Sas {
     }
 
     /// `m.key.verification.accept` content.
-    pub fn accept_content(&mut self) -> SasResult<Value> {
+    pub(crate) fn accept_content(&mut self) -> SasResult<Value> {
         if self.state != SasState::Started {
             return Err("SAS verification start was already accepted");
         }
@@ -191,20 +191,20 @@ impl Sas {
         }))
     }
 
-    pub fn receive_key(&mut self, peer_public: &Value) -> SasResult<()> {
+    pub(crate) fn receive_key(&mut self, peer_public: &Value) -> SasResult<()> {
         if self.state != SasState::Accepted {
             return Err("Unexpected SAS key event");
         }
         let Some(pk) = bounded_str(Some(peer_public)) else { return Err("SAS peer key is missing or malformed") };
-        let raw = b64dec(pk).map_err(|_| "SAS peer key is not base64")?;
+        let raw = b64dec(pk).ok().ok_or("SAS peer key is not base64")?;
         let shared = self.key.exchange(&raw).map_err(|e| e.0)?;
         self.shared = Some(shared);
-        self.peer_public = Some(pk.to_string());
+        self.peer_public = Some(pk.to_owned());
         self.state = SasState::KeyReceived;
         Ok(())
     }
 
-    pub fn key_content(&self) -> SasResult<Value> {
+    pub(crate) fn key_content(&self) -> SasResult<Value> {
         if self.state != SasState::KeyReceived {
             return Err("SAS peer key has not been received");
         }
@@ -226,11 +226,11 @@ impl Sas {
     }
 
     /// The decimal short authentication string.
-    pub fn decimal_sas(&self) -> SasResult<(u16, u16, u16)> {
+    pub(crate) fn decimal_sas(&self) -> SasResult<(u16, u16, u16)> {
         let shared = self.shared.as_ref().ok_or("SAS shared secret has not been established")?;
         let info = self.sas_info()?;
         let bytes = hkdf_sha256(shared, 5, None, info.as_bytes());
-        let b: [u8; 5] = bytes.as_slice().try_into().map_err(|_| "hkdf length")?;
+        let b: [u8; 5] = bytes.as_slice().try_into().ok().ok_or("hkdf length")?;
         Ok(decimal_from_bytes(&b))
     }
 
@@ -251,7 +251,7 @@ impl Sas {
     }
 
     /// MAC proving possession of our device signing key.
-    pub fn mac_content(&mut self, own_signing_key: &str) -> SasResult<Value> {
+    pub(crate) fn mac_content(&mut self, own_signing_key: &str) -> SasResult<Value> {
         if self.state != SasState::KeyReceived {
             return Err("SAS peer key has not been received");
         }
@@ -265,7 +265,7 @@ impl Sas {
     }
 
     /// Validate the initiator's MACs against the queried keys.
-    pub fn verify_peer_mac(&mut self, content: &Value, peer_keys: &Map<String, Value>) -> SasResult<()> {
+    pub(crate) fn verify_peer_mac(&mut self, content: &Value, peer_keys: &Map<String, Value>) -> SasResult<()> {
         if self.state != SasState::MacSent {
             return Err("Unexpected SAS MAC event");
         }
@@ -438,7 +438,7 @@ fn poll(s: Session, v: Verifier, since: Option<String>, k: K<bool>) -> Plan {
     let Some(f) = bounded(&v, f, Some(Duration::from_millis(poll_ms)), false) else { return k(s, false) };
     s.fetch(f, move |s, r| {
         let Some(resp) = r.object() else { return k(s, false) };
-        let Some(next) = resp.get("next_batch").and_then(Value::as_str).filter(|n| !n.is_empty()).map(str::to_string)
+        let Some(next) = resp.get("next_batch").and_then(Value::as_str).filter(|n| !n.is_empty()).map(str::to_owned)
         else {
             return k(s, false);
         };
@@ -481,8 +481,8 @@ fn handle_events(s: Session, v: Verifier, mut events: std::vec::IntoIter<Value>,
 
 fn handle_event(s: Session, mut v: Verifier, event: Value, k: VK) -> Plan {
     let Some(ev) = event.as_object() else { return k(s, v, None) };
-    let etype = ev.get("type").and_then(Value::as_str).unwrap_or("").to_string();
-    let sender = ev.get("sender").and_then(Value::as_str).map(str::to_string);
+    let etype = ev.get("type").and_then(Value::as_str).unwrap_or("").to_owned();
+    let sender = ev.get("sender").and_then(Value::as_str).map(str::to_owned);
     let content = ev.get("content").cloned().unwrap_or_else(|| json!({}));
     if sender.is_none() || sender != s.user_id || !content.is_object() {
         return k(s, v, None);
@@ -491,7 +491,7 @@ fn handle_event(s: Session, mut v: Verifier, event: Value, k: VK) -> Plan {
     if etype == EVENT_REQUEST {
         return handle_request(s, v, sender, content, k);
     }
-    let txn = content.get("transaction_id").and_then(Value::as_str).map(str::to_string);
+    let txn = content.get("transaction_id").and_then(Value::as_str).map(str::to_owned);
     let Some(active) = v.active.as_ref() else { return k(s, v, None) };
     if txn.as_deref() != Some(active.transaction_id.as_str()) || sender != active.user_id {
         return k(s, v, None);

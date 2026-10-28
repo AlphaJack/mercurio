@@ -11,9 +11,9 @@ use crate::util::parse_int;
 use crate::{Plan, Result};
 
 /// Urgency levels shared by the D-Bus style notifiers.
-pub const URGENCY_LOW: u8 = 0;
-pub const URGENCY_NORMAL: u8 = 1;
-pub const URGENCY_HIGH: u8 = 2;
+pub(crate) const URGENCY_LOW: u8 = 0;
+pub(crate) const URGENCY_NORMAL: u8 = 1;
+pub(crate) const URGENCY_HIGH: u8 = 2;
 
 /// `DBUS_URGENCY_MAP` / `GLIB_URGENCY_MAP` / `GNOME_URGENCY_MAP`, checked in order as prefixes of the lowercased urgency.
 const URGENCY_MAP: &[(&str, u8)] = &[
@@ -28,7 +28,7 @@ const URGENCY_MAP: &[(&str, u8)] = &[
 ];
 
 /// `?urgency=` (falling back to `?priority=`).
-pub fn urgency(u: &ParsedUrl) -> u8 {
+pub(crate) fn urgency(u: &ParsedUrl) -> u8 {
     let raw = u.text("urgency").or_else(|| u.text("priority"));
     match raw {
         None => URGENCY_NORMAL,
@@ -40,7 +40,7 @@ pub fn urgency(u: &ParsedUrl) -> u8 {
 }
 
 /// `?x=` / `?y=` screen coordinates (D-Bus hints). Both must be integers when either one is given.
-pub fn xy(u: &ParsedUrl, service: &'static crate::ServiceDef) -> Result<Option<(i64, i64)>> {
+pub(crate) fn xy(u: &ParsedUrl, service: &'static crate::ServiceDef) -> Result<Option<(i64, i64)>> {
     let x = service.text(u, "x");
     let y = service.text(u, "y");
     if x.as_deref().is_none_or(str::is_empty) && y.as_deref().is_none_or(str::is_empty) {
@@ -54,7 +54,7 @@ pub fn xy(u: &ParsedUrl, service: &'static crate::ServiceDef) -> Result<Option<(
 
 /// One `org.freedesktop.Notifications.Notify` call on the session bus.
 #[derive(Debug, Clone)]
-pub struct DesktopNotify<'a> {
+pub(crate) struct DesktopNotify<'a> {
     pub app: &'a str,
     /// `app_icon`: a file the notification daemon shows (SVG works).
     pub icon: Option<&'a crate::IconFile>,
@@ -67,7 +67,7 @@ pub struct DesktopNotify<'a> {
 }
 
 /// Write the bundled icon (unless it is already there) to the user's own directory ([`user_icon`]), then call `Notify` (replaces-id `0`, no actions, `{urgency: byte, x: int32, y: int32}` hints) over a native D-Bus connection.
-pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
+pub(crate) fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
     let icon = n.icon.map(|i| user_icon(i, env));
     let ep = match session_bus(env) {
         Ok(ep) => ep,
@@ -81,10 +81,10 @@ pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
         hints.extend([("x", Hint::Int32(x)), ("y", Hint::Int32(y))]);
     }
     let call = Notification {
-        app: n.app.to_string(),
+        app: n.app.to_owned(),
         icon: icon.as_ref().map_or_else(String::new, |i| i.path.clone()),
-        summary: n.title.to_string(),
-        body: n.body.to_string(),
+        summary: n.title.to_owned(),
+        body: n.body.to_owned(),
         hints,
         timeout: n.timeout_ms,
     }
@@ -96,7 +96,7 @@ pub fn notify(n: &DesktopNotify<'_>, env: &dyn Env) -> Plan {
 }
 
 /// `icon` moved, when mercurio writes it, from the shared temporary directory to one only this user can write: `$XDG_RUNTIME_DIR/mercurio`, else `$XDG_CACHE_HOME/mercurio`, else `~/.cache/mercurio`. On a shared `/tmp`, the first user to send would own `/tmp/mercurio`, and every other user's icon write would fail there. A user's own file (`image_path_mask`) stays where it is.
-pub fn user_icon(icon: &crate::IconFile, env: &dyn Env) -> crate::IconFile {
+pub(crate) fn user_icon(icon: &crate::IconFile, env: &dyn Env) -> crate::IconFile {
     let var = |name| env.var(name).filter(|v| v.starts_with('/'));
     let dir = var("XDG_RUNTIME_DIR")
         .or_else(|| var("XDG_CACHE_HOME"))
@@ -112,7 +112,7 @@ pub fn user_icon(icon: &crate::IconFile, env: &dyn Env) -> crate::IconFile {
 }
 
 /// Write the bundled icon to its path unless it already holds it: what [`with_icon`] has the transport do for a command. A failed write is logged and the notification goes on: the notifier shows it without the icon.
-pub fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
+pub(crate) fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
     let Some((path, bytes)) = icon.and_then(|i| i.bundled.map(|b| (PathBuf::from(&i.path), b))) else {
         return Plan::Done;
     };
@@ -131,7 +131,7 @@ pub fn write_icon(icon: Option<&crate::IconFile>) -> Plan {
 }
 
 /// `cmd` plus the bundled icon file it reads, when the icon is the bundled one.
-pub fn with_icon(cmd: Command, icon: Option<&crate::IconFile>) -> Command {
+pub(crate) fn with_icon(cmd: Command, icon: Option<&crate::IconFile>) -> Command {
     match icon.and_then(|i| i.bundled.map(|b| (i.path.clone(), b))) {
         Some((path, bytes)) => cmd.file(path, bytes),
         None => cmd,
@@ -139,7 +139,7 @@ pub fn with_icon(cmd: Command, icon: Option<&crate::IconFile>) -> Command {
 }
 
 /// Fail unless the program exited with status 0.
-pub fn check_exit(what: &'static str, res: Result<CommandOutput>) -> Plan {
+pub(crate) fn check_exit(what: &'static str, res: Result<CommandOutput>) -> Plan {
     match res {
         Ok(out) if out.status == 0 => Plan::Done,
         Ok(out) => {

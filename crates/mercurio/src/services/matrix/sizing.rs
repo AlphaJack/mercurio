@@ -1,18 +1,18 @@
 //! Matrix event size accounting. [`body_char_limit`] sizes direct sends (`Notify::message_limits`); the flat limits (65000, 40000 with E2EE) apply to webhooks.
 
 /// Matrix's hard event-size ceiling.
-pub const MATRIX_EVENT_BYTE_LIMIT: usize = 65536;
+pub(crate) const MATRIX_EVENT_BYTE_LIMIT: usize = 65536;
 /// Room for homeserver-added event metadata.
-pub const MATRIX_EVENT_SAFETY_MARGIN: usize = 4000;
+pub(crate) const MATRIX_EVENT_SAFETY_MARGIN: usize = 4000;
 /// JSON fields around plaintext or encrypted message content.
-pub const MATRIX_CONTENT_JSON_OVERHEAD: usize = 200;
+pub(crate) const MATRIX_CONTENT_JSON_OVERHEAD: usize = 200;
 /// Unpadded base64 of a 32-byte key.
-pub const MATRIX_E2EE_KEY_LEN: usize = 43;
+pub(crate) const MATRIX_E2EE_KEY_LEN: usize = 43;
 /// Fallback device-id cost before the device id is known.
-pub const MATRIX_DEVICE_ID_FALLBACK_BYTES: usize = 512;
+pub(crate) const MATRIX_DEVICE_ID_FALLBACK_BYTES: usize = 512;
 
 /// Serialised size of a Megolm envelope with empty ciphertext and device id.
-pub fn e2ee_envelope_structural_bytes() -> usize {
+pub(crate) fn e2ee_envelope_structural_bytes() -> usize {
     let x = "x".repeat(MATRIX_E2EE_KEY_LEN);
     let v = serde_json::json!({
         "algorithm": "m.megolm.v1.aes-sha2",
@@ -25,12 +25,12 @@ pub fn e2ee_envelope_structural_bytes() -> usize {
 }
 
 #[cfg(test)]
-pub fn utf8_char_len(ch: char) -> usize {
+pub(crate) fn utf8_char_len(ch: char) -> usize {
     ch.len_utf8()
 }
 
 /// A character's UTF-8 cost after JSON string escaping.
-pub fn json_char_bytes(ch: char) -> usize {
+pub(crate) fn json_char_bytes(ch: char) -> usize {
     match ch {
         '"' | '\\' | '\u{8}' | '\u{c}' | '\n' | '\r' | '\t' => 2,
         c if (c as u32) < 0x20 => 6,
@@ -39,7 +39,7 @@ pub fn json_char_bytes(ch: char) -> usize {
 }
 
 /// Largest input accepted by a non-decreasing cost function.
-pub fn max_byte_budget(cost: impl Fn(usize) -> usize, byte_budget: usize, ceiling: usize) -> usize {
+pub(crate) fn max_byte_budget(cost: impl Fn(usize) -> usize, byte_budget: usize, ceiling: usize) -> usize {
     if cost(0) > byte_budget {
         return 0;
     }
@@ -56,7 +56,7 @@ pub fn max_byte_budget(cost: impl Fn(usize) -> usize, byte_budget: usize, ceilin
 }
 
 /// Character limit safe for every chunk of `body` (sliding window).
-pub fn fit_char_limit(body: &str, byte_budget: usize, cost: impl Fn(usize) -> usize) -> usize {
+pub(crate) fn fit_char_limit(body: &str, byte_budget: usize, cost: impl Fn(usize) -> usize) -> usize {
     let chars: Vec<char> = body.chars().collect();
     if chars.is_empty() {
         return 1;
@@ -83,7 +83,7 @@ pub fn fit_char_limit(body: &str, byte_budget: usize, cost: impl Fn(usize) -> us
     }
 }
 
-pub fn device_id_overhead_bytes(device_id: Option<&str>) -> usize {
+pub(crate) fn device_id_overhead_bytes(device_id: Option<&str>) -> usize {
     match device_id {
         None | Some("") => MATRIX_DEVICE_ID_FALLBACK_BYTES,
         Some(d) => d.chars().map(json_char_bytes).sum(),
@@ -91,7 +91,7 @@ pub fn device_id_overhead_bytes(device_id: Option<&str>) -> usize {
 }
 
 /// JSON bytes added by Matrix title wrappers.
-pub fn title_overhead_bytes(title: &str, rich: bool) -> usize {
+pub(crate) fn title_overhead_bytes(title: &str, rich: bool) -> usize {
     if title.is_empty() {
         return 0;
     }
@@ -104,7 +104,7 @@ pub fn title_overhead_bytes(title: &str, rich: bool) -> usize {
 }
 
 /// Unpadded base64 length of `n` bytes.
-pub fn b64_unpadded_len(n: usize) -> usize {
+pub(crate) fn b64_unpadded_len(n: usize) -> usize {
     let (full, rem) = (n / 3, n % 3);
     if rem == 0 { full * 4 } else { full * 4 + rem + 1 }
 }
@@ -114,7 +114,7 @@ fn varint_len(n: usize) -> usize {
 }
 
 /// Predicted base64 Megolm ciphertext length.
-pub fn predict_megolm_ciphertext_len(plaintext_len: usize, counter: usize) -> usize {
+pub(crate) fn predict_megolm_ciphertext_len(plaintext_len: usize, counter: usize) -> usize {
     let padded = (plaintext_len / 16 + 1) * 16;
     let counter_field = 1 + varint_len(counter);
     let ct_field = 1 + varint_len(padded) + padded;
@@ -123,7 +123,7 @@ pub fn predict_megolm_ciphertext_len(plaintext_len: usize, counter: usize) -> us
 }
 
 /// Estimated final event size of a chunk.
-pub fn wire_cost(content_bytes: usize, rich: bool, e2ee: bool, title_bytes: usize, device_id: Option<&str>) -> usize {
+pub(crate) fn wire_cost(content_bytes: usize, rich: bool, e2ee: bool, title_bytes: usize, device_id: Option<&str>) -> usize {
     let mult = if rich { 2 } else { 1 };
     let inner = content_bytes * mult + title_bytes + MATRIX_CONTENT_JSON_OVERHEAD;
     if !e2ee {
@@ -133,7 +133,7 @@ pub fn wire_cost(content_bytes: usize, rich: bool, e2ee: bool, title_bytes: usiz
 }
 
 /// Safe Matrix body limit (characters) for one notification.
-pub fn body_char_limit(body: &str, title: &str, rich: bool, e2ee: bool, device_id: Option<&str>) -> usize {
+pub(crate) fn body_char_limit(body: &str, title: &str, rich: bool, e2ee: bool, device_id: Option<&str>) -> usize {
     let title_bytes = title_overhead_bytes(title, rich);
     let budget = MATRIX_EVENT_BYTE_LIMIT - MATRIX_EVENT_SAFETY_MARGIN;
     fit_char_limit(body, budget, |c| wire_cost(c, rich, e2ee, title_bytes, device_id))

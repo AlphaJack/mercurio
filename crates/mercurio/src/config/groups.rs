@@ -13,7 +13,7 @@ pub(super) fn normalize_groups(groups: &mut Vec<(String, Vec<String>)>) {
         match g.iter().position(|(n, _)| n == k) {
             Some(i) => i,
             None => {
-                g.push((k.to_string(), Vec::new()));
+                g.push((k.to_owned(), Vec::new()));
                 g.len() - 1
             }
         }

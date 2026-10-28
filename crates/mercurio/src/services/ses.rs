@@ -16,7 +16,7 @@ use crate::services::_mail::mime::{Part, formataddr, header_value, render};
 use crate::url::{ParsedUrl, form_urlencode, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "ses",
     name: "AWS Simple Email Service (SES)",
     schemes: &["ses"],
@@ -91,10 +91,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets: Vec<String> = entries[index..].to_vec();
     let from_name = SERVICE.text(u, "name");
     if let Some(to) = u.param_nonempty("to") {
-        targets.push(to.to_string());
+        targets.push(to.to_owned());
     }
-    let cc = u.param_nonempty("cc").map(str::to_string);
-    let bcc = u.param_nonempty("bcc").map(str::to_string);
+    let cc = u.param_nonempty("cc").map(str::to_owned);
+    let bcc = u.param_nonempty("bcc").map(str::to_owned);
     let from_param = SERVICE.text(u, "from");
     let reply = SERVICE.text(u, "reply");
     let secret = SERVICE.text(u, "secret").or(secret_from_path);
@@ -213,11 +213,11 @@ impl Notify for Arc<Ses> {
         let from_name = match (&self.from_name, &self.reply_to) {
             (Some(n), _) => n.clone(),
             (None, Some((n, _))) if !n.is_empty() => n.clone(),
-            _ => ctx.app_desc().to_string(),
+            _ => ctx.app_desc().to_owned(),
         };
         let reply_addr = self.reply_to.as_ref().map_or(self.from_addr.clone(), |r| r.1.clone());
         let date = crate::time::rfc2822_utc(ctx.env().unix_time());
-        let ua = ctx.app_id().to_string();
+        let ua = ctx.app_id().to_owned();
 
         let mut plans = Vec::new();
         for (to_name, to_addr) in &self.targets {
@@ -226,7 +226,7 @@ impl Notify for Arc<Ses> {
                 cc_addrs.iter().map(|a| formataddr(self.names.get(*a).map_or("", String::as_str), a)).collect();
             let bcc: Vec<&String> = self.bcc.iter().filter(|a| *a != to_addr).collect();
             let mut headers = vec![
-                ("Subject".to_string(), header_value(msg.title)),
+                ("Subject".to_owned(), header_value(msg.title)),
                 ("From".into(), formataddr(&from_name, &self.from_addr)),
                 ("To".into(), formataddr(to_name, to_addr)),
             ];
@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn raw_message_layout() {
-        let headers = vec![("Subject".to_string(), header_value("Tïtle")), ("To".into(), "a@b.com".into())];
+        let headers = vec![("Subject".to_owned(), header_value("Tïtle")), ("To".into(), "a@b.com".into())];
         let plain = raw_message(&headers, true, "Body", &[], crate::testing::test_env());
         assert!(plain.starts_with("Subject: =?utf-8?b?VMOvdGxl?=\r\nTo: a@b.com\r\nMIME-Version: 1.0\r\n"), "{plain}");
         assert!(plain.ends_with("Content-Type: text/html; charset=\"utf-8\"\r\n\
@@ -315,7 +315,7 @@ mod tests {
             let raw = crate::regex!(r"Date: [^\r\n]*").replace_all(raw, "Date: <date>").to_string();
             crate::regex!(r"=+mercurio[0-9a-f]+==").replace_all(&raw, "<boundary>").to_string()
         };
-        let mut out = std::collections::BTreeMap::new();
+        let mut out = BTreeMap::new();
         for case in doc["cases"].as_array().unwrap() {
             let Ok(target) = crate::parse(case["url"].as_str().unwrap()) else { continue };
             let fake = case_transport(case);
@@ -331,7 +331,7 @@ mod tests {
                 })
                 .collect();
             if !raws.is_empty() {
-                out.insert(case["name"].as_str().unwrap().to_string(), raws);
+                out.insert(case["name"].as_str().unwrap().to_owned(), raws);
             }
         }
         assert!(out.len() >= 5, "{}", out.len());

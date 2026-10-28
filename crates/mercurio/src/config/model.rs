@@ -16,7 +16,7 @@ use crate::target::Target;
 use crate::transport::{AsyncTransport, Blocking, Transport};
 
 /// Largest configuration read (`max_buffer_size`, 128 KiB).
-pub const MAX_BUFFER_SIZE: usize = 131072;
+pub(super) const MAX_BUFFER_SIZE: usize = 131072;
 
 /// Configuration syntax.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -153,7 +153,7 @@ impl Config {
         let Some(format) = format else {
             return Err(cfg_err("the format of the configuration could not be detected"));
         };
-        let src = Source { kind: SourceKind::Memory(content.to_string()), format: Some(format) };
+        let src = Source { kind: SourceKind::Memory(content.to_owned()), format: Some(format) };
         Ok(Self::from_source(src, transport, opts).await)
     }
 

@@ -4,7 +4,7 @@ use std::io::Read;
 
 use serde_json::Value;
 
-pub fn run(args: &[&str]) -> Result<(), String> {
+pub(crate) fn run(args: &[&str]) -> Result<(), String> {
     if args.first() == Some(&"supports") {
         return Ok(());
     }
@@ -17,7 +17,7 @@ pub fn run(args: &[&str]) -> Result<(), String> {
     Ok(())
 }
 
-pub fn fill(text: &str) -> String {
+pub(crate) fn fill(text: &str) -> String {
     let path = mercurio::asset::REPOSITORY_URL.trim_start_matches("https://github.com/").to_lowercase();
     text.replace("{{repository}}", mercurio::asset::REPOSITORY_URL)
         .replace("{{pages}}", mercurio::asset::PAGES_URL)

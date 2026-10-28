@@ -347,14 +347,14 @@ fn storage_list_prune_and_clear() {
     // A configured URL that never stored anything: listed as unused.
     let (code, text) = run(bin().args(["storage", "-S", &s, url]));
     assert_eq!(code, Some(0), "{text}");
-    let first = text.lines().next().unwrap_or_default().to_string();
+    let first = text.lines().next().unwrap_or_default().to_owned();
     assert!(first.ends_with("unused"), "{text}");
     assert!(text.contains("- json://localhost/"), "{text}");
-    let uid = first.split_whitespace().nth(1).unwrap().to_string();
+    let uid = first.split_whitespace().nth(1).unwrap().to_owned();
     assert_eq!(uid.len(), 8);
     // -SUL sets the id length (Apprise's -SUL); below 2 is a usage error.
     let (_, text) = run(bin().args(["storage", "-S", &s, "-SUL", "12", url]));
-    let long = text.lines().next().unwrap_or_default().split_whitespace().nth(1).unwrap_or_default().to_string();
+    let long = text.lines().next().unwrap_or_default().split_whitespace().nth(1).unwrap_or_default().to_owned();
     assert!(long.len() == 12 && long.starts_with(&uid), "{text}");
     let (code, text) = run(bin().args(["storage", "-S", &s, "-SUL", "1"]));
     assert_eq!(code, Some(2), "{text}");

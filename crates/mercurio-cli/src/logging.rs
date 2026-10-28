@@ -13,14 +13,14 @@ use tracing_subscriber::prelude::*;
 use tracing_subscriber::registry::LookupSpan;
 
 /// Receives the library's log lines of one `serve` request: level and message, as they happen.
-pub type Sink = Arc<dyn Fn(Level, String) + Send + Sync>;
+pub(crate) type Sink = Arc<dyn Fn(Level, String) + Send + Sync>;
 
 tokio::task_local! {
     static SINK: Sink;
 }
 
 /// Run `fut` with the library's log lines (DEBUG and up) also going to `sink`; they still reach stderr at the `-v` level. Delivery runs inside the calling task, so the lines are this request's.
-pub async fn capture<F: Future>(sink: Sink, fut: F) -> F::Output {
+pub(crate) async fn capture<F: Future>(sink: Sink, fut: F) -> F::Output {
     SINK.scope(sink, fut).await
 }
 
@@ -60,7 +60,7 @@ struct Fields {
 impl Visit for Fields {
     fn record_str(&mut self, field: &Field, value: &str) {
         if field.name() == "log.target" {
-            self.target = value.to_string();
+            self.target = value.to_owned();
         }
     }
 
@@ -73,7 +73,7 @@ impl Visit for Fields {
 
 /// How the log looks on stderr.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Style {
+pub(crate) enum Style {
     /// `LEVEL - message` lines on stderr (every command but `notify` and `serve`).
     Cli,
     /// `LEVEL - message` lines on stdout, as Apprise writes them: callers such as Uptime Kuma read stdout only.
@@ -85,7 +85,7 @@ pub enum Style {
 }
 
 /// Log at the `-v` level, to stderr (stdout for [`Style::Notify`]). `serve` adds one `request` event per request at INFO and hands library lines to the request that caused them ([`capture`]).
-pub fn init(verbose: u8, style: Style) {
+pub(crate) fn init(verbose: u8, style: Style) {
     let level = match verbose {
         0 => LevelFilter::ERROR,
         1 => LevelFilter::WARN,

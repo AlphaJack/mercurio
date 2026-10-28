@@ -12,7 +12,7 @@ use crate::transport::{Datagram, DatagramTarget};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "rsyslog",
     name: "Remote Syslog",
     schemes: &["rsyslog"],
@@ -62,7 +62,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 /// The UDP payload for one message.
-pub fn payload(pri: u32, pid: Option<u32>, body: &str) -> String {
+pub(crate) fn payload(pri: u32, pid: Option<u32>, body: &str) -> String {
     match pid {
         Some(pid) => format!("<{pri}>- {pid} {body}"),
         None => format!("<{pri}>- {body}"),
@@ -71,7 +71,7 @@ pub fn payload(pri: u32, pid: Option<u32>, body: &str) -> String {
 
 impl Notify for RSyslog {
     fn plan(&self, msg: &Prepared<'_>, _ctx: &Context<'_>) -> Plan {
-        let body = if msg.title.is_empty() { msg.body.to_string() } else { format!("{}: {}", msg.title, msg.body) };
+        let body = if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}: {}", msg.title, msg.body) };
         let pri = self.facility + syslog_level(msg.kind);
         let data = payload(pri, self.log_pid.then(std::process::id), &body);
         Plan::Datagram(Datagram {

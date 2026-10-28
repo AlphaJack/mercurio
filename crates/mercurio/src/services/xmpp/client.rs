@@ -19,7 +19,7 @@ const NS_MUC: &str = "http://jabber.org/protocol/muc";
 
 /// Stream security (`?mode=`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mode {
+pub(super) enum Mode {
     /// Plain TCP; STARTTLS is not attempted.
     None,
     /// Direct TLS from the first byte.
@@ -30,7 +30,7 @@ pub enum Mode {
 
 /// What one session delivers.
 #[derive(Debug, Clone)]
-pub struct Session {
+pub(super) struct Session {
     pub mode: Mode,
     /// Bare or full JID we log in as.
     pub jid: String,
@@ -65,7 +65,7 @@ fn iq_error(what: &str, el: &Element) -> Error {
     let cond = el
         .child("error")
         .and_then(|e| e.children.iter().find(|c| c.local() != "text"))
-        .map(|c| c.local().to_string())
+        .map(|c| c.local().to_owned())
         .unwrap_or_else(|| "unknown".into());
     Error::service(format!("XMPP {what} failed: {cond}"))
 }
@@ -74,7 +74,7 @@ fn iq_error(what: &str, el: &Element) -> Error {
 fn stanza(ev: Event) -> Result<Element> {
     match ev {
         Event::Stanza(el) if el.local() == "error" && el.name.contains(':') => {
-            let cond = el.children.first().map(|c| c.local().to_string()).unwrap_or_default();
+            let cond = el.children.first().map(|c| c.local().to_owned()).unwrap_or_default();
             Err(Error::service(format!("XMPP stream error: {cond}")))
         }
         Event::Stanza(el) => Ok(el),
@@ -94,7 +94,7 @@ fn sasl_failed(el: &Element, scramplus: bool) -> Error {
             "XMPP authentication failed: the server rejected channel binding despite ?scramplus=no being set."
         });
     }
-    let cond = el.children.iter().find(|c| c.local() != "text").map(|c| c.local().to_string());
+    let cond = el.children.iter().find(|c| c.local() != "text").map(|c| c.local().to_owned());
     Error::service(format!("XMPP authentication failed: {}", cond.unwrap_or_else(|| "unknown".into())))
 }
 
@@ -180,7 +180,7 @@ enum Wait {
 }
 
 /// An XMPP session as a sans-IO state machine.
-pub struct Client {
+pub(super) struct Client {
     cfg: Session,
     wait: Wait,
     parser: Parser,
@@ -199,7 +199,7 @@ pub struct Client {
 
 impl Client {
     /// A session for `cfg`; `tls` is whether the stream starts encrypted.
-    pub fn new(cfg: Session, tls: bool, env: Arc<dyn Env>) -> Self {
+    pub(super) fn new(cfg: Session, tls: bool, env: Arc<dyn Env>) -> Self {
         let mut c = Client {
             cfg,
             wait: Wait::Done,
@@ -233,7 +233,7 @@ impl Client {
 
     /// Open (or restart) the stream.
     fn open(&mut self, phase: Phase) {
-        let domain = split_jid(&self.cfg.jid).domain.to_string();
+        let domain = split_jid(&self.cfg.jid).domain.to_owned();
         self.send(&format!(
             "<?xml version='1.0'?><stream:stream to='{}' xmlns='jabber:client' \
              xmlns:stream='http://etherx.jabber.org/streams' xml:lang='en' version='1.0'>",
@@ -322,7 +322,7 @@ impl Client {
     fn authenticate(&mut self, features: &Element) {
         let offered: Vec<String> = features
             .child("mechanisms")
-            .map(|m| m.children_named("mechanism").map(|c| c.text.trim().to_string()).collect())
+            .map(|m| m.children_named("mechanism").map(|c| c.text.trim().to_owned()).collect())
             .unwrap_or_default();
         if self.cfg.scramplus
             && self.tls
@@ -345,7 +345,7 @@ impl Client {
         match (data, rest.pop_front()) {
             (Some(data), _) => {
                 self.plus = true;
-                let user = split_jid(&self.cfg.jid).local.to_string();
+                let user = split_jid(&self.cfg.jid).local.to_owned();
                 let scram = Scram::new(mech, &user, self.env.as_ref()).with_binding(kind.name(), data);
                 self.start_scram(&format!("{}-PLUS", mech.name()), scram);
             }
@@ -357,12 +357,12 @@ impl Client {
     fn authenticate_unbound(&mut self, offered: &[String]) {
         let Some(mech) = Mech::choose(offered.iter().map(String::as_str), self.tls) else {
             return self.fail(Error::service(if offered.iter().any(|m| m.eq_ignore_ascii_case("PLAIN")) && !self.tls {
-                "XMPP: the server only offers PLAIN authentication over an unencrypted stream; use TLS".to_string()
+                "XMPP: the server only offers PLAIN authentication over an unencrypted stream; use TLS".to_owned()
             } else {
-                "XMPP: no supported SASL mechanism offered".to_string()
+                "XMPP: no supported SASL mechanism offered".to_owned()
             }));
         };
-        let user = split_jid(&self.cfg.jid).local.to_string();
+        let user = split_jid(&self.cfg.jid).local.to_owned();
         if mech == Mech::Plain {
             let auth = format!("<auth xmlns='{NS_SASL}' mechanism='PLAIN'>{}</auth>", plain(&user, &self.cfg.password));
             self.send(&auth);
@@ -462,7 +462,7 @@ impl Client {
     /// `(type, jid)` of target `i`; the account itself when there are none.
     fn target(&self, i: usize) -> Option<(String, String)> {
         if self.cfg.targets.is_empty() {
-            return (i == 0).then(|| ("chat".to_string(), self.cfg.jid.clone()));
+            return (i == 0).then(|| ("chat".to_owned(), self.cfg.jid.clone()));
         }
         self.cfg.targets.get(i).cloned()
     }
@@ -615,7 +615,7 @@ mod tests {
             let list: String = types.iter().map(|t| format!("<channel-binding type='{t}'/>")).collect();
             format!("<sasl-channel-binding xmlns='urn:xmpp:sasl-cb:0'>{list}</sasl-channel-binding>")
         };
-        let reason = reason.to_string();
+        let reason = reason.to_owned();
         let conn = ScriptedConn::bytes(Vec::new(), move |w: &[u8]| {
             let w = String::from_utf8_lossy(w);
             let head = "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>";

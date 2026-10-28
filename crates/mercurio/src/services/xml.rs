@@ -10,7 +10,7 @@ use crate::url::ParsedUrl;
 use crate::util::{escape_html, escape_html_into};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "xml",
     name: "XML",
     schemes: &["xml", "xmls"],
@@ -66,7 +66,7 @@ struct Xml {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     crate::parse::require_host(u, &SERVICE)?;
-    let mut field_names = FIELDS.map(str::to_string);
+    let mut field_names = FIELDS.map(str::to_owned);
     let mut extras: Vec<(String, String)> = Vec::new();
     for (k, v) in double_unquoted(&u.query_colon) {
         let key: String = k.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '-').collect();

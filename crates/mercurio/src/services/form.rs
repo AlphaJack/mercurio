@@ -8,7 +8,7 @@ use crate::services::_webhook::{double_unquoted, endpoint, parse_method};
 use crate::url::ParsedUrl;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "form",
     name: "Form",
     schemes: &["form", "forms"],
@@ -59,7 +59,7 @@ struct Form {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     crate::parse::require_host(u, &SERVICE)?;
-    let mut field_names = FIELDS.map(str::to_string);
+    let mut field_names = FIELDS.map(str::to_owned);
     let mut extras = Vec::new();
     for (k, v) in double_unquoted(&u.query_colon) {
         match FIELDS.iter().position(|f| *f == k) {
@@ -71,7 +71,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         }
     }
     let (attach_as, attach_multi) = match u.param_nonempty("attach-as") {
-        None => ("file{}".to_string(), true),
+        None => ("file{}".to_owned(), true),
         Some(spec) => parse_attach_as(spec.trim()).ok_or_else(|| SERVICE.err(format!("invalid attach-as {spec:?}")))?,
     };
     Ok(Box::new(Form {
@@ -99,7 +99,7 @@ fn parse_attach_as(spec: &str) -> Option<(String, bool)> {
         Some((format!("{pre}{{}}{}", &c["id1b"]), true))
     } else {
         let id = &c["id2"];
-        if c.name("wc2").is_some_and(|m| !m.as_str().is_empty()) { Some((format!("{id}{{}}"), true)) } else { Some((id.to_string(), false)) }
+        if c.name("wc2").is_some_and(|m| !m.as_str().is_empty()) { Some((format!("{id}{{}}"), true)) } else { Some((id.to_owned(), false)) }
     }
 }
 

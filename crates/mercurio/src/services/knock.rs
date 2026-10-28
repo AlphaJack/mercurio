@@ -21,7 +21,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "knock",
     name: "Knock",
     schemes: &["knock"],
@@ -91,7 +91,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if labels.is_empty() {
         return Err(SERVICE.err("no Knock recipients were specified"));
     }
-    let base = api_base(u, DEFAULT_API).map_err(|_| SERVICE.err("an invalid Knock host was specified"))?;
+    let base = api_base(u, DEFAULT_API).ok().ok_or_else(|| SERVICE.err("an invalid Knock host was specified"))?;
     let mut extra = Vec::new();
     for (param, key) in [("actor", "actor"), ("tenant", "tenant"), ("cancel", "cancellation_key")] {
         if let Some(v) = u.param_nonempty(param) {
@@ -106,7 +106,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         labels,
         extra,
         data: colon_data(u),
-        headers: u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        headers: u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
     }))
 }
 
@@ -132,7 +132,7 @@ impl Notify for Knock {
                 .json_text(&payload, msg.body);
             Plan::send(req).target(labels.join(", "))
         });
-        Plan::all(plans.collect::<Vec<_>>())
+        Plan::all(plans)
     }
 }
 

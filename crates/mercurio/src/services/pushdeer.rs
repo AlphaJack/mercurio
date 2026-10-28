@@ -6,7 +6,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushdeer",
     name: "PushDeer",
     schemes: &["pushdeer", "pushdeers"],
@@ -39,7 +39,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     };
     let push_key = validate_regex(&key, r"^[a-z0-9]+$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid PushDeer API Pushkey was specified"))?;
-    let host = if host.is_empty() { "api2.pushdeer.com".to_string() } else { host };
+    let host = if host.is_empty() { "api2.pushdeer.com".to_owned() } else { host };
     let port = match u.port {
         Some(p) if p != 0 => p,
         _ if u.secure => 443,

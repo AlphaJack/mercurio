@@ -13,15 +13,15 @@ use crate::transport::{
 };
 
 /// Continuation receiving the outcome of an HTTP request.
-pub type Then = Box<dyn FnOnce(Result<Response>) -> Plan + Send>;
+pub(crate) type Then = Box<dyn FnOnce(Result<Response>) -> Plan + Send>;
 /// Continuation receiving the outcome of a process run.
-pub type ThenCommand = Box<dyn FnOnce(Result<CommandOutput>) -> Plan + Send>;
+pub(crate) type ThenCommand = Box<dyn FnOnce(Result<CommandOutput>) -> Plan + Send>;
 /// Continuation receiving the outcome of an in-process OS call.
-pub type ThenNative = Box<dyn FnOnce(Result<()>) -> Plan + Send>;
+pub(crate) type ThenNative = Box<dyn FnOnce(Result<()>) -> Plan + Send>;
 /// Continuation receiving the outcome of a file operation.
-pub type ThenFile = Box<dyn FnOnce(Result<FileOutput>) -> Plan + Send>;
+pub(crate) type ThenFile = Box<dyn FnOnce(Result<FileOutput>) -> Plan + Send>;
 /// A conversation over a connected stream (SMTP, IRC, MQTT, ...). The transport is there for its timer ([`AsyncTransport::sleep`]).
-pub type Session =
+pub(crate) type Session =
     Box<dyn for<'c> FnOnce(&'c mut dyn AsyncConn, &'c dyn AsyncTransport) -> BoxFuture<'c, Result<()>> + Send>;
 
 /// What a service wants done.
@@ -273,7 +273,7 @@ impl Delivery {
 
 /// URL-level settings applied to every request of a plan.
 #[derive(Debug, Clone, Copy)]
-pub struct ExecOptions {
+pub(crate) struct ExecOptions {
     /// Verify TLS certificates (`?verify=`).
     pub verify_tls: bool,
     /// Follow HTTP redirects.
@@ -303,24 +303,24 @@ impl Default for ExecOptions {
 
 /// Which message pieces and targets accepted a notification, so a retry skips them.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct DeliveryTracker {
+pub(crate) struct DeliveryTracker {
     delivered: std::collections::HashSet<(usize, Option<String>)>,
 }
 
 impl DeliveryTracker {
     /// An empty tracker.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
     /// `target == None` tracks the whole piece.
-    pub fn is_delivered(&self, piece: usize, target: Option<&str>) -> bool {
-        self.delivered.contains(&(piece, target.map(str::to_string)))
+    pub(crate) fn is_delivered(&self, piece: usize, target: Option<&str>) -> bool {
+        self.delivered.contains(&(piece, target.map(str::to_owned)))
     }
 
     /// Record piece `piece` (and `target`; the whole piece for `None`) as delivered.
-    pub fn mark_delivered(&mut self, piece: usize, target: Option<&str>) {
-        self.delivered.insert((piece, target.map(str::to_string)));
+    pub(crate) fn mark_delivered(&mut self, piece: usize, target: Option<&str>) {
+        self.delivered.insert((piece, target.map(str::to_owned)));
     }
 }
 
@@ -347,7 +347,7 @@ pub(crate) fn execute(plan: Plan, transport: &dyn crate::transport::Transport, o
 }
 
 /// Runs several plans (the pieces of one message) on one transport, keeping the throttle between them and, optionally, a [`DeliveryTracker`] that skips targets an earlier attempt delivered.
-pub struct Executor<'a> {
+pub(crate) struct Executor<'a> {
     runner: Runner<'a>,
 }
 
@@ -359,7 +359,7 @@ impl fmt::Debug for Executor<'_> {
 
 impl<'a> Executor<'a> {
     /// An executor without a delivery tracker.
-    pub fn new(transport: &'a dyn AsyncTransport, opts: ExecOptions) -> Self {
+    pub(crate) fn new(transport: &'a dyn AsyncTransport, opts: ExecOptions) -> Self {
         Self {
             runner: Runner {
                 transport,
@@ -374,29 +374,29 @@ impl<'a> Executor<'a> {
     }
 
     /// Flush `stores` before every I/O step, so values saved by one step's continuation are on disk before the next.
-    pub fn with_stores(mut self, stores: Vec<StoreRef>) -> Self {
+    pub(crate) fn with_stores(mut self, stores: Vec<StoreRef>) -> Self {
         self.runner.stores = stores;
         self
     }
 
     /// Skip and record targets through `tracker`.
-    pub fn with_tracker(mut self, tracker: &'a mut DeliveryTracker) -> Self {
+    pub(crate) fn with_tracker(mut self, tracker: &'a mut DeliveryTracker) -> Self {
         self.runner.tracker = Some(tracker);
         self
     }
 
     /// Message piece the next plan belongs to (tracking key).
-    pub fn set_piece(&mut self, piece: usize) {
+    pub(crate) fn set_piece(&mut self, piece: usize) {
         self.runner.piece = piece;
     }
 
     /// `true` when the tracker says the current piece was delivered.
-    pub fn piece_delivered(&self) -> bool {
+    pub(crate) fn piece_delivered(&self) -> bool {
         self.runner.tracker.as_deref().is_some_and(|t| t.is_delivered(self.runner.piece, None))
     }
 
     /// Run one plan; returns whether it succeeded. A successful plan marks the current piece delivered.
-    pub async fn run(&mut self, plan: Plan) -> bool {
+    pub(crate) async fn run(&mut self, plan: Plan) -> bool {
         let ok = self.runner.run(plan, None).await;
         if ok && let Some(t) = self.runner.tracker.as_deref_mut() {
             t.mark_delivered(self.runner.piece, None);
@@ -405,7 +405,7 @@ impl<'a> Executor<'a> {
     }
 
     /// Outcomes so far (a generic one when no target reported any). Flushes the stores.
-    pub async fn finish(self, ok: bool) -> Delivery {
+    pub(crate) async fn finish(self, ok: bool) -> Delivery {
         self.runner.flush().await;
         let mut out = self.runner.out;
         if out.is_empty() {
@@ -477,7 +477,7 @@ impl Runner<'_> {
 
     fn fail(&mut self, target: Option<&str>, e: Error) -> bool {
         crate::warning!("{}{}", target.map(|t| format!("{t}: ")).unwrap_or_default(), e);
-        self.out.push(Outcome { target: target.map(str::to_string), result: Err(e) });
+        self.out.push(Outcome { target: target.map(str::to_owned), result: Err(e) });
         false
     }
 

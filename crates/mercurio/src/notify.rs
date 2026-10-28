@@ -214,6 +214,7 @@ impl Escalation {
 
     /// Record the round: a chain whose group all delivered is done, any other moves on to its next group.
     pub(crate) fn settle(&mut self, delivered: impl Fn(usize) -> bool) {
+        #[expect(clippy::needless_collect, reason = "the loop writes to the fields that pending() borrows")]
         for c in self.pending().collect::<Vec<_>>() {
             if self.chains[c][self.next[c]].iter().all(|&i| delivered(i)) {
                 self.done[c] = Some(self.next[c]);
@@ -604,6 +605,7 @@ impl Mercurio {
         };
         let lanes = lanes(&targets);
         let mut done: Vec<(usize, ReportEntry)> = std::thread::scope(|s| {
+            #[expect(clippy::needless_collect, reason = "spawns every lane before joining the first")]
             let handles: Vec<_> = lanes
                 .iter()
                 .map(|lane| {
@@ -637,7 +639,7 @@ mod tests {
     fn warnings_reach_the_entry_of_their_url() {
         let fake = Arc::new(crate::testing::FakeTransport::new());
         let asset = Asset { image_path_mask: Some("/missing/{TYPE}.png".into()), ..Asset::default() };
-        let mut m = Mercurio::with_transport(fake.clone()).asset(asset);
+        let mut m = Mercurio::with_transport(fake).asset(asset);
         assert!(m.add_all("tgram://123456789:abcdefg/12345?image=yes json://localhost").is_empty());
         let report = m.notify(&Message::new("b"));
         let warnings: Vec<_> = report.entries.iter().map(|e| e.warnings.clone()).collect();
@@ -685,7 +687,7 @@ mod tests {
     fn async_entry_points_are_send() {
         fn assert_send<T: Send>(_: &T) {}
         let fake = crate::testing::FakeTransport::new();
-        let (t, msg, asset) = (crate::parse("json://localhost").unwrap(), Message::new("x"), Asset::default());
+        let (t, msg, asset) = (parse("json://localhost").unwrap(), Message::new("x"), Asset::default());
         let blocking = Blocking(&fake);
         assert_send(&t.send_attempts_async(&msg, &blocking, &asset));
         assert_send(&t.close_async(&blocking, &asset));
@@ -1003,7 +1005,7 @@ mod tests {
     /// The clock of [`first_error`]'s transport.
     const NOW: u64 = 1_700_000_000;
 
-    fn first_error(url: &str, replies: Vec<crate::Response>) -> crate::ErrorClass {
+    fn first_error(url: &str, replies: Vec<crate::Response>) -> ErrorClass {
         let fake = crate::testing::FakeTransport::new().with_env(crate::testing::FixedEnv::new(NOW));
         for r in replies {
             fake.respond_with(r);

@@ -27,7 +27,7 @@ const SIG_REVOCATIONS: [u8; 3] = [0x20, 0x28, 0x30];
 const MAX_AUTOCRYPT: usize = 10 * 1024;
 
 /// A generated key pair, armored.
-pub struct Generated {
+pub(crate) struct Generated {
     pub public: String,
     pub secret: Zeroizing<String>,
 }
@@ -55,7 +55,7 @@ fn secret_body(public: &[u8], secrets: &[&[u8]]) -> Zeroizing<Vec<u8>> {
 }
 
 /// A new key for `name <email>`, as GnuPG makes them by default: an Ed25519 primary key that certifies and signs, and a Curve25519 subkey that encrypts (SHA-256, AES-128 key wrap). The self-signatures carry Apprise's preferences: AES-256, SHA-256, ZLIB.
-pub fn generate(name: &str, email: &str, env: &dyn Env) -> Option<Generated> {
+pub(crate) fn generate(name: &str, email: &str, env: &dyn Env) -> Option<Generated> {
     let created = u32::try_from(env.unix_time()).unwrap_or(u32::MAX);
     let mut seed = Zeroizing::new([0u8; 32]);
     env.fill_random(&mut *seed);
@@ -185,7 +185,7 @@ fn autocrypt_cert(secret: &[u8]) -> Option<Vec<u8>> {
 }
 
 /// The `Autocrypt` header value advertising the key of `secret` for `email`, folded at 76 characters; `None` when the key does not suit Autocrypt or the header would exceed 10 KiB.
-pub fn autocrypt_header(email: &str, secret: &[u8]) -> Option<String> {
+pub(crate) fn autocrypt_header(email: &str, secret: &[u8]) -> Option<String> {
     let Some(cert) = autocrypt_cert(secret) else {
         log::debug!("PGP private key lacks an Autocrypt-compatible encryption subkey; omitting Autocrypt header");
         return None;

@@ -35,7 +35,7 @@ pub(crate) fn parse_with(u: &ParsedUrl, def: &'static ServiceDef) -> Result<Box<
     let id = vec![
         format!("{}s", def.schemes[0]),
         user.clone(),
-        u.password().as_deref().unwrap_or_default().to_string(),
+        u.password().as_deref().unwrap_or_default().to_owned(),
         u.host(),
         u.port.filter(|p| *p != 0).unwrap_or(DEFAULT_PORT).to_string(),
     ];
@@ -72,7 +72,7 @@ const SESSION_KEY: &str = "session";
 impl Session {
     fn load(store: &dyn Store) -> Option<Session> {
         let v = store.get_some(SESSION_KEY)?;
-        Some(Session { token: v.get("token")?.as_str()?.to_string(), user_id: v.get("user_id")?.as_str()?.to_string() })
+        Some(Session { token: v.get("token")?.as_str()?.to_owned(), user_id: v.get("user_id")?.as_str()?.to_owned() })
     }
 
     fn save(&self, store: &dyn Store) {
@@ -202,7 +202,7 @@ impl Emby {
 impl Notify for Emby {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let me = self.clone();
-        let ua = ctx.app_id().to_string();
+        let ua = ctx.app_id().to_owned();
         let mut payload = json!({"Header": msg.title, "Text": crate::http::TEXT});
         if !self.modal {
             payload["TimeoutMs"] = json!(MESSAGE_TIMEOUT_MS);

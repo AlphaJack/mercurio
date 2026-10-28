@@ -9,7 +9,7 @@ use crate::url::ParsedUrl;
 use crate::util::xml_escape;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "twilio",
     name: "Twilio",
     schemes: &["twilio"],
@@ -70,7 +70,7 @@ struct Twilio {
 fn mode_detect(s: &str) -> Option<(Option<String>, String)> {
     let re = crate::regex!(r"(?i)^\s*(?:([^:]+)\s*:\s*)?(.+)\n?\z");
     let caps = re.captures(s)?;
-    Some((caps.get(1).map(|m| m.as_str().to_string()), caps[2].to_string()))
+    Some((caps.get(1).map(|m| m.as_str().to_owned()), caps[2].to_string()))
 }
 
 fn is_whatsapp(mode: Option<&str>) -> bool {
@@ -88,7 +88,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(v) = SERVICE.text(u, "sid") {
         sid = v;
     }
-    let apikey = u.param_nonempty("apikey").map(str::to_string);
+    let apikey = u.param_nonempty("apikey").map(str::to_owned);
     if let Some(v) = u.text("source").or_else(|| u.text("from")) {
         source = v;
     }
@@ -159,11 +159,11 @@ impl Notify for Twilio {
         let sid = self.account_sid.expose();
         let (url, first) = match self.method {
             Method::Sms => {
-                (format!("https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"), ("Body", msg.body.to_string()))
+                (format!("https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"), ("Body", msg.body.to_owned()))
             }
             Method::Call => {
                 let twiml = if msg.body.trim_start().starts_with('<') {
-                    msg.body.to_string()
+                    msg.body.to_owned()
                 } else {
                     let says: String = [msg.title, msg.body]
                         .iter()
@@ -179,7 +179,7 @@ impl Notify for Twilio {
         if targets.is_empty() && self.method != Method::Call {
             targets.push((self.default_mode, self.source.clone()));
         }
-        let user = self.apikey.as_ref().unwrap_or(&self.account_sid).expose().to_string();
+        let user = self.apikey.as_ref().unwrap_or(&self.account_sid).expose().to_owned();
         per_target(
             targets,
             |(_, t)| t.clone(),

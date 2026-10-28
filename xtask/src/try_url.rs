@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::Command;
 
 fn cases(attachment: &str) -> Vec<(&'static str, Vec<String>)> {
-    let s = |v: &[&str]| v.iter().map(|x| (*x).to_string()).collect::<Vec<_>>();
+    let s = |v: &[&str]| v.iter().map(|x| (*x).to_owned()).collect::<Vec<_>>();
     let long = "Long body that has to be split or truncated. ".repeat(150);
     vec![
         ("text, info", s(&["-t", "mercurio try: info", "-b", "Plain text body."])),
@@ -39,7 +39,7 @@ fn cases(attachment: &str) -> Vec<(&'static str, Vec<String>)> {
     ]
 }
 
-pub fn run(root: &Path, urls: &[&str]) -> Result<(), String> {
+pub(crate) fn run(root: &Path, urls: &[&str]) -> Result<(), String> {
     if urls.is_empty() {
         return Err("usage: cargo xtask try URL... (URLs of real endpoints you own)".to_owned());
     }

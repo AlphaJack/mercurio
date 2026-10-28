@@ -4,7 +4,7 @@ use super::*;
 
 /// Device-level Curve25519 identity key + Ed25519 signing key.
 #[derive(Debug)]
-pub struct OlmAccount {
+pub(crate) struct OlmAccount {
     ik: XKey,
     sk: SigningKey,
     /// `{"id": ..., "sk": ...}` of the published fallback key.
@@ -22,37 +22,37 @@ impl Drop for OlmAccount {
 }
 
 impl OlmAccount {
-    pub fn new(env: &dyn Env) -> Self {
+    pub(crate) fn new(env: &dyn Env) -> Self {
         Self { ik: XKey::generate(env), sk: SigningKey::generate(env), fallback_otk: None }
     }
 
     #[cfg(test)]
-    pub fn from_keys(ik: XKey, sk: SigningKey) -> Self {
+    pub(crate) fn from_keys(ik: XKey, sk: SigningKey) -> Self {
         Self { ik, sk, fallback_otk: None }
     }
 
-    pub fn identity_key(&self) -> String {
+    pub(crate) fn identity_key(&self) -> String {
         b64enc(&self.ik.public())
     }
 
-    pub fn signing_key(&self) -> String {
+    pub(crate) fn signing_key(&self) -> String {
         b64enc(self.sk.public())
     }
 
-    pub fn sign(&self, data: &[u8]) -> String {
+    pub(crate) fn sign(&self, data: &[u8]) -> String {
         self.sk.sign_b64(data)
     }
 
     #[cfg(test)]
-    pub fn identity_private(&self) -> &XKey {
+    pub(crate) fn identity_private(&self) -> &XKey {
         &self.ik
     }
 
-    pub fn to_value(&self) -> Value {
+    pub(crate) fn to_value(&self) -> Value {
         json!({"ik": self.ik.to_b64(), "sk": self.sk.seed_b64(), "fallback_otk": self.fallback_otk})
     }
 
-    pub fn from_value(v: &Value) -> CResult<Self> {
+    pub(crate) fn from_value(v: &Value) -> CResult<Self> {
         let ik = v.get("ik").and_then(Value::as_str).ok_or(CryptoError("missing ik"))?;
         let sk = v.get("sk").and_then(Value::as_str).ok_or(CryptoError("missing sk"))?;
         let ik = XKey::from_b64(ik)?;
@@ -62,7 +62,7 @@ impl OlmAccount {
     }
 
     /// Signed `device_keys` for `POST /keys/upload`.
-    pub fn device_keys_payload(&self, user_id: &str, device_id: &str) -> Value {
+    pub(crate) fn device_keys_payload(&self, user_id: &str, device_id: &str) -> Value {
         let mut dk = json!({
             "algorithms": [OLM_ALGORITHM, MEGOLM_ALGORITHM],
             "device_id": device_id,
@@ -85,16 +85,16 @@ impl OlmAccount {
     }
 
     /// Signed `fallback_keys` (creates the fallback key on first use).
-    pub fn fallback_keys_payload(&mut self, user_id: &str, device_id: &str, env: &dyn Env) -> Value {
+    pub(crate) fn fallback_keys_payload(&mut self, user_id: &str, device_id: &str, env: &dyn Env) -> Value {
         let parsed = self.fallback_otk.as_ref().and_then(|f| {
-            let id = f.get("id")?.as_str()?.to_string();
+            let id = f.get("id")?.as_str()?.to_owned();
             let sk = XKey::from_b64(f.get("sk")?.as_str()?).ok()?;
             Some((id, sk))
         });
         let (id, sk) = match parsed {
             Some(p) => p,
             None => {
-                let id = env.uuid4().replace('-', "").get(..10).unwrap_or_default().to_string();
+                let id = env.uuid4().replace('-', "").get(..10).unwrap_or_default().to_owned();
                 let sk = XKey::generate(env);
                 self.fallback_otk = Some(json!({"id": id, "sk": sk.to_b64()}));
                 (id, sk)
@@ -104,11 +104,11 @@ impl OlmAccount {
     }
 
     /// Outbound Olm session (X3DH) to a device.
-    pub fn create_outbound_session(&self, their_ik_b64: &str, their_otk_b64: &str, env: &dyn Env) -> CResult<OlmSession> {
+    pub(crate) fn create_outbound_session(&self, their_ik_b64: &str, their_otk_b64: &str, env: &dyn Env) -> CResult<OlmSession> {
         self.create_outbound_session_with(their_ik_b64, their_otk_b64, XKey::generate(env))
     }
 
-    pub fn create_outbound_session_with(
+    pub(crate) fn create_outbound_session_with(
         &self,
         their_ik_b64: &str,
         their_otk_b64: &str,
@@ -141,7 +141,7 @@ impl OlmAccount {
 
 /// Single-use outbound Olm session (pre-key messages only).
 #[derive(Debug)]
-pub struct OlmSession {
+pub(crate) struct OlmSession {
     our_ik_pub: [u8; 32],
     eph_pub: [u8; 32],
     their_otk_pub: Vec<u8>,
@@ -157,7 +157,7 @@ impl Drop for OlmSession {
 
 impl OlmSession {
     /// Encrypt as an Olm pre-key (type 0) message: `{"type": 0, "body": ...}`.
-    pub fn encrypt(&mut self, plaintext: &[u8]) -> Value {
+    pub(crate) fn encrypt(&mut self, plaintext: &[u8]) -> Value {
         let msg_key = Zeroizing::new(hmac_sha256(&self.chain_key, b"\x01"));
         self.chain_key = hmac_sha256(&self.chain_key, b"\x02");
         let keys = hkdf_sha256(&msg_key[..], 80, Some(&[0u8; 32]), b"OLM_KEYS");

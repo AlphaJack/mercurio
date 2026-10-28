@@ -14,7 +14,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "mailersend",
     name: "MailerSend",
     schemes: &["mailersend"],
@@ -131,7 +131,7 @@ impl Notify for MailerSend {
                 .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200, 202]).target(target.clone())
         });
-        Plan::all(plans.collect::<Vec<_>>())
+        Plan::all(plans)
     }
 }
 

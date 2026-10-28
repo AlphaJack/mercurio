@@ -223,7 +223,7 @@ impl<T: Transport> AsyncTransport for Blocking<T> {
         Box::pin(ready(self.0.http(req)))
     }
     fn connect<'a>(&'a self, ep: &'a Endpoint) -> BoxFuture<'a, Result<Box<dyn AsyncConn>>> {
-        Box::pin(ready(self.0.connect(ep).map(|c| Box::new(c) as Box<dyn AsyncConn>)))
+        Box::pin(ready(self.0.connect(ep).map(|c| -> Box<dyn AsyncConn> { Box::new(c) })))
     }
     fn datagram<'a>(&'a self, dg: &'a Datagram) -> BoxFuture<'a, Result<()>> {
         Box::pin(ready(self.0.datagram(dg)))
@@ -419,7 +419,7 @@ pub struct Command {
 }
 
 /// [`Command::timeout`] unless a service sets its own.
-pub const DEFAULT_COMMAND_TIMEOUT: Duration = Duration::from_secs(10);
+pub(crate) const DEFAULT_COMMAND_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// `CREATE_NO_WINDOW`: a [`Command`] runs without a console window. A process with no console of its own,
 /// such as a service or a program started at login, would otherwise open one for each command.

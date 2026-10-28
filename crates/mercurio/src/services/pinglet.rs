@@ -11,7 +11,7 @@ use crate::url::{PATH_SAFE, ParsedUrl, quote, unquote};
 use crate::util::truncate_chars;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pinglet",
     name: "Pinglet",
     schemes: &["pinglet", "pinglets"],
@@ -71,7 +71,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut entries = u.path_segments();
     let topic = entries.pop();
     let namespace = entries.pop();
-    let fullpath = if entries.is_empty() { "/".to_string() } else { format!("/{}/", entries.join("/")) };
+    let fullpath = if entries.is_empty() { "/".to_owned() } else { format!("/{}/", entries.join("/")) };
 
     let mut token = u.user.as_deref().filter(|s| !s.is_empty()).map(unquote);
     if let Some(t) = u.param_nonempty("token") {

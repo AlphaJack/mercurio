@@ -7,12 +7,12 @@ use crate::transport::FileOp;
 use crate::url::unquote;
 
 /// The file steps behind [`read_local_file`], for [`crate::Notify::files`].
-pub fn local_file_ops(spec: &str) -> Vec<FileOp> {
+pub(crate) fn local_file_ops(spec: &str) -> Vec<FileOp> {
     local_path(spec).map(|p| FileOp::local_file(p).into()).unwrap_or_default()
 }
 
 /// The download behind [`read_local_file`] for an `http(s)://` reference, for [`crate::Notify::fetches`]; none for a local one.
-pub fn remote_fetches(ctx: &Context<'_>, spec: &str, max_size: u64) -> Vec<crate::http::Request> {
+pub(crate) fn remote_fetches(ctx: &Context<'_>, spec: &str, max_size: u64) -> Vec<crate::http::Request> {
     let spec = spec.trim();
     match crate::url::scheme_of(spec).as_deref() {
         Some("http" | "https") => {
@@ -23,7 +23,7 @@ pub fn remote_fetches(ctx: &Context<'_>, spec: &str, max_size: u64) -> Vec<crate
 }
 
 /// A file referenced as a plain local path, a `file://` URL (read by [`local_file_ops`]) or an `http(s)://` URL (downloaded by [`remote_fetches`]). Files larger than `max_size` bytes (when non-zero) are refused, like `AttachBase.max_file_size`.
-pub fn read_local_file<'a>(ctx: &Context<'a>, spec: &str, max_size: u64) -> Option<&'a [u8]> {
+pub(crate) fn read_local_file<'a>(ctx: &Context<'a>, spec: &str, max_size: u64) -> Option<&'a [u8]> {
     match local_path(spec) {
         Some(path) => ctx.local_file(path, max_size).ok(),
         None => ctx.fetched(spec.trim()).ok(),
@@ -31,7 +31,7 @@ pub fn read_local_file<'a>(ctx: &Context<'a>, spec: &str, max_size: u64) -> Opti
 }
 
 /// The local filesystem path a keyfile/subfile reference points at; `None` for remote URLs.
-pub fn local_path(spec: &str) -> Option<String> {
+pub(crate) fn local_path(spec: &str) -> Option<String> {
     let spec = spec.trim();
     if spec.is_empty() {
         return None;
@@ -44,14 +44,14 @@ pub fn local_path(spec: &str) -> Option<String> {
         let rest = rest.split(['?', '#']).next().unwrap_or("");
         return Some(unquote(rest)).filter(|p| !p.is_empty());
     }
-    Some(spec.to_string())
+    Some(spec.to_owned())
 }
 
 /// Decode the first PEM block; returns `(label, der)`.
-pub fn pem_decode(text: &str) -> Option<(String, Vec<u8>)> {
+pub(crate) fn pem_decode(text: &str) -> Option<(String, Vec<u8>)> {
     let (_, rest) = text.split_once("-----BEGIN ")?;
     let (label, body) = rest.split_once("-----")?;
-    let label = label.trim().to_string();
+    let label = label.trim().to_owned();
     let (body, _) = body.split_once(&format!("-----END {label}-----"))?;
     let b64: String = body.chars().filter(|c| !c.is_whitespace()).collect();
     let der = base64::engine::general_purpose::STANDARD.decode(b64).ok()?;
@@ -59,7 +59,7 @@ pub fn pem_decode(text: &str) -> Option<(String, Vec<u8>)> {
 }
 
 /// One DER TLV: `(tag, contents, rest)`.
-pub fn der_next(data: &[u8]) -> Option<(u8, &[u8], &[u8])> {
+pub(crate) fn der_next(data: &[u8]) -> Option<(u8, &[u8], &[u8])> {
     let (&tag, rest) = data.split_first()?;
     let (&first, mut rest) = rest.split_first()?;
     let len = if first & 0x80 == 0 {
@@ -86,7 +86,7 @@ const OID_EC_PUBLIC_KEY: &[u8] = &[0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01];
 const OID_PRIME256V1: &[u8] = &[0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07];
 
 /// Extract the raw P-256 private scalar and uncompressed public point from a PKCS#8 or SEC1 (`EC PRIVATE KEY`) DER structure.
-pub fn p256_keys_from_der(der: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
+pub(crate) fn p256_keys_from_der(der: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     let (tag, seq, _) = der_next(der)?;
     if tag != 0x30 {
         return None;
@@ -149,7 +149,7 @@ pub fn p256_keys_from_der(der: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
 }
 
 /// Recursively merge `src` into `dst`.
-pub fn json_full_update(dst: &mut serde_json::Value, src: &serde_json::Value) {
+pub(crate) fn json_full_update(dst: &mut serde_json::Value, src: &serde_json::Value) {
     match (dst, src) {
         (serde_json::Value::Object(d), serde_json::Value::Object(s)) => {
             for (k, v) in s {

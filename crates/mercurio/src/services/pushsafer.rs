@@ -11,7 +11,7 @@ use crate::url::ParsedUrl;
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushsafer",
     name: "Pushsafer",
     schemes: &["psafer", "psafers"],
@@ -162,9 +162,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     // Priority is validated but (as upstream) never sent.
     choice(get("priority").as_deref(), PRIORITY_MAP)
-        .map_err(|_| SERVICE.err("an invalid PushSafer priority was specified"))?;
+        .ok().ok_or_else(|| SERVICE.err("an invalid PushSafer priority was specified"))?;
     let sound =
-        choice(get("sound").as_deref(), SOUNDS).map_err(|_| SERVICE.err("an invalid PushSafer sound was specified"))?;
+        choice(get("sound").as_deref(), SOUNDS).ok().ok_or_else(|| SERVICE.err("an invalid PushSafer sound was specified"))?;
     let vibration = match get("vibration") {
         None => None,
         Some(v) => {
@@ -179,7 +179,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         validate_nonblank(&privatekey).ok_or_else(|| SERVICE.err("an invalid PushSafer Private Key was specified"))?;
     let mut targets = parse_list(targets);
     if targets.is_empty() {
-        targets.push(SEND_TO_ALL.to_string());
+        targets.push(SEND_TO_ALL.to_owned());
     }
     Ok(Box::new(PushSafer { secure: u.secure, privatekey: Secret::new(privatekey), targets, sound, vibration }))
 }
@@ -205,7 +205,7 @@ fn check(r: &Response) -> Result<()> {
         let err = json
             .as_ref()
             .and_then(|j| j.get("error"))
-            .and_then(|e| e.as_str().map(str::to_string))
+            .and_then(|e| e.as_str().map(str::to_owned))
             .unwrap_or_else(|| "Unknown".into());
         return Err(Error::Service(format!("Pushsafer: {err}")));
     }
@@ -264,15 +264,15 @@ impl Notify for PushSafer {
             .collect();
         let sender = Sender {
             url: format!("{}://www.pushsafer.com/api", if self.secure { "https" } else { "http" }),
-            key: self.privatekey.expose().to_string(),
-            app_id: ctx.app_id().to_string(),
+            key: self.privatekey.expose().to_owned(),
+            app_id: ctx.app_id().to_owned(),
         };
         let plans = self.targets.iter().map(|recipient| {
             let mut payload: Payload = vec![
-                ("t", msg.title.to_string()),
-                ("m", msg.body.to_string()),
+                ("t", msg.title.to_owned()),
+                ("m", msg.body.to_owned()),
                 ("i", DEFAULT_ICON.to_string()),
-                ("c", ctx.asset.color(msg.kind).to_string()),
+                ("c", ctx.asset.color(msg.kind).to_owned()),
                 ("d", recipient.clone()),
             ];
             if let Some(s) = self.sound {
@@ -288,7 +288,7 @@ impl Notify for PushSafer {
             };
             plan.target(recipient.clone())
         });
-        Plan::all(plans.collect::<Vec<_>>())
+        Plan::all(plans)
     }
 
 }

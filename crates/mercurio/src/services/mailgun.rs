@@ -13,7 +13,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "mailgun",
     name: "Mailgun",
     schemes: &["mailgun"],
@@ -114,7 +114,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
 
     if let Some(to) = u.param_nonempty("to") {
-        segs.push(to.to_string());
+        segs.push(to.to_owned());
     }
     let targets = if segs.is_empty() { vec![(String::new(), from_email.clone())] } else { email_pairs(&segs) };
 
@@ -155,17 +155,17 @@ impl Notify for Mailgun {
             return Plan::Fail(Error::Service("there are no Email recipients to notify".into()));
         }
         let from_name = match &self.from_name {
-            FromName::AppId => ctx.app_id().to_string(),
+            FromName::AppId => ctx.app_id().to_owned(),
             FromName::Name(n) => n.clone(),
             FromName::None => String::new(),
         };
         let mut base: Vec<(String, String)> = vec![
             ("o:skip-verification".into(), if self.skip_verification { "True" } else { "False" }.into()),
             ("from".into(), formataddr(&from_name, &self.from_email)),
-            ("subject".into(), msg.title.to_string()),
+            ("subject".into(), msg.title.to_owned()),
         ];
         let key = if msg.format == NotifyFormat::Html { "html" } else { "text" };
-        base.push((key.into(), msg.body.to_string()));
+        base.push((key.into(), msg.body.to_owned()));
 
         let url = format!("{}{}/messages", self.api, self.host);
         let mut plans = Vec::new();

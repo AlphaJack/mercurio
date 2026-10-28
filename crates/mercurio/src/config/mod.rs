@@ -20,7 +20,7 @@ mod loader;
 mod model;
 mod pending;
 pub mod spec;
-pub mod template;
+pub(crate) mod template;
 mod text;
 pub mod yaml;
 mod yaml_doc;

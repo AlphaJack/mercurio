@@ -11,7 +11,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "lametric",
     name: "LaMetric",
     schemes: &["lametric", "lametrics"],
@@ -129,8 +129,8 @@ struct Lametric {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let (user, password) = match (u.user.as_deref().filter(|s| !s.is_empty()), u.password.as_deref()) {
-        (Some(user), None | Some("")) => (None, Some(user.to_string())),
-        (user, pw) => (user.map(str::to_string), pw.map(str::to_string)),
+        (Some(user), None | Some("")) => (None, Some(user.to_owned())),
+        (user, pw) => (user.map(str::to_owned), pw.map(str::to_owned)),
     };
     let password = password.filter(|p| !p.is_empty());
     let mut entries = u.path_segments();
@@ -171,7 +171,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             let app_ver = match app_ver.filter(|v| !v.is_empty()) {
                 Some(v) => validate_regex(&v, r"^[1-9][0-9]*$", "", true)
                     .ok_or_else(|| SERVICE.err("an invalid LaMetric Application Version was specified"))?,
-                None => caps.name("app_ver").map(|m| m.as_str().to_string()).unwrap_or_else(|| SERVICE.default_of("app_ver").into()),
+                None => caps.name("app_ver").map(|m| m.as_str().to_owned()).unwrap_or_else(|| SERVICE.default_of("app_ver").into()),
             };
             Mode::Cloud { app_id: caps["app_id"].to_string(), app_ver, token: Secret::new(token) }
         }
@@ -226,8 +226,7 @@ impl Notify for Lametric {
                 NotifyType::Success => "i9182",
                 NotifyType::Warning => "i9183",
                 NotifyType::Failure => "i9184",
-            }
-            .to_string()
+            }.to_owned()
         });
         let req = match &self.mode {
             Mode::Cloud { app_id, app_ver, token } => {

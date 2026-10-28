@@ -28,7 +28,7 @@ const SMTP_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Which service this instance serves.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Flavor {
+pub(crate) enum Flavor {
     Email,
     DeltaChat,
 }
@@ -77,7 +77,7 @@ enum Name {
 
 impl Name {
     fn of(name: &str) -> Name {
-        if name.is_empty() { Name::None } else { Name::Text(name.to_string()) }
+        if name.is_empty() { Name::None } else { Name::Text(name.to_owned()) }
     }
     fn resolve<'a>(&'a self, ctx: &'a Context<'_>) -> Option<&'a str> {
         match self {
@@ -259,7 +259,7 @@ fn template_regexes() -> &'static [Option<Regex>] {
 
 /// A configured e-mail (or Delta Chat) target.
 #[derive(Debug)]
-pub struct Email {
+pub(crate) struct Email {
     flavor: Flavor,
     user: Option<String>,
     password: Option<Secret>,
@@ -322,7 +322,7 @@ fn insert_unique(v: &mut Vec<String>, s: String) {
 fn set_name(names: &mut Vec<(String, Name)>, addr: &str, name: Name) {
     match names.iter_mut().find(|(a, _)| a == addr) {
         Some(entry) => entry.1 = name,
-        None => names.push((addr.to_string(), name)),
+        None => names.push((addr.to_owned(), name)),
     }
 }
 
@@ -355,7 +355,7 @@ fn pgp_prefix(s: &str) -> Option<Pgp> {
 
 impl Email {
     /// Parse and validate an email URL.
-    pub fn from_url(u: &ParsedUrl, def: &'static ServiceDef, flavor: Flavor) -> Result<Email> {
+    pub(crate) fn from_url(u: &ParsedUrl, def: &'static ServiceDef, flavor: Flavor) -> Result<Email> {
         let mut targets_raw: Vec<String> = Vec::new();
         let mut host_raw = u.host.clone();
         if is_ipaddr(&host_raw, true, true).is_some() {
@@ -373,7 +373,7 @@ impl Email {
                 Some(Pgp::None) => "no".into(),
                 Some(Pgp::Sign) => "sign".into(),
                 Some(Pgp::Encrypt) => "encrypt".into(),
-                None => raw.to_string(),
+                None => raw.to_owned(),
             });
         }
         let use_wkd = def.flag_strict(u, "wkd");
@@ -384,7 +384,7 @@ impl Email {
 
         targets_raw.extend(u.path_segments());
         if let Some(to) = u.param_nonempty("to") {
-            targets_raw.push(to.to_string());
+            targets_raw.push(to.to_owned());
         }
         let mut from_arg = String::new();
         if let Some(from) = u.param_nonempty("from") {
@@ -440,7 +440,7 @@ impl Email {
             for (t, re) in TEMPLATES.iter().zip(template_regexes()) {
                 let Some(caps) = re.as_ref().and_then(|re| re.captures(&probe)) else { continue };
                 if let Some(h) = t.smtp_host {
-                    smtp_host = h.to_string();
+                    smtp_host = h.to_owned();
                 }
                 if port_arg.is_none()
                     && let Some(p) = t.port
@@ -456,9 +456,9 @@ impl Email {
                     let current = user.clone().unwrap_or_default();
                     if user.as_deref().is_some_and(|u| is_email(u).is_some()) {
                         if !t.login.contains(&Login::Email) {
-                            user = caps.name("id").map(|m| m.as_str().to_string());
+                            user = caps.name("id").map(|m| m.as_str().to_owned());
                         } else if let Some((_, domain)) = current.split_once('@') {
-                            host = domain.split('@').next().unwrap_or("").to_string();
+                            host = domain.split('@').next().unwrap_or("").to_owned();
                         }
                     } else if !t.login.contains(&Login::UserId) {
                         let name = user.clone().unwrap_or_default();
@@ -479,7 +479,7 @@ impl Email {
             } else if let Some(r) = is_email(u) {
                 host = r.domain;
                 from_name = Name::AppId;
-                from_addr = u.to_string();
+                from_addr = u.to_owned();
             }
         }
         if !from_arg.is_empty() {
@@ -647,23 +647,23 @@ impl Email {
         let format = if self.flavor == Flavor::DeltaChat { NotifyFormat::Text } else { msg.format };
         let subject = match (self.flavor, self.pgp) {
             // A signed message must not show its content in the subject either.
-            (Flavor::DeltaChat, Pgp::Sign) => "Chat:".to_string(),
+            (Flavor::DeltaChat, Pgp::Sign) => "Chat:".to_owned(),
             // Delta Chat's placeholder when the subject is not carried inside the encryption.
-            (Flavor::DeltaChat, Pgp::Encrypt) => "Chat: Encrypted message".to_string(),
+            (Flavor::DeltaChat, Pgp::Encrypt) => "Chat: Encrypted message".to_owned(),
             (Flavor::DeltaChat, Pgp::None) => Self::chat_subject(msg.body),
-            (Flavor::Email, _) => msg.title.to_string(),
+            (Flavor::Email, _) => msg.title.to_owned(),
         };
         let subject: String = subject.split_whitespace().collect::<Vec<_>>().join(" ");
         let msgid_host = if self.smtp_host.is_empty() {
-            self.from_addr.split('@').nth(1).unwrap_or("localhost").to_string()
+            self.from_addr.split('@').nth(1).unwrap_or("localhost").to_owned()
         } else {
             self.smtp_host.clone()
         };
         // headers map: X-Application, user headers, protocol headers (later keys replace values).
-        let mut extra: Vec<(String, String)> = vec![("X-Application".into(), ctx.app_id().to_string())];
+        let mut extra: Vec<(String, String)> = vec![("X-Application".into(), ctx.app_id().to_owned())];
         let mut put = |k: &str, v: &str| match extra.iter_mut().find(|(ek, _)| ek == k) {
-            Some(e) => e.1 = v.to_string(),
-            None => extra.push((k.to_string(), v.to_string())),
+            Some(e) => e.1 = v.to_owned(),
+            None => extra.push((k.to_owned(), v.to_owned())),
         };
         for (k, v) in &self.headers {
             put(k, v);
@@ -684,7 +684,7 @@ impl Email {
             let mut body: std::borrow::Cow<'_, str> = std::borrow::Cow::Borrowed(msg.body);
             let mut cid_refs: Vec<String> = Vec::new();
             let att_name =
-                |i: usize, n: &str| if n.is_empty() { format!("file{:03}.dat", i + 1) } else { n.to_string() };
+                |i: usize, n: &str| if n.is_empty() { format!("file{:03}.dat", i + 1) } else { n.to_owned() };
             if self.inline && !msg.attachments.is_empty() {
                 if format == NotifyFormat::Html {
                     let re = crate::regex!(r#"cid:([^\s"'>\)]+)"#);

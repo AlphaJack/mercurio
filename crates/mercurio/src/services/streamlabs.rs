@@ -14,7 +14,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "streamlabs",
     name: "Streamlabs",
     schemes: &["strmlabs"],
@@ -96,7 +96,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         amount: opt(u, "amount", false).unwrap_or_else(|| SERVICE.default_of("amount").into()),
         currency,
         name,
-        identifier: opt(u, "identifier", false).map(|v| v.trim().to_string()),
+        identifier: opt(u, "identifier", false).map(|v| v.trim().to_owned()),
     }))
 }
 
@@ -123,7 +123,7 @@ impl Notify for Streamlabs {
             body.insert("duration".into(), number(&self.duration));
         } else {
             let message =
-                if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\r\n{}", msg.title, msg.body) };
+                if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}\r\n{}", msg.title, msg.body) };
             body.insert("name".into(), json!(self.name));
             body.insert("identifier".into(), json!(self.identifier.as_deref().unwrap_or(ctx.app_id())));
             body.insert("amount".into(), number(&self.amount));

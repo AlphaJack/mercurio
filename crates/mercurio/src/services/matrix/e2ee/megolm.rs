@@ -4,7 +4,7 @@ use super::*;
 
 /// Outbound Megolm session (ratchet wiped on drop).
 #[derive(Debug)]
-pub struct MegolmSession {
+pub(crate) struct MegolmSession {
     pub(super) ratchet: [[u8; 32]; 4],
     counter: u32,
     sk: SigningKey,
@@ -19,18 +19,18 @@ impl Drop for MegolmSession {
 }
 
 impl MegolmSession {
-    pub fn new(env: &dyn Env) -> Self {
+    pub(crate) fn new(env: &dyn Env) -> Self {
         let ratchet = [random32(env), random32(env), random32(env), random32(env)];
         Self::from_parts(ratchet, 0, SigningKey::generate(env), env.unix_time_f64())
     }
 
-    pub fn from_parts(ratchet: [[u8; 32]; 4], counter: u32, sk: SigningKey, created_at: f64) -> Self {
+    pub(crate) fn from_parts(ratchet: [[u8; 32]; 4], counter: u32, sk: SigningKey, created_at: f64) -> Self {
         let session_id = b64enc(sk.public());
         Self { ratchet, counter, sk, session_id, created_at }
     }
 
     #[cfg(test)]
-    pub fn counter(&self) -> u32 {
+    pub(crate) fn counter(&self) -> u32 {
         self.counter
     }
 
@@ -59,12 +59,12 @@ impl MegolmSession {
         split_keys(&keys)
     }
 
-    pub fn should_rotate(&self, env: &dyn Env) -> bool {
+    pub(crate) fn should_rotate(&self, env: &dyn Env) -> bool {
         self.counter >= MEGOLM_ROTATION_MSGS || env.unix_time_f64() - self.created_at >= MEGOLM_ROTATION_AGE
     }
 
     /// Encrypt bytes; returns the base64 Megolm message.
-    pub fn encrypt_bytes(&mut self, plaintext: &[u8]) -> String {
+    pub(crate) fn encrypt_bytes(&mut self, plaintext: &[u8]) -> String {
         let (aes_key, mac_key, iv) = self.message_keys();
         let ct = aes_cbc_encrypt(&aes_key, &iv, plaintext);
         let mut body = vec![3u8];
@@ -79,12 +79,12 @@ impl MegolmSession {
     }
 
     /// Encrypt a JSON event (compact serialisation).
-    pub fn encrypt(&mut self, event: &Value) -> String {
+    pub(crate) fn encrypt(&mut self, event: &Value) -> String {
         self.encrypt_bytes(event.to_string().as_bytes())
     }
 
     /// Exportable session key (`m.room_key` `session_key`).
-    pub fn session_key(&self) -> String {
+    pub(crate) fn session_key(&self) -> String {
         let mut payload = Zeroizing::new(Vec::with_capacity(229));
         payload.push(2u8);
         payload.extend_from_slice(&self.counter.to_be_bytes());
@@ -97,7 +97,7 @@ impl MegolmSession {
         b64enc(&payload)
     }
 
-    pub fn to_value(&self) -> Value {
+    pub(crate) fn to_value(&self) -> Value {
         json!({
             "version": MATRIX_MEGOLM_STORE_VERSION,
             "ratchet": self.ratchet.iter().map(|r| b64enc(r)).collect::<Vec<_>>(),
@@ -108,7 +108,7 @@ impl MegolmSession {
         })
     }
 
-    pub fn from_value(v: &Value, env: &dyn Env) -> CResult<Self> {
+    pub(crate) fn from_value(v: &Value, env: &dyn Env) -> CResult<Self> {
         if v.get("version").and_then(Value::as_u64) != Some(MATRIX_MEGOLM_STORE_VERSION) {
             return Err(CryptoError("incompatible Megolm session cache format"));
         }
@@ -119,10 +119,10 @@ impl MegolmSession {
         let mut ratchet = Zeroizing::new([[0u8; 32]; 4]);
         for (slot, p) in ratchet.iter_mut().zip(parts) {
             let raw = Zeroizing::new(b64dec(p.as_str().ok_or(CryptoError("ratchet part"))?)?);
-            *slot = <[u8; 32]>::try_from(raw.as_slice()).map_err(|_| CryptoError("ratchet part must be 32 bytes"))?;
+            *slot = <[u8; 32]>::try_from(raw.as_slice()).ok().ok_or(CryptoError("ratchet part must be 32 bytes"))?;
         }
         let counter = v.get("counter").and_then(Value::as_u64).ok_or(CryptoError("missing counter"))?;
-        let counter = u32::try_from(counter).map_err(|_| CryptoError("counter out of range"))?;
+        let counter = u32::try_from(counter).ok().ok_or(CryptoError("counter out of range"))?;
         let sk = SigningKey::from_b64(v.get("sk").and_then(Value::as_str).ok_or(CryptoError("missing sk"))?)?;
         let created_at = v.get("created_at").and_then(Value::as_f64).unwrap_or_else(|| env.unix_time_f64());
         Ok(Self::from_parts(*ratchet, counter, sk, created_at))

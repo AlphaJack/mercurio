@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushplus",
     name: "Pushplus",
     schemes: &["pushplus", "wecom"],
@@ -74,7 +74,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let channel = match channel.filter(|c| !c.is_empty()) {
         Some(c) => {
             let c = c.to_lowercase();
-            let c = if c == "wecom" { "cp".to_string() } else { c };
+            let c = if c == "wecom" { "cp".to_owned() } else { c };
             CHANNELS
                 .iter()
                 .copied()

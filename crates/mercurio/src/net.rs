@@ -69,11 +69,11 @@ fn system_bundle() -> Option<Vec<CertificateDer<'static>>> {
 
 /// `host` as a TLS server name.
 pub(crate) fn server_name(host: &str) -> Result<ServerName<'static>> {
-    ServerName::try_from(host.to_string()).map_err(|e| Error::transport(format!("invalid TLS server name {host}: {e}")))
+    ServerName::try_from(host.to_owned()).map_err(|e| Error::transport(format!("invalid TLS server name {host}: {e}")))
 }
 
 /// Client TLS config: [`ca_bundle`], else the Mozilla roots (feature `bundle-certificates`); no verification when asked.
-pub fn tls_config(verify: bool) -> std::result::Result<Arc<ClientConfig>, rustls::Error> {
+pub(crate) fn tls_config(verify: bool) -> std::result::Result<Arc<ClientConfig>, rustls::Error> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     let builder = ClientConfig::builder_with_provider(provider.clone()).with_safe_default_protocol_versions()?;
     let config = if verify {
@@ -100,8 +100,8 @@ struct NoVerify(Arc<rustls::crypto::CryptoProvider>);
 impl rustls::client::danger::ServerCertVerifier for NoVerify {
     fn verify_server_cert(
         &self,
-        _end_entity: &rustls::pki_types::CertificateDer<'_>,
-        _intermediates: &[rustls::pki_types::CertificateDer<'_>],
+        _end_entity: &CertificateDer<'_>,
+        _intermediates: &[CertificateDer<'_>],
         _server_name: &ServerName<'_>,
         _ocsp: &[u8],
         _now: rustls::pki_types::UnixTime,
@@ -112,7 +112,7 @@ impl rustls::client::danger::ServerCertVerifier for NoVerify {
     fn verify_tls12_signature(
         &self,
         message: &[u8],
-        cert: &rustls::pki_types::CertificateDer<'_>,
+        cert: &CertificateDer<'_>,
         dss: &rustls::DigitallySignedStruct,
     ) -> std::result::Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
         rustls::crypto::verify_tls12_signature(message, cert, dss, &self.0.signature_verification_algorithms)
@@ -121,7 +121,7 @@ impl rustls::client::danger::ServerCertVerifier for NoVerify {
     fn verify_tls13_signature(
         &self,
         message: &[u8],
-        cert: &rustls::pki_types::CertificateDer<'_>,
+        cert: &CertificateDer<'_>,
         dss: &rustls::DigitallySignedStruct,
     ) -> std::result::Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
         rustls::crypto::verify_tls13_signature(message, cert, dss, &self.0.signature_verification_algorithms)

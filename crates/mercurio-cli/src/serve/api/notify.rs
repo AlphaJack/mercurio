@@ -20,9 +20,9 @@ impl Server {
             return r;
         }
         let key = match req.x_header("Config-ID") {
-            Some(h) if valid_key(h) => h.to_string(),
+            Some(h) if valid_key(h) => h.to_owned(),
             Some(_) => return Reply::error(req, 400, INVALID_KEY_HEADER),
-            None => key.to_string(),
+            None => key.to_owned(),
         };
         let content = match payload::load_notify(req, false, Some(&key), self.s.mapping_depth) {
             Ok(c) => c,
@@ -32,7 +32,7 @@ impl Server {
     }
 
     async fn notify_stored(&self, req: &Req, key: &str, mut content: Content) -> Reply {
-        req.note(|ev| ev.key = Some(key.to_string()));
+        req.note(|ev| ev.key = Some(key.to_owned()));
         if !self.key_ok(req, key, true).await {
             return self.key_denied(req, key);
         }
@@ -76,13 +76,13 @@ impl Server {
         // Without a tag only untagged entries are notified.
         let filter = tag.as_ref().map(payload::tag_filter).unwrap_or_else(TagFilter::untagged);
         let vars = content.template.take().unwrap_or_default();
-        let job = notify::Job { notifier: m, message, filter, vars, key: Some(key.to_string()) };
+        let job = notify::Job { notifier: m, message, filter, vars, key: Some(key.to_owned()) };
         self.deliver(req, job).await
     }
 
     pub(crate) async fn notify_stateless(&self, req: &Req) -> Reply {
         let key = match req.x_header("Config-ID") {
-            Some(h) if valid_key(h) => Some(h.to_string()),
+            Some(h) if valid_key(h) => Some(h.to_owned()),
             Some(_) => return Reply::error(req, 400, INVALID_KEY_HEADER),
             None => None,
         };
@@ -115,7 +115,7 @@ impl Server {
         }
         let urls: Vec<String> = match content.fields.get("urls") {
             Some(Value::String(s)) if !s.is_empty() => vec![s.clone()],
-            Some(Value::Array(a)) if !a.is_empty() => a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+            Some(Value::Array(a)) if !a.is_empty() => a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect(),
             _ => self.s.stateless_urls.iter().cloned().collect(),
         };
         let Ok(tag) = payload::notify_tag(req, &content) else {
@@ -158,7 +158,7 @@ impl Server {
 
     /// The asset for a send, carrying the caller's `X-Apprise-ID` and recursion count.
     fn request_asset(&self, req: &Req, persistent: bool, recursion: u32) -> mercurio::Asset {
-        let uid = req.x_header("ID").map(str::trim).filter(|u| !u.is_empty()).map(str::to_string);
+        let uid = req.x_header("ID").map(str::trim).filter(|u| !u.is_empty()).map(str::to_owned);
         mercurio::Asset { uid, recursion, ..self.asset(persistent) }
     }
 
@@ -264,7 +264,7 @@ fn query_overrides(req: &Req, c: &mut Content) {
         if c.str(name).is_none()
             && let Some(v) = req.query(name)
         {
-            c.fields.insert(name.into(), Value::String(v.to_string()));
+            c.fields.insert(name.into(), Value::String(v.to_owned()));
         }
     }
 }

@@ -67,9 +67,9 @@ impl fmt::Display for Method {
 }
 
 /// Default connect timeout.
-pub const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+pub(crate) const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 /// Default read timeout.
-pub const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(30);
+pub(crate) const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Redirects followed before the last 3xx response is returned as is.
 pub(crate) const MAX_REDIRECTS: u32 = 10;
@@ -466,7 +466,7 @@ impl Response {
     }
 
     /// [`Response::http_error`], with `hint` (a wait the service put in the body) when there is no `Retry-After` header: a 429 or 503 with either is [`crate::Error::RateLimited`], anything else [`crate::Error::Http`].
-    pub fn rate_limited_or_http(&self, hint: Option<std::time::Duration>) -> crate::Error {
+    pub fn rate_limited_or_http(&self, hint: Option<Duration>) -> crate::Error {
         self.limited_or_http(self.snippet(), hint)
     }
 
@@ -475,7 +475,7 @@ impl Response {
         crate::Error::RateLimited { status: self.status, reason: self.snippet(), retry_after: self.retry_after() }
     }
 
-    fn limited_or_http(&self, reason: String, hint: Option<std::time::Duration>) -> crate::Error {
+    fn limited_or_http(&self, reason: String, hint: Option<Duration>) -> crate::Error {
         match self.retry_after().or(hint).filter(|_| matches!(self.status, 429 | 503)) {
             Some(d) => crate::Error::RateLimited { status: self.status, reason, retry_after: Some(d) },
             None => crate::Error::Http { status: self.status, reason },
@@ -484,7 +484,7 @@ impl Response {
 
     /// The `Retry-After` header as a wait from now.
     #[expect(clippy::disallowed_methods, reason = "a wait on the real clock, not request content")]
-    pub fn retry_after(&self) -> Option<std::time::Duration> {
+    pub fn retry_after(&self) -> Option<Duration> {
         crate::error::parse_retry_after(self.header("retry-after")?, crate::env::system().now())
     }
 
@@ -645,13 +645,13 @@ pub fn multipart_parts<'a>(content_type: &str, body: &'a [u8]) -> Vec<MultipartP
                 for attr in line.split(';').skip(1) {
                     let attr = attr.trim();
                     if let Some(v) = attr.strip_prefix("name=") {
-                        part.name = Some(v.trim_matches('"').to_string());
+                        part.name = Some(v.trim_matches('"').to_owned());
                     } else if let Some(v) = attr.strip_prefix("filename=") {
-                        part.filename = Some(v.trim_matches('"').to_string());
+                        part.filename = Some(v.trim_matches('"').to_owned());
                     }
                 }
             } else if lower.starts_with("content-type:") {
-                part.content_type = Some(line.get(13..).unwrap_or_default().trim().to_string());
+                part.content_type = Some(line.get(13..).unwrap_or_default().trim().to_owned());
             }
         }
         parts.push(part);
@@ -675,7 +675,7 @@ pub fn parse_multipart(content_type: &str, body: &[u8]) -> Vec<Value> {
             }
             match std::str::from_utf8(part.data) {
                 Ok(s) if part.filename.is_none() => {
-                    obj.insert("value".into(), Value::String(s.to_string()));
+                    obj.insert("value".into(), Value::String(s.to_owned()));
                 }
                 _ => {
                     obj.insert("b64".into(), Value::String(crate::crypto::b64(part.data)));

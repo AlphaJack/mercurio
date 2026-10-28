@@ -3,7 +3,7 @@
 use crate::convert::markup::{self, Markup};
 
 /// `*bold*`, `_italic_`, `~strike~`, `<url|label>` links; `&`, `<` and `>` are entity-escaped.
-pub const ANCHOR: Markup = Markup {
+pub(crate) const ANCHOR: Markup = Markup {
     bold: ("*", "*"),
     italic: ("_", "_"),
     strike: ("~", "~"),
@@ -25,6 +25,6 @@ fn escape(s: &str) -> String {
 }
 
 /// Markdown rendered with `markup`.
-pub fn render(body: &str, markup: &Markup) -> String {
+pub(crate) fn render(body: &str, markup: &Markup) -> String {
     markup::render(body, markup)
 }

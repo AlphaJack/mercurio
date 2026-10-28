@@ -75,13 +75,13 @@ struct Counters {
 }
 
 #[derive(Default)]
-pub struct Metrics {
+pub(super) struct Metrics {
     inner: Mutex<Counters>,
 }
 
 impl Metrics {
     /// Count one answered request. `view` is the route name; `bytes_in` the request body; `bytes_out` the response body, `None` when it is streamed.
-    pub fn record(
+    pub(super) fn record(
         &self,
         method: &str,
         view: &str,
@@ -93,10 +93,10 @@ impl Metrics {
         let Ok(mut c) = self.inner.lock() else { return };
         c.requests += 1;
         c.responses += 1;
-        *c.by_method.entry(method.to_string()).or_default() += 1;
-        *c.by_view.entry((view.to_string(), method.to_string())).or_default() += 1;
+        *c.by_method.entry(method.to_owned()).or_default() += 1;
+        *c.by_view.entry((view.to_owned(), method.to_owned())).or_default() += 1;
         *c.by_status.entry(status).or_default() += 1;
-        *c.by_status_view.entry((status, view.to_string(), method.to_string())).or_default() += 1;
+        *c.by_status_view.entry((status, view.to_owned(), method.to_owned())).or_default() += 1;
         if c.latency.is_empty() {
             c.latency = vec![0; BUCKETS.len()];
         }
@@ -110,7 +110,7 @@ impl Metrics {
         }
         c.latency_sum += secs;
         c.latency_by_view
-            .entry((view.to_string(), method.to_string()))
+            .entry((view.to_owned(), method.to_owned()))
             .or_insert_with(|| Hist::new(BUCKETS.to_vec()))
             .observe(secs);
         c.request_bytes.get_or_insert_with(|| Hist::new(byte_buckets())).observe(bytes_in as f64);
@@ -121,13 +121,13 @@ impl Metrics {
     }
 
     /// Count one notification call by its outcome (`success`, `failure`, ...).
-    pub fn notified(&self, status: &'static str) {
+    pub(super) fn notified(&self, status: &'static str) {
         if let Ok(mut c) = self.inner.lock() {
             *c.notifications.entry(status).or_default() += 1;
         }
     }
 
-    pub fn render(&self) -> String {
+    pub(super) fn render(&self) -> String {
         let Ok(c) = self.inner.lock() else { return String::new() };
         let mut o = String::new();
         let counter = |o: &mut String, name: &str, help: &str| {

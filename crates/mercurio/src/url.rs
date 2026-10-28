@@ -145,7 +145,7 @@ impl fmt::Debug for ParsedUrl {
 
 /// Options for [`parse_url_with`].
 #[derive(Debug, Clone, Copy)]
-pub struct ParseOptions {
+pub(crate) struct ParseOptions {
     /// Validate the host as a hostname or IP address.
     pub verify_host: bool,
     /// Reject ports outside 1-65535; with `verify_host` off, keep a non-numeric port in `port_raw` instead of the host.
@@ -161,7 +161,7 @@ impl Default for ParseOptions {
 }
 
 /// Parse with default options (`verify_host = true`).
-pub fn parse_url(url: &str) -> Option<ParsedUrl> {
+pub(crate) fn parse_url(url: &str) -> Option<ParsedUrl> {
     parse_url_with(url, ParseOptions::default())
 }
 
@@ -171,7 +171,7 @@ pub fn parse_url_unverified(url: &str) -> Option<ParsedUrl> {
 }
 
 /// Parse `url` with explicit [`ParseOptions`]. `None` when it is not a notification URL.
-pub fn parse_url_with(url: &str, opts: ParseOptions) -> Option<ParsedUrl> {
+pub(crate) fn parse_url_with(url: &str, opts: ParseOptions) -> Option<ParsedUrl> {
     let mut r = parse_raw(url, "unknown", opts)?;
     post_process(&mut r);
     Some(r)
@@ -219,9 +219,9 @@ pub(crate) fn fullpath_keeping_encoded_slashes(u: &ParsedUrl) -> Option<String> 
 fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<ParsedUrl> {
     let caps = url_parts(url)?;
     let scheme =
-        caps.name("schema").map(|m| m.as_str().trim().to_lowercase()).unwrap_or_else(|| default_schema.to_string());
-    let host_part = caps.name("path").map(|m| m.as_str().trim().to_string()).unwrap_or_default();
-    let query_string = caps.name("query").map(|m| m.as_str().trim().to_string());
+        caps.name("schema").map(|m| m.as_str().trim().to_lowercase()).unwrap_or_else(|| default_schema.to_owned());
+    let host_part = caps.name("path").map(|m| m.as_str().trim().to_owned()).unwrap_or_default();
+    let query_string = caps.name("query").map(|m| m.as_str().trim().to_owned());
 
     let mut out = ParsedUrl {
         scheme,
@@ -249,7 +249,7 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
         retry: None,
         wait: None,
         optional: None,
-        original: url.to_string(),
+        original: url.to_owned(),
     };
 
     if let Some(qs) = query_string.as_deref().filter(|q| !q.is_empty()) {
@@ -260,15 +260,15 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
     let host_part =
         if host_part.contains(['\t', '\r', '\n']) { host_part.replace(['\t', '\r', '\n'], "") } else { host_part };
     let (netloc, rest) = split_netloc(&host_part);
-    out.host = netloc.trim().to_string();
+    out.host = netloc.trim().to_owned();
     // urlparse drops the fragment, the query and `;params` of the last segment.
     let fullpath = quoted_path(rest, url, false);
     if !fullpath.is_empty() {
         if let Some(i) = fullpath.rfind(['/', '\\']) {
             // Both separators are one byte, so `i + 1` is a char boundary.
             let (path, last) = fullpath.split_at(i + 1);
-            out.path = Some(path.to_string());
-            out.last_segment = Some(last).filter(|q| !q.is_empty()).map(str::to_string);
+            out.path = Some(path.to_owned());
+            out.last_segment = Some(last).filter(|q| !q.is_empty()).map(str::to_owned);
         }
         out.fullpath = Some(fullpath);
     }
@@ -277,8 +277,8 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
     {
         let parts: Vec<&str> = split_runs(&out.host, '@');
         if parts.len() >= 2 {
-            let user = parts[0].to_string();
-            let host = parts[1].to_string();
+            let user = parts[0].to_owned();
+            let host = parts[1].to_owned();
             out.user = Some(user);
             out.host = host;
         }
@@ -286,8 +286,8 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
     if let Some(user) = out.user.clone() {
         let parts: Vec<&str> = split_runs(&user, ':');
         if parts.len() >= 2 {
-            out.user = Some(parts[0].to_string());
-            out.password = Some(parts[1].to_string());
+            out.user = Some(parts[0].to_owned());
+            out.password = Some(parts[1].to_owned());
         }
     }
 
@@ -323,7 +323,7 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
         }
     } else if let (Some(text), None) = (&port_text, port_numeric) {
         if opts.strict_port {
-            out.port_raw = Some(text.trim().to_string());
+            out.port_raw = Some(text.trim().to_owned());
         } else {
             out.host = format!("{}:{}", out.host, text);
         }
@@ -416,20 +416,20 @@ fn parse_query_into(qs: &str, sanitize: bool, out: &mut ParsedUrl) {
             key.push_str(&chars.as_str().replace('+', " "));
         }
         let key = unquote(&key);
-        let val = value.to_string();
-        let val = unquote(&val).trim().to_string();
-        let qkey = if sanitize { key.to_lowercase().trim().to_string() } else { key.clone() };
+        let val = value.to_owned();
+        let val = unquote(&val).trim().to_owned();
+        let qkey = if sanitize { key.to_lowercase().trim().to_owned() } else { key.clone() };
         out.query.insert(qkey, val.clone());
 
         // ^( |\+)(?P<key>.*)\s*   (a leading space is what '+' becomes after unquote)
         if let Some(rest) = key.strip_prefix([' ', '+']) {
-            out.query_plus.insert(rest.to_string(), val.clone());
+            out.query_plus.insert(rest.to_owned(), val.clone());
         }
         if let Some(rest) = key.strip_prefix('-') {
-            out.query_minus.insert(rest.to_string(), val.clone());
+            out.query_minus.insert(rest.to_owned(), val.clone());
         }
         if let Some(rest) = key.strip_prefix(':') {
-            out.query_colon.insert(rest.to_string(), val.clone());
+            out.query_colon.insert(rest.to_owned(), val.clone());
         }
     }
 }
@@ -467,14 +467,14 @@ fn post_process(r: &mut ParsedUrl) {
         r.redirect = parse_bool(v, true);
     }
     if let Some(p) = r.query.get("password") {
-        r.password = Some(p.to_string());
+        r.password = Some(p.to_owned());
     }
     if let Some(p) = r.query.get("pass") {
-        r.password = Some(p.to_string());
+        r.password = Some(p.to_owned());
     }
     if let Some(u) = r.query.get("user") {
         let had_password = r.password.is_some();
-        r.user = Some(u.to_string());
+        r.user = Some(u.to_owned());
         if !had_password {
             // The original user@ becomes the password.
             if let Some(again) = parse_raw(&r.url, "unknown", ParseOptions::default()) {
@@ -504,7 +504,7 @@ fn post_process(r: &mut ParsedUrl) {
         }
     }
     if let Some(v) = r.query.get("tz") {
-        r.tz = Some(v.to_string());
+        r.tz = Some(v.to_owned());
     }
     if let Some(v) = r.query.get("retry").filter(|v| !v.is_empty()) {
         r.retry = v.trim().parse().ok();
@@ -573,18 +573,18 @@ impl ParsedUrl {
 }
 
 /// Split on whitespace, `,`, `/`, `\`.
-pub fn split_path(path: &str, unquote_parts: bool) -> Vec<String> {
+pub(crate) fn split_path(path: &str, unquote_parts: bool) -> Vec<String> {
     let re = regex!(r"[ \t\r\n,\\/]+");
     re.split(path.trim_start_matches('/'))
         .filter(|s| !s.is_empty())
-        .map(|s| if unquote_parts { unquote(s) } else { s.to_string() })
+        .map(|s| if unquote_parts { unquote(s) } else { s.to_owned() })
         .collect()
 }
 
 /// Percent-decoding (UTF-8; invalid bytes become U+FFFD; malformed escapes kept).
 pub fn unquote(s: &str) -> String {
     if !s.contains('%') {
-        return s.to_string();
+        return s.to_owned();
     }
     let b = s.as_bytes();
     let mut out = Vec::with_capacity(b.len());
@@ -610,10 +610,10 @@ pub fn unquote_plus(s: &str) -> String {
 }
 
 /// Characters left unescaped in URL paths.
-pub const PATH_SAFE: &str = "/:@!$&'()*+=";
+pub(crate) const PATH_SAFE: &str = "/:@!$&'()*+=";
 
 /// Percent-encoding: keeps ASCII alphanumerics, `_.-~` and the `safe` characters; percent-encodes UTF-8 bytes otherwise.
-pub fn quote(s: &str, safe: &str) -> String {
+pub(crate) fn quote(s: &str, safe: &str) -> String {
     let mut out = String::with_capacity(s.len());
     quote_into(&mut out, s, safe, false);
     out
@@ -636,7 +636,7 @@ fn quote_into(out: &mut String, s: &str, safe: &str, plus: bool) {
 }
 
 /// `application/x-www-form-urlencoded` encoding (form bodies and query strings).
-pub fn form_urlencode<'a, I, K, V>(pairs: I) -> String
+pub(crate) fn form_urlencode<'a, I, K, V>(pairs: I) -> String
 where
     I: IntoIterator<Item = &'a (K, V)>,
     K: AsRef<str> + 'a,
@@ -657,7 +657,7 @@ where
 }
 
 /// Extract the scheme from a URL. Same as matching `^\s*([a-zA-Z0-9]{1,32})://` (`\s` is Unicode whitespace).
-pub fn scheme_of(url: &str) -> Option<String> {
+pub(crate) fn scheme_of(url: &str) -> Option<String> {
     let rest = url.trim_start();
     let len = rest.bytes().take_while(u8::is_ascii_alphanumeric).count();
     let (scheme, tail) = rest.split_at(len);
@@ -668,9 +668,8 @@ pub fn scheme_of(url: &str) -> Option<String> {
 mod tests {
     #[test]
     fn common_timeouts_are_the_transport_defaults() {
-        let default = |k: &str| {
-            super::COMMON_PARAMS.iter().find(|p| p.key == k).map(|p| p.default.parse::<f64>().unwrap_or(-1.0))
-        };
+        let default =
+            |k: &str| COMMON_PARAMS.iter().find(|p| p.key == k).map(|p| p.default.parse::<f64>().unwrap_or(-1.0));
         assert_eq!(default("cto"), Some(crate::http::DEFAULT_CONNECT_TIMEOUT.as_secs_f64()));
         assert_eq!(default("rto"), Some(crate::http::DEFAULT_READ_TIMEOUT.as_secs_f64()));
     }

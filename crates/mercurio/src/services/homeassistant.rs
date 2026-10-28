@@ -9,7 +9,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, split_path, unquote};
 use crate::{Error, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "homeassistant",
     name: "HomeAssistant",
     schemes: &["hassio", "hassios"],
@@ -88,7 +88,7 @@ fn domain_service_entries(args: &[String]) -> Vec<String> {
                     entry.push(',');
                     entry.push_str(part);
                 }
-                _ => out.extend(current.replace(part.to_string())),
+                _ => out.extend(current.replace(part.to_owned())),
             }
         }
         out.extend(current);
@@ -101,7 +101,7 @@ fn domain_service_target(entry: &str) -> Option<Target> {
     let re = crate::regex!(r"(?i)^(?:(?P<domain>[a-z0-9_-]+)\.)?(?P<service>[a-z0-9_-]+)(?::(?P<targets>[a-z0-9_,-]+))?$");
     let c = re.captures(entry)?;
     Some(Target {
-        domain: c.name("domain").map_or(DEFAULT_DOMAIN, |m| m.as_str()).to_string(),
+        domain: c.name("domain").map_or(DEFAULT_DOMAIN, |m| m.as_str()).to_owned(),
         service: c["service"].to_string(),
         devices: c.name("targets").map(|m| parse_list([m.as_str()])).unwrap_or_default(),
     })

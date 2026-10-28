@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "evolution",
     name: "Evolution API",
     schemes: &["evolution", "evolutions"],
@@ -83,7 +83,7 @@ const WHATSAPP: Markup = Markup {
 };
 
 /// Markdown as WhatsApp text.
-pub fn commonmark_to_whatsapp(body: &str) -> String {
+pub(crate) fn commonmark_to_whatsapp(body: &str) -> String {
     crate::convert::markup::render(body, &WHATSAPP)
 }
 

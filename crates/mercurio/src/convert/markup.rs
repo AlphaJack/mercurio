@@ -6,7 +6,7 @@ use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, T
 /// How a service writes each Markdown construct.
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(not(feature = "markdown"), expect(dead_code, reason = "only the Markdown renderer reads the styling"))]
-pub struct Markup {
+pub(crate) struct Markup {
     pub bold: (&'static str, &'static str),
     pub italic: (&'static str, &'static str),
     pub strike: (&'static str, &'static str),
@@ -26,7 +26,7 @@ pub struct Markup {
 
 impl Markup {
     /// Plain text: markup dropped, links as `text (url)`.
-    pub const PLAIN: Markup = Markup {
+    pub(crate) const PLAIN: Markup = Markup {
         bold: ("", ""),
         italic: ("", ""),
         strike: ("", ""),
@@ -42,7 +42,7 @@ impl Markup {
     /// Standard Markdown, normalised (used where a service reads Markdown).
     #[cfg(test)]
     #[cfg(feature = "markdown")]
-    pub const MARKDOWN: Markup = Markup {
+    pub(crate) const MARKDOWN: Markup = Markup {
         bold: ("**", "**"),
         italic: ("*", "*"),
         strike: ("~~", "~~"),
@@ -57,24 +57,24 @@ impl Markup {
 }
 
 /// `[text](url)`.
-pub fn markdown_link(text: &str, url: &str) -> String {
-    if text.is_empty() { url.to_string() } else { format!("[{text}]({url})") }
+pub(crate) fn markdown_link(text: &str, url: &str) -> String {
+    if text.is_empty() { url.to_owned() } else { format!("[{text}]({url})") }
 }
 
 /// `text (url)`; the URL alone when it is also the text.
-pub fn plain_link(text: &str, url: &str) -> String {
-    if text.is_empty() || text == url { url.to_string() } else { format!("{text} ({url})") }
+pub(crate) fn plain_link(text: &str, url: &str) -> String {
+    if text.is_empty() || text == url { url.to_owned() } else { format!("{text} ({url})") }
 }
 
 /// Returns its input.
-pub fn same(s: &str) -> String {
-    s.to_string()
+pub(crate) fn same(s: &str) -> String {
+    s.to_owned()
 }
 
 /// Render `markdown` with `m`. Paragraphs are separated by a blank line, soft breaks stay line breaks, lists use `- ` / `1. `, quotes `> `, tables become ` | `-separated lines and raw HTML is escaped as text.
 #[cfg(feature = "markdown")]
 #[expect(clippy::wildcard_enum_match_arm, reason = "events and tags a dialect does not style are skipped")]
-pub fn render(markdown: &str, m: &Markup) -> String {
+pub(crate) fn render(markdown: &str, m: &Markup) -> String {
     let mut out = String::with_capacity(markdown.len());
     // Text collected for open links, with their URL.
     let mut links: Vec<(String, String)> = Vec::new();
@@ -219,12 +219,12 @@ pub fn render(markdown: &str, m: &Markup) -> String {
             _ => {}
         }
     }
-    out.trim_end().to_string()
+    out.trim_end().to_owned()
 }
 
 /// Without the `markdown` feature: `markdown` as literal text, escaped for `m`.
 #[cfg(not(feature = "markdown"))]
-pub fn render(markdown: &str, m: &Markup) -> String {
+pub(crate) fn render(markdown: &str, m: &Markup) -> String {
     super::markdown_unavailable();
     (m.escape)(markdown)
 }
@@ -235,7 +235,7 @@ fn heading_level(level: HeadingLevel) -> usize {
 }
 
 /// Remove CommonMark backslash escapes (`\*` becomes `*`).
-pub fn unescape(s: &str) -> String {
+pub(crate) fn unescape(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();
     while let Some(c) = chars.next() {
@@ -253,7 +253,7 @@ pub fn unescape(s: &str) -> String {
 }
 
 /// `# heading` lines become `**heading**`; everything else is unchanged. Lines inside code fences are left alone.
-pub fn headings_to_bold(markdown: &str) -> String {
+pub(crate) fn headings_to_bold(markdown: &str) -> String {
     let re = crate::regex!(r"^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$");
     let mut fence = false;
     let lines: Vec<String> = markdown
@@ -264,7 +264,7 @@ pub fn headings_to_bold(markdown: &str) -> String {
             }
             match re.captures(line) {
                 Some(c) if !fence => format!("**{}**", &c[1]),
-                _ => line.to_string(),
+                _ => line.to_owned(),
             }
         })
         .collect();
@@ -272,7 +272,7 @@ pub fn headings_to_bold(markdown: &str) -> String {
 }
 
 /// Split Markdown into a description and `(heading, content)` sections at `#` headings (as embed fields). Headings are cut to `name_max` chars and contents to `value_max`.
-pub fn sections(markdown: &str, name_max: usize, value_max: usize) -> (String, Vec<(String, String)>) {
+pub(crate) fn sections(markdown: &str, name_max: usize, value_max: usize) -> (String, Vec<(String, String)>) {
     let re = crate::regex!(r"^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$");
     let mut description = String::new();
     let mut fields: Vec<(String, String)> = Vec::new();
@@ -294,7 +294,7 @@ pub fn sections(markdown: &str, name_max: usize, value_max: usize) -> (String, V
     for (_, v) in &mut fields {
         *v = v.trim().chars().take(value_max).collect();
     }
-    (description.trim().to_string(), fields)
+    (description.trim().to_owned(), fields)
 }
 
 #[cfg(test)]

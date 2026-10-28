@@ -1,7 +1,7 @@
 //! Shared e-mail code: SMTP client, MIME builder and the e-mail engine used by `email` and `deltachat`.
 
-pub mod email;
-pub mod mime;
+pub(crate) mod email;
+pub(crate) mod mime;
 #[cfg(any(feature = "service-email-pgp", feature = "service-deltachat-pgp"))]
-pub mod pgp;
-pub mod smtp;
+pub(crate) mod pgp;
+pub(crate) mod smtp;

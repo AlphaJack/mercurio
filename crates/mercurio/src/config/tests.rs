@@ -60,7 +60,7 @@ fn yaml_template() {
     let c = load("template:\n  - target\n  - host: localhost\nurls:\n  - json://${HOST}/${TARGET}:\n      tag: t\n");
     let ConfigService::Pending(p) = &c.services[0] else { panic!("expected pending") };
     assert_eq!(p.template_names(), ["host", "target"]);
-    assert_eq!(p.template_required(), vec!["target".to_string()]);
+    assert_eq!(p.template_required(), vec!["target".to_owned()]);
     assert_eq!(p.url(), "json://${HOST}/${TARGET}");
     let t = p.resolve(&TemplateVars::new().no_environment().with("target", "xyz")).unwrap();
     assert_eq!(t.tags(), ["t"]);
@@ -71,10 +71,10 @@ fn yaml_template() {
 fn fold() {
     let mut w = Vec::new();
     let t = vec![
-        ("user".to_string(), Yaml::Str("me".into())),
-        ("+X-H".to_string(), Yaml::Str("a b".into())),
-        ("verify".to_string(), Yaml::Bool(false)),
-        ("x-bad".to_string(), Yaml::Int(1)),
+        ("user".to_owned(), Yaml::Str("me".into())),
+        ("+X-H".to_owned(), Yaml::Str("a b".into())),
+        ("verify".to_owned(), Yaml::Bool(false)),
+        ("x-bad".to_owned(), Yaml::Int(1)),
     ];
     let u = fold_url(Some("json://old@localhost:8080/p?a=1"), "json", &t, &mut w);
     assert_eq!(u, "json://me@localhost:8080/p?a=1&+X-H=a%20b&verify=no");

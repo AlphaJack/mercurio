@@ -113,7 +113,7 @@ impl ServiceDef {
 
     /// [`ServiceDef::text`], or the declared default.
     pub fn text_or_default(&self, u: &ParsedUrl, key: &str) -> String {
-        self.text(u, key).unwrap_or_else(|| self.default_of(key).to_string())
+        self.text(u, key).unwrap_or_else(|| self.default_of(key).to_owned())
     }
 
     /// A yes/no parameter: its value read with [`crate::parse::parse_bool`], falling back to the declared default (`Param::bool`).
@@ -392,7 +392,7 @@ impl Param {
                 serde_json::Value::Number(_) | serde_json::Value::Object(_) => false,
             };
             if !empty {
-                m.insert(k.to_string(), v);
+                m.insert(k.to_owned(), v);
             }
         };
         put("key", self.key.into());
@@ -669,6 +669,6 @@ impl From<String> for Secret {
 
 impl From<&str> for Secret {
     fn from(s: &str) -> Self {
-        Self(s.to_string())
+        Self(s.to_owned())
     }
 }

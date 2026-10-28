@@ -5,7 +5,7 @@ use quick_xml::events::{BytesRef, BytesStart, Event as XmlEvent};
 use crate::error::{Error, Result};
 
 /// Escape character data.
-pub fn text(s: &str) -> String {
+pub(super) fn text(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
@@ -20,7 +20,7 @@ pub fn text(s: &str) -> String {
 }
 
 /// Escape an attribute value (for either quote style).
-pub fn attr(s: &str) -> String {
+pub(super) fn attr(s: &str) -> String {
     text(s).replace('\'', "&apos;").replace('"', "&quot;")
 }
 
@@ -31,7 +31,7 @@ fn is_xml_char(c: char) -> bool {
 
 /// A parsed element.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct Element {
+pub(super) struct Element {
     /// Qualified name as written (`stream:features`, `iq`, ...).
     pub name: String,
     pub attrs: Vec<(String, String)>,
@@ -42,27 +42,27 @@ pub struct Element {
 
 impl Element {
     /// Name without its namespace prefix.
-    pub fn local(&self) -> &str {
+    pub(super) fn local(&self) -> &str {
         self.name.rsplit(':').next().unwrap_or(&self.name)
     }
 
-    pub fn attr(&self, key: &str) -> Option<&str> {
+    pub(super) fn attr(&self, key: &str) -> Option<&str> {
         self.attrs.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
     }
 
     /// First child with this local name.
-    pub fn child(&self, local: &str) -> Option<&Element> {
+    pub(super) fn child(&self, local: &str) -> Option<&Element> {
         self.children.iter().find(|c| c.local() == local)
     }
 
-    pub fn children_named<'a>(&'a self, local: &'a str) -> impl Iterator<Item = &'a Element> + 'a {
+    pub(super) fn children_named<'a>(&'a self, local: &'a str) -> impl Iterator<Item = &'a Element> + 'a {
         self.children.iter().filter(move |c| c.local() == local)
     }
 }
 
 /// One item read from the stream.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Event {
+pub(super) enum Event {
     /// `<stream:stream ...>` (attributes only; it stays open).
     Open(Element),
     /// A complete top-level stanza.
@@ -78,7 +78,7 @@ const MAX_DEPTH: usize = 64;
 
 /// Sans-IO parser of the server half of an XMPP stream: [`Parser::push`] received bytes, then take complete events one at a time with [`Parser::next_event`].
 #[derive(Default)]
-pub struct Parser {
+pub(super) struct Parser {
     pending: Vec<u8>,
     /// The stream header's name, once read.
     open: Option<String>,
@@ -103,11 +103,11 @@ fn xml_error(e: quick_xml::Error) -> Error {
 
 /// A start tag as an [`Element`] without children.
 fn element(start: &BytesStart<'_>) -> Result<Element> {
-    let mut el = Element { name: start.name().as_ref().to_string(), ..Element::default() };
+    let mut el = Element { name: start.name().as_ref().to_owned(), ..Element::default() };
     for a in start.attributes() {
         let a = a.map_err(|e| xml_error(e.into()))?;
         let value = a.normalized_value(quick_xml::XmlVersion::Implicit1_0).map_err(xml_error)?;
-        el.attrs.push((a.key.as_ref().to_string(), value.into_owned()));
+        el.attrs.push((a.key.as_ref().to_owned(), value.into_owned()));
     }
     Ok(el)
 }
@@ -168,7 +168,7 @@ fn parse(input: &[u8], stream: Option<&str>) -> Result<Parsed> {
                 }
             }
             XmlEvent::End(e) => {
-                let found = e.name().as_ref().to_string();
+                let found = e.name().as_ref().to_owned();
                 let expected = stack.last().map(|el| el.name.as_str()).or(stream);
                 if let Some(expected) = expected.filter(|x| *x != found) {
                     let ill = quick_xml::errors::IllFormedError::MismatchedEndTag { expected: expected.into(), found };
@@ -203,12 +203,12 @@ fn parse(input: &[u8], stream: Option<&str>) -> Result<Parsed> {
 
 impl Parser {
     /// Append bytes from the server.
-    pub fn push(&mut self, data: &[u8]) {
+    pub(super) fn push(&mut self, data: &[u8]) {
         self.pending.extend_from_slice(data);
     }
 
     /// The next complete event; `Ok(None)` until more bytes arrive.
-    pub fn next_event(&mut self) -> Result<Option<Event>> {
+    pub(super) fn next_event(&mut self) -> Result<Option<Event>> {
         match parse(&self.pending, self.open.as_deref())? {
             Parsed::Event(ev, used) => {
                 if let Event::Open(el) = &ev {
@@ -222,7 +222,7 @@ impl Parser {
     }
 
     /// What the stream ending now means: a syntax error if it ends inside markup, else a closed connection.
-    pub fn eof_error(&self) -> Error {
+    pub(super) fn eof_error(&self) -> Error {
         match parse(&self.pending, self.open.as_deref()) {
             Ok(Parsed::More(Some(e))) => xml_error(e),
             Ok(Parsed::More(None) | Parsed::Event(..)) => closed(),
@@ -231,12 +231,12 @@ impl Parser {
     }
 
     /// Whether bytes were received but not read yet.
-    pub fn has_unread(&self) -> bool {
+    pub(super) fn has_unread(&self) -> bool {
         !self.pending.is_empty()
     }
 
     /// Start over and expect a new stream header (after STARTTLS or SASL success). Unread bytes are dropped.
-    pub fn reset(&mut self) {
+    pub(super) fn reset(&mut self) {
         self.pending.clear();
         self.open = None;
     }

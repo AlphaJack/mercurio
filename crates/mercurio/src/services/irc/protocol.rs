@@ -2,7 +2,7 @@
 
 /// A parsed IRC line: `[":" prefix " "] command params [" :" trailing]`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IrcMessage {
+pub(super) struct IrcMessage {
     pub prefix: Option<String>,
     pub command: String,
     pub params: Vec<String>,
@@ -11,23 +11,23 @@ pub struct IrcMessage {
 
 impl IrcMessage {
     /// Three-digit numeric replies as an integer.
-    pub fn numeric(&self) -> Option<u16> {
+    pub(super) fn numeric(&self) -> Option<u16> {
         (self.command.len() == 3 && self.command.bytes().all(|b| b.is_ascii_digit()))
             .then(|| self.command.parse().ok())
             .flatten()
     }
 
-    pub fn is(&self, command: &str) -> bool {
+    pub(super) fn is(&self, command: &str) -> bool {
         self.command.eq_ignore_ascii_case(command)
     }
 
     /// Payload to echo in a PONG.
-    pub fn ping_payload(&self) -> &str {
+    pub(super) fn ping_payload(&self) -> &str {
         self.trailing.as_deref().or(self.params.first().map(String::as_str)).unwrap_or("")
     }
 
     /// Human readable error text.
-    pub fn error_text(&self) -> String {
+    pub(super) fn error_text(&self) -> String {
         match &self.trailing {
             Some(t) if !t.is_empty() => t.clone(),
             _ if !self.params.is_empty() => self.params.join(" "),
@@ -37,41 +37,41 @@ impl IrcMessage {
 }
 
 /// Parse one IRC line into prefix, command and parameters.
-pub fn parse_line(line: &str) -> IrcMessage {
+pub(super) fn parse_line(line: &str) -> IrcMessage {
     let raw = line.trim_end_matches(['\r', '\n']);
     let mut s = raw;
     let mut prefix = None;
     if let Some(rest) = s.strip_prefix(':') {
         match rest.split_once(' ') {
             Some((p, r)) => {
-                prefix = Some(p.to_string());
+                prefix = Some(p.to_owned());
                 s = r;
             }
             None => {
-                prefix = Some(rest.to_string());
+                prefix = Some(rest.to_owned());
                 s = "";
             }
         }
     }
     let mut trailing = None;
     if let Some((before, after)) = s.split_once(" :") {
-        trailing = Some(after.to_string());
+        trailing = Some(after.to_owned());
         s = before;
     }
     let mut bits = s.split_whitespace();
-    let command = bits.next().unwrap_or("").to_string();
-    let params = bits.map(str::to_string).collect();
+    let command = bits.next().unwrap_or("").to_owned();
+    let params = bits.map(str::to_owned).collect();
     IrcMessage { prefix, command, params, trailing }
 }
 
 /// Ensure a leading `#`.
-pub fn normalise_channel(name: &str) -> String {
+pub(super) fn normalise_channel(name: &str) -> String {
     let name = name.trim();
-    if name.is_empty() || name.starts_with('#') { name.to_string() } else { format!("#{name}") }
+    if name.is_empty() || name.starts_with('#') { name.to_owned() } else { format!("#{name}") }
 }
 
 /// Registration failures.
-pub fn register_error(n: u16) -> Option<&'static str> {
+pub(super) fn register_error(n: u16) -> Option<&'static str> {
     Some(match n {
         464 => "Password incorrect",
         465 => "Banned from server",
@@ -81,7 +81,7 @@ pub fn register_error(n: u16) -> Option<&'static str> {
 }
 
 /// Join failures.
-pub fn join_error(n: u16) -> Option<&'static str> {
+pub(super) fn join_error(n: u16) -> Option<&'static str> {
     Some(match n {
         403 => "No such channel",
         471 => "Channel is full",

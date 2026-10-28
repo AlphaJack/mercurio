@@ -64,8 +64,8 @@ pub(super) fn fold_url(
     let (user, host, port) = (get("user"), get("host"), get("port"));
     let base = url.unwrap_or("");
     let (head, query) = match base.split_once('?') {
-        Some((h, q)) => (h.to_string(), q.to_string()),
-        None => (base.to_string(), String::new()),
+        Some((h, q)) => (h.to_owned(), q.to_owned()),
+        None => (base.to_owned(), String::new()),
     };
     let head = if url.is_none() || user.is_some() || password.is_some() || host.is_some() || port.is_some() {
         let parsed = url.and_then(parse_url_unverified);
@@ -159,7 +159,7 @@ pub(super) fn fold_url(
 
 /// String-keyed view of a YAML mapping (non-string keys are skipped).
 pub(super) fn str_items(m: &[(Yaml, Yaml)]) -> Vec<(String, Yaml)> {
-    m.iter().filter_map(|(k, v)| k.as_str().map(|k| (k.to_string(), v.clone()))).collect()
+    m.iter().filter_map(|(k, v)| k.as_str().map(|k| (k.to_owned(), v.clone()))).collect()
 }
 
 /// Merge `b` over `a`: existing keys keep their position and take the new value, new keys are appended.

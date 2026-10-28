@@ -13,7 +13,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushward",
     name: "PushWard",
     schemes: &["pushward"],
@@ -81,7 +81,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let volume = match u.param_nonempty("volume") {
         Some(v) => {
             let f: f64 =
-                unquote(v).trim().parse().map_err(|_| SERVICE.err("an invalid PushWard volume was specified"))?;
+                unquote(v).trim().parse().ok().ok_or_else(|| SERVICE.err("an invalid PushWard volume was specified"))?;
             if !(0.0..=1.0).contains(&f) {
                 return Err(SERVICE.err("an invalid PushWard volume was specified"));
             }

@@ -5,20 +5,20 @@
 use serde_json::{Map, Value};
 
 /// `true` for an Alertmanager or Grafana webhook payload that carries no notification body of its own.
-pub fn is_alert_payload(data: &Map<String, Value>) -> bool {
+pub(super) fn is_alert_payload(data: &Map<String, Value>) -> bool {
     !data.contains_key("body")
         && data.get("alerts").is_some_and(Value::is_array)
         && data.get("status").is_some_and(Value::is_string)
 }
 
 /// Fill `title`, `body`, `type` and `format` from the webhook fields; fields already set are kept.
-pub fn convert(data: &mut Map<String, Value>) {
+pub(super) fn convert(data: &mut Map<String, Value>) {
     let status = data.get("status").and_then(Value::as_str).unwrap_or("").to_lowercase();
     let alerts: Vec<Value> = data.get("alerts").and_then(Value::as_array).cloned().unwrap_or_default();
     let title = text(data, "title").unwrap_or_else(|| subject(data, &status, &alerts));
     let body = text(data, "message").unwrap_or_else(|| alert_lines(&alerts).join("\n"));
     let kind = kind(data, &status, &alerts);
-    for (k, v) in [("title", title), ("body", body), ("type", kind.to_string()), ("format", "text".to_string())] {
+    for (k, v) in [("title", title), ("body", body), ("type", kind.to_owned()), ("format", "text".to_owned())] {
         if !data.get(k).is_some_and(|v| v.as_str().is_some_and(|s| !s.is_empty())) {
             data.insert(k.into(), Value::String(v));
         }
@@ -26,7 +26,7 @@ pub fn convert(data: &mut Map<String, Value>) {
 }
 
 fn text(data: &Map<String, Value>, key: &str) -> Option<String> {
-    data.get(key).and_then(Value::as_str).filter(|s| !s.trim().is_empty()).map(str::to_string)
+    data.get(key).and_then(Value::as_str).filter(|s| !s.trim().is_empty()).map(str::to_owned)
 }
 
 /// The values of a label set, sorted by label name.
@@ -34,7 +34,7 @@ fn values(labels: Option<&Value>, skip: &Map<String, Value>) -> Vec<String> {
     let Some(Value::Object(m)) = labels else { return Vec::new() };
     let mut pairs: Vec<(&String, &Value)> = m.iter().filter(|(k, _)| !skip.contains_key(*k)).collect();
     pairs.sort_by(|a, b| a.0.cmp(b.0));
-    pairs.into_iter().map(|(_, v)| v.as_str().map_or_else(|| v.to_string(), str::to_string)).collect()
+    pairs.into_iter().map(|(_, v)| v.as_str().map_or_else(|| v.to_string(), str::to_owned)).collect()
 }
 
 /// Alertmanager's default `__subject`: `[STATUS:firing count] group label values (other common label values)`.
@@ -58,7 +58,7 @@ fn subject(data: &Map<String, Value>, status: &str, alerts: &[Value]) -> String 
 /// One line per alert, `[FIRING] name: summary`, with the description on the next line.
 fn alert_lines(alerts: &[Value]) -> Vec<String> {
     let field = |a: &Value, set: &str, key: &str| {
-        a.get(set).and_then(|s| s.get(key)).and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string)
+        a.get(set).and_then(|s| s.get(key)).and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_owned)
     };
     let mut lines = Vec::new();
     for a in alerts {
@@ -150,7 +150,7 @@ mod tests {
         let firing = |sev: Value| {
             let mut d = obj(json!({"status": "firing", "alerts": [{"status": "firing", "labels": {"severity": sev}}]}));
             convert(&mut d);
-            d["type"].as_str().unwrap().to_string()
+            d["type"].as_str().unwrap().to_owned()
         };
         assert_eq!(firing(json!("warning")), "warning");
         assert_eq!(firing(json!("info")), "info");

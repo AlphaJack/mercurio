@@ -11,7 +11,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pingram",
     name: "Pingram",
     schemes: &["pingram"],
@@ -140,7 +140,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let cc = SERVICE.text(u, "cc");
     let bcc = SERVICE.text(u, "bcc");
-    let tokens: Vec<(String, String)> = u.query_colon.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+    let tokens: Vec<(String, String)> = u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
 
     let apikey = apikey
         .as_deref()
@@ -227,12 +227,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             continue;
         }
         if let Some(id) = match_id(&entry) {
-            if cur.id.is_none() {
-                cur.id = Some(id);
-            } else {
+            if cur.id.is_some() {
                 recipients.push(std::mem::take(&mut cur));
-                cur.id = Some(id);
             }
+            cur.id = Some(id);
             continue;
         }
         crate::warning!("Pingram: dropped an invalid target");
@@ -291,9 +289,9 @@ impl Pingram {
         } else {
             // SMS and calls need text: derive it from an HTML body.
             let text_owned =
-                if msg.format == NotifyFormat::Html { crate::convert::html_to_text(msg.body) } else { msg.body.to_string() };
+                if msg.format == NotifyFormat::Html { crate::convert::html_to_text(msg.body) } else { msg.body.to_owned() };
             let text_body = text_owned.as_str();
-            let joined = if title.is_empty() { text_body.to_string() } else { format!("{title}\n{text_body}") };
+            let joined = if title.is_empty() { text_body.to_owned() } else { format!("{title}\n{text_body}") };
             for ch in &self.channels {
                 let v = match ch.as_str() {
                     "sms" | "call" => json!({"message": joined}),
@@ -301,7 +299,7 @@ impl Pingram {
                         let html = if msg.format != NotifyFormat::Html {
                             crate::convert::text_to_html(msg.body)
                         } else {
-                            msg.body.to_string()
+                            msg.body.to_owned()
                         };
                         let mut e = json!({"subject": title_or_app, "html": html});
                         if let Some((addr, name)) = &self.from {

@@ -303,7 +303,7 @@ async fn authorize(
     let auth = &server.s.auth;
     let (role, admitted) = {
         // `Request` is not `Sync`: no reference to it may live across the `await` below.
-        let header = |name| request.headers().get(name).map(|v| http::decode_header(v.as_bytes()).trim().to_string());
+        let header = |name| request.headers().get(name).map(|v| http::decode_header(v.as_bytes()).trim().to_owned());
         let role = if !auth.required {
             Role::Open
         } else if auth.is_admin(header("authorization").and_then(|h| http::basic_auth(&h)).as_ref()) {
@@ -341,9 +341,9 @@ async fn observe(
     let event = http::RequestEvent::shared();
     request.extensions_mut().insert(event.clone());
     let method = request.method().as_str().to_ascii_uppercase();
-    let route = request.extensions().get::<axum::extract::MatchedPath>().map(|p| p.as_str().to_string());
+    let route = request.extensions().get::<axum::extract::MatchedPath>().map(|p| p.as_str().to_owned());
     let (apprise_id, recursion, bytes_in) = {
-        let header = |name| request.headers().get(name).map(|v| http::decode_header(v.as_bytes()).trim().to_string());
+        let header = |name| request.headers().get(name).map(|v| http::decode_header(v.as_bytes()).trim().to_owned());
         let bytes_in = header("content-length").and_then(|v| v.parse::<u64>().ok());
         (header("x-apprise-id"), header("x-apprise-recursion-count"), bytes_in)
     };

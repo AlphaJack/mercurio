@@ -3,16 +3,16 @@
 use pulldown_cmark::{Event, Options, Parser, html};
 
 /// Markdown to HTML with soft breaks as `<br />`, tables and strike-through.
-pub fn markdown_to_html(content: &str) -> String {
+pub(super) fn markdown_to_html(content: &str) -> String {
     markdown_to_html_with(content, true, true)
 }
 
 /// Markdown to HTML without extensions.
-pub fn markdown_to_html_plain(content: &str) -> String {
+pub(super) fn markdown_to_html_plain(content: &str) -> String {
     markdown_to_html_with(content, false, false)
 }
 
-pub fn markdown_to_html_with(content: &str, nl2br: bool, tables: bool) -> String {
+pub(super) fn markdown_to_html_with(content: &str, nl2br: bool, tables: bool) -> String {
     let mut opts = Options::empty();
     if tables {
         opts.insert(Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH);

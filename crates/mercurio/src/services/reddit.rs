@@ -24,7 +24,7 @@ use crate::url::{ParsedUrl, parse_url, unquote};
 use crate::util::{json_int, json_text, json_has_value};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "reddit",
     name: "Reddit",
     schemes: &["reddit"],
@@ -98,7 +98,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
     let kind = match u.param_nonempty("kind") {
         Some(k) => unquote(&k.trim().to_lowercase()),
-        None => "auto".to_string(),
+        None => "auto".to_owned(),
     };
     let nsfw = SERVICE.flag(u, "nsfw");
     let resubmit = SERVICE.flag(u, "resubmit");
@@ -143,7 +143,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid Reddit App Secret was specified"))?;
     let subreddits = parse_list(targets)
         .into_iter()
-        .map(|s| s.trim_start_matches('#').to_string())
+        .map(|s| s.trim_start_matches('#').to_owned())
         .filter(|s| !s.is_empty())
         .collect();
 
@@ -260,9 +260,9 @@ fn login(creds: Arc<Creds>, next: Next) -> Plan {
     }
     let store = creds.store.clone();
     let payload = vec![
-        ("grant_type".to_string(), "password".to_string()),
-        ("username".to_string(), creds.user.clone()),
-        ("password".to_string(), creds.password.expose().to_string()),
+        ("grant_type".to_owned(), "password".to_owned()),
+        ("username".to_owned(), creds.user.clone()),
+        ("password".to_owned(), creds.password.expose().to_owned()),
     ];
     fetch(
         creds,
@@ -323,7 +323,7 @@ impl Notify for Reddit {
         let link = if msg.format == NotifyFormat::Markdown && !msg.passthrough {
             crate::convert::markup::unescape(msg.body)
         } else {
-            msg.body.to_string()
+            msg.body.to_owned()
         };
         let kind = if self.kind == "auto" {
             match parse_url(&link) {
@@ -344,8 +344,8 @@ impl Notify for Reddit {
                     ("api_type".into(), "json".into()),
                     ("extension".into(), "json".into()),
                     ("sr".into(), sr.clone()),
-                    ("title".into(), title.to_string()),
-                    ("kind".into(), kind.to_string()),
+                    ("title".into(), title.to_owned()),
+                    ("kind".into(), kind.to_owned()),
                     ("nsfw".into(), self.nsfw.to_string()),
                     ("resubmit".into(), self.resubmit.to_string()),
                     ("sendreplies".into(), true.to_string()),
@@ -360,7 +360,7 @@ impl Notify for Reddit {
                 if kind == "link" {
                     p.push(("url".into(), link.clone()));
                 } else {
-                    p.push(("text".into(), msg.body.to_string()));
+                    p.push(("text".into(), msg.body.to_owned()));
                 }
                 (sr.clone(), p)
             })
@@ -368,7 +368,7 @@ impl Notify for Reddit {
         let subs = Arc::new(subs);
         let creds = Arc::new(Creds {
             store: Some(ctx.store()),
-            user_agent: ctx.app_id().to_string(),
+            user_agent: ctx.app_id().to_owned(),
             env: ctx.env().clone(),
             ..(*self.creds).clone()
         });

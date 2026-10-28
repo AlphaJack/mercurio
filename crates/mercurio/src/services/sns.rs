@@ -14,7 +14,7 @@ use crate::services::_aws::{AWS_FORM_CONTENT_TYPE, AwsSigner, aws_check, aws_reg
 use crate::url::{ParsedUrl, form_urlencode, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "sns",
     name: "AWS Simple Notification Service (SNS)",
     schemes: &["sns"],
@@ -190,18 +190,18 @@ impl Notify for Arc<Sns> {
         if self.phones.is_empty() && self.topics.is_empty() {
             return Plan::Fail(Error::Message("no AWS targets to notify".into()));
         }
-        let ua = ctx.app_id().to_string();
+        let ua = ctx.app_id().to_owned();
         let mut plans = Vec::new();
         for no in &self.phones {
             let message = if self.mode == Mode::Topic && !msg.title.is_empty() {
                 format!("{}\r\n{}", msg.title, msg.body)
             } else {
-                msg.body.to_string()
+                msg.body.to_owned()
             };
             let payload = vec![
-                ("Action", "Publish".to_string()),
+                ("Action", "Publish".to_owned()),
                 ("Message", message),
-                ("Version", "2010-03-31".to_string()),
+                ("Version", "2010-03-31".to_owned()),
                 ("PhoneNumber", no.clone()),
             ];
             let (me, ua, env) = (self.clone(), ua.clone(), ctx.env().clone());
@@ -216,11 +216,11 @@ impl Notify for Arc<Sns> {
             );
         }
         for topic in &self.topics {
-            let body = msg.body.to_string();
+            let body = msg.body.to_owned();
             let subject = (self.mode == Mode::Topic && !msg.title.is_empty()).then(|| subject(msg.title));
             let payload = vec![
-                ("Action", "CreateTopic".to_string()),
-                ("Version", "2010-03-31".to_string()),
+                ("Action", "CreateTopic".to_owned()),
+                ("Version", "2010-03-31".to_owned()),
                 ("Name", topic.clone()),
             ];
             let (me, ua, env) = (self.clone(), ua.clone(), ctx.env().clone());
@@ -239,8 +239,8 @@ impl Notify for Arc<Sns> {
                             return Plan::Fail(Error::service("could not acquire the AWS topic ARN"));
                         };
                         let mut payload = vec![
-                            ("Action", "Publish".to_string()),
-                            ("Version", "2010-03-31".to_string()),
+                            ("Action", "Publish".to_owned()),
+                            ("Version", "2010-03-31".to_owned()),
                             ("TopicArn", arn),
                             ("Message", body),
                         ];

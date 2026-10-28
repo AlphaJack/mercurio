@@ -13,7 +13,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushbullet",
     name: "Pushbullet",
     schemes: &["pbul"],
@@ -137,7 +137,7 @@ fn upload_all(api: Api, mut pending: Vec<Upload>, mut done: Vec<Value>, finish: 
             if is_image {
                 payload["image_url"] = file_url;
             }
-            let upload_url = resp.get("upload_url")?.as_str()?.to_string();
+            let upload_url = resp.get("upload_url")?.as_str()?.to_owned();
             Some((payload, upload_url))
         })();
         let Some((payload, upload_url)) = parsed else {
@@ -155,7 +155,7 @@ fn upload_all(api: Api, mut pending: Vec<Upload>, mut done: Vec<Value>, finish: 
 
 impl Notify for PushBullet {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let api = Api { token: self.token.expose().to_string(), app_id: ctx.app_id().to_string(), env: ctx.env().clone() };
+        let api = Api { token: self.token.expose().to_owned(), app_id: ctx.app_id().to_owned(), env: ctx.env().clone() };
         let uploads: Vec<Upload> = msg
             .attachments
             .iter()
@@ -167,15 +167,15 @@ impl Notify for PushBullet {
                 data: a.data.to_vec(),
             })
             .collect();
-        let title = msg.title.to_string();
-        let body = msg.body.to_string();
+        let title = msg.title.to_owned();
+        let body = msg.body.to_owned();
         let targets = self.targets.clone();
         let push_api = api.clone();
         let finish: Finish = Box::new(move |files: Vec<Value>| {
             Plan::all(targets.into_iter().map(|recipient| {
                 let mut payload = json!({"type": "note", "title": title, "body": body});
                 let label = match &recipient {
-                    Recipient::All => "ALL_DEVICES".to_string(),
+                    Recipient::All => "ALL_DEVICES".to_owned(),
                     Recipient::Target(t) => t.clone(),
                 };
                 if let Recipient::Target(t) = &recipient {

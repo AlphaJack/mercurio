@@ -9,7 +9,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::{json_has_value, parse_int};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushy",
     name: "Pushy",
     schemes: &["pushy"],
@@ -49,7 +49,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let sound = SERVICE.text(u, "sound");
     let badge = u.param_nonempty("badge").map(|b| unquote(b.trim()));
     if let Some(k) = u.param_nonempty("key") {
-        apikey = k.to_string();
+        apikey = k.to_owned();
     }
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list([to]));
@@ -113,8 +113,7 @@ impl Notify for Pushy {
                         Ok(())
                     })
                     .target(label)
-                })
-                .collect::<Vec<_>>(),
+                }),
         )
     }
 

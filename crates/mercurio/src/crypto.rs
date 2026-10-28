@@ -4,7 +4,7 @@ use base64::Engine;
 use ring::{digest, hmac};
 
 /// Format 16 random bytes as an RFC 4122 version 4 UUID (see [`crate::Env::uuid4`]).
-pub fn uuid_v4(mut b: [u8; 16]) -> String {
+pub(crate) fn uuid_v4(mut b: [u8; 16]) -> String {
     b[6] = (b[6] & 0x0f) | 0x40;
     b[8] = (b[8] & 0x3f) | 0x80;
     let h = hex(&b);
@@ -16,31 +16,31 @@ pub fn uuid_v4(mut b: [u8; 16]) -> String {
 }
 
 /// Lower-case hex encoding.
-pub fn hex(data: &[u8]) -> String {
+pub(crate) fn hex(data: &[u8]) -> String {
     data.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// Hex decoding; pairs that are not hex digits are skipped, as is an odd last digit.
-pub fn unhex(s: &str) -> Vec<u8> {
+pub(crate) fn unhex(s: &str) -> Vec<u8> {
     let (pairs, _) = s.as_bytes().as_chunks::<2>();
     pairs.iter().filter_map(|p| u8::from_str_radix(std::str::from_utf8(p).ok()?, 16).ok()).collect()
 }
 
 /// SHA-1 digest (legacy signatures only).
-pub fn sha1(data: &[u8]) -> Vec<u8> {
+pub(crate) fn sha1(data: &[u8]) -> Vec<u8> {
     digest::digest(&digest::SHA1_FOR_LEGACY_USE_ONLY, data).as_ref().to_vec()
 }
 /// SHA-256 digest.
-pub fn sha256(data: &[u8]) -> Vec<u8> {
+pub(crate) fn sha256(data: &[u8]) -> Vec<u8> {
     digest::digest(&digest::SHA256, data).as_ref().to_vec()
 }
 /// SHA-512 digest.
-pub fn sha512(data: &[u8]) -> Vec<u8> {
+pub(crate) fn sha512(data: &[u8]) -> Vec<u8> {
     digest::digest(&digest::SHA512, data).as_ref().to_vec()
 }
 
 /// MD5 digest (RFC 1321; legacy logins only). `ring` has no MD5, and the RustCrypto crate would add a dozen crates for these few lines.
-pub fn md5(data: &[u8]) -> [u8; 16] {
+pub(crate) fn md5(data: &[u8]) -> [u8; 16] {
     const S: [u32; 64] = [
         7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14,
         20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6,
@@ -92,7 +92,7 @@ pub fn md5(data: &[u8]) -> [u8; 16] {
 }
 
 /// HMAC-SHA1 of `data` with `key` (legacy signatures only).
-pub fn hmac_sha1(key: &[u8], data: &[u8]) -> Vec<u8> {
+pub(crate) fn hmac_sha1(key: &[u8], data: &[u8]) -> Vec<u8> {
     hmac::sign(&hmac::Key::new(hmac::HMAC_SHA1_FOR_LEGACY_USE_ONLY, key), data).as_ref().to_vec()
 }
 /// HMAC-SHA256 of `data` with `key`.
@@ -100,7 +100,7 @@ pub fn hmac_sha256(key: &[u8], data: &[u8]) -> Vec<u8> {
     hmac::sign(&hmac::Key::new(hmac::HMAC_SHA256, key), data).as_ref().to_vec()
 }
 /// HMAC-SHA512 of `data` with `key`.
-pub fn hmac_sha512(key: &[u8], data: &[u8]) -> Vec<u8> {
+pub(crate) fn hmac_sha512(key: &[u8], data: &[u8]) -> Vec<u8> {
     hmac::sign(&hmac::Key::new(hmac::HMAC_SHA512, key), data).as_ref().to_vec()
 }
 
@@ -109,7 +109,7 @@ pub fn b64(data: &[u8]) -> String {
     base64::engine::general_purpose::STANDARD.encode(data)
 }
 /// URL-safe base64 without padding.
-pub fn b64_url_nopad(data: &[u8]) -> String {
+pub(crate) fn b64_url_nopad(data: &[u8]) -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(data)
 }
 /// Decode standard base64 (surrounding whitespace ignored); `None` if invalid.
@@ -117,7 +117,7 @@ pub fn b64_decode(s: &str) -> Option<Vec<u8>> {
     base64::engine::general_purpose::STANDARD.decode(s.trim()).ok()
 }
 /// Decode URL-safe base64, with or without padding; `None` if invalid.
-pub fn b64_url_decode(s: &str) -> Option<Vec<u8>> {
+pub(crate) fn b64_url_decode(s: &str) -> Option<Vec<u8>> {
     let s = s.trim().trim_end_matches('=');
     base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(s).ok()
 }

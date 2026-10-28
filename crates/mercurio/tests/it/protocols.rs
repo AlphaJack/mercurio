@@ -86,10 +86,10 @@ fn mqtt_qos1_round_trip() {
     assert_eq!(
         seen,
         vec![
-            "CONNECT MQTT 4 0xc2 [] user:pass".to_string(),
-            "PUBLISH 0x33 a/topic \"Title\\r\\nBody\"".to_string(),
-            "PUBLISH 0x33 b/topic \"Title\\r\\nBody\"".to_string(),
-            "DISCONNECT".to_string(),
+            "CONNECT MQTT 4 0xc2 [] user:pass".to_owned(),
+            "PUBLISH 0x33 a/topic \"Title\\r\\nBody\"".to_owned(),
+            "PUBLISH 0x33 b/topic \"Title\\r\\nBody\"".to_owned(),
+            "DISCONNECT".to_owned(),
         ]
     );
 }
@@ -205,7 +205,7 @@ fn loopback(advertise_starttls: bool, starttls_reply: &'static str) -> (u16, thr
             if reader.read_line(&mut line).unwrap_or(0) == 0 {
                 break;
             }
-            let line = line.trim_end_matches(['\r', '\n']).to_string();
+            let line = line.trim_end_matches(['\r', '\n']).to_owned();
             lines.push(line.clone());
             if in_data {
                 if line == "." {
@@ -250,8 +250,8 @@ fn loopback_plain_delivery() {
     let lines = server.join().unwrap();
     assert!(lines[0].starts_with("EHLO "));
     assert!(lines.contains(&format!("AUTH PLAIN {}", mercurio::__private::b64(b"\0bob\0pw"))), "{lines:?}");
-    assert!(lines.contains(&"MAIL FROM:<bob@example.com>".to_string()), "{lines:?}");
-    assert!(lines.contains(&"RCPT TO:<alice@example.com>".to_string()));
+    assert!(lines.contains(&"MAIL FROM:<bob@example.com>".to_owned()), "{lines:?}");
+    assert!(lines.contains(&"RCPT TO:<alice@example.com>".to_owned()));
     let start = lines.iter().position(|l| l == "DATA").unwrap() + 1;
     let end = lines.iter().rposition(|l| l == ".").unwrap();
     let raw: String = lines[start..end].iter().map(|l| format!("{}\r\n", l.strip_prefix('.').unwrap_or(l))).collect();
@@ -280,7 +280,7 @@ fn loopback_starttls_rejected() {
     let d = t.send(&Message::new("hi"), &BlockingTransport::new(), &Asset::default());
     assert!(!d.is_success());
     let lines = server.join().unwrap();
-    assert!(lines.contains(&"STARTTLS".to_string()));
+    assert!(lines.contains(&"STARTTLS".to_owned()));
     assert!(lines.iter().all(|l| !l.starts_with("AUTH") && !l.starts_with("MAIL")), "{lines:?}");
 }
 

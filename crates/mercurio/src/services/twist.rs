@@ -16,7 +16,7 @@ use crate::url::ParsedUrl;
 use crate::util::{json_text, json_has_value};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "twist",
     name: "Twist",
     schemes: &["twist"],
@@ -108,7 +108,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         }
     }
     if channels.is_empty() && channel_ids.is_empty() {
-        channels.insert("general".to_string());
+        channels.insert("general".to_owned());
     }
     Ok(Box::new(Twist {
         email,
@@ -241,7 +241,7 @@ fn do_login(r: R, k: K<bool>) -> Plan {
         s.channel_cache.clear();
     });
     let payload =
-        vec![("email".to_string(), r.email.clone()), ("password".to_string(), r.password.expose().to_string())];
+        vec![("email".to_owned(), r.email.clone()), ("password".to_owned(), r.password.expose().to_owned())];
     fetch(
         r,
         "users/login",
@@ -411,11 +411,11 @@ fn post_all(r: R) -> Plan {
         };
         let name = c["name"].to_string();
         let digits = c["channel"].trim_start_matches('0');
-        let channel_id = if digits.is_empty() { "0".to_string() } else { digits.to_string() };
+        let channel_id = if digits.is_empty() { "0".to_owned() } else { digits.to_owned() };
         let payload = vec![
-            ("channel_id".to_string(), channel_id),
-            ("title".to_string(), r.title.clone()),
-            ("content".to_string(), r.body.clone()),
+            ("channel_id".to_owned(), channel_id),
+            ("title".to_owned(), r.title.clone()),
+            ("content".to_owned(), r.body.clone()),
         ];
         let r2 = r.clone();
         plans.push(
@@ -489,9 +489,9 @@ impl Twist {
         Arc::new(Run {
             email: self.email.clone(),
             password: self.password.clone(),
-            ua: ctx.app_id().to_string(),
-            title: title.to_string(),
-            body: body.to_string(),
+            ua: ctx.app_id().to_owned(),
+            title: title.to_owned(),
+            body: body.to_owned(),
             st: self.state.clone(),
         })
     }

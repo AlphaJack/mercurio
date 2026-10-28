@@ -10,7 +10,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "nextcloudtalk",
     name: "Nextcloud Talk",
     schemes: &["nctalk", "nctalks"],
@@ -90,7 +90,7 @@ impl Notify for NextcloudTalk {
             return Plan::Fail(Error::Service("there were no Nextcloud Talk targets to notify".into()));
         }
         let head = if msg.title.is_empty() { ctx.app_desc() } else { msg.title };
-        let message = if msg.body.is_empty() { head.to_string() } else { format!("{head}\r\n{}", msg.body) };
+        let message = if msg.body.is_empty() { head.to_owned() } else { format!("{head}\r\n{}", msg.body) };
         let mut payload = json!({"message": message});
         if self.silent {
             payload["silent"] = json!(true);

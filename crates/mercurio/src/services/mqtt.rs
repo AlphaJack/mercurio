@@ -20,7 +20,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "mqtt",
     name: "MQTT Notification",
     schemes: &["mqtt", "mqtts"],
@@ -59,7 +59,7 @@ const KEEPALIVE: u16 = 30;
 
 /// MQTT protocol levels (3.1, 3.1.1, 5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Version {
+pub(crate) enum Version {
     V31 = 3,
     V311 = 4,
     V5 = 5,
@@ -125,7 +125,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 /// MQTT "remaining length" variable byte integer (max 268,435,455).
-pub fn encode_varint(mut n: usize, out: &mut Vec<u8>) {
+pub(crate) fn encode_varint(mut n: usize, out: &mut Vec<u8>) {
     loop {
         let mut byte = (n % 128) as u8;
         n /= 128;
@@ -140,7 +140,7 @@ pub fn encode_varint(mut n: usize, out: &mut Vec<u8>) {
 }
 
 /// Decode a variable byte integer; returns (value, bytes used).
-pub fn decode_varint(data: &[u8]) -> Option<(usize, usize)> {
+pub(crate) fn decode_varint(data: &[u8]) -> Option<(usize, usize)> {
     let mut value = 0usize;
     let mut mult = 1usize;
     for (i, b) in data.iter().enumerate().take(4) {
@@ -167,7 +167,7 @@ fn packet(header: u8, body: &[u8]) -> Vec<u8> {
 }
 
 /// CONNECT packet.
-pub fn connect_packet(
+pub(crate) fn connect_packet(
     version: Version,
     client_id: &str,
     clean: bool,
@@ -204,7 +204,7 @@ pub fn connect_packet(
 }
 
 /// PUBLISH packet (`packet_id` is ignored for QoS 0).
-pub fn publish_packet(version: Version, topic: &str, payload: &[u8], qos: u8, retain: bool, packet_id: u16) -> Vec<u8> {
+pub(crate) fn publish_packet(version: Version, topic: &str, payload: &[u8], qos: u8, retain: bool, packet_id: u16) -> Vec<u8> {
     // The variable header is small; the payload is copied once, into the packet.
     let mut head = Vec::new();
     put_str(&mut head, topic.as_bytes());
@@ -224,7 +224,7 @@ pub fn publish_packet(version: Version, topic: &str, payload: &[u8], qos: u8, re
 
 /// A control packet read from the broker.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Packet {
+pub(crate) struct Packet {
     pub kind: u8,
     pub flags: u8,
     pub body: Vec<u8>,
@@ -451,7 +451,7 @@ impl Notify for Mqtt {
             client_id,
             clean: !self.session,
             user: self.user.clone(),
-            password: if self.user.is_some() { self.password.as_ref().map(|p| p.expose().to_string()) } else { None },
+            password: if self.user.is_some() { self.password.as_ref().map(|p| p.expose().to_owned()) } else { None },
             topics,
             payload,
             prebuilt,

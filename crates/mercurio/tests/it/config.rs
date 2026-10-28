@@ -35,7 +35,7 @@ fn tags_json(tags: &[Tag]) -> Value {
 }
 
 fn pairs(p: &mercurio::service::Pairs) -> Map<String, Value> {
-    p.iter().map(|(k, v)| (k.to_string(), json!(v))).collect()
+    p.iter().map(|(k, v)| (k.to_owned(), json!(v))).collect()
 }
 
 fn url_fields(url: &str) -> Value {
@@ -137,7 +137,7 @@ fn filter_of(expr: &Value) -> TagFilter {
                 .as_array()
                 .unwrap()
                 .iter()
-                .map(|g| g.as_array().unwrap().iter().map(|t| t.as_str().unwrap().to_string()).collect::<Vec<_>>()),
+                .map(|g| g.as_array().unwrap().iter().map(|t| t.as_str().unwrap().to_owned()).collect::<Vec<_>>()),
         ),
     }
 }
@@ -158,7 +158,7 @@ fn load_case(case: &Value, dir: &Path) -> Result<Config, String> {
     };
     let t = FakeTransport::new();
     // Windows `canonicalize` adds the `\\?\` verbatim prefix, whose `?` would start a URL query.
-    let dirs = dir.to_string_lossy().trim_start_matches(r"\\?\").to_string();
+    let dirs = dir.to_string_lossy().trim_start_matches(r"\\?\").to_owned();
     if let Some(files) = case["files"].as_object() {
         for (name, content) in files {
             std::fs::write(dir.join(name), content.as_str().unwrap().replace("{DIR}", &dirs)).unwrap();
@@ -236,7 +236,7 @@ fn check_case(case: &Value, exprs: &[Value], dir: &Path) -> Result<(), String> {
     let exp = &exp;
     let env: BTreeMap<String, String> = case["env"]
         .as_object()
-        .map(|m| m.iter().map(|(k, v)| (k.clone(), v.as_str().unwrap().to_string())).collect())
+        .map(|m| m.iter().map(|(k, v)| (k.clone(), v.as_str().unwrap().to_owned())).collect())
         .unwrap_or_default();
     let loaded = load_case(case, dir);
     let loaded_ok = loaded.is_ok();
@@ -250,7 +250,7 @@ fn check_case(case: &Value, exprs: &[Value], dir: &Path) -> Result<(), String> {
             .services
             .iter()
             .map(|s| match s {
-                ConfigService::Ready(t) => t.url().to_string(),
+                ConfigService::Ready(t) => t.url().to_owned(),
                 ConfigService::Pending(p) => format!("pending {}", p.url()),
             })
             .collect();

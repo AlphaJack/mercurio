@@ -28,7 +28,7 @@ use crate::transport::FileOp;
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "vapid",
     name: "Vapid Web Push Notifications",
     schemes: &["vapid"],
@@ -98,7 +98,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         None => format!("{user}@{host}"),
     };
     targets.extend(u.path_segments());
-    let mode = u.param("mode").map(str::to_string);
+    let mode = u.param("mode").map(str::to_owned);
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list_unquoted([to]));
     }
@@ -116,7 +116,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let subscriber = is_email(&subscriber)
         .map(|e| e.full_email)
         .ok_or_else(|| SERVICE.err("an invalid Vapid Subscriber was specified"))?;
-    let mode = mode.map_or_else(|| MODES[0].to_string(), |m| m.to_lowercase());
+    let mode = mode.map_or_else(|| MODES[0].to_owned(), |m| m.to_lowercase());
     if !MODES.contains(&mode.as_str()) {
         return Err(SERVICE.err("the Vapid mode specified is invalid"));
     }
@@ -323,7 +323,7 @@ fn valid_p256_point(point: &[u8]) -> bool {
 
 fn load_subscription(content: &Value) -> Option<Subscription> {
     let obj = content.as_object()?;
-    let endpoint = obj.get("endpoint")?.as_str()?.trim().to_string();
+    let endpoint = obj.get("endpoint")?.as_str()?.trim().to_owned();
     let origin = webpush_origin(&endpoint)?;
     let keys = obj.get("keys")?.as_object()?;
     let p256dh = uncompressed(b64_url_decode(keys.get("p256dh")?.as_str()?).filter(|k| !k.is_empty())?)?;
@@ -519,7 +519,7 @@ impl Notify for Vapid {
             dir.as_ref()
                 .map(|d| d.join("subscriptions.json"))
                 .filter(|p| ctx.stat(p).is_some_and(|m| m.is_file))
-                .and_then(|p| p.to_str().map(str::to_string))
+                .and_then(|p| p.to_str().map(str::to_owned))
         });
         let Some(loaded) = subfile.as_deref().and_then(|s| load_subscriptions(ctx, s)) else {
             return Plan::Fail(Error::Service("Vapid/WebPush subscriptions could not be loaded".into()));
@@ -531,7 +531,7 @@ impl Notify for Vapid {
         let retired: Vec<String> = ctx
             .store
             .get(RETIRED_KEY)
-            .and_then(|v| v.as_array().map(|a| a.iter().filter_map(|e| e.as_str().map(str::to_string)).collect()))
+            .and_then(|v| v.as_array().map(|a| a.iter().filter_map(|e| e.as_str().map(str::to_owned)).collect()))
             .unwrap_or_default();
         let tally = Arc::new(Mutex::new(Tally::default()));
         let now = ctx.env().unix_time();
@@ -638,7 +638,7 @@ mod tests {
     use ring::signature::{ECDSA_P256_SHA256_FIXED, UnparsedPublicKey as SigKey};
 
     fn b64d(s: &str) -> Vec<u8> {
-        crate::crypto::b64_url_decode(s).unwrap()
+        b64_url_decode(s).unwrap()
     }
 
     fn data(name: &str) -> String {
@@ -764,7 +764,7 @@ mod tests {
         let key = std::fs::read(data("vapid_private_key.pem")).unwrap();
         let subs = std::fs::read(data("vapid_subscriptions.json")).unwrap();
         let url = "vapid://user@example.com/user1?keyfile=https://keys.example/k.pem&subfile=https://keys.example/s.json";
-        let fake = crate::testing::FakeTransport::new();
+        let fake = FakeTransport::new();
         fake.on_url("keys.example/k.pem", crate::Response::new(200, key));
         fake.on_url("keys.example/s.json", crate::Response::new(200, subs));
         fake.default_response(crate::Response::new(201, Vec::new()));
@@ -778,7 +778,7 @@ mod tests {
         assert!(reqs.iter().any(|r| r.header_value("authorization").is_some_and(|a| a.starts_with("vapid "))), "a push was sent");
 
         // A key that cannot be downloaded fails the send.
-        let fake = crate::testing::FakeTransport::new();
+        let fake = FakeTransport::new();
         fake.on_url("keys.example", crate::Response::new(404, Vec::new()));
         assert!(!crate::parse(url).unwrap().send(&crate::Message::new("b"), &fake, &crate::Asset::default()).is_success());
     }

@@ -35,7 +35,7 @@ impl Session {
                 .get("m.homeserver")
                 .and_then(|h| h.get("base_url"))
                 .and_then(Value::as_str)
-                .map(|b| b.trim_end_matches('/').to_string())
+                .map(|b| b.trim_end_matches('/').to_owned())
                 .filter(|b| is_secure_http_url(b) && !b.contains('?'));
             let Some(base) = base else {
                 return s.discovery_failed("Base URI Discovery Failed (m.homeserver)", k);
@@ -52,7 +52,7 @@ impl Session {
                 let identity = id
                     .get("base_url")
                     .and_then(Value::as_str)
-                    .map(|b| b.trim_end_matches('/').to_string())
+                    .map(|b| b.trim_end_matches('/').to_owned())
                     .filter(|b| is_secure_http_url(b) && !b.contains('?'));
                 let Some(identity) = identity else {
                     return s.discovery_failed("Identity URI Discovery Failed", k);
@@ -100,7 +100,7 @@ impl Session {
         if non_empty(self.access_token.as_deref()) {
             return k(self, true);
         }
-        let (Some(user), Some(password)) = (self.cfg.user.clone(), self.password().map(str::to_string)) else {
+        let (Some(user), Some(password)) = (self.cfg.user.clone(), self.password().map(str::to_owned)) else {
             crate::warning!("Failed to login to Matrix server: token or user/pass combo is missing.");
             return k(self, false);
         };
@@ -176,7 +176,7 @@ impl Session {
     }
 
     /// Log out of a session kept in a memory store (persistent stores keep it for the next run). `None` when there is nothing to do.
-    pub fn logout(self) -> Option<Plan> {
+    pub(crate) fn logout(self) -> Option<Plan> {
         let token_is_password =
             self.access_token.is_some() && self.access_token.as_deref() == self.password() && self.cfg.user.is_none();
         if self.cfg.mode == Mode::T2bot

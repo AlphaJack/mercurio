@@ -1,6 +1,6 @@
 //! Generates the service registry and the per-fixture tests.
 //!
-//! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `service-<id>`, which `Cargo.toml` must declare and list in `all-services`. It must export `pub static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
+//! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `service-<id>`, which `Cargo.toml` must declare and list in `all-services`. It must export `pub(crate) static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
 
 #![expect(clippy::unwrap_used, clippy::expect_used, clippy::panic, reason = "a build script should fail loudly")]
 #![expect(clippy::disallowed_methods, reason = "a build script reads and writes files")]
@@ -42,7 +42,7 @@ fn main() {
                 modules.push((name, module));
             }
         } else if let Some(stem) = name.strip_suffix(".rs") {
-            modules.push((stem.to_string(), path.clone()));
+            modules.push((stem.to_owned(), path.clone()));
         }
     }
     modules.sort();
@@ -54,7 +54,7 @@ fn main() {
         expect(clippy::allow_attributes, reason = \"generated: which helpers go unused depends on the features\"), \
         allow(dead_code, reason = \"helpers serve optional services\"))]";
     for (name, path) in &helpers {
-        writeln!(code, "{helper_attr}\n#[path = {path:?}]\npub mod {name};").unwrap();
+        writeln!(code, "{helper_attr}\n#[path = {path:?}]\npub(crate) mod {name};").unwrap();
     }
     for (name, _) in &modules {
         assert!(
@@ -71,10 +71,10 @@ fn main() {
     }
     let gate = |name: &str| format!("#[cfg(feature = \"{}\")]\n", service_feature(name));
     for (name, path) in &modules {
-        writeln!(code, "{}#[path = {path:?}]\npub mod {name};", gate(name)).unwrap();
+        writeln!(code, "{}#[path = {path:?}]\npub(crate) mod {name};", gate(name)).unwrap();
     }
     code.push_str(
-        "\n/// Every service compiled into this build.\npub static ALL: &[&crate::service::ServiceDef] = &[\n",
+        "\n/// Every service compiled into this build.\npub(crate) static ALL: &[&crate::service::ServiceDef] = &[\n",
     );
     for (name, _) in &modules {
         writeln!(code, "    {}&{name}::SERVICE,", gate(name).replace('\n', "\n    ")).unwrap();
@@ -176,7 +176,7 @@ fn toml_table(manifest: &Path, header: &str) -> std::collections::BTreeMap<Strin
         }
         let values = match line.split_once('=') {
             Some((key, rest)) if current.is_none() => {
-                let key = key.trim().to_string();
+                let key = key.trim().to_owned();
                 out.insert(key.clone(), Vec::new());
                 current = Some(key);
                 rest
@@ -185,7 +185,7 @@ fn toml_table(manifest: &Path, header: &str) -> std::collections::BTreeMap<Strin
         };
         let key = current.clone().unwrap();
         let entry = out.get_mut(&key).unwrap();
-        entry.extend(values.split('"').skip(1).step_by(2).map(str::to_string));
+        entry.extend(values.split('"').skip(1).step_by(2).map(str::to_owned));
         if values.contains(']') {
             current = None;
         }
@@ -197,7 +197,7 @@ fn toml_table(manifest: &Path, header: &str) -> std::collections::BTreeMap<Strin
 fn pages_url(repository: &str) -> String {
     println!("cargo::rerun-if-env-changed=MERCURIO_PAGES_URL");
     if let Ok(url) = env::var("MERCURIO_PAGES_URL") {
-        return url.trim_end_matches('/').to_string();
+        return url.trim_end_matches('/').to_owned();
     }
     let path = repository.trim_end_matches('/').trim_end_matches(".git");
     let forges = [
@@ -227,7 +227,7 @@ fn features_doc(manifest: &Path, table: &std::collections::BTreeMap<String, Vec<
             continue;
         }
         if let Some(c) = line.strip_prefix('#') {
-            comment.push(c.trim().to_string());
+            comment.push(c.trim().to_owned());
             continue;
         }
         if let Some((key, _)) = line.split_once('=').filter(|_| !comment.is_empty()) {

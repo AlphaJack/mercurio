@@ -15,7 +15,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "sendgrid",
     name: "SendGrid",
     schemes: &["sendgrid"],
@@ -82,7 +82,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let cc = unique_emails(u.param_nonempty("cc"));
     let bcc = unique_emails(u.param_nonempty("bcc"));
     let template = SERVICE.text(u, "template");
-    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
     Ok(Box::new(SendGrid { apikey: Secret::new(apikey), from_email, targets, cc, bcc, template, template_data }))
 }
 
@@ -135,7 +135,7 @@ impl Notify for SendGrid {
                 .json_text(&Value::Object(payload), msg.body);
             Plan::send_expect(req, &[200, 202]).target(target.clone())
         });
-        Plan::all(plans.collect::<Vec<_>>())
+        Plan::all(plans)
     }
 }
 

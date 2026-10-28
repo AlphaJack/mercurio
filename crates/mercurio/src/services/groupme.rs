@@ -10,7 +10,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "groupme",
     name: "GroupMe",
     schemes: &["groupme"],
@@ -64,8 +64,7 @@ fn error_reason(status: u16) -> String {
         404 => "Not Found - The specified bot_id does not exist.",
         429 => "Too many requests; rate-limit exceeded.",
         _ => "",
-    }
-    .to_string()
+    }.to_owned()
 }
 
 /// Upload the remaining images one by one, then post the message.
@@ -111,9 +110,9 @@ fn upload_then_post(
 
 impl Notify for GroupMe {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let bot_id = self.bot_id.expose().to_string();
-        let body = msg.body.to_string();
-        let ua = ctx.app_id().to_string();
+        let bot_id = self.bot_id.expose().to_owned();
+        let body = msg.body.to_owned();
+        let ua = ctx.app_id().to_owned();
         let post = {
             let ua = ua.clone();
             move |attachments: Vec<Value>| {
@@ -154,7 +153,7 @@ impl Notify for GroupMe {
                 Vec::new()
             }
         };
-        let token = self.token.as_ref().map(|t| t.expose().to_string()).unwrap_or_default();
+        let token = self.token.as_ref().map(|t| t.expose().to_owned()).unwrap_or_default();
         upload_then_post(images.into_iter(), Vec::new(), token, ua, Box::new(post))
     }
 }

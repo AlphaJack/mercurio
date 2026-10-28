@@ -9,7 +9,7 @@ use super::notify::LogEntry;
 
 /// Services switched off by `APPRISE_ALLOW_SERVICES` / `APPRISE_DENY_SERVICES`.
 #[derive(Debug, Default)]
-pub struct ServiceFilter {
+pub(super) struct ServiceFilter {
     disabled: BTreeSet<&'static str>,
 }
 
@@ -26,7 +26,7 @@ fn names(list: &str) -> Vec<String> {
 
 impl ServiceFilter {
     /// `allow` wins when set; one scheme names its whole service.
-    pub fn new(allow: Option<&str>, deny: Option<&str>) -> Self {
+    pub(super) fn new(allow: Option<&str>, deny: Option<&str>) -> Self {
         let ids = |list: &str| -> BTreeSet<&'static str> {
             names(list).iter().filter_map(|n| mercurio::service_for_scheme(n)).map(|d| d.id).collect()
         };
@@ -41,14 +41,14 @@ impl ServiceFilter {
         ServiceFilter { disabled }
     }
 
-    pub fn enabled(&self, service_id: &str) -> bool {
+    pub(super) fn enabled(&self, service_id: &str) -> bool {
         !self.disabled.contains(service_id)
     }
 }
 
 /// `APPRISE_ATTACH_ALLOW_URL` / `APPRISE_ATTACH_REJECT_URL` rules.
 #[derive(Debug)]
-pub struct UrlFilter {
+pub(super) struct UrlFilter {
     allow: Vec<Rule>,
     deny: Vec<Rule>,
 }
@@ -72,12 +72,12 @@ fn rules(list: &str) -> Vec<Rule> {
                 return Rule::Internal;
             }
             let (schemes, rest) = match t.split_once("://") {
-                Some((s, r)) => (vec![s.to_string()], r.to_string()),
+                Some((s, r)) => (vec![s.to_owned()], r.to_owned()),
                 None if t.contains('/') => (vec!["http".into(), "https".into()], t.clone()),
                 None => return Rule::Host(t),
             };
             let (host, path) =
-                rest.split_once('/').map(|(h, p)| (h.to_string(), format!("/{p}"))).unwrap_or((rest, String::new()));
+                rest.split_once('/').map(|(h, p)| (h.to_owned(), format!("/{p}"))).unwrap_or((rest, String::new()));
             Rule::Url { schemes, host, path }
         })
         .collect()
@@ -128,7 +128,7 @@ fn is_public(ip: IpAddr) -> bool {
 }
 
 impl UrlFilter {
-    pub fn new(allow: &str, deny: &str) -> Self {
+    pub(super) fn new(allow: &str, deny: &str) -> Self {
         UrlFilter { allow: rules(allow), deny: rules(deny) }
     }
 
@@ -157,7 +157,7 @@ impl UrlFilter {
     }
 
     /// Deny rules first; then an allow rule must match.
-    pub fn allowed(&self, url: &str) -> bool {
+    pub(super) fn allowed(&self, url: &str) -> bool {
         let lower = url.to_ascii_lowercase();
         let Some((scheme, rest)) = lower.split_once("://") else { return false };
         let end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
@@ -176,7 +176,7 @@ impl UrlFilter {
 }
 
 /// POST the result of a notification call to `APPRISE_WEBHOOK_URL`.
-pub async fn send_webhook(
+pub(super) async fn send_webhook(
     transport: &dyn mercurio::transport::AsyncTransport,
     url: &str,
     source: &str,
@@ -200,7 +200,7 @@ pub async fn send_webhook(
             let p = p.map(mercurio::__private::unquote);
             mercurio::transport::Request::post(format!("{scheme}://{host}{tail}")).basic_auth(&u, p.as_deref())
         }
-        None => mercurio::transport::Request::post(url.to_string()),
+        None => mercurio::transport::Request::post(url.to_owned()),
     };
     req = req.header("User-Agent", format!("Mercurio/{}", env!("CARGO_PKG_VERSION"))).json(&body);
     match transport.http(&req).await {

@@ -14,10 +14,10 @@ mod attachment;
 pub(super) mod keys;
 mod megolm;
 mod olm;
-pub use attachment::encrypt_attachment;
-pub use keys::{cross_signing_key, verify_device_keys, verify_signed_by, verify_signed_otk};
-pub use megolm::MegolmSession;
-pub use olm::OlmAccount;
+pub(crate) use attachment::encrypt_attachment;
+pub(crate) use keys::{cross_signing_key, verify_device_keys, verify_signed_by, verify_signed_otk};
+pub(crate) use megolm::MegolmSession;
+pub(crate) use olm::OlmAccount;
 
 use aes::Aes256;
 use aes::cipher::{Array, BlockCipherEncrypt, KeyInit};
@@ -30,20 +30,20 @@ use zeroize::{Zeroize, Zeroizing};
 use crate::env::Env;
 
 /// Rotate the Megolm session after this many messages.
-pub const MEGOLM_ROTATION_MSGS: u32 = 100;
+pub(crate) const MEGOLM_ROTATION_MSGS: u32 = 100;
 
 /// Rotate the Megolm session after this many seconds (7 days).
-pub const MEGOLM_ROTATION_AGE: f64 = 60.0 * 60.0 * 24.0 * 7.0;
+pub(crate) const MEGOLM_ROTATION_AGE: f64 = 60.0 * 60.0 * 24.0 * 7.0;
 
 /// Serialisation version of cached Megolm sessions.
-pub const MATRIX_MEGOLM_STORE_VERSION: u64 = 1;
+pub(crate) const MATRIX_MEGOLM_STORE_VERSION: u64 = 1;
 
-pub const OLM_ALGORITHM: &str = "m.olm.v1.curve25519-aes-sha2";
+pub(crate) const OLM_ALGORITHM: &str = "m.olm.v1.curve25519-aes-sha2";
 
-pub const MEGOLM_ALGORITHM: &str = "m.megolm.v1.aes-sha2";
+pub(crate) const MEGOLM_ALGORITHM: &str = "m.megolm.v1.aes-sha2";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CryptoError(pub &'static str);
+pub(crate) struct CryptoError(pub &'static str);
 
 impl std::fmt::Display for CryptoError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -51,15 +51,15 @@ impl std::fmt::Display for CryptoError {
     }
 }
 
-pub type CResult<T> = std::result::Result<T, CryptoError>;
+pub(crate) type CResult<T> = Result<T, CryptoError>;
 
 /// Matrix unpadded standard base64.
-pub fn b64enc(data: &[u8]) -> String {
+pub(crate) fn b64enc(data: &[u8]) -> String {
     base64::engine::general_purpose::STANDARD_NO_PAD.encode(data)
 }
 
 /// Decode base64, tolerating missing padding and URL-safe characters.
-pub fn b64dec(s: &str) -> CResult<Vec<u8>> {
+pub(crate) fn b64dec(s: &str) -> CResult<Vec<u8>> {
     let s: String = s
         .chars()
         .map(|c| {
@@ -84,21 +84,21 @@ pub fn b64dec(s: &str) -> CResult<Vec<u8>> {
             )
             .decode(s)
         })
-        .map_err(|_| CryptoError("invalid base64"))
+        .ok().ok_or(CryptoError("invalid base64"))
 }
 
 fn b64url_nopad(data: &[u8]) -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(data)
 }
 
-pub fn hmac_sha256(key: &[u8], data: &[u8]) -> [u8; 32] {
+pub(crate) fn hmac_sha256(key: &[u8], data: &[u8]) -> [u8; 32] {
     let tag = ring::hmac::sign(&ring::hmac::Key::new(ring::hmac::HMAC_SHA256, key), data);
     let mut out = [0u8; 32];
     out.copy_from_slice(tag.as_ref());
     out
 }
 
-pub fn sha256(data: &[u8]) -> [u8; 32] {
+pub(crate) fn sha256(data: &[u8]) -> [u8; 32] {
     let d = ring::digest::digest(&ring::digest::SHA256, data);
     let mut out = [0u8; 32];
     out.copy_from_slice(d.as_ref());
@@ -106,7 +106,7 @@ pub fn sha256(data: &[u8]) -> [u8; 32] {
 }
 
 /// HKDF-SHA-256 (RFC 5869); `None` salt is 32 zero bytes. Every intermediate and the output are wiped on drop.
-pub fn hkdf_sha256(ikm: &[u8], len: usize, salt: Option<&[u8]>, info: &[u8]) -> Zeroizing<Vec<u8>> {
+pub(crate) fn hkdf_sha256(ikm: &[u8], len: usize, salt: Option<&[u8]>, info: &[u8]) -> Zeroizing<Vec<u8>> {
     let zero = [0u8; 32];
     let prk = Zeroizing::new(hmac_sha256(salt.unwrap_or(&zero), ikm));
     // Capacity for the last whole block: the buffers never reallocate (which would leave an unwiped copy behind).
@@ -134,7 +134,7 @@ fn aes(key: &[u8; 32]) -> Aes256 {
 }
 
 /// AES-256-CBC with PKCS#7 padding.
-pub fn aes_cbc_encrypt(key: &[u8; 32], iv: &[u8; 16], plaintext: &[u8]) -> Vec<u8> {
+pub(crate) fn aes_cbc_encrypt(key: &[u8; 32], iv: &[u8; 16], plaintext: &[u8]) -> Vec<u8> {
     let cipher = aes(key);
     let pad = 16 - plaintext.len() % 16;
     let mut data = plaintext.to_vec();
@@ -156,7 +156,7 @@ pub fn aes_cbc_encrypt(key: &[u8; 32], iv: &[u8; 16], plaintext: &[u8]) -> Vec<u
 }
 
 /// AES-256-CTR with a 128-bit big-endian counter (as `cryptography`'s `CTR`).
-pub fn aes_ctr(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Vec<u8> {
+pub(crate) fn aes_ctr(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Vec<u8> {
     let cipher = aes(key);
     let mut counter = u128::from_be_bytes(*iv);
     let mut out = Vec::with_capacity(data.len());
@@ -169,13 +169,13 @@ pub fn aes_ctr(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Vec<u8> {
     out
 }
 
-pub fn random32(env: &dyn Env) -> [u8; 32] {
+pub(crate) fn random32(env: &dyn Env) -> [u8; 32] {
     let mut b = [0u8; 32];
     env.fill_random(&mut b);
     b
 }
 
-pub fn varint(mut n: u64) -> Vec<u8> {
+pub(crate) fn varint(mut n: u64) -> Vec<u8> {
     if n == 0 {
         return vec![0];
     }
@@ -192,7 +192,7 @@ pub fn varint(mut n: u64) -> Vec<u8> {
 }
 
 /// Protobuf length-delimited field.
-pub fn pb_bytes(field: u64, data: &[u8]) -> Vec<u8> {
+pub(crate) fn pb_bytes(field: u64, data: &[u8]) -> Vec<u8> {
     let mut out = varint((field << 3) | 2);
     out.extend(varint(data.len() as u64));
     out.extend_from_slice(data);
@@ -200,14 +200,14 @@ pub fn pb_bytes(field: u64, data: &[u8]) -> Vec<u8> {
 }
 
 /// Protobuf varint field.
-pub fn pb_varint(field: u64, value: u64) -> Vec<u8> {
+pub(crate) fn pb_varint(field: u64, value: u64) -> Vec<u8> {
     let mut out = varint(field << 3);
     out.extend(varint(value));
     out
 }
 
 /// Matrix canonical JSON: sorted keys, no whitespace, UTF-8.
-pub fn canonical_json(v: &Value) -> String {
+pub(crate) fn canonical_json(v: &Value) -> String {
     let mut out = String::new();
     write_canonical(v, &mut out);
     out
@@ -246,7 +246,7 @@ fn write_canonical(v: &Value, out: &mut String) {
 }
 
 /// Ed25519 signing key (kept as its 32-byte seed, wiped on drop).
-pub struct SigningKey {
+pub(crate) struct SigningKey {
     seed: [u8; 32],
     // `Ed25519KeyPair` is not `Clone`; sharing it avoids re-deriving it.
     pair: std::sync::Arc<Ed25519KeyPair>,
@@ -267,44 +267,44 @@ impl Drop for SigningKey {
 impl SigningKey {
     // Ring rejects only seeds whose length is not 32 bytes; `random32()` is `[u8; 32]`.
     #[expect(clippy::expect_used, reason = "ring rejects only seeds whose length is not 32 bytes")]
-    pub fn generate(env: &dyn Env) -> Self {
+    pub(crate) fn generate(env: &dyn Env) -> Self {
         Self::from_seed(random32(env)).expect("valid seed")
     }
 
-    pub fn from_seed(seed: [u8; 32]) -> CResult<Self> {
-        let pair = Ed25519KeyPair::from_seed_unchecked(&seed).map_err(|_| CryptoError("invalid ed25519 seed"))?;
+    pub(crate) fn from_seed(seed: [u8; 32]) -> CResult<Self> {
+        let pair = Ed25519KeyPair::from_seed_unchecked(&seed).ok().ok_or(CryptoError("invalid ed25519 seed"))?;
         Ok(Self { seed, pair: std::sync::Arc::new(pair) })
     }
 
-    pub fn from_b64(s: &str) -> CResult<Self> {
+    pub(crate) fn from_b64(s: &str) -> CResult<Self> {
         let raw = Zeroizing::new(b64dec(s)?);
         let seed = Zeroizing::new(
-            <[u8; 32]>::try_from(raw.as_slice()).map_err(|_| CryptoError("ed25519 key must be 32 bytes"))?,
+            <[u8; 32]>::try_from(raw.as_slice()).ok().ok_or(CryptoError("ed25519 key must be 32 bytes"))?,
         );
         Self::from_seed(*seed)
     }
 
-    pub fn seed_b64(&self) -> String {
+    pub(crate) fn seed_b64(&self) -> String {
         b64enc(&self.seed)
     }
 
-    pub fn public(&self) -> &[u8] {
+    pub(crate) fn public(&self) -> &[u8] {
         self.pair.public_key().as_ref()
     }
 
-    pub fn sign(&self, data: &[u8]) -> [u8; 64] {
+    pub(crate) fn sign(&self, data: &[u8]) -> [u8; 64] {
         let mut out = [0u8; 64];
         out.copy_from_slice(self.pair.sign(data).as_ref());
         out
     }
 
-    pub fn sign_b64(&self, data: &[u8]) -> String {
+    pub(crate) fn sign_b64(&self, data: &[u8]) -> String {
         b64enc(&self.sign(data))
     }
 }
 
 /// X25519 private key (wiped on drop).
-pub struct XKey([u8; 32]);
+pub(crate) struct XKey([u8; 32]);
 
 impl Drop for XKey {
     fn drop(&mut self) {
@@ -319,31 +319,31 @@ impl std::fmt::Debug for XKey {
 }
 
 impl XKey {
-    pub fn generate(env: &dyn Env) -> Self {
+    pub(crate) fn generate(env: &dyn Env) -> Self {
         XKey(random32(env))
     }
 
     #[cfg(test)]
-    pub fn from_bytes(b: [u8; 32]) -> Self {
+    pub(crate) fn from_bytes(b: [u8; 32]) -> Self {
         XKey(b)
     }
 
-    pub fn from_b64(s: &str) -> CResult<Self> {
+    pub(crate) fn from_b64(s: &str) -> CResult<Self> {
         let raw = Zeroizing::new(b64dec(s)?);
-        Ok(XKey(<[u8; 32]>::try_from(raw.as_slice()).map_err(|_| CryptoError("x25519 key must be 32 bytes"))?))
+        Ok(XKey(<[u8; 32]>::try_from(raw.as_slice()).ok().ok_or(CryptoError("x25519 key must be 32 bytes"))?))
     }
 
-    pub fn to_b64(&self) -> String {
+    pub(crate) fn to_b64(&self) -> String {
         b64enc(&self.0)
     }
 
-    pub fn public(&self) -> [u8; 32] {
+    pub(crate) fn public(&self) -> [u8; 32] {
         MontgomeryPoint::mul_base_clamped(self.0).to_bytes()
     }
 
     /// X25519; rejects low-order points (all-zero shared secret) like `cryptography`.
-    pub fn exchange(&self, their_public: &[u8]) -> CResult<[u8; 32]> {
-        let p: [u8; 32] = their_public.try_into().map_err(|_| CryptoError("x25519 public key must be 32 bytes"))?;
+    pub(crate) fn exchange(&self, their_public: &[u8]) -> CResult<[u8; 32]> {
+        let p: [u8; 32] = their_public.try_into().ok().ok_or(CryptoError("x25519 public key must be 32 bytes"))?;
         let shared = MontgomeryPoint(p).mul_clamped(self.0).to_bytes();
         if shared.iter().all(|b| *b == 0) {
             return Err(CryptoError("x25519 shared secret is zero"));

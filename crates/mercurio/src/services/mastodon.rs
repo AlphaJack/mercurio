@@ -20,7 +20,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::json_has_value;
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "mastodon",
     name: "Mastodon",
     schemes: &["mastodon", "toot", "mastodons", "toots"],
@@ -126,7 +126,7 @@ fn normalize_ping_token(token: &str) -> Option<String> {
         return Some(format!("@{user}"));
     }
     if token.starts_with('#') {
-        return valid_hashtag(token).then(|| token.to_string());
+        return valid_hashtag(token).then(|| token.to_owned());
     }
     None
 }
@@ -261,7 +261,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         None
     };
     let token = token
-        .map(|t| t.trim().to_string())
+        .map(|t| t.trim().to_owned())
         .filter(|t| !t.is_empty())
         .ok_or_else(|| SERVICE.err("an invalid Mastodon Access Token was specified"))?;
 
@@ -272,7 +272,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     let visibility = match SERVICE.text(u, "visibility") {
         Some(v) => Some(v),
-        None if u.scheme.starts_with("toot") => Some("public".to_string()),
+        None if u.scheme.starts_with("toot") => Some("public".to_owned()),
         None => None,
     };
     let visibility = match visibility.filter(|v| !v.is_empty()) {
@@ -402,7 +402,7 @@ impl Notify for Mastodon {
     }
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let body = msg.body.to_string();
+        let body = msg.body.to_owned();
         let uploads = msg
             .attachments
             .iter()
@@ -412,7 +412,7 @@ impl Notify for Mastodon {
             })
             .map(|a| Upload { name: a.name.clone(), mime: a.mime.clone(), data: a.data.to_vec() })
             .collect();
-        let job = Job { cfg: self.0.clone(), ua: ctx.app_id().to_string(), env: ctx.env().clone(), body, format: msg.format, uploads };
+        let job = Job { cfg: self.0.clone(), ua: ctx.app_id().to_owned(), env: ctx.env().clone(), body, format: msg.format, uploads };
 
         if self.0.visibility == "direct" && self.0.targets.is_empty() {
             if let Some(me) = self.0.whoami.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone() {

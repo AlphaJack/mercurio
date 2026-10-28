@@ -20,7 +20,7 @@ impl Session {
     pub(super) fn cached_room(&self, key: &str) -> Option<Option<String>> {
         let v = self.store.get(key)?;
         let id = v.as_object()?.get("id")?;
-        Some(id.as_str().map(str::to_string))
+        Some(id.as_str().map(str::to_owned))
     }
 
     /// Room id or alias to a joined room id.
@@ -28,7 +28,7 @@ impl Session {
         if self.access_token.is_none() {
             return k(self, None);
         }
-        let Some(room) = room.as_str().map(str::to_string) else { return k(self, None) };
+        let Some(room) = room.as_str().map(str::to_owned) else { return k(self, None) };
         if let Some((token, explicit_hs)) = match_room_id(&room) {
             let home_server = explicit_hs.clone().or_else(|| self.home_server.clone()).unwrap_or_default();
             let cache_key =
@@ -44,7 +44,7 @@ impl Session {
                 }
                 let joined = r.json.get("room_id").filter(|v| has_value(v)).cloned().unwrap_or(json!(room_id));
                 s.store.set(&cache_key, json!({"id": joined, "home_server": home_server}), None);
-                k(s, joined.as_str().map(str::to_string))
+                k(s, joined.as_str().map(str::to_owned))
             });
         }
         let Some((name, explicit_hs)) = match_room_alias(&room) else {
@@ -70,7 +70,7 @@ impl Session {
             if r.ok {
                 let id = r.json.get("room_id").cloned().unwrap_or(Value::Null);
                 s.store.set(&alias, json!({"id": id, "home_server": home_server}), None);
-                return k(s, id.as_str().map(str::to_string));
+                return k(s, id.as_str().map(str::to_owned));
             }
             if r.status == 404 || r.json.get("errcode").and_then(Value::as_str) == Some("M_NOT_FOUND") {
                 return s.room_create(alias, k);
@@ -119,7 +119,7 @@ impl Session {
             if let Some(alias) = r.json.get("room_alias").and_then(Value::as_str) {
                 s.store.set(alias, json!({"id": room_id, "home_server": home_server}), None);
             }
-            let room_id = room_id.as_str().map(str::to_string);
+            let room_id = room_id.as_str().map(str::to_owned);
             if e2ee && let Some(rid) = room_id.as_deref().filter(|r| !r.is_empty()) {
                 s.store.set(&format!("e2ee_room_enc_{rid}"), json!(true), CACHE_EXPIRY);
             }

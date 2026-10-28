@@ -21,7 +21,7 @@ use crate::transport::Endpoint;
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "smpp",
     name: "SMPP",
     schemes: &["smpp", "smpps"],
@@ -51,11 +51,11 @@ pub static SERVICE: ServiceDef = ServiceDef {
 const DEFAULT_PORT: u16 = 2775;
 const DEFAULT_SECURE_PORT: u16 = 3550;
 
-pub const BIND_TRANSMITTER: u32 = 0x0000_0002;
-pub const SUBMIT_SM: u32 = 0x0000_0004;
-pub const UNBIND: u32 = 0x0000_0006;
-pub const ENQUIRE_LINK: u32 = 0x0000_0015;
-pub const GENERIC_NACK: u32 = 0x8000_0000;
+pub(crate) const BIND_TRANSMITTER: u32 = 0x0000_0002;
+pub(crate) const SUBMIT_SM: u32 = 0x0000_0004;
+pub(crate) const UNBIND: u32 = 0x0000_0006;
+pub(crate) const ENQUIRE_LINK: u32 = 0x0000_0015;
+pub(crate) const GENERIC_NACK: u32 = 0x8000_0000;
 const RESP: u32 = 0x8000_0000;
 
 const TON_INTL: u8 = 0x01;
@@ -155,7 +155,7 @@ const GSM_TABLE: &str = concat!(
 );
 
 /// GSM 03.38 default alphabet, unpacked (one septet per octet); `None` if a character is not representable.
-pub fn gsm_encode(text: &str) -> Option<Vec<u8>> {
+pub(crate) fn gsm_encode(text: &str) -> Option<Vec<u8>> {
     // Each character's first index in `GSM_TABLE`.
     static INDEX: LazyLock<BTreeMap<char, usize>> = LazyLock::new(|| {
         let mut m = BTreeMap::new();
@@ -178,7 +178,7 @@ pub fn gsm_encode(text: &str) -> Option<Vec<u8>> {
 }
 
 /// Split `text` into segments: (segments, data_coding, esm_class).
-pub fn make_parts(text: &str, reference: u8) -> Result<(Vec<Vec<u8>>, u8, u8)> {
+pub(crate) fn make_parts(text: &str, reference: u8) -> Result<(Vec<Vec<u8>>, u8, u8)> {
     let (encoded, coding, split, part_size) = match gsm_encode(text) {
         Some(e) => (e, ENCODING_DEFAULT, 160, 153),
         None => {
@@ -220,7 +220,7 @@ fn cstr(out: &mut Vec<u8>, s: &str, max: usize) {
 }
 
 /// A full PDU: 16-byte header (length, command, status 0, sequence) + body.
-pub fn pdu(command: u32, seq: u32, body: &[u8]) -> Vec<u8> {
+pub(crate) fn pdu(command: u32, seq: u32, body: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity(16 + body.len());
     out.extend_from_slice(&((16 + body.len()) as u32).to_be_bytes());
     out.extend_from_slice(&command.to_be_bytes());
@@ -230,7 +230,7 @@ pub fn pdu(command: u32, seq: u32, body: &[u8]) -> Vec<u8> {
     out
 }
 
-pub fn bind_transmitter(seq: u32, system_id: &str, password: &str) -> Vec<u8> {
+pub(crate) fn bind_transmitter(seq: u32, system_id: &str, password: &str) -> Vec<u8> {
     let mut b = Vec::new();
     cstr(&mut b, system_id, 16);
     cstr(&mut b, password, 9);
@@ -242,7 +242,7 @@ pub fn bind_transmitter(seq: u32, system_id: &str, password: &str) -> Vec<u8> {
     pdu(BIND_TRANSMITTER, seq, &b)
 }
 
-pub fn submit_sm(seq: u32, source: &str, dest: &str, coding: u8, esm: u8, message: &[u8]) -> Vec<u8> {
+pub(crate) fn submit_sm(seq: u32, source: &str, dest: &str, coding: u8, esm: u8, message: &[u8]) -> Vec<u8> {
     let mut b = Vec::new();
     cstr(&mut b, "", 6); // service_type
     b.push(TON_INTL);

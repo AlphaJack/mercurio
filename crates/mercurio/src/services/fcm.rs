@@ -21,7 +21,7 @@ use crate::service::{Context, Limits, Notify, Param, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{FileOp, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "fcm",
     name: "Firebase Cloud Messaging",
     schemes: &["fcm"],
@@ -102,7 +102,7 @@ fn parse_color(color: Option<&str>) -> Color {
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut project = u.host();
     let mut targets = u.path_segments();
-    let mode_raw = SERVICE.raw(u, "mode").map(str::to_string);
+    let mode_raw = SERVICE.raw(u, "mode").map(str::to_owned);
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list_unquoted([to]));
     }
@@ -147,7 +147,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         project,
         keyfile,
         targets: parse_list(&targets),
-        data: u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        data: u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
         include_image,
         image_src,
         priority,
@@ -190,7 +190,7 @@ fn load_rsa_key(pem: &str) -> Option<RsaKeyPair> {
 /// Load and check a service account key file.
 fn load_keyfile(ctx: &Context<'_>, path: &str) -> std::result::Result<ServiceAccount, &'static str> {
     let data = read_local_file(ctx, path, MAX_KEYFILE_SIZE).ok_or("FCM keyfile could not be accessed")?;
-    let content: Value = serde_json::from_slice(data).map_err(|_| "FCM keyfile is not valid JSON")?;
+    let content: Value = serde_json::from_slice(data).ok().ok_or("FCM keyfile is not valid JSON")?;
     let obj = content.as_object().ok_or("FCM keyfile is incorrectly structured")?;
     if !["client_email", "private_key_id", "private_key", "type", "project_id"].iter().all(|k| obj.get(*k).is_some_and(crate::util::json_has_value)) {
         return Err("FCM keyfile is missing required information");
@@ -198,15 +198,15 @@ fn load_keyfile(ctx: &Context<'_>, path: &str) -> std::result::Result<ServiceAcc
     if obj.get("type").and_then(Value::as_str) != Some("service_account") {
         return Err("FCM keyfile is not of type service_account");
     }
-    let s = |k: &str| obj.get(k).and_then(Value::as_str).map(str::to_string);
+    let s = |k: &str| obj.get(k).and_then(Value::as_str).map(str::to_owned);
     let key = s("private_key").as_deref().and_then(load_rsa_key).ok_or("FCM provided private key is invalid")?;
     Ok(ServiceAccount {
         project_id: s("project_id").ok_or("FCM keyfile project_id is not a string")?,
         client_email: s("client_email").ok_or("FCM keyfile client_email is not a string")?,
         key_id: s("private_key_id").ok_or("FCM keyfile private_key_id is not a string")?,
         token_uri: match obj.get("token_uri") {
-            None => DEFAULT_TOKEN_URI.to_string(),
-            Some(v) => v.as_str().ok_or("FCM keyfile token_uri is not a string")?.to_string(),
+            None => DEFAULT_TOKEN_URI.to_owned(),
+            Some(v) => v.as_str().ok_or("FCM keyfile token_uri is not a string")?.to_owned(),
         },
         key,
     })
@@ -257,12 +257,12 @@ fn access_token(body: &[u8]) -> Option<String> {
 impl Fcm {
     fn payload(&self, recipient: &str, msg: &Prepared<'_>, ctx: &Context<'_>) -> Value {
         let image = match self.image_src.as_deref().filter(|s| !s.is_empty()) {
-            Some(s) => Some(s.to_string()),
+            Some(s) => Some(s.to_owned()),
             None => ctx.asset.image_url(msg.kind, ImageSize::Xy256),
         };
         let color = match &self.color {
             Color::Off => None,
-            Color::Asset => Some(ctx.asset.color(msg.kind).to_string()),
+            Color::Asset => Some(ctx.asset.color(msg.kind).to_owned()),
             Color::Rgb(c) => Some(format!("#{c}")),
         };
         let data: Map<String, Value> = self.data.iter().map(|(k, v)| (k.clone(), json!(v))).collect();

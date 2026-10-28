@@ -19,7 +19,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIden
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "ringcentral",
     name: "RingCentral",
     schemes: &["ringc"],
@@ -84,7 +84,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(t) = param_unquoted(u, "token") {
         token = t;
     }
-    let mode = param_unquoted(u, "mode").unwrap_or_else(|| if token.chars().count() > 60 { "jwt" } else { "basic" }.to_string());
+    let mode = param_unquoted(u, "mode").unwrap_or_else(|| if token.chars().count() > 60 { "jwt" } else { "basic" }.to_owned());
     if let Some(s) = param_unquoted(u, "secret") {
         client_secret = Some(s);
     }
@@ -195,7 +195,7 @@ impl RingCentral {
 
 impl Notify for RingCentral {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let ua = ctx.app_id().to_string();
+        let ua = ctx.app_id().to_owned();
         let payload: Vec<(&str, String)> = if self.jwt {
             vec![
                 ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer".into()),
@@ -216,7 +216,7 @@ impl Notify for RingCentral {
         let store = ctx.store();
         let login = self.oauth_request("token", &ua).form(&payload);
         let me = self.clone();
-        let body = msg.body.to_string();
+        let body = msg.body.to_owned();
         let attachments = msg.attachments.to_vec();
         let env = ctx.env().clone();
         Plan::http(login, move |res| {
@@ -263,8 +263,8 @@ impl Notify for RingCentral {
         UrlIdentifier::Parts(vec![
             "ringc".into(),
             self.client_id.clone(),
-            self.client_secret.expose().to_string(),
-            self.token.expose().to_string(),
+            self.client_secret.expose().to_owned(),
+            self.token.expose().to_owned(),
             self.source.clone(),
         ])
     }

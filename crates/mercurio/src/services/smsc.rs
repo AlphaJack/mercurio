@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "smsc",
     name: "SMSC",
     schemes: &["smsc"],
@@ -88,7 +88,7 @@ impl Notify for Smsc {
         }
         let mut params: Vec<(&str, String)> = vec![
             ("login", self.user.clone()),
-            ("psw", self.password.expose().to_string()),
+            ("psw", self.password.expose().to_owned()),
             ("phones", self.targets.join(",")),
             ("fmt", "3".into()),
         ];
@@ -98,7 +98,7 @@ impl Notify for Smsc {
         if self.translit {
             params.push(("translit", "1".into()));
         }
-        params.push(("mes", msg.body.to_string()));
+        params.push(("mes", msg.body.to_owned()));
         let req = Request::post(NOTIFY_URL);
         let req = if msg.attachments.is_empty() {
             req.form(&params)

@@ -143,14 +143,14 @@ enum Inner {
 }
 
 /// A TCP stream that can be upgraded to TLS in place, or a Unix stream socket.
-pub struct NetConn {
+pub(crate) struct NetConn {
     inner: Inner,
     host: String,
     verify: bool,
 }
 
 impl NetConn {
-    pub fn connect(ep: &Endpoint) -> Result<Self> {
+    pub(crate) fn connect(ep: &Endpoint) -> Result<Self> {
         if let Some(path) = &ep.unix {
             return Self::connect_unix(ep, path);
         }
@@ -250,8 +250,8 @@ impl Write for NetConn {
     }
 }
 
-impl std::fmt::Debug for NetConn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for NetConn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("NetConn").field("host", &self.host).field("tls", &self.is_tls()).finish()
     }
 }

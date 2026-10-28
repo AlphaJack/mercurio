@@ -25,7 +25,7 @@ use super::_chat::{TemplateSrc, apply_template_json, load_template, template_fet
 use crate::util::{json_text, json_has_value, parse_int};
 use crate::{FileOp, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "telegram",
     name: "Telegram",
     schemes: &["tgram"],
@@ -224,7 +224,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         content_before,
         markdown_ver,
         template,
-        tokens: r.query_colon.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        tokens: r.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
     }))
 }
 
@@ -498,7 +498,7 @@ impl Job {
             return None;
         }
         let (name, data) = self.image.clone()?;
-        let mut form = crate::http::Multipart::with_env(self.env.as_ref()).text("chat_id", chat.id.text());
+        let mut form = Multipart::with_env(self.env.as_ref()).text("chat_id", chat.id.text());
         if let Some(t) = chat.thread() {
             form = form.text("message_thread_id", t.to_string());
         }
@@ -579,7 +579,7 @@ impl Job {
         for (k, v) in [
             ("app_body", self.body.clone()),
             ("app_title", self.title.clone()),
-            ("app_type", self.kind.as_str().to_string()),
+            ("app_type", self.kind.as_str().to_owned()),
             ("app_id", self.app_id.clone()),
             ("app_desc", self.app_desc.clone()),
             ("app_color", self.color.clone()),
@@ -589,12 +589,12 @@ impl Job {
         ] {
             match tokens.iter_mut().find(|(tk, _)| tk == k) {
                 Some(slot) => slot.1 = v,
-                None => tokens.push((k.to_string(), v)),
+                None => tokens.push((k.to_owned(), v)),
             }
         }
         tokens.retain(|(k, _)| k != "app_mode");
         let content = apply_template_json(text, &tokens).ok_or_else(|| fail("references an unknown token"))?;
-        let content: Value = serde_json::from_str(&content).map_err(|_| fail("contains invalid JSON"))?;
+        let content: Value = serde_json::from_str(&content).ok().ok_or_else(|| fail("contains invalid JSON"))?;
         let Some(obj) = content.as_object() else {
             return Err(fail("must be a JSON object"));
         };
@@ -636,7 +636,7 @@ impl Job {
                 }
                 Plan::chain(steps).target(chat.label())
             });
-            Plan::all(plans.collect::<Vec<_>>())
+            Plan::all(plans)
         })
     }
 }
@@ -699,7 +699,7 @@ const TELEGRAM_HTML: html::Filter = html::Filter {
 };
 
 /// HTML reduced to the tags Telegram accepts; no-break and em spaces become plain spaces (Telegram has no entities for them).
-pub fn html_to_telegram(body: &str) -> String {
+pub(crate) fn html_to_telegram(body: &str) -> String {
     html::filter(body, &TELEGRAM_HTML).replace('\u{a0}', " ").replace('\u{2003}', "   ")
 }
 
@@ -743,7 +743,7 @@ fn escape_chars(s: &str, reserved: &str) -> String {
 }
 
 /// Markdown as Telegram Markdown (MarkdownV2 when `strict`).
-pub fn commonmark_to_telegram(body: &str, strict: bool) -> String {
+pub(crate) fn commonmark_to_telegram(body: &str, strict: bool) -> String {
     crate::convert::markup::render(body, if strict { &TELEGRAM_V2 } else { &TELEGRAM_V1 })
 }
 
@@ -792,29 +792,29 @@ impl Notify for Telegram {
             (false, false) => msg.attachments,
         };
         let (text, parse_mode) = if msg.format == NotifyFormat::Markdown {
-            (body.to_string(), self.markdown_ver)
+            (body.to_owned(), self.markdown_ver)
         } else if msg.passthrough {
             // Undeclared input may be plain text or HTML: keep its line breaks, then reduce any tags to the ones Telegram accepts.
             let breaks = crate::regex!(r"(?i)(?:<br\s*/?>)?\r?\n").replace_all(body, "<br>");
             (html_to_telegram(&breaks), "HTML")
         } else {
-            (body.to_string(), "HTML")
+            (body.to_owned(), "HTML")
         };
         let job = Arc::new(Job {
             cfg: self.clone(),
-            app_id: ctx.app_id().to_string(),
+            app_id: ctx.app_id().to_owned(),
             env: ctx.env().clone(),
             text,
             parse_mode,
-            title: title.to_string(),
-            body: body.to_string(),
+            title: title.to_owned(),
+            body: body.to_owned(),
             kind: msg.kind,
             attachments: attachments.to_vec(),
             image_url: ctx.asset.image_url(msg.kind, ImageSize::Xy256),
             image: if self.include_image { notify_image(ctx, msg.kind) } else { None },
-            color: ctx.asset.color(msg.kind).to_string(),
-            app_desc: ctx.app_desc().to_string(),
-            app_url: ctx.app_url().to_string(),
+            color: ctx.asset.color(msg.kind).to_owned(),
+            app_desc: ctx.app_desc().to_owned(),
+            app_url: ctx.app_url().to_owned(),
             first_piece: msg.index == 0,
             template: match &self.template {
                 Some(src) => load_template(ctx, src, TEMPLATE_MAX_BYTES),
@@ -960,7 +960,7 @@ mod tests {
         let target = crate::parse(url).unwrap();
         let fake = FakeTransport::new();
         let tpl = r#"{"blocks":[{"type":"text","text":"{{app_title}}: {{ app_body }}"}]}"#;
-        fake.on_url("tpl.example", crate::Response::new(200, tpl.as_bytes().to_vec()));
+        fake.on_url("tpl.example", Response::new(200, tpl.as_bytes().to_vec()));
         for _ in 0..2 {
             assert!(target.send(&Message::new("body").title("T"), &fake, &Asset::default()).is_success());
         }

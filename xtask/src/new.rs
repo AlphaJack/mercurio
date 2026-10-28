@@ -6,7 +6,7 @@ const SERVICE: &str = include_str!("../templates/acme.rs");
 const FIXTURE: &str = include_str!("../templates/acme.json");
 
 /// Writes `src/services/<id>.rs` and `tests/fixtures/services/<id>.json`, and adds the service's feature to `Cargo.toml`.
-pub fn scaffold(root: &Path, id: &str) -> Result<(), String> {
+pub(crate) fn scaffold(root: &Path, id: &str) -> Result<(), String> {
     if !id.starts_with(|c: char| c.is_ascii_lowercase())
         || !id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
     {

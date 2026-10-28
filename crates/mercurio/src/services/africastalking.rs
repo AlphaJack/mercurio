@@ -12,7 +12,7 @@ use crate::url::ParsedUrl;
 use crate::util::{json_text, parse_int};
 use crate::{Error, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "africastalking",
     name: "Africas Talking",
     schemes: &["atalk"],
@@ -117,7 +117,7 @@ fn accepted(r: &Response, batch: &[String]) -> Vec<String> {
         let Value::Object(entry) = entry else { continue };
         let raw = entry.get("number").map(json_text).unwrap_or_default();
         let digits: String = raw.chars().filter(|c| c.is_numeric()).collect();
-        let number = digits.trim_start_matches('0').to_string();
+        let number = digits.trim_start_matches('0').to_owned();
         numbers.insert(number.clone());
         let code = entry.get("statusCode").and_then(|v| v.as_i64().or_else(|| v.as_str().and_then(parse_int)));
         if code.is_some_and(|c| RECIPIENT_OK.contains(&c)) {

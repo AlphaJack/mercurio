@@ -42,9 +42,9 @@ use crate::service::Secret;
 use crate::transport::{AsyncTransport, Blocking, FileOp, FileOutput, Transport};
 
 /// Largest attachment by default (1000 MiB); the [`Asset::attachment_max_size`] default.
-pub const DEFAULT_MAX_SIZE: u64 = 1_048_576_000;
+pub(crate) const DEFAULT_MAX_SIZE: u64 = 1_048_576_000;
 /// Default `cache` age in seconds.
-pub const DEFAULT_CACHE_SECS: u64 = 600;
+pub(crate) const DEFAULT_CACHE_SECS: u64 = 600;
 
 const UNKNOWN_MIME: &str = "application/octet-stream";
 const UNKNOWN_NAME: &str = "mercurio-attachment";
@@ -196,10 +196,10 @@ impl AttachSource {
         let mut s = Self::build(Kind::Memory(data.into()));
         s.name = Some(
             name.filter(|n| !n.is_empty())
-                .map(str::to_string)
+                .map(str::to_owned)
                 .unwrap_or_else(|| format!("{}.dat", crate::env::system().uuid4())),
         );
-        s.mime = Some(mime.unwrap_or(UNKNOWN_MIME).to_string());
+        s.mime = Some(mime.unwrap_or(UNKNOWN_MIME).to_owned());
         s
     }
 
@@ -208,7 +208,7 @@ impl AttachSource {
     pub fn text(text: &str, name: Option<&str>) -> Self {
         let name = name
             .filter(|n| !n.is_empty())
-            .map(str::to_string)
+            .map(str::to_owned)
             .unwrap_or_else(|| format!("{}.txt", crate::env::system().uuid4()));
         Self::memory(text.as_bytes(), Some(&name), Some("text/plain"))
     }
@@ -265,7 +265,7 @@ impl AttachSource {
         if let Some(n) = query.get("name") {
             let base = n.rsplit(['/', '\\']).next().unwrap_or("").trim();
             if !base.is_empty() {
-                self.name = Some(base.to_string());
+                self.name = Some(base.to_owned());
             }
         }
         if let Some(c) = query.get("cache") {
@@ -287,7 +287,7 @@ impl AttachSource {
         let caps = re.captures(spec).ok_or_else(|| Error::InvalidUrl("memory://...".into()))?;
         let query = query_pairs(caps.get(2).and_then(|m| m.as_str().strip_prefix('?')).unwrap_or(""));
         let path = crate::url::unquote(&caps["path"]);
-        let name = path.rsplit('/').next().unwrap_or("").to_string();
+        let name = path.rsplit('/').next().unwrap_or("").to_owned();
         let s = Self::build(Kind::Memory(Vec::new()));
         let mut s = s.apply_options(&query)?;
         if s.name.is_none() && !name.is_empty() {
@@ -302,13 +302,13 @@ impl AttachSource {
             crate::url::parse_url_with(spec, opts).ok_or_else(|| Error::InvalidUrl(crate::plan::redact_url(spec)))?;
         // `?-x=` and `?+x=` both become request headers.
         let mut headers: Vec<(String, String)> =
-            u.query_minus.iter().chain(u.query_plus.iter()).map(|(k, v)| (k.to_string(), v.to_string())).collect();
+            u.query_minus.iter().chain(u.query_plus.iter()).map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
         headers.dedup_by(|a, b| a.0 == b.0);
         let query = u
             .query
             .iter()
             .filter(|(k, _)| !["cache", "mime", "name", "verify"].contains(k) && !k.starts_with(['+', '-', ':']))
-            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
             .collect();
         let http = HttpSource {
             secure: u.secure,
@@ -399,9 +399,9 @@ impl AttachSource {
             return m.clone();
         }
         if let Some(d) = detected.filter(|d| !d.trim().is_empty()) {
-            return d.to_string();
+            return d.to_owned();
         }
-        name.and_then(guess_mime).unwrap_or(UNKNOWN_MIME).to_string()
+        name.and_then(guess_mime).unwrap_or(UNKNOWN_MIME).to_owned()
     }
 
     async fn download(
@@ -449,11 +449,11 @@ impl AttachSource {
         }
         let disposition = res.header("content-disposition").unwrap_or("");
         let re = crate::regex!(r#"(?i)filename=['"]?([^'"]+)['"]?"#);
-        let name = re.captures(disposition).map(|c| c[1].trim().to_string()).filter(|n| !n.is_empty()).or_else(|| {
+        let name = re.captures(disposition).map(|c| c[1].trim().to_owned()).filter(|n| !n.is_empty()).or_else(|| {
             // Fall back to the basename of the (still quoted) URL path.
-            Some(h.fullpath.rsplit('/').next().unwrap_or("").to_string())
+            Some(h.fullpath.rsplit('/').next().unwrap_or("").to_owned())
         });
-        let mime = res.header("content-type").map(str::to_string);
+        let mime = res.header("content-type").map(str::to_owned);
         Ok((res.body, name, mime))
     }
 
@@ -472,7 +472,7 @@ fn query_pairs(q: &str) -> crate::url::Pairs {
         if k.starts_with(['+', '-', ':']) {
             continue;
         }
-        out.insert(k, crate::url::unquote_plus(v).trim().to_string());
+        out.insert(k, crate::url::unquote_plus(v).trim().to_owned());
     }
     out
 }
@@ -597,7 +597,7 @@ impl AttachmentSet {
 }
 
 /// `true` for MIME types in the built-in table.
-pub fn is_known_mime(mime: &str) -> bool {
+pub(crate) fn is_known_mime(mime: &str) -> bool {
     MIME_TYPES.iter().any(|(_, m)| *m == mime)
 }
 
@@ -607,14 +607,14 @@ fn validate_mime(mime: &str) -> Result<String> {
 }
 
 /// MIME type for a file name's extension (case-insensitive).
-pub fn guess_mime(name: &str) -> Option<&'static str> {
+pub(crate) fn guess_mime(name: &str) -> Option<&'static str> {
     let (_, ext) = name.rsplit_once('.')?;
     let ext = ext.to_ascii_lowercase();
     MIME_TYPES.iter().find(|(e, _)| *e == ext).map(|(_, m)| *m)
 }
 
 /// Preferred extension (with the dot) for a MIME type.
-pub fn extension_for(mime: &str) -> Option<&'static str> {
+pub(crate) fn extension_for(mime: &str) -> Option<&'static str> {
     let mime = mime.to_ascii_lowercase();
     let ext = PREFERRED_EXTENSIONS
         .iter()

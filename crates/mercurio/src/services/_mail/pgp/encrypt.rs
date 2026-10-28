@@ -13,7 +13,7 @@ use crate::env::Env;
 
 /// Why a public key could not be used.
 #[derive(Debug, PartialEq, Eq)]
-pub enum EncryptError {
+pub(crate) enum EncryptError {
     /// Not an OpenPGP public key.
     Unreadable,
     /// No key in it may encrypt.
@@ -24,7 +24,7 @@ pub enum EncryptError {
 
 impl EncryptError {
     /// The warning logged before Apprise's "Unable to encrypt" error.
-    pub fn warning(&self) -> String {
+    pub(crate) fn warning(&self) -> String {
         match self {
             EncryptError::Unreadable => "PGP Public Key file could not be parsed".into(),
             EncryptError::NoEncryptionKey => "PGP Public Key has no key that may encrypt".into(),
@@ -255,10 +255,10 @@ fn recipient(data: &[u8]) -> Result<(Recipient, [u8; 20]), EncryptError> {
         }
         other => return Err(EncryptError::Algorithm(super::algorithm_name(other))),
     };
-    let len = u16::try_from(body.len()).map_err(|_| EncryptError::Unreadable)?;
+    let len = u16::try_from(body.len()).ok().ok_or(EncryptError::Unreadable)?;
     let fingerprint: [u8; 20] = crypto::sha1(&[&[0x99], len.to_be_bytes().as_slice(), body].concat())
         .try_into()
-        .map_err(|_| EncryptError::Unreadable)?;
+        .ok().ok_or(EncryptError::Unreadable)?;
     Ok((recipient, fingerprint))
 }
 
@@ -324,7 +324,7 @@ fn pkesk(recipient: &Recipient, fingerprint: &[u8; 20], session: &[u8], env: &dy
 }
 
 /// `message` encrypted to the certificate `public_key` (armored or binary), as an armored `PGP MESSAGE`.
-pub fn encrypt(public_key: &[u8], message: &[u8], env: &dyn Env) -> Result<String, EncryptError> {
+pub(crate) fn encrypt(public_key: &[u8], message: &[u8], env: &dyn Env) -> Result<String, EncryptError> {
     let cert = match std::str::from_utf8(public_key).ok().and_then(dearmor) {
         Some(b) => b,
         None => public_key.to_vec(),
@@ -521,7 +521,7 @@ mod tests {
         assert!(parts[1].contains("Content-Type: application/pgp-encrypted") && parts[1].contains("Version: 1"), "{}", parts[1]);
         assert!(parts[2].contains("Content-Type: application/octet-stream"), "{}", parts[2]);
         let armored = format!("-----BEGIN{}", parts[2].split_once("-----BEGIN").unwrap().1);
-        let outer = mail.split("\r\n\r\n").next().unwrap().to_string();
+        let outer = mail.split("\r\n\r\n").next().unwrap().to_owned();
         (armored, outer)
     }
 

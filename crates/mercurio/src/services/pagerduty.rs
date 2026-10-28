@@ -11,7 +11,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pagerduty",
     name: "Pager Duty",
     schemes: &["pagerduty"],
@@ -94,7 +94,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let component = match component.filter(|s| !s.is_empty()) {
         Some(c) => validate_nonblank(&c)
             .ok_or_else(|| SERVICE.err("an invalid Pager Duty Notification Component was specified"))?,
-        None => "Notification".to_string(),
+        None => "Notification".to_owned(),
     };
     let eu = match SERVICE.text_or_default(u, "region").to_lowercase().as_str() {
         "us" => false,
@@ -136,7 +136,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         severity,
         include_image: SERVICE.flag(u, "image"),
         action,
-        dedup: SERVICE.text(u, "dedup").map(|d| d.trim().to_string()).filter(|d| !d.is_empty()),
+        dedup: SERVICE.text(u, "dedup").map(|d| d.trim().to_owned()).filter(|d| !d.is_empty()),
     }))
 }
 

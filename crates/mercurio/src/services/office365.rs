@@ -21,7 +21,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::{json_int, scalar_text};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "office365",
     name: "Office 365",
     schemes: &["azure", "o365"],
@@ -402,13 +402,13 @@ impl Notify for Office365 {
         let store = ctx.store();
         let shared: Shared = Arc::new(Mutex::new(State {
             cfg: cfg.clone(),
-            app_id: ctx.app_id().to_string(),
+            app_id: ctx.app_id().to_owned(),
             token: None,
             store: store.clone(),
         }));
         let message = Message {
-            subject: msg.title.to_string(),
-            body: msg.body.to_string(),
+            subject: msg.title.to_owned(),
+            body: msg.body.to_owned(),
             html: msg.format == NotifyFormat::Html,
             attachments: msg.attachments.to_vec(),
         };
@@ -463,18 +463,18 @@ impl Notify for Office365 {
                 }),
             );
         }
-        let from = from_email.and_then(|e| e.as_str().map(str::to_string)).map(|e| (e, from_name));
+        let from = from_email.and_then(|e| e.as_str().map(str::to_owned)).map(|e| (e, from_name));
         deliver(shared, message, from)
     }
 
     fn url_identifier(&self) -> UrlIdentifier {
         let c = &self.0;
-        let mut parts = vec!["azure".to_string(), c.source.clone()];
+        let mut parts = vec!["azure".to_owned(), c.source.clone()];
         if let Some(t) = c.tenant.as_ref().filter(|_| !c.personal) {
             parts.push(t.clone());
         }
         parts.push(c.client_id.clone());
-        parts.push(c.secret.expose().to_string());
+        parts.push(c.secret.expose().to_owned());
         UrlIdentifier::Parts(parts)
     }
 }
@@ -701,7 +701,7 @@ mod tests {
     }
 
     fn p(url: &str) -> Result<Box<dyn Notify>> {
-        cfg(url).map(|c| Box::new(Office365(Arc::new(c))) as Box<dyn Notify>)
+        cfg(url).map(|c| -> Box<dyn Notify> { Box::new(Office365(Arc::new(c))) })
     }
 
     #[test]

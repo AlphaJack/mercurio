@@ -121,18 +121,18 @@ impl StorageMode {
 
 /// [`Asset::storage_idlen`] by default.
 pub const DEFAULT_STORAGE_IDLEN: usize = 8;
-pub const DEFAULT_APP_ID: &str = "Mercurio";
-pub const DEFAULT_APP_DESC: &str = "Mercurio Notifications";
+pub(crate) const DEFAULT_APP_ID: &str = "Mercurio";
+pub(crate) const DEFAULT_APP_DESC: &str = "Mercurio Notifications";
 /// The repository (`repository` in the workspace `Cargo.toml`, the only place it is written).
 pub const REPOSITORY_URL: &str = env!("CARGO_PKG_REPOSITORY");
 /// The repository's GitHub Pages site, derived from [`REPOSITORY_URL`]: the book and the icons services link to.
 pub const PAGES_URL: &str = env!("MERCURIO_PAGES_URL");
 /// Default [`Asset::app_url`].
-pub const DEFAULT_APP_URL: &str = REPOSITORY_URL;
+pub(crate) const DEFAULT_APP_URL: &str = REPOSITORY_URL;
 /// Default [`Asset::image_url_mask`] and [`Asset::image_url_logo`]: the icon published with the book (`crates/mercurio/assets/logo.png`).
-pub const DEFAULT_IMAGE_URL_MASK: &str = concat!(env!("MERCURIO_PAGES_URL"), "/assets/icons/logo.png");
+pub(crate) const DEFAULT_IMAGE_URL_MASK: &str = concat!(env!("MERCURIO_PAGES_URL"), "/assets/icons/logo.png");
 /// Default [`Asset::image_url_logo`].
-pub const DEFAULT_IMAGE_URL_LOGO: &str = DEFAULT_IMAGE_URL_MASK;
+pub(crate) const DEFAULT_IMAGE_URL_LOGO: &str = DEFAULT_IMAGE_URL_MASK;
 /// The bundled icon as SVG, for local notifiers that read SVG.
 pub const ICON_SVG: &[u8] = include_bytes!("../assets/logo.svg");
 /// The bundled icon as a 256 px PNG, for local notifiers that need a raster image.
@@ -225,11 +225,11 @@ impl Asset {
 
     fn substitute(&self, mask: &str, kind: NotifyType, size: ImageSize, ext: Option<&str>) -> String {
         let re = crate::regex!(r"(?i)\{(THEME|TYPE|XY|EXTENSION)\}");
-        re.replace_all(mask, |c: &crate::re::Captures| match c[1].to_ascii_uppercase().as_str() {
+        re.replace_all(mask, |c: &crate::re::Captures<'_>| match c[1].to_ascii_uppercase().as_str() {
             "THEME" => self.theme.clone(),
-            "TYPE" => kind.as_str().to_string(),
-            "XY" => size.as_str().to_string(),
-            _ => ext.unwrap_or(&self.default_extension).to_string(),
+            "TYPE" => kind.as_str().to_owned(),
+            "XY" => size.as_str().to_owned(),
+            _ => ext.unwrap_or(&self.default_extension).to_owned(),
         })
         .into_owned()
     }

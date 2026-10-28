@@ -207,7 +207,7 @@ impl fmt::Display for ErrorClass {
 }
 
 /// Parse a `Retry-After` value (RFC 9110 10.2.3): delta-seconds or an IMF-fixdate (`Sun, 06 Nov 1994 08:49:37 GMT`), relative to `now`. A date in the past is zero. The obsolete RFC 850 and asctime forms are rejected.
-pub fn parse_retry_after(value: &str, now: SystemTime) -> Option<Duration> {
+pub(crate) fn parse_retry_after(value: &str, now: SystemTime) -> Option<Duration> {
     let value = value.trim();
     if !value.is_empty() && value.bytes().all(|b| b.is_ascii_digit()) {
         return Some(Duration::from_secs(value.parse().unwrap_or(u64::MAX)));
@@ -263,7 +263,7 @@ impl<T> ResultExt<T> for Result<T> {
 }
 
 /// Short canonical phrase for common status codes.
-pub fn http_reason(status: u16) -> &'static str {
+pub(crate) fn http_reason(status: u16) -> &'static str {
     match status {
         400 => "Bad Request - Unsupported Parameters.",
         401 => "Verification Failed.",
@@ -300,7 +300,7 @@ mod tests {
         assert_eq!(Error::config("x", "bad").class(), ErrorClass::InvalidTarget);
         let rl = Error::RateLimited { status: 429, reason: "slow".into(), retry_after: Some(Duration::from_secs(3)) };
         assert_eq!(rl.class(), ErrorClass::RateLimited { retry_after: Some(Duration::from_secs(3)) });
-        assert_eq!((rl.to_string(), rl.status()), ("HTTP 429: slow".to_string(), Some(429)));
+        assert_eq!((rl.to_string(), rl.status()), ("HTTP 429: slow".to_owned(), Some(429)));
         assert!(Error::unconfirmed("timed out (receive body)").is_timeout());
     }
 

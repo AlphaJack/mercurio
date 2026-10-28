@@ -9,7 +9,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "seven",
     name: "seven",
     schemes: &["seven"],
@@ -52,15 +52,15 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let source = param_unquoted(u, "from").or_else(|| param_unquoted(u, "source"));
     let flash = SERVICE.flag(u, "flash");
-    let label = u.param("label").map(str::to_string);
+    let label = u.param("label").map(str::to_owned);
     if apikey.is_empty() {
         return Err(SERVICE.err("an invalid seven API Key was specified"));
     }
     Ok(Box::new(Seven {
         apikey: Secret::new(apikey),
-        source: source.map(|s| s.trim().to_string()),
+        source: source.map(|s| s.trim().to_owned()),
         flash,
-        label: label.map(|s| s.trim().to_string()),
+        label: label.map(|s| s.trim().to_owned()),
         targets: valid_phones(&targets, 10),
     }))
 }

@@ -23,7 +23,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "courier",
     name: "Courier",
     schemes: &["courier"],
@@ -86,7 +86,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if labels.is_empty() {
         return Err(SERVICE.err("no Courier recipients were specified"));
     }
-    let base = api_base(u, DEFAULT_API).map_err(|_| SERVICE.err("an invalid Courier host was specified"))?;
+    let base = api_base(u, DEFAULT_API).ok().ok_or_else(|| SERVICE.err("an invalid Courier host was specified"))?;
     Ok(Box::new(Courier {
         token: Secret::new(token),
         base,
@@ -95,7 +95,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         template: SERVICE.text(u, "template"),
         channels: u.param_nonempty("channels").map(|c| crate::parse::parse_list_unsorted([unquote(c)])).unwrap_or_default(),
         data: colon_data(u),
-        headers: u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        headers: u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
     }))
 }
 

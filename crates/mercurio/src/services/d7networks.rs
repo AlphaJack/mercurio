@@ -10,7 +10,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "d7networks",
     name: "D7 Networks",
     schemes: &["d7sms"],
@@ -61,7 +61,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let batch = SERVICE.flag(u, "batch");
     let unicode = SERVICE.flag(u, "unicode");
     targets.extend(to_param(u));
-    let source = u.text("from").or_else(|| u.text("source")).map(|s| s.trim().to_string());
+    let source = u.text("from").or_else(|| u.text("source")).map(|s| s.trim().to_owned());
 
     let token = token
         .and_then(|t| validate_nonblank(&t))

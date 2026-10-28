@@ -13,7 +13,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "onebot",
     name: "OneBot",
     schemes: &["onebot", "onebots"],
@@ -53,7 +53,7 @@ struct OneBot {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     crate::parse::require_host(u, &SERVICE)?;
-    let token_raw = u.param_nonempty("token").map(str::to_string).or_else(|| u.user.clone()).unwrap_or_default();
+    let token_raw = u.param_nonempty("token").map(str::to_owned).or_else(|| u.user.clone()).unwrap_or_default();
     let token = unquote(&token_raw);
     let token = if token.is_empty() { None } else { Some(Secret::new(token)) };
 
@@ -104,7 +104,7 @@ fn check(res: Result<Response>) -> Result<()> {
     if let Some(Value::Object(m)) = r.json()
         && (m.get("status").and_then(Value::as_str) == Some("failed") || !retcode_ok(m.get("retcode")))
     {
-        let why = m.get("wording").or_else(|| m.get("message")).and_then(Value::as_str).unwrap_or("").to_string();
+        let why = m.get("wording").or_else(|| m.get("message")).and_then(Value::as_str).unwrap_or("").to_owned();
         return Err(Error::Service(format!(
             "OneBot action failed: retcode={}, {why}",
             m.get("retcode").unwrap_or(&Value::Null)
@@ -145,7 +145,7 @@ fn post(req: Request, key: String, failed: Failed) -> Plan {
 
 fn payload(field: &str, id: &str, message: Value) -> Value {
     let mut m = serde_json::Map::new();
-    m.insert(field.to_string(), json!(id.parse::<u64>().unwrap_or(0)));
+    m.insert(field.to_owned(), json!(id.parse::<u64>().unwrap_or(0)));
     m.insert("message".into(), message);
     Value::Object(m)
 }

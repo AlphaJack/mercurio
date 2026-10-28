@@ -42,7 +42,7 @@ struct Server {
     streams: Arc<notify::StreamSlots>,
 }
 /// `mercurio serve --healthcheck`: `GET /status` on the server listening at `bind` (a wildcard address is reached through loopback). `Ok` on `200`. The container image's `HEALTHCHECK` runs it; the image has no curl.
-pub fn healthcheck(bind: &str) -> Result<(), String> {
+pub(crate) fn healthcheck(bind: &str) -> Result<(), String> {
     use std::io::{Read as _, Write as _};
     use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
     let mut addr: SocketAddr =
@@ -62,14 +62,14 @@ pub fn healthcheck(bind: &str) -> Result<(), String> {
         None => Err(format!("{addr}: no HTTP answer")),
     }
 }
-pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
+pub(crate) async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     let s = Settings::from_args(args)?;
     let listener = tokio::net::TcpListener::bind(bind).await.map_err(|e| format!("bind {bind}: {e}"))?;
     let addr = listener.local_addr().map_err(|e| e.to_string())?;
     let mut stop = std::pin::pin!(shutdown());
     outln!("listening on http://{addr}");
     if let Some(p) = s.prune {
-        let store = store::ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
+        let store = ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
         tokio::spawn(prune_loop(p, store, s.storage.clone()));
     }
     let io_timeout = s.io_timeout;
@@ -110,7 +110,7 @@ pub async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
 }
 /// Ctrl-C, or SIGTERM / SIGHUP on Unix (a container stop).
 /// apprise-api's container clean-up: one run at start-up, then one every interval, each stopped after the timeout. It ends with the server.
-async fn prune_loop(p: settings::Prune, store: store::ConfigStore, storage: Option<std::path::PathBuf>) {
+async fn prune_loop(p: settings::Prune, store: ConfigStore, storage: Option<std::path::PathBuf>) {
     loop {
         match tokio::time::timeout(p.timeout, prune_once(&p, &store, storage.as_deref())).await {
             Ok((files, logins)) => log::info!("pruned {files} persistent storage file(s) and {logins} unused login(s)"),
@@ -121,11 +121,7 @@ async fn prune_loop(p: settings::Prune, store: store::ConfigStore, storage: Opti
 }
 
 /// Persistent storage older than `p.storage`, then logins without a configuration older than `p.logins`: the counts removed.
-async fn prune_once(
-    p: &settings::Prune,
-    store: &store::ConfigStore,
-    storage: Option<&std::path::Path>,
-) -> (usize, usize) {
+async fn prune_once(p: &settings::Prune, store: &ConfigStore, storage: Option<&std::path::Path>) -> (usize, usize) {
     let mut files = 0;
     if let Some(dir) = storage {
         let pruned = crate::storage::prune(dir, &[], p.storage, true).await;
@@ -135,7 +131,7 @@ async fn prune_once(
 }
 
 /// Resolves on SIGINT, SIGTERM or SIGHUP (Ctrl-C elsewhere). The handlers are installed when this is called, not when it is first awaited, so a signal sent right after the listener is announced is never lost to the default action.
-fn shutdown() -> impl std::future::Future<Output = ()> {
+fn shutdown() -> impl Future<Output = ()> {
     #[cfg(unix)]
     {
         use tokio::signal::unix::{SignalKind, signal};
@@ -165,9 +161,9 @@ const DENIED: &str = "The site has been configured to deny this request";
 /// The effective Config ID: a valid `Config-ID` header wins over the path.
 fn resolve_key(req: &Req, path_key: Option<&str>) -> Result<String, Reply> {
     match req.x_header("Config-ID") {
-        Some(h) if valid_key(h) => Ok(h.to_string()),
+        Some(h) if valid_key(h) => Ok(h.to_owned()),
         Some(_) => Err(Reply::error(req, 400, INVALID_KEY_HEADER)),
-        None => path_key.map(str::to_string).ok_or_else(|| Reply::error(req, 400, MISSING_KEY)),
+        None => path_key.map(str::to_owned).ok_or_else(|| Reply::error(req, 400, MISSING_KEY)),
     }
 }
 
@@ -178,7 +174,7 @@ impl Server {
 
     /// May this request use `key`? Sets the caller's role on success.
     async fn key_ok(&self, req: &Req, key: &str, allow_public: bool) -> bool {
-        req.note(|ev| ev.key = Some(key.to_string()));
+        req.note(|ev| ev.key = Some(key.to_owned()));
         match req.role.get() {
             Role::Admin | Role::Open => return true,
             Role::User | Role::Anonymous => {}
@@ -193,7 +189,7 @@ impl Server {
             return false;
         }
         if state.disabled() {
-            req.disabled_key.set(Some(key.to_string()));
+            req.disabled_key.set(Some(key.to_owned()));
             return false;
         }
         req.role.set(Role::User);
@@ -311,7 +307,7 @@ mod tests {
     fn form(path: &str, body: &str) -> Request<Body> {
         Request::post(path)
             .header("content-type", "application/x-www-form-urlencoded")
-            .body(Body::from(body.to_string()))
+            .body(Body::from(body.to_owned()))
             .unwrap()
     }
 

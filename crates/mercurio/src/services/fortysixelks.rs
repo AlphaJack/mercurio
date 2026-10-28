@@ -6,7 +6,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "fortysixelks",
     name: "46elks",
     schemes: &["46elks", "elks"],
@@ -55,7 +55,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
     targets.extend(to_param(u));
 
-    let source = source.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let source = source.map(|s| s.trim().to_owned()).filter(|s| !s.is_empty());
     let password = u.password().unwrap_or_default();
     let user = u.user().unwrap_or_default();
     if password.is_empty() {
@@ -68,7 +68,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         && let Some(s) = source.as_deref()
         && is_phone_no(s, 10).is_some()
     {
-        targets = vec![s.to_string()];
+        targets = vec![s.to_owned()];
     }
     let targets = parse_phone_no(&targets, true, false)
         .into_iter()

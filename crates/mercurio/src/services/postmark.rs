@@ -15,7 +15,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "postmark",
     name: "Postmark",
     schemes: &["postmark"],
@@ -60,7 +60,7 @@ struct Postmark {
 
 fn set_name(names: &mut Vec<(String, String)>, email: &str, name: &str) {
     names.retain(|(k, _)| k != email);
-    names.push((email.to_string(), name.to_string()));
+    names.push((email.to_owned(), name.to_owned()));
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -122,7 +122,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     };
     let cc = collect(u.list("cc"), true, &mut names);
     let bcc = collect(u.list("bcc"), false, &mut names);
-    let reply_to = collect(u.param_nonempty("reply").map(|v| vec![v.to_string()]).unwrap_or_default(), true, &mut names);
+    let reply_to = collect(u.param_nonempty("reply").map(|v| vec![v.to_owned()]).unwrap_or_default(), true, &mut names);
     Ok(Box::new(Postmark { apikey: Secret::new(apikey), from, targets, names, cc, bcc, reply_to }))
 }
 
@@ -178,7 +178,7 @@ impl Notify for Postmark {
                 .json_text(&payload, msg.body);
             Plan::send_expect(req, &[200]).target(target.clone())
         });
-        Plan::all(plans.collect::<Vec<_>>())
+        Plan::all(plans)
     }
 }
 

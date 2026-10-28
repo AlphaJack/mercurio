@@ -7,7 +7,7 @@ const DAYS_PER_ERA: i64 = 146_097;
 const EPOCH_FROM_MARCH: i64 = 719_468;
 
 /// Unix seconds at midnight UTC of `year-month-day` (Howard Hinnant's `days_from_civil`).
-pub fn unix_secs(year: i64, month: i64, day: i64) -> i64 {
+pub(crate) fn unix_secs(year: i64, month: i64, day: i64) -> i64 {
     let y = if month <= 2 { year - 1 } else { year };
     let era = y.div_euclid(400);
     let yoe = y - era * 400;
@@ -34,13 +34,13 @@ pub fn utc_parts(secs: u64) -> (i64, u32, u32, u32, u32, u32) {
 }
 
 /// RFC 3339 / ISO 8601 UTC timestamp, e.g. `2026-10-16T12:00:00Z`.
-pub fn iso8601_utc(secs: u64) -> String {
+pub(crate) fn iso8601_utc(secs: u64) -> String {
     let (y, mo, d, h, mi, s) = utc_parts(secs);
     format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}Z")
 }
 
 /// RFC 2822 date, e.g. `Fri, 16 Oct 2026 12:00:00 +0000`.
-pub fn rfc2822_utc(secs: u64) -> String {
+pub(crate) fn rfc2822_utc(secs: u64) -> String {
     let (y, mo, d, h, mi, s) = utc_parts(secs);
     let days = (secs / SECS_PER_DAY) as i64;
     let wd = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"][days.rem_euclid(7) as usize];
@@ -49,7 +49,7 @@ pub fn rfc2822_utc(secs: u64) -> String {
 }
 
 /// Unix seconds of an RFC 3339 time (`2026-10-20T17:00:00.000Z`, `...+02:00`); `None` when it is not one.
-pub fn parse_rfc3339(s: &str) -> Option<f64> {
+pub(crate) fn parse_rfc3339(s: &str) -> Option<f64> {
     let c = crate::regex!(
         r"^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2}):(\d{2})(\.\d+)?(?:([Zz])|([+-])(\d{2}):?(\d{2}))$"
     )
@@ -73,30 +73,30 @@ pub fn parse_rfc3339(s: &str) -> Option<f64> {
 
 /// A time zone: an IANA zone with the `timezones` feature, UTC only without it.
 #[cfg(feature = "timezones")]
-pub type Zone = jiff::tz::TimeZone;
+pub(crate) type Zone = jiff::tz::TimeZone;
 
 /// A time zone: UTC only, as this build lacks the `timezones` feature.
 #[cfg(not(feature = "timezones"))]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Zone;
+pub(crate) struct Zone;
 
 #[cfg(not(feature = "timezones"))]
 impl Zone {
     /// The IANA name, as `jiff` names its UTC zone.
-    pub fn iana_name(&self) -> Option<&str> {
+    pub(crate) fn iana_name(&self) -> Option<&str> {
         Some("UTC")
     }
 }
 
 /// The UTC zone.
 #[cfg(feature = "timezones")]
-pub const UTC: Zone = jiff::tz::TimeZone::UTC;
+pub(crate) const UTC: Zone = jiff::tz::TimeZone::UTC;
 /// The UTC zone.
 #[cfg(not(feature = "timezones"))]
-pub const UTC: Zone = Zone;
+pub(crate) const UTC: Zone = Zone;
 
 /// The time zone `name` names, looked up as Apprise does: the UTC family (`utc`, `z`, `gmt`, `etc/utc`, ...), an exact IANA name, the same name in any case, or its location alone (`paris`, `argentina/salta`). `None` when nothing matches; without the `timezones` feature, anything but the UTC family.
-pub fn zone(name: &str) -> Option<Zone> {
+pub(crate) fn zone(name: &str) -> Option<Zone> {
     let raw = name.trim();
     if raw.is_empty() {
         return None;
@@ -123,7 +123,7 @@ fn iana_zone(raw: &str, lowered: &str) -> Option<Zone> {
     for zone in db.available() {
         let full = zone.as_str().to_lowercase();
         let parts: Vec<&str> = full.split('/').skip(1).take(2).collect();
-        let location = if parts.len() == 1 { parts[0].to_string() } else { parts.join("/") };
+        let location = if parts.len() == 1 { parts[0].to_owned() } else { parts.join("/") };
         if full == lowered || (!location.is_empty() && location == lowered) {
             return db.get(zone.as_str()).ok();
         }
@@ -132,7 +132,7 @@ fn iana_zone(raw: &str, lowered: &str) -> Option<Zone> {
 }
 
 /// The machine's time zone (Apprise's default), UTC when it cannot be found or without the `timezones` feature.
-pub fn local_zone() -> Zone {
+pub(crate) fn local_zone() -> Zone {
     #[cfg(feature = "timezones")]
     return jiff::tz::TimeZone::try_system().unwrap_or(UTC);
     #[cfg(not(feature = "timezones"))]
@@ -141,13 +141,13 @@ pub fn local_zone() -> Zone {
 
 /// RFC 2822 date in `tz`, e.g. `Fri, 16 Oct 2026 14:00:00 +0200` (e-mail `Date:`).
 #[cfg(not(feature = "timezones"))]
-pub fn rfc2822_in(secs: u64, _tz: &Zone) -> String {
+pub(crate) fn rfc2822_in(secs: u64, _tz: &Zone) -> String {
     rfc2822_utc(secs)
 }
 
 /// RFC 2822 date in `tz`, e.g. `Fri, 16 Oct 2026 14:00:00 +0200` (e-mail `Date:`).
 #[cfg(feature = "timezones")]
-pub fn rfc2822_in(secs: u64, tz: &Zone) -> String {
+pub(crate) fn rfc2822_in(secs: u64, tz: &Zone) -> String {
     match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
         Ok(ts) => ts.to_zoned(tz.clone()).strftime("%a, %d %b %Y %H:%M:%S %z").to_string(),
         Err(_) => rfc2822_utc(secs),
@@ -156,14 +156,14 @@ pub fn rfc2822_in(secs: u64, tz: &Zone) -> String {
 
 /// The wall-clock `(month, day, hour, minute, second)` of `secs` in `tz`.
 #[cfg(not(feature = "timezones"))]
-pub fn local_parts(secs: u64, _tz: &Zone) -> (u32, u32, u32, u32, u32) {
+pub(crate) fn local_parts(secs: u64, _tz: &Zone) -> (u32, u32, u32, u32, u32) {
     let (_, mo, d, h, mi, s) = utc_parts(secs);
     (mo, d, h, mi, s)
 }
 
 /// The wall-clock `(month, day, hour, minute, second)` of `secs` in `tz`.
 #[cfg(feature = "timezones")]
-pub fn local_parts(secs: u64, tz: &Zone) -> (u32, u32, u32, u32, u32) {
+pub(crate) fn local_parts(secs: u64, tz: &Zone) -> (u32, u32, u32, u32, u32) {
     match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
         Ok(ts) => {
             let dt = ts.to_zoned(tz.clone()).datetime();
@@ -187,10 +187,10 @@ mod tests {
         assert_eq!(zone("UTC0"), Some(jiff::tz::TimeZone::UTC));
         let paris = zone("Europe/Paris").expect("Europe/Paris");
         assert_eq!(
-            zone("europe/paris").and_then(|z| z.iana_name().map(str::to_string)).as_deref(),
+            zone("europe/paris").and_then(|z| z.iana_name().map(str::to_owned)).as_deref(),
             Some("Europe/Paris")
         );
-        assert_eq!(zone("paris").and_then(|z| z.iana_name().map(str::to_string)).as_deref(), Some("Europe/Paris"));
+        assert_eq!(zone("paris").and_then(|z| z.iana_name().map(str::to_owned)).as_deref(), Some("Europe/Paris"));
         assert!(zone("Mars/Olympus").is_none());
         assert!(zone("  ").is_none());
         // 2026-10-16 12:00 UTC is 14:00 in Paris (CEST).

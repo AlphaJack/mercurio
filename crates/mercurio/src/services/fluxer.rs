@@ -16,7 +16,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "fluxer",
     name: "Fluxer",
     schemes: &["fluxer", "fluxers"],
@@ -160,7 +160,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         crate::warning!("Fluxer mode changed to cloud mode because fluxer.app found in the host");
         mode = Mode::Cloud;
     }
-    let mut path = fullpath.map(|p| p.trim().to_string()).unwrap_or_default();
+    let mut path = fullpath.map(|p| p.trim().to_owned()).unwrap_or_default();
     if mode != Mode::Private {
         path = "/".into();
     } else if path.is_empty() {
@@ -178,7 +178,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
 
     let prefix = match mode {
-        Mode::Cloud => CLOUD_NOTIFY_HOST.to_string(),
+        Mode::Cloud => CLOUD_NOTIFY_HOST.to_owned(),
         Mode::Private => {
             let mut p = format!("{}://{}", u.http_scheme(), host);
             if let Some(port) = u.port {
@@ -222,7 +222,7 @@ fn ping_payload(args: &[&str]) -> Map<String, Value> {
     let (mut roles, mut users, mut parse) = (Vec::<String>::new(), Vec::<String>::new(), Vec::<String>::new());
     let add = |v: &mut Vec<String>, s: &str| {
         if !v.iter().any(|x| x == s) {
-            v.push(s.to_string());
+            v.push(s.to_owned());
         }
     };
     for arg in args {
@@ -258,7 +258,7 @@ fn extract_markdown_sections(body: &str) -> (String, Vec<Value>) {
         .into_iter()
         .map(|(name, value)| {
             let value =
-                if value.is_empty() { "```\n```".to_string() } else { format!("```md\n{}\n```", value.trim_end()) };
+                if value.is_empty() { "```\n```".to_owned() } else { format!("```md\n{}\n```", value.trim_end()) };
             json!({"name": name, "value": value})
         })
         .collect();
@@ -337,7 +337,7 @@ impl Notify for Fluxer {
             payload.extend(ping_payload(&[&joined]));
         }
 
-        let mut url = self.notify_url.expose().to_string();
+        let mut url = self.notify_url.expose().to_owned();
         if let Some(t) = &self.thread_id {
             url = Request::get(url).query(&[("thread_id", t.as_str())]).url;
         }
@@ -387,7 +387,7 @@ impl Notify for Fluxer {
                 payload.insert("embeds".into(), json!([Value::Object(embed)]));
             } else {
                 let mut content =
-                    if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\r\n{}", msg.title, msg.body) };
+                    if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}\r\n{}", msg.title, msg.body) };
                 if let Some(Value::String(c)) = payload.get("content") {
                     content.push_str(c);
                 }

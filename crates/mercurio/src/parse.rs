@@ -22,7 +22,7 @@ macro_rules! regex {
 
 /// Parse a yes/no word by its first two letters (`yes`, `on`, `true`, `enable`, `1`, ... and their negatives); anything else is `default`.
 /// `s` as a port: digits only, 1 to 65535.
-pub fn port(s: &str) -> Option<u16> {
+pub(crate) fn port(s: &str) -> Option<u16> {
     s.bytes().all(|b| b.is_ascii_digit()).then(|| s.parse().ok()).flatten().filter(|p| *p > 0)
 }
 
@@ -43,33 +43,33 @@ fn delimited(s: &str) -> impl Iterator<Item = &str> {
 }
 
 /// Split on `[](),; whitespace`, dedupe, sort.
-pub fn parse_list<I, S>(args: I) -> Vec<String>
+pub(crate) fn parse_list<I, S>(args: I) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
     let mut set: BTreeSet<String> = BTreeSet::new();
     for a in args {
-        set.extend(delimited(a.as_ref()).map(str::to_string));
+        set.extend(delimited(a.as_ref()).map(str::to_owned));
     }
     set.into_iter().collect()
 }
 
 /// Split like [`parse_list`], keeping order and duplicates.
-pub fn parse_list_unsorted<I, S>(args: I) -> Vec<String>
+pub(crate) fn parse_list_unsorted<I, S>(args: I) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
     let mut out = Vec::new();
     for a in args {
-        out.extend(delimited(a.as_ref()).map(str::to_string));
+        out.extend(delimited(a.as_ref()).map(str::to_owned));
     }
     out
 }
 
 /// Split on `[];,` only (not whitespace); items trimmed, sorted and deduplicated.
-pub fn parse_list_keep_spaces<I, S>(args: I) -> Vec<String>
+pub(crate) fn parse_list_keep_spaces<I, S>(args: I) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -77,14 +77,14 @@ where
     let re = regex!(r"[\[\];,]+");
     let set: BTreeSet<String> = args
         .into_iter()
-        .flat_map(|a| re.split(a.as_ref()).map(|s| s.trim().to_string()).collect::<Vec<_>>())
+        .flat_map(|a| re.split(a.as_ref()).map(|s| s.trim().to_owned()).collect::<Vec<_>>())
         .filter(|s| !s.is_empty())
         .collect();
     set.into_iter().collect()
 }
 
 /// [`parse_list`], then unquote each item.
-pub fn parse_list_unquoted<I, S>(args: I) -> Vec<String>
+pub(crate) fn parse_list_unquoted<I, S>(args: I) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -93,7 +93,7 @@ where
 }
 
 fn split_unparseable(arg: &str) -> Vec<String> {
-    delimited(arg).map(str::to_string).collect()
+    delimited(arg).map(str::to_owned).collect()
 }
 
 /// `$` inside a lookahead: end of string or a final `\n`.
@@ -125,7 +125,7 @@ fn findall_lookahead(
         let found = if lazy { (si + 1..last).find(matches) } else { (si + 1..last).rev().find(matches) };
         match found {
             Some(ei) => {
-                out.push(text.get(s..bounds[ei]).unwrap_or_default().to_string());
+                out.push(text.get(s..bounds[ei]).unwrap_or_default().to_owned());
                 si = ei;
             }
             None => si += 1,
@@ -135,7 +135,7 @@ fn findall_lookahead(
 }
 
 /// Phone numbers found in `args`; `prefix` also accepts a `label:` prefix. `store_unparseable` keeps the leftovers that are not numbers.
-pub fn parse_phone_no<I, S>(args: I, store_unparseable: bool, prefix: bool) -> Vec<String>
+pub(crate) fn parse_phone_no<I, S>(args: I, store_unparseable: bool, prefix: bool) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -165,7 +165,7 @@ where
 }
 
 /// Unquote each entry, then [`parse_phone_no`].
-pub fn parse_phone_no_unquoted<I, S>(args: I, prefix: bool) -> Vec<String>
+pub(crate) fn parse_phone_no_unquoted<I, S>(args: I, prefix: bool) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -176,7 +176,7 @@ where
 
 /// Result of [`is_phone_no`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PhoneNo {
+pub(crate) struct PhoneNo {
     /// Last 7 digits (the subscriber number).
     pub line: String,
     /// The 3 digits before `line`, if any.
@@ -190,7 +190,7 @@ pub struct PhoneNo {
 }
 
 /// Validate a phone number with at least `min_len` digits.
-pub fn is_phone_no(phone: &str, min_len: usize) -> Option<PhoneNo> {
+pub(crate) fn is_phone_no(phone: &str, min_len: usize) -> Option<PhoneNo> {
     if !regex!(r"^\+?[0-9\s)(+-]+\s*$").is_match(phone) {
         return None;
     }
@@ -201,7 +201,7 @@ pub fn is_phone_no(phone: &str, min_len: usize) -> Option<PhoneNo> {
     let full = digits.clone();
     let n = digits.len();
     let (rest, line) = digits.split_at(n.saturating_sub(7));
-    let line = line.to_string();
+    let line = line.to_owned();
     let (country, area) = rest.split_at(rest.len().saturating_sub(3));
     let mut pretty = String::new();
     if !country.is_empty() {
@@ -216,12 +216,12 @@ pub fn is_phone_no(phone: &str, min_len: usize) -> Option<PhoneNo> {
     } else {
         pretty.push_str(&line);
     }
-    Some(PhoneNo { line, area: area.to_string(), country: country.to_string(), pretty, full })
+    Some(PhoneNo { line, area: area.to_owned(), country: country.to_owned(), pretty, full })
 }
 
 /// Result of [`is_email`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EmailAddr {
+pub(crate) struct EmailAddr {
     /// Display name before the address, if any.
     pub name: String,
     /// Address without the `label+` part.
@@ -237,7 +237,7 @@ pub struct EmailAddr {
 }
 
 /// Parse an e-mail address, optionally with a display name and `+label`.
-pub fn is_email(address: &str) -> Option<EmailAddr> {
+pub(crate) fn is_email(address: &str) -> Option<EmailAddr> {
     let re = regex!(
         r#"(?i)^(?:(?:[\s"']{0,32})?(?P<name>[^:<'"]{0,128})?[:<\s'"]{1,32})?(?P<full_email>(?:(?P<label>[^+\s]{1,128})\+)?(?P<email>(?P<userid>[a-z0-9_!#$%&*/=?%`{|}~^-]+(?:\.[a-z0-9_!#$%&'*/=?%`{|}~^-]+)*)@(?P<domain>(?:(?:[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9_-]*[a-z0-9]))|[a-z0-9][a-z0-9_-]{5,})))\s*>?"#
     );
@@ -245,19 +245,19 @@ pub fn is_email(address: &str) -> Option<EmailAddr> {
         return None;
     }
     let c = re.captures(address)?;
-    let g = |n: &str| c.name(n).map(|m| m.as_str().to_string()).unwrap_or_default();
+    let g = |n: &str| c.name(n).map(|m| m.as_str().to_owned()).unwrap_or_default();
     Some(EmailAddr {
-        name: g("name").trim_end_matches([' ', '\t', '\r', '\n', '\x0b', '\x0c', '+']).to_string(),
+        name: g("name").trim_end_matches([' ', '\t', '\r', '\n', '\x0b', '\x0c', '+']).to_owned(),
         email: g("email"),
         full_email: g("full_email"),
-        label: g("label").trim_matches([' ', '\t', '\r', '\n', '\x0b', '\x0c', '+']).to_string(),
+        label: g("label").trim_matches([' ', '\t', '\r', '\n', '\x0b', '\x0c', '+']).to_owned(),
         user: g("userid"),
         domain: g("domain"),
     })
 }
 
 /// E-mail addresses found in `args`; `store_unparseable` keeps the leftovers.
-pub fn parse_emails<I, S>(args: I, store_unparseable: bool) -> Vec<String>
+pub(crate) fn parse_emails<I, S>(args: I, store_unparseable: bool) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -282,7 +282,7 @@ where
                     && let Some(m) = core.find(tail)
                     && !m.as_str().is_empty()
                 {
-                    found.push(m.as_str().to_string());
+                    found.push(m.as_str().to_owned());
                     i += m.end();
                     continue;
                 }
@@ -329,7 +329,7 @@ where
 
 /// Result of [`is_call_sign`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CallSign {
+pub(crate) struct CallSign {
     /// Upper-cased call sign without SSID.
     pub callsign: String,
     /// SSID digits after `-` (may be empty).
@@ -337,17 +337,17 @@ pub struct CallSign {
 }
 
 /// Validate an amateur-radio call sign with an optional `-SSID`.
-pub fn is_call_sign(callsign: &str) -> Option<CallSign> {
+pub(crate) fn is_call_sign(callsign: &str) -> Option<CallSign> {
     let re = regex!(r"(?i)^(?P<callsign>[0-9a-z]{1,2}[0-9][a-z0-9]{1,3})(?:-(?P<ssid>[0-9]{1,2}))?\s*$");
     let c = re.captures(callsign)?;
     Some(CallSign {
         callsign: c["callsign"].to_uppercase(),
-        ssid: c.name("ssid").map(|m| m.as_str().to_string()).unwrap_or_default(),
+        ssid: c.name("ssid").map(|m| m.as_str().to_owned()).unwrap_or_default(),
     })
 }
 
 /// Call signs found in `args`; `store_unparseable` keeps the leftovers.
-pub fn parse_call_sign<I, S>(args: I, store_unparseable: bool) -> Vec<String>
+pub(crate) fn parse_call_sign<I, S>(args: I, store_unparseable: bool) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -368,7 +368,7 @@ where
             64,
         )
         .into_iter()
-        .map(|s| s.trim_start().to_string())
+        .map(|s| s.trim_start().to_owned())
         .collect();
         if !found.is_empty() {
             out.extend(found);
@@ -380,17 +380,17 @@ where
 }
 
 /// Whether the string starts with a UUID4.
-pub fn is_uuid(s: &str) -> bool {
+pub(crate) fn is_uuid(s: &str) -> bool {
     regex!(r"(?i)^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}").is_match(s)
 }
 
 /// Validate an IPv4 and/or IPv6 address. IPv6 results are returned wrapped in `[...]`.
-pub fn is_ipaddr(addr: &str, ipv4: bool, ipv6: bool) -> Option<String> {
+pub(crate) fn is_ipaddr(addr: &str, ipv4: bool, ipv6: bool) -> Option<String> {
     if ipv4 {
         let re =
             regex!(r"^((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\n?$");
         if re.is_match(addr) {
-            return Some(addr.to_string());
+            return Some(addr.to_owned());
         }
     }
     if ipv6 {
@@ -411,7 +411,7 @@ pub fn is_ipaddr(addr: &str, ipv4: bool, ipv6: bool) -> Option<String> {
 }
 
 /// For services that connect to the URL host: reject a host that is not a hostname or IP address. Also reject a port that is not a valid number.
-pub fn require_host(u: &crate::url::ParsedUrl, def: &'static crate::service::ServiceDef) -> crate::Result<()> {
+pub(crate) fn require_host(u: &crate::url::ParsedUrl, def: &'static crate::service::ServiceDef) -> crate::Result<()> {
     if u.port_raw.is_some() || is_hostname(&u.host, true, true, true).is_none() {
         return Err(def.err("an invalid hostname or port was specified"));
     }
@@ -419,7 +419,7 @@ pub fn require_host(u: &crate::url::ParsedUrl, def: &'static crate::service::Ser
 }
 
 /// Validate a hostname or IP address. Returns the normalised hostname.
-pub fn is_hostname(hostname: &str, ipv4: bool, ipv6: bool, underscore: bool) -> Option<String> {
+pub(crate) fn is_hostname(hostname: &str, ipv4: bool, ipv6: bool, underscore: bool) -> Option<String> {
     if hostname.is_empty() || hostname.chars().count() > 253 {
         return None;
     }
@@ -444,7 +444,7 @@ pub fn is_hostname(hostname: &str, ipv4: bool, ipv6: bool, underscore: bool) -> 
     if !labels.iter().all(|l| ok(l)) {
         return is_ipaddr(h, ipv4, ipv6);
     }
-    Some(h.to_string())
+    Some(h.to_owned())
 }
 
 // `Arc`: a cloned `Regex` starts with an empty match cache, which costs more than the match. Keyed by pattern, then flags, so a lookup needs no allocation.
@@ -456,28 +456,28 @@ const MAX_CACHED_REGEXES: usize = 256;
 /// `value` (trimmed when `strip`) when it matches `pattern`.
 ///
 /// The pattern is anchored at the start only. `flags` is a subset of `imsx`.
-pub fn validate_regex(value: &str, pattern: &str, flags: &str, strip: bool) -> Option<String> {
+pub(crate) fn validate_regex(value: &str, pattern: &str, flags: &str, strip: bool) -> Option<String> {
     let re = compiled(pattern, flags)?;
     if !re.is_match(value) {
         return None;
     }
-    Some(if strip { value.trim().to_string() } else { value.to_string() })
+    Some(if strip { value.trim().to_owned() } else { value.to_owned() })
 }
 
 /// [`validate_regex`], then the named groups substituted into `fmt` (e.g. `"{token}"`).
-pub fn validate_regex_fmt(value: &str, pattern: &str, flags: &str, fmt: &str) -> Option<String> {
+pub(crate) fn validate_regex_fmt(value: &str, pattern: &str, flags: &str, fmt: &str) -> Option<String> {
     let re = compiled(pattern, flags)?;
     let caps = re.captures(value)?;
-    let mut out = fmt.to_string();
+    let mut out = fmt.to_owned();
     for name in re.capture_names().flatten() {
         let v = caps.name(name).map(|m| m.as_str()).unwrap_or("");
         out = out.replace(&format!("{{{name}}}"), v);
     }
-    Some(out.trim().to_string())
+    Some(out.trim().to_owned())
 }
 
 /// Default `validate_regex` pattern: any non-whitespace start.
-pub fn validate_nonblank(value: &str) -> Option<String> {
+pub(crate) fn validate_nonblank(value: &str) -> Option<String> {
     validate_regex(value, r"[^\s]+", "i", true)
 }
 
@@ -499,7 +499,7 @@ fn compiled(pattern: &str, flags: &str) -> Option<Arc<Regex>> {
     if cache.values().map(BTreeMap::len).sum::<usize>() >= MAX_CACHED_REGEXES {
         cache.clear();
     }
-    cache.entry(pattern.to_string()).or_default().insert(flags.to_string(), re.clone());
+    cache.entry(pattern.to_owned()).or_default().insert(flags.to_owned(), re.clone());
     Some(re)
 }
 

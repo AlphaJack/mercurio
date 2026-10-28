@@ -12,7 +12,7 @@ use crate::url::ParsedUrl;
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "smseagle",
     name: "SMS Eagle",
     schemes: &["smseagle", "smseagles"],
@@ -166,7 +166,7 @@ impl Notify for SmsEagle {
             .map(|a| json!({"content_type": a.mime, "content": b64(&a.data)}))
             .collect();
         let message =
-            if self.status { format!("{} {}", ctx.asset.ascii(msg.kind), msg.body) } else { msg.body.to_string() };
+            if self.status { format!("{} {}", ctx.asset.ascii(msg.kind), msg.body) } else { msg.body.to_owned() };
         let batch = if self.batch { BATCH_SIZE } else { 1 };
         let categories: [(&str, &str, &Vec<String>); 3] = [
             ("sms.send_sms", "to", &self.phones),

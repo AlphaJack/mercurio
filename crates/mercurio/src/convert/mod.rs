@@ -1,21 +1,21 @@
 //! Body format conversion: Markdown to HTML, HTML to text / Markdown, text to HTML / Markdown, Markdown to a service's own markup and the size-aware splitting helpers. All index arithmetic is in code points.
 
-pub mod dialect;
+pub(crate) mod dialect;
 #[cfg(feature = "emojis")]
-pub mod emoji;
-pub mod html;
+pub(crate) mod emoji;
+pub(crate) mod html;
 #[cfg(feature = "markdown")]
 mod markdown;
-pub mod markup;
-pub mod split;
+pub(crate) mod markup;
+pub(crate) mod split;
 
 use crate::message::NotifyFormat;
 
-pub use dialect::{split_dialect_chunk, truncate_dialect_chunk};
-pub use split::smart_split;
+pub(crate) use dialect::{split_dialect_chunk, truncate_dialect_chunk};
+pub(crate) use split::smart_split;
 
 /// Convert `content` from one format to another. Pairs without a converter (e.g. Markdown to text) return the input.
-pub fn convert_between(from: NotifyFormat, to: NotifyFormat, content: &str) -> String {
+pub(crate) fn convert_between(from: NotifyFormat, to: NotifyFormat, content: &str) -> String {
     use NotifyFormat::*;
     match (from, to) {
         (Markdown, Html) => markdown_to_html(content),
@@ -23,12 +23,12 @@ pub fn convert_between(from: NotifyFormat, to: NotifyFormat, content: &str) -> S
         (Html, Text) => html_to_text(content),
         (Html, Markdown) => html_to_markdown(content),
         (Text, Markdown) => text_to_markdown(content),
-        _ => content.to_string(),
+        _ => content.to_owned(),
     }
 }
 
 /// Markdown to HTML (with `nl2br` and `tables`); escaped text without the `markdown` feature.
-pub fn markdown_to_html(content: &str) -> String {
+pub(crate) fn markdown_to_html(content: &str) -> String {
     #[cfg(feature = "markdown")]
     return markdown::markdown_to_html(content);
     #[cfg(not(feature = "markdown"))]
@@ -39,7 +39,7 @@ pub fn markdown_to_html(content: &str) -> String {
 }
 
 /// Markdown to HTML without extensions (as Matrix uses it); escaped text without the `markdown` feature.
-pub fn markdown_to_html_plain(content: &str) -> String {
+pub(crate) fn markdown_to_html_plain(content: &str) -> String {
     #[cfg(feature = "markdown")]
     return markdown::markdown_to_html_plain(content);
     #[cfg(not(feature = "markdown"))]
@@ -55,12 +55,12 @@ fn markdown_unavailable() {
 }
 
 /// Plain text to HTML: escape and turn newlines into `<br/>`.
-pub fn text_to_html(content: &str) -> String {
+pub(crate) fn text_to_html(content: &str) -> String {
     crate::util::escape_html(content, true, true)
 }
 
 /// Plain text to CommonMark: backslash-escape every syntax character (`&` only when it would start an entity such as `&amp;`).
-pub fn text_to_markdown(content: &str) -> String {
+pub(crate) fn text_to_markdown(content: &str) -> String {
     let chars: Vec<char> = content.chars().collect();
     let mut out = String::with_capacity(content.len() + 8);
     for (i, &c) in chars.iter().enumerate() {
@@ -101,12 +101,12 @@ fn entity_follows(rest: &[char]) -> bool {
 }
 
 /// HTML to plain text.
-pub fn html_to_text(content: &str) -> String {
+pub(crate) fn html_to_text(content: &str) -> String {
     html::html_to_text(content)
 }
 
 /// HTML to CommonMark.
-pub fn html_to_markdown(content: &str) -> String {
+pub(crate) fn html_to_markdown(content: &str) -> String {
     html::html_to_markdown(content)
 }
 

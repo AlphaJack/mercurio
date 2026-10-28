@@ -14,7 +14,7 @@ use super::http::{Body, Reply, Req};
 
 /// One log line of a notification call.
 #[derive(Debug, Clone)]
-pub struct LogEntry {
+pub(super) struct LogEntry {
     pub level: &'static str,
     pub time: SystemTime,
     pub message: String,
@@ -22,27 +22,27 @@ pub struct LogEntry {
 }
 
 impl LogEntry {
-    pub fn new(level: &'static str, message: String, service: Option<String>) -> Self {
+    pub(super) fn new(level: &'static str, message: String, service: Option<String>) -> Self {
         LogEntry { level, time: SystemTime::now(), message, service }
     }
 
     /// `YYYY-MM-DD HH:MM:SS,mmm` (UTC).
-    pub fn asctime(&self) -> String {
+    pub(super) fn asctime(&self) -> String {
         let d = self.time.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
         let (y, mo, da, h, mi, s) = mercurio::__private::utc_parts(d.as_secs());
         format!("{y:04}-{mo:02}-{da:02} {h:02}:{mi:02}:{s:02},{:03}", d.subsec_millis())
     }
 
-    pub fn line(&self) -> String {
+    pub(super) fn line(&self) -> String {
         format!("{} - {} - {}", self.asctime(), self.level, self.message)
     }
 }
 
 /// Log entries for a finished call: one per service notified.
-pub fn report_logs(report: &Report) -> Vec<LogEntry> {
+pub(super) fn report_logs(report: &Report) -> Vec<LogEntry> {
     let mut logs = Vec::new();
     for e in &report.entries {
-        let service = Some(e.service.to_string());
+        let service = Some(e.service.to_owned());
         if e.delivery.is_success() {
             logs.push(LogEntry::new("INFO", format!("Sent {} notification.", e.label), service));
         } else {
@@ -59,7 +59,7 @@ pub fn report_logs(report: &Report) -> Vec<LogEntry> {
     logs
 }
 
-pub fn render(req: &Req, status: u16, logs: &[LogEntry], error: Option<&str>) -> Reply {
+pub(super) fn render(req: &Req, status: u16, logs: &[LogEntry], error: Option<&str>) -> Reply {
     if req.wants_json() {
         let details: Vec<Value> = logs.iter().map(|l| json!([l.level, l.asctime(), l.message])).collect();
         return Reply::json(status, &json!({"error": error, "details": details}));
@@ -79,7 +79,7 @@ pub fn render(req: &Req, status: u16, logs: &[LogEntry], error: Option<&str>) ->
     }
     let mut text = logs.iter().map(LogEntry::line).collect::<Vec<_>>().join("\n");
     if text.is_empty() {
-        text = error.unwrap_or_default().to_string();
+        text = error.unwrap_or_default().to_owned();
     }
     Reply::new(status, "text/plain; charset=utf-8", text.into_bytes())
 }
@@ -89,7 +89,7 @@ fn html_escape(s: &str) -> String {
 }
 
 /// What to send.
-pub struct Job {
+pub(super) struct Job {
     pub notifier: AsyncMercurio,
     pub message: Message,
     pub filter: TagFilter,
@@ -100,7 +100,7 @@ pub struct Job {
 
 impl Job {
     /// Send, with every log line of the call (the library's own and one per finished service) going to `on_log` as it happens.
-    pub async fn run(&self, on_log: Arc<dyn Fn(LogEntry) + Send + Sync>) -> Report {
+    pub(super) async fn run(&self, on_log: Arc<dyn Fn(LogEntry) + Send + Sync>) -> Report {
         let sink: crate::logging::Sink = {
             let on_log = on_log.clone();
             Arc::new(move |level, message| on_log(LogEntry::new(level_name(level), message, None)))
@@ -118,7 +118,7 @@ impl Job {
     }
 
     /// The 424 message for this kind of call.
-    pub fn failure_message(&self) -> &'static str {
+    pub(super) fn failure_message(&self) -> &'static str {
         if self.key.is_some() {
             "One or more notification could not be sent"
         } else {
@@ -127,7 +127,7 @@ impl Job {
     }
 }
 
-pub async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<LogEntry>) {
+pub(super) async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<LogEntry>) {
     let collected = Arc::new(std::sync::Mutex::new(Vec::new()));
     let report = {
         let collected = collected.clone();
@@ -142,7 +142,7 @@ pub async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<Log
     let reply = if report.is_success() {
         render(req, 200, &logs, None)
     } else {
-        req.note(|ev| ev.error = Some(job.failure_message().to_string()));
+        req.note(|ev| ev.error = Some(job.failure_message().to_owned()));
         render(req, 424, &logs, Some(job.failure_message()))
     };
     (reply, report, all)
@@ -160,7 +160,7 @@ fn level_name(level: tracing::Level) -> &'static str {
 }
 
 /// Numeric log level of a level name (`TRACE` 5 ... `CRITICAL` 50).
-pub fn level_value(name: &str) -> Option<u8> {
+pub(super) fn level_value(name: &str) -> Option<u8> {
     match name.trim().to_ascii_uppercase().as_str() {
         "TRACE" => Some(5),
         "DEBUG" => Some(10),
@@ -173,7 +173,7 @@ pub fn level_value(name: &str) -> Option<u8> {
 }
 
 /// Keep the entries at or above `level`.
-pub fn filter_level(logs: Vec<LogEntry>, level: u8) -> Vec<LogEntry> {
+pub(super) fn filter_level(logs: Vec<LogEntry>, level: u8) -> Vec<LogEntry> {
     logs.into_iter().filter(|l| level_value(l.level).unwrap_or(20) >= level).collect()
 }
 
@@ -184,7 +184,7 @@ fn entry_logs(e: &mercurio::ReportEntry) -> Vec<LogEntry> {
 }
 
 /// One Server-Sent Event.
-pub fn sse(event: &str, data: &Value) -> Event {
+pub(super) fn sse(event: &str, data: &Value) -> Event {
     Event::default().event(event).data(data.to_string())
 }
 
@@ -193,17 +193,17 @@ fn log_event(l: &LogEntry) -> Event {
 }
 
 /// Live streams currently admitted (`APPRISE_STREAM_WORKER_COUNT` + `APPRISE_STREAM_QUEUE_SIZE`).
-pub struct StreamSlots {
+pub(super) struct StreamSlots {
     active: AtomicUsize,
     capacity: usize,
 }
 
 impl StreamSlots {
-    pub fn new(capacity: usize) -> Arc<StreamSlots> {
+    pub(super) fn new(capacity: usize) -> Arc<StreamSlots> {
         Arc::new(StreamSlots { active: AtomicUsize::new(0), capacity })
     }
 
-    pub fn try_admit(self: &Arc<Self>) -> Option<StreamSlot> {
+    pub(super) fn try_admit(self: &Arc<Self>) -> Option<StreamSlot> {
         let prev = self.active.fetch_add(1, Ordering::SeqCst);
         if prev >= self.capacity {
             self.active.fetch_sub(1, Ordering::SeqCst);
@@ -214,7 +214,7 @@ impl StreamSlots {
 }
 
 /// Releases its admission when the response is done.
-pub struct StreamSlot(Arc<StreamSlots>);
+pub(super) struct StreamSlot(Arc<StreamSlots>);
 
 impl Drop for StreamSlot {
     fn drop(&mut self) {
@@ -223,10 +223,10 @@ impl Drop for StreamSlot {
 }
 
 /// Called once a streamed job has finished, with its report and logs.
-pub type OnDone = Box<dyn FnOnce(Report, Vec<LogEntry>) -> BoxFuture<'static, ()> + Send>;
+pub(super) type OnDone = Box<dyn FnOnce(Report, Vec<LogEntry>) -> BoxFuture<'static, ()> + Send>;
 
 /// Runs the job in a task, sending a `log` event as each service finishes and a final `result` event; `done` gets the report and logs. While idle the stream sends a heartbeat comment.
-pub fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: OnDone) -> Reply {
+pub(super) fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: OnDone) -> Reply {
     let (tx, rx) = mpsc::unbounded_channel::<Event>();
     let send = move |tx: &mpsc::UnboundedSender<Event>, event: Event| {
         if tx.send(event).is_err() {
