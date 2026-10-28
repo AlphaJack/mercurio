@@ -71,44 +71,12 @@ jobs:
         run: cargo doc --workspace --lib --no-deps --all-features --document-private-items --locked
 
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
-        with:
-          toolchain: "stable"
-      - name: Install sccache
-        if: vars.CI_USE_SCCACHE == 'true'
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-      - name: Cache cargo registry and target
-        if: vars.CI_USE_SCCACHE != 'true'
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Install cargo-nextest
-        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
-        with:
-          tool: cargo-nextest
-      - name: Test
-        run: cargo nextest run --workspace --locked
-      - name: Doctests
-        run: cargo test --workspace --doc --locked
-      - name: Test without default features
-        run: cargo nextest run -p mercurio --no-default-features --locked
-      - name: Check the systemd unit
-        run: |
-          sudo ln -s "$PWD/target/debug/mercurio" /usr/local/bin/
-          for unit in packaging/systemd/*.service; do
-            systemd-analyze verify "$unit"
-          done
-
-  test-macos:
-    name: test (macos-latest)
-    runs-on: macos-latest
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -128,6 +96,7 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Clippy
+        if: runner.os == 'macOS'
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Install cargo-nextest
         uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
@@ -137,6 +106,16 @@ jobs:
         run: cargo nextest run --workspace --locked
       - name: Doctests
         run: cargo test --workspace --doc --locked
+      - name: Test without default features
+        if: runner.os == 'Linux'
+        run: cargo nextest run -p mercurio --no-default-features --locked
+      - name: Check the systemd unit
+        if: runner.os == 'Linux'
+        run: |
+          sudo ln -s "$PWD/target/debug/mercurio" /usr/local/bin/
+          for unit in packaging/systemd/*.service; do
+            systemd-analyze verify "$unit"
+          done
 
   test-windows:
     name: test (windows-latest)
