@@ -25,8 +25,8 @@ create-release = false
 include = ["packaging/systemd/mercurio.service", "packaging/systemd/mercurio.env"]
 # steps injected into every build-local-artifacts job (sccache etc.)
 github-build-setup = "../build-setup.yml"
-post-announce-jobs = ["./docker", "./aur"]
-github-custom-job-permissions = { "docker" = { contents = "read", packages = "write" }, "aur" = { contents = "read" } }
+post-announce-jobs = ["./docker", "./aur", "./scoop", "./chocolatey"]
+github-custom-job-permissions = { "docker" = { contents = "read", packages = "write" }, "aur" = { contents = "read" }, "scoop" = {}, "chocolatey" = { contents = "read" } }
 
 [dist.github-custom-runners]
 global = "ubuntu-latest"

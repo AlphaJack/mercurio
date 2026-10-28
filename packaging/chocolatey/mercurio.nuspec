@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>mercurio</id>
+    <!-- Set by .github/workflows/chocolatey.yml at each release. -->
+    <version>0</version>
+    <title>Mercurio</title>
+    <authors>AlphaJack</authors>
+    <owners>AlphaJack</owners>
+    <projectUrl>https://github.com/AlphaJack/mercurio</projectUrl>
+    <packageSourceUrl>https://github.com/AlphaJack/mercurio/tree/main/packaging/chocolatey</packageSourceUrl>
+    <docsUrl>https://alphajack.github.io/mercurio</docsUrl>
+    <bugTrackerUrl>https://github.com/AlphaJack/mercurio/issues</bugTrackerUrl>
+    <licenseUrl>https://github.com/AlphaJack/mercurio/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <copyright>AlphaJack</copyright>
+    <iconUrl>https://cdn.jsdelivr.net/gh/AlphaJack/mercurio@main/crates/mercurio/assets/logo.png</iconUrl>
+    <tags>notifications apprise cli push alerts</tags>
+    <summary>Apprise-compatible CLI and HTTP server to send notifications to 150+ services via a single URL</summary>
+    <description>Apprise-compatible Rust library, CLI and HTTP server to send notifications to 150+ services via a single URL.</description>
+    <releaseNotes>https://github.com/AlphaJack/mercurio/releases</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
