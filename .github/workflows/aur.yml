@@ -1,7 +1,7 @@
-# pushes packaging/aur/PKGBUILD to the mercurio-bin AUR package, with pkgver set to the release tag.
-# Secrets:
-#   AUR_SSH_PRIVATE_KEY  private key registered on the AUR account that maintains mercurio-bin.
 name: AUR
+
+# requirements:
+# - secret AUR_SSH_PRIVATE_KEY, of an AUR account maintaining mercurio-bin
 
 on:
   workflow_call:
@@ -9,7 +9,6 @@ on:
       plan:
         required: true
         type: string
-  # Republishes an existing release, e.g. when the release run failed at this step.
   workflow_dispatch:
     inputs:
       tag:
@@ -20,6 +19,7 @@ on:
 permissions: {}
 
 jobs:
+
   aur:
     name: Deploy to AUR
     runs-on: ubuntu-latest
@@ -29,8 +29,9 @@ jobs:
       PLAN: ${{ inputs.plan }}
       DISPATCH_TAG: ${{ inputs.tag }}
     steps:
+
       - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -52,7 +53,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Set pkgver
-        # pkgver can not contain `-`, so prereleases (v1.0.0-rc.1) are skipped.
+        # pkgver can't contain `-`: prereleases (v1.0.0-rc.1) are skipped
         if: steps.v.outputs.prerelease != 'true'
         env:
           VERSION: ${{ steps.v.outputs.version }}
@@ -64,7 +65,6 @@ jobs:
         with:
           pkgname: mercurio-bin
           pkgbuild: packaging/aur/PKGBUILD
-          # Replaces the SKIP b2sums with the BLAKE2 hashes of the release archives.
           updpkgsums: true
           commit_username: AlphaJack
           commit_email: 19962243+AlphaJack@users.noreply.github.com

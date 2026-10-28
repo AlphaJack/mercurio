@@ -1,7 +1,7 @@
-# pushes packaging/chocolatey to the Mercurio package on community.chocolatey.org, with the version and checksum of the release.
-# Secrets:
-#   CHOCOLATEY_API_KEY  API key of the community.chocolatey.org account that maintains Mercurio.
 name: Chocolatey
+
+# requirements:
+# - secret CHOCOLATEY_API_KEY, of the community.chocolatey.org account maintaining mercurio
 
 on:
   workflow_call:
@@ -9,7 +9,6 @@ on:
       plan:
         required: true
         type: string
-  # Republishes an existing release, e.g. when the release run failed at this step.
   workflow_dispatch:
     inputs:
       tag:
@@ -20,6 +19,7 @@ on:
 permissions: {}
 
 jobs:
+
   chocolatey:
     name: Push to Chocolatey
     runs-on: windows-latest
@@ -29,8 +29,9 @@ jobs:
       PLAN: ${{ inputs.plan }}
       DISPATCH_TAG: ${{ inputs.tag }}
     steps:
+
       - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -52,7 +53,6 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Set version and checksum
-        # Chocolatey takes prereleases (v1.0.0-rc.1) as public versions, so they are skipped.
         if: steps.v.outputs.prerelease != 'true'
         shell: bash
         env:

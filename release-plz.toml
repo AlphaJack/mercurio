@@ -1,23 +1,50 @@
 [workspace]
-git_release_enable = false
+git_only = true
+git_tag_name = "v{{ version }}"
 git_tag_enable = false
-release_always = false
-release_commits = "^(feat|fix|perf)"
+git_release_enable = false
+changelog_update = false
+# mercurio is a library: a breaking API change bumps the version accordingly.
 semver_check = true
+# crates.yml publishes once dist has built every target.
+publish = false
+# Chores and docs alone open no release PR.
+release_commits = "^(feat|fix|perf)"
+# Without a scope, which pr-title.yml would reject.
+pr_name = "chore: release v{{ version }}"
 
 [[package]]
 name = "mercurio-cli"
 git_tag_enable = true
-git_tag_name = "v{{ version }}"
+changelog_update = true
+changelog_path = "CHANGELOG.md"
+# The release page is the only changelog users read: it lists the lib too.
+changelog_include = ["mercurio"]
 git_release_enable = true
 git_release_name = "v{{ version }}"
 git_release_draft = true
-# The release page is the only changelog users read: it lists the lib too.
-changelog_include = ["mercurio"]
+# Thanks people other than the owner on the release page.
+git_release_body = """
+{{ changelog }}
+{%- set_global others = "" %}
+{%- for c in remote.contributors %}{% if c.username != "AlphaJack" %}{% set_global others = others ~ "- @" ~ c.username ~ "\n" %}{% endif %}{% endfor %}
+{%- if others %}
 
-# Setting commit_parsers replaces release-plz's defaults, so they are restated below the skip rule.
+### Contributors
+
+{{ others }}
+{%- endif %}
+"""
+# Build tooling, never released.
+[[package]]
+name = "xtask"
+release = false
+
 [changelog]
-# One heading per type, then unscoped commits, then one subheading per scope; breaking changes first.
+header = """
+# Changelog
+
+"""
 body = """
 ## [{{ version }}]{%- if release_link -%}({{ release_link }}){% endif %} - {{ timestamp | date(format="%Y-%m-%d") }}
 {% for group, commits in commits | group_by(attribute="group") %}
@@ -34,23 +61,25 @@ body = """
 {% endfor %}
 {%- macro list(commits) -%}
 {%- for c in commits | filter(attribute="breaking", value=true) %}
-- **breaking**: {{ c.message }}
+- **breaking**: {{ c.message | upper_first }}{{ self::extra(c=c) }}
+{%- if c.breaking_description != c.message %}
+  {{ c.breaking_description }}
+{%- endif %}
 {%- endfor %}
 {%- for c in commits | filter(attribute="breaking", value=false) %}
-- {{ c.message }}
+- {{ c.message | upper_first }}{{ self::extra(c=c) }}
 {%- endfor %}
+{%- endmacro -%}
+{%- macro extra(c) -%}
+{%- for f in c.footers %}{% if f.token == "Fixes" or f.token == "Closes" %}, fixes #{{ f.value | trim_start_matches(pat="#") }}{% endif %}{% endfor -%}
+{%- if c.remote.username and c.remote.username != "AlphaJack" %}, by @{{ c.remote.username }}{% endif -%}
 {%- endmacro %}
 """
 commit_parsers = [
-    # The release PR bumps the version, so release-plz counts it as a change in the next release.
-    { message = "^chore: release", skip = true },
     { message = "^feat", group = "added" },
-    { message = "^changed", group = "changed" },
-    { message = "^deprecated", group = "deprecated" },
     { message = "^fix", group = "fixed" },
-    { message = "^security", group = "security" },
-    # Other types are invisible to users, unless they break the API.
+    { message = "^perf", group = "performance" },
+    # Other types are invisible to users, unless they break something.
     { message = "^[a-z]+(\\([^)]*\\))?!:", group = "changed" },
-    { message = "^(build|chore|ci|docs|refactor|test)", skip = true },
-    { message = "^.*", group = "other" },
+    { message = ".*", skip = true },
 ]
