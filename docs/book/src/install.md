@@ -14,6 +14,19 @@ cargo binstall mercurio-cli
 brew install AlphaJack/tap/mercurio
 ```
 
+## Scoop
+
+```powershell
+scoop bucket add alphajack https://github.com/AlphaJack/scoop-bucket
+scoop install alphajack/mercurio
+```
+
+## Chocolatey
+
+```powershell
+choco install mercurio
+```
+
 ## Container
 
 In server mode:

@@ -1,0 +1,75 @@
+# pushes packaging/chocolatey to the mercurio package on community.chocolatey.org, with the version and checksum of the release.
+# Secrets:
+#   CHOCOLATEY_API_KEY  API key of the community.chocolatey.org account that maintains mercurio.
+name: Chocolatey
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        required: true
+        type: string
+  # Republishes an existing release, e.g. when the release run failed at this step.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (e.g. v0.1.0)
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  chocolatey:
+    name: Push to Chocolatey
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    env:
+      PLAN: ${{ inputs.plan }}
+      DISPATCH_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Resolve tag and version
+        id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${DISPATCH_TAG}" ]; then
+            tag="${DISPATCH_TAG}"
+          else
+            tag="$(jq -r '.announcement_tag' <<<"${PLAN}")"
+            prerelease="$(jq -r '.announcement_is_prerelease' <<<"${PLAN}")"
+          fi
+          {
+            echo "tag=${tag}"
+            echo "version=${tag#v}"
+            echo "prerelease=${prerelease:-false}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set version and checksum
+        # Chocolatey takes prereleases (v1.0.0-rc.1) as public versions, so they are skipped.
+        if: steps.v.outputs.prerelease != 'true'
+        shell: bash
+        env:
+          TAG: ${{ steps.v.outputs.tag }}
+          VERSION: ${{ steps.v.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sum="$(gh release download "${TAG}" -R "${GITHUB_REPOSITORY}" -p mercurio-cli-x86_64-pc-windows-msvc.zip.sha256 -O - | cut -d' ' -f1)"
+          sed -i "s|<version>0</version>|<version>${VERSION}</version>|" packaging/chocolatey/mercurio.nuspec
+          sed -i "s|/download/v0/|/download/${TAG}/|; s|'XXXXXX'|'${sum}'|" packaging/chocolatey/tools/chocolateyinstall.ps1
+
+      - name: Push to Chocolatey
+        if: steps.v.outputs.prerelease != 'true'
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          choco pack packaging/chocolatey/mercurio.nuspec --output-directory build
+          choco push "build/mercurio.$env:VERSION.nupkg" --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY
