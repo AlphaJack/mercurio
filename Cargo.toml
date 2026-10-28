@@ -60,6 +60,12 @@ module_name_repetitions = "allow"
 [workspace.dependencies]
 mercurio = { path = "crates/mercurio", version = "0.2.4", default-features = false }
 
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
