@@ -15,7 +15,7 @@ jobs:
   release:
     name: Publish crates and tag
     if: ${{ !github.event.repository.fork }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: read
@@ -40,7 +40,7 @@ jobs:
   release-pr:
     name: Open or update the release PR
     if: ${{ !github.event.repository.fork }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write

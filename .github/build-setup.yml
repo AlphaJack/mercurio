@@ -1,8 +1,9 @@
 # injected by `dist generate` into release.yml's build-local-artifacts job
 - name: Install sccache
-  if: ${{ !(runner.os == 'Windows' && runner.arch == 'ARM64') }}
+  if: ${{ vars.CI_USE_SCCACHE == 'true' && !(runner.os == 'Windows' && runner.arch == 'ARM64') }}
   uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
 - name: Use sccache when available
+  if: vars.CI_USE_SCCACHE == 'true'
   shell: bash
   run: |
     if command -v sccache >/dev/null 2>&1; then
