@@ -1,4 +1,4 @@
-# mercurio
+# Mercurio
 
 <img src="https://raw.githubusercontent.com/AlphaJack/mercurio/main/crates/mercurio/assets/logo.svg" alt="a talaria (winged sandal)" width="64" height="64" align="right">
 
@@ -74,6 +74,6 @@ curl -X POST -d 'urls=ntfy://my-topic' -d 'title=Backup' -d 'body=Finished in 42
 
 ## Credits
 
-mercurio is a Rust port of [Apprise](https://github.com/caronc/apprise) by Chris Caron.
+Mercurio is a Rust port of [Apprise](https://github.com/caronc/apprise) by Chris Caron.
 Its URL schemes, service behaviour, defaults and much of the documentation follow Apprise.
-mercurio is an independent project, not affiliated with or endorsed by Apprise.
+Mercurio is an independent project, not affiliated with or endorsed by Apprise.

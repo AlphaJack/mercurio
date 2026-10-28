@@ -6,7 +6,7 @@
 | YAML, one entry | `tag: devops, critical` or `tag: [devops, critical]` under the URL |
 | YAML, every entry | top-level `tag: home` |
 | Groups | TEXT `oncall = devops, critical`; YAML `groups:` |
-| Any URL | `?tag=devops,critical` (mercurio extension) |
+| Any URL | `?tag=devops,critical` (Mercurio extension) |
 | Library | `?tag=` or `Target::with_tags(...)` before `Mercurio::push` |
 
 Tags are case-insensitive (stored lower-cased), made of letters, digits,
@@ -27,7 +27,7 @@ are added to the entry's tags.
 - `all` as a filter matches everything; do not use it as a tag name.
 - Services tagged `always` join every tagged run (any `-g`), not the run
   without `-g`.
-- When nothing matches, mercurio prints `no URLs matched the given tags`
+- When nothing matches, Mercurio prints `no URLs matched the given tags`
   and exits with code 3.
 - The library's `TagFilter::parse("a,b")` and the HTTP server's `tag=a,b`
   mean `a` **or** `b`; the server's `tag=a b` means both. See

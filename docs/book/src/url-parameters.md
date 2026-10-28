@@ -13,7 +13,7 @@ case-insensitive.
 ## `format`
 
 The caller declares the input format (`mercurio -i markdown`,
-`Message::format`); mercurio converts it to the service format. A service
+`Message::format`); Mercurio converts it to the service format. A service
 with one format uses `?format=` if given, else its default. A service with
 several formats uses `?format=` if it supports it, else the input format if
 it supports that, else its default (the first one on its page). See
@@ -38,7 +38,7 @@ greater than zero falls back to the default.
 mercurio -b "disk full" "ntfy://alerts?retry=3&wait=2"
 ```
 
-`retry` above 10 is capped and `wait` is clamped to 0–20 s. mercurio only
+`retry` above 10 is capped and `wait` is clamped to 0–20 s. Mercurio only
 repeats an attempt when repeating cannot deliver the message twice. Every
 error has an `ErrorClass` (`mercurio::Error::class()`):
 

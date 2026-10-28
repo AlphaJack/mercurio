@@ -3,7 +3,7 @@
 The **input format** is what the caller says the body is written in (`-i`,
 the server's `format` field, `Message::format`). The **service format** is
 what the service renders (its default or `?format=`). When they differ,
-mercurio converts the body. With no input format declared nothing is
+Mercurio converts the body. With no input format declared nothing is
 converted: the body passes through as the service's own format.
 
 | Input | Meaning |
@@ -62,5 +62,5 @@ cut to fit.
 
 Markdown is rendered with `pulldown-cmark` (CommonMark plus GFM tables);
 HTML to text and HTML to Markdown use a small HTML tokenizer. When a split
-cuts Markdown, mercurio repairs unclosed emphasis, code fences and link
+cuts Markdown, Mercurio repairs unclosed emphasis, code fences and link
 syntax.
