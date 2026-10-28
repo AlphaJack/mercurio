@@ -85,10 +85,16 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           cache-targets: "false"
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+        with:
+          tool: cargo-nextest
       - name: Test
-        run: cargo test --workspace --locked
+        run: cargo nextest run --workspace --locked
+      - name: Doctests
+        run: cargo test --workspace --doc --locked
       - name: Test without default features
-        run: cargo test -p mercurio --no-default-features --locked
+        run: cargo nextest run -p mercurio --no-default-features --locked
       - name: Check the systemd unit
         run: |
           sudo ln -s "$PWD/target/debug/mercurio" /usr/local/bin/
@@ -119,8 +125,14 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           cache-targets: "false"
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+        with:
+          tool: cargo-nextest
       - name: Test
-        run: cargo test --workspace --locked
+        run: cargo nextest run --workspace --locked
+      - name: Doctests
+        run: cargo test --workspace --doc --locked
 
   docs:
     runs-on: ubuntu-24.04
