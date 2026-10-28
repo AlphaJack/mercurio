@@ -15,7 +15,10 @@ struct Server {
 
 /// Stops the server gracefully (`SIGTERM`, as a supervisor would), so it exits normally and coverage tools get its data; killed after 5 s otherwise.
 impl Drop for Server {
-    #[expect(clippy::disallowed_methods, reason = "polling a real child process requires wall-clock waits")]
+    #[cfg_attr(
+        unix,
+        expect(clippy::disallowed_methods, reason = "polling a real child process requires wall-clock waits")
+    )]
     fn drop(&mut self) {
         #[cfg(unix)]
         if Command::new("kill").args(["-TERM", &self.child.id().to_string()]).status().is_ok_and(|s| s.success()) {
