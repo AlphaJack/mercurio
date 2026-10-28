@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.5](https://github.com/AlphaJack/mercurio/compare/mercurio-v0.2.4...mercurio-v0.2.5) - 2026-10-28
+
+### Fixed
+
+#### Lib
+
+- a stalled server no longer hangs the blocking transport on Windows ([#145](https://github.com/AlphaJack/mercurio/pull/145))
+
+#### Serve
+
+- stop on Ctrl-Break on Windows too ([#146](https://github.com/AlphaJack/mercurio/pull/146))
 ## [0.2.4](https://github.com/AlphaJack/mercurio/compare/mercurio-v0.2.3...mercurio-v0.2.4) - 2026-10-26
 
 ### Added
