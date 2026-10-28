@@ -1,0 +1,13 @@
+{
+  "name": "mercurio",
+  "image": "mcr.microsoft.com/devcontainers/rust:1-bookworm",
+  "postCreateCommand": "rustup component add rust-analyzer clippy rustfmt && cargo install --locked cargo-nextest cargo-insta mdbook",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  }
+}

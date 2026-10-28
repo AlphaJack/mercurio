@@ -2,11 +2,12 @@
 members = ["cargo:."]
 
 [dist]
-cargo-dist-version = "0.31.0"
+cargo-dist-version = "0.33.0"
+precise-builds = true
 ci = "github"
 installers = ["shell", "powershell", "homebrew"]
 tap = "AlphaJack/homebrew-tap"
-publish-jobs = ["homebrew"]
+publish-jobs = ["homebrew", "./crates"]
 formula = "mercurio"
 targets = [
   "x86_64-unknown-linux-musl",
@@ -19,6 +20,7 @@ targets = [
 install-path = "CARGO_HOME"
 install-updater = false
 checksum = "sha256"
+github-attestations = true
 # release-plz drafts the release with the changelog; dist uploads to it and publishes it.
 create-release = false
 # The systemd unit and its settings ship next to the binary (manual installs and the AUR package use them).
@@ -26,7 +28,7 @@ include = ["packaging/systemd/mercurio.service", "packaging/systemd/mercurio.env
 # steps injected into every build-local-artifacts job (sccache etc.)
 github-build-setup = "../build-setup.yml"
 post-announce-jobs = ["./docker", "./aur", "./scoop", "./chocolatey"]
-github-custom-job-permissions = { "docker" = { contents = "read", packages = "write" }, "aur" = { contents = "read" }, "scoop" = {}, "chocolatey" = { contents = "read" } }
+github-custom-job-permissions = { "crates" = { contents = "read" }, "docker" = { contents = "read", packages = "write" }, "aur" = { contents = "read" }, "scoop" = {}, "chocolatey" = { contents = "read" } }
 
 [dist.github-custom-runners]
 global = "ubuntu-latest"

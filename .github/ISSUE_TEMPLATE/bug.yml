@@ -1,0 +1,69 @@
+name: Bug
+description: Something does not work as the documentation says
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+      placeholder: |
+        I ran `mercurio -b "hi" ntfy://my-topic`. I expected a notification on my phone, but it failed with "...".
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The commands you ran, the requests you sent to `mercurio serve`, or the Rust code you called.
+      placeholder: |
+        1. mercurio -b "hi" ntfy://my-topic
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Run the failing command again with `-v` (for example `mercurio -v -b "hi" ntfy://my-topic`) and paste everything it prints. Replace passwords, tokens and keys with XXXXXX.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: urls
+    attributes:
+      label: URLs or configuration
+      description: The notification URLs or the configuration file you used. Replace passwords, tokens and keys with XXXXXX.
+      render: yaml
+  - type: input
+    id: versions
+    attributes:
+      label: Version
+      description: The output of `mercurio --version`, or the `mercurio` version in your Cargo.lock
+      placeholder: mercurio 0.2.5
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installed with
+      options:
+        - Installer script
+        - Release binary
+        - Container image
+        - Homebrew
+        - Scoop
+        - Chocolatey
+        - AUR
+        - cargo
+        - As a Rust library
+        - Other
+    validations:
+      required: true

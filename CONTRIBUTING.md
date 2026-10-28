@@ -6,6 +6,8 @@
 cargo install mdbook cargo-insta
 ```
 
+Or open the repository in its dev container (`.devcontainer`), which sets all of this up on Linux.
+
 ## Add or fix a service
 
 ```sh
@@ -33,7 +35,39 @@ cargo xtask docs
 
 ## Pull requests
 
-The PR title must be a conventional commit (`feat(services): gotify`, `fix(cli): ...`): PRs are squash-merged and release-plz builds the changelog and version from these titles.
-Allowed types and scopes: [pr-title.yml](.github/workflows/pr-title.yml).
-Use `feat`, `fix` and `perf` only for changes users notice: the changelog skips `build`, `chore`, `ci`, `docs`, `refactor` and `test` unless they are breaking (`!`).
-The scope becomes a changelog heading, so name what users touch: `services` for notification services (desktop included), `lib` for the rest of the Rust API.
+The PR title is a conventional commit such as `feat(services): gotify`.
+PRs are squash-merged with the title as the commit and the description as its body.
+[pr-title.yml](.github/workflows/pr-title.yml) checks the title against these types and scopes:
+
+| Type | For |
+| --- | --- |
+| `feat` | something users can do that they could not before |
+| `fix` | a bug users hit |
+| `perf` | the same behaviour, faster or smaller |
+| `refactor`, `docs`, `test`, `ci`, `chore` | anything users do not notice |
+
+[release-plz.toml](release-plz.toml) gives `feat`, `fix` and `perf` their heading in the release notes and leaves the others out unless breaking.
+
+The scope is optional and becomes a heading under the type. Leave it out for changes across the whole project.
+
+| Scope | For |
+| --- | --- |
+| `services` | notification services, desktop ones included |
+| `lib` | the rest of the Rust API |
+| `serve` | the HTTP server |
+| `cli` | the commands and their output |
+| `config` | configuration files, text and YAML |
+| `install` | installing, packages and images |
+| `deps` | dependency bumps users notice |
+
+At the end of the description, after some text:
+
+- `Fixes #12` adds "fixes #12" to the entry.
+- With `!` after the scope, `BREAKING CHANGE: <what users must do>` shows that line under the entry.
+
+## Release process
+
+1. Every push to main that passes CI updates a release PR, in which release-plz sets the version and the changelog from the PR titles since the last release.
+2. Merging it tags `vX.Y.Z` and drafts a GitHub release.
+3. The tag starts [release.yml](.github/workflows/release.yml), where cargo-dist builds the binaries and installers.
+4. The publish and post-announce jobs in [dist-workspace.toml](dist-workspace.toml) then publish the packages, crates.io included. Their workflows in `.github/workflows` can be run again for a tag by hand.

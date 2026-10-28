@@ -1,7 +1,7 @@
-# starts the Excavator of AlphaJack/scoop-bucket, which updates bucket/mercurio.json to the latest release.
-# Secrets:
-#   SCOOP_BUCKET_TOKEN  fine-grained PAT with Actions read and write on AlphaJack/scoop-bucket.
 name: Scoop
+
+# Starts the Excavator of AlphaJack/scoop-bucket, which updates the mercurio manifest to the latest release.
+# requirements: secret SCOOP_BUCKET_TOKEN, a fine-grained token with Actions read and write on AlphaJack/scoop-bucket
 
 on:
   workflow_call:
@@ -14,11 +14,13 @@ on:
 permissions: {}
 
 jobs:
+
   scoop:
     name: Update Scoop bucket
     runs-on: ubuntu-latest
     permissions: {}
     steps:
+
       - name: Start Excavator
         env:
           GH_TOKEN: ${{ secrets.SCOOP_BUCKET_TOKEN }}
