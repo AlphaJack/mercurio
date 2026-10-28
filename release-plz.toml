@@ -35,6 +35,11 @@ git_release_body = """
 {{ others }}
 {%- endif %}
 """
+# Build tooling, never released.
+[[package]]
+name = "xtask"
+release = false
+
 [changelog]
 header = """
 # Changelog
