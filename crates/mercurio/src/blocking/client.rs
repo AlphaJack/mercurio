@@ -65,11 +65,12 @@ impl Dial for StdDial {
     type Stream = StdStream;
 
     fn tcp<'a>(&'a self, host: &'a str, port: u16, limit: Duration) -> BoxFuture<'a, io::Result<StdStream>> {
-        Box::pin(ready(tcp_connect(host, port, limit).and_then(|tcp| {
+        Box::pin(ready(tcp_connect(host, port, limit).map(|tcp| {
             tcp.set_nodelay(true).ok();
-            let mut stream = StdStream { socket: tcp.try_clone()?, io: Layer::Plain(tcp) };
+            let tcp = Arc::new(tcp);
+            let mut stream = StdStream { socket: tcp.clone(), io: Layer::Plain(Tcp(tcp)) };
             stream.set_timeout(DEFAULT_READ_TIMEOUT);
-            Ok(stream)
+            stream
         })))
     }
 
@@ -88,14 +89,33 @@ impl Dial for StdDial {
 }
 
 enum Layer {
-    Plain(TcpStream),
+    Plain(Tcp),
     Tls(Box<TlsStream>),
 }
 
-/// A plain or TLS stream; `socket` is the same TCP socket, for its timeouts and the idle probe.
+/// The TCP socket that a [`Layer`] reads and writes. The same handle as [`StdStream::socket`]: on Windows, a clone
+/// from `try_clone` keeps timeouts of its own, which reads on the original ignore.
+struct Tcp(Arc<TcpStream>);
+
+impl Read for Tcp {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        (&*self.0).read(buf)
+    }
+}
+
+impl Write for Tcp {
+    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        (&*self.0).write(data)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        (&*self.0).flush()
+    }
+}
+
+/// A plain or TLS stream; `socket` is its TCP socket, for its timeouts and the idle probe.
 pub(crate) struct StdStream {
     io: Layer,
-    socket: TcpStream,
+    socket: Arc<TcpStream>,
 }
 
 impl StdStream {
