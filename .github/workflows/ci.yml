@@ -1,6 +1,6 @@
 name: CI
 
-# Pull requests run the fast Linux jobs. macOS and Windows run in the merge queue (`merge_group`) and on main, so they start only after a maintainer queued the PR. A skipped job counts as passed for a required check.
+# Pull requests run the fast Linux jobs. macOS and Windows run after a merge, on main, and in a merge queue (`merge_group`) if one is enabled. A skipped job counts as passed for a required check.
 on:
   pull_request:
   merge_group:
@@ -17,15 +17,16 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  # sccache cannot cache incremental builds.
+  # Neither compile cache keeps incremental builds.
   CARGO_INCREMENTAL: "0"
-  # Compile cache: sccache on the GitHub Actions cache backend.
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: sccache
+  # Compile cache: rust-cache, or sccache on the GitHub Actions cache backend if the repository variable
+  # CI_USE_SCCACHE is true.
+  SCCACHE_GHA_ENABLED: ${{ vars.CI_USE_SCCACHE == 'true' }}
+  RUSTC_WRAPPER: ${{ vars.CI_USE_SCCACHE == 'true' && 'sccache' || '' }}
 
 jobs:
   fmt:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
       RUSTC_WRAPPER: ""
     steps:
@@ -42,7 +43,7 @@ jobs:
         run: cargo fmt --all --check
 
   clippy:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -54,12 +55,13 @@ jobs:
           toolchain: "stable"
           components: clippy
       - name: Install sccache
+        if: vars.CI_USE_SCCACHE == 'true'
         uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-      # Registry and git checkouts only; sccache handles compiled output.
-      - name: Cache cargo registry
+      - name: Cache cargo registry and target
+        if: vars.CI_USE_SCCACHE != 'true'
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          cache-targets: "false"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       # The default features compile every service.
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
@@ -69,7 +71,7 @@ jobs:
         run: cargo doc --workspace --lib --no-deps --all-features --document-private-items --locked
 
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -80,11 +82,13 @@ jobs:
         with:
           toolchain: "stable"
       - name: Install sccache
+        if: vars.CI_USE_SCCACHE == 'true'
         uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-      - name: Cache cargo registry
+      - name: Cache cargo registry and target
+        if: vars.CI_USE_SCCACHE != 'true'
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          cache-targets: "false"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Install cargo-nextest
         uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
         with:
@@ -108,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-2022]
+        os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
@@ -120,22 +124,31 @@ jobs:
         with:
           toolchain: "stable"
       - name: Install sccache
+        if: vars.CI_USE_SCCACHE == 'true'
         uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-      - name: Cache cargo registry
+      - name: Cache cargo registry and target
+        if: vars.CI_USE_SCCACHE != 'true'
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          cache-targets: "false"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Turn off Defender's real-time scanning
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-MpPreference -DisableRealtimeMonitoring $true
       - name: Install cargo-nextest
         uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
         with:
           tool: cargo-nextest
       - name: Test
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: cargo nextest run --workspace --locked
       - name: Doctests
         run: cargo test --workspace --doc --locked
 
   docs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -146,11 +159,13 @@ jobs:
         with:
           toolchain: "stable"
       - name: Install sccache
+        if: vars.CI_USE_SCCACHE == 'true'
         uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-      - name: Cache cargo registry
+      - name: Cache cargo registry and target
+        if: vars.CI_USE_SCCACHE != 'true'
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          cache-targets: "false"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Install mdbook
         uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
         with:
@@ -160,7 +175,7 @@ jobs:
 
   # advisories, licenses, duplicate and unknown-source crates
   deny:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # The action runs in its own container, which has no sccache.
     env:
       RUSTC_WRAPPER: ""
@@ -174,7 +189,7 @@ jobs:
 
   workflows:
     name: Check workflows
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
       ACTIONLINT: v1.7.12
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
