@@ -315,8 +315,8 @@ const SALT: &[u8] = b"mercurio-salt";
 
 /// Derived once per password and process, as every session derives them again.
 fn scram_keys(password: &str) -> (Vec<u8>, Vec<u8>) {
-    static DERIVED: Mutex<std::collections::BTreeMap<String, (Vec<u8>, Vec<u8>)>> =
-        Mutex::new(std::collections::BTreeMap::new());
+    type Derived = std::collections::BTreeMap<String, (Vec<u8>, Vec<u8>)>;
+    static DERIVED: Mutex<Derived> = Mutex::new(std::collections::BTreeMap::new());
     if let Some(k) = DERIVED.lock().ok().and_then(|d| d.get(password).cloned()) {
         return k;
     }
