@@ -71,15 +71,34 @@ impl Hash {
         }
     }
 
+    /// Tests derive the same few keys again and again, each in a new session: there, each is derived once per process.
     fn pbkdf2(self, password: &[u8], salt: &[u8], iterations: NonZeroU32) -> Vec<u8> {
         let (alg, len) = match self {
             Hash::Sha1 => (ring::pbkdf2::PBKDF2_HMAC_SHA1, 20),
             Hash::Sha256 => (ring::pbkdf2::PBKDF2_HMAC_SHA256, 32),
             Hash::Sha512 => (ring::pbkdf2::PBKDF2_HMAC_SHA512, 64),
         };
-        let mut out = vec![0u8; len];
-        ring::pbkdf2::derive(alg, iterations, salt, password, &mut out);
-        out
+        let derive = || {
+            let mut out = vec![0u8; len];
+            ring::pbkdf2::derive(alg, iterations, salt, password, &mut out);
+            out
+        };
+        #[cfg(any(test, feature = "testing"))]
+        {
+            type Derived = std::collections::BTreeMap<(usize, Vec<u8>, Vec<u8>, u32), Vec<u8>>;
+            static DERIVED: std::sync::Mutex<Derived> = std::sync::Mutex::new(std::collections::BTreeMap::new());
+            let id = (len, password.to_vec(), salt.to_vec(), iterations.get());
+            if let Some(k) = DERIVED.lock().ok().and_then(|d| d.get(&id).cloned()) {
+                return k;
+            }
+            let k = derive();
+            if let Ok(mut d) = DERIVED.lock() {
+                d.insert(id, k.clone());
+            }
+            k
+        }
+        #[cfg(not(any(test, feature = "testing")))]
+        derive()
     }
 }
 

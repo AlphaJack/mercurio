@@ -313,7 +313,21 @@ pub struct XmppServer {
 
 const SALT: &[u8] = b"mercurio-salt";
 
+/// Derived once per password and process, as every session derives them again.
 fn scram_keys(password: &str) -> (Vec<u8>, Vec<u8>) {
+    type Derived = std::collections::BTreeMap<String, (Vec<u8>, Vec<u8>)>;
+    static DERIVED: Mutex<Derived> = Mutex::new(std::collections::BTreeMap::new());
+    if let Some(k) = DERIVED.lock().ok().and_then(|d| d.get(password).cloned()) {
+        return k;
+    }
+    let k = derive_scram_keys(password);
+    if let Ok(mut d) = DERIVED.lock() {
+        d.insert(password.to_owned(), k.clone());
+    }
+    k
+}
+
+fn derive_scram_keys(password: &str) -> (Vec<u8>, Vec<u8>) {
     let mut salted = [0u8; 20];
     ring::pbkdf2::derive(
         ring::pbkdf2::PBKDF2_HMAC_SHA1,
