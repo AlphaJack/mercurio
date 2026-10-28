@@ -63,7 +63,7 @@ struct HString(Hstring);
 impl HString {
     fn new(s: &str) -> Result<Self> {
         let wide: Vec<u16> = s.encode_utf16().collect();
-        let len = u32::try_from(wide.len()).map_err(|_| Error::Service("toast text is too long".into()))?;
+        let len = u32::try_from(wide.len()).map_err(|e| Error::Service(format!("toast text is too long: {e}")))?;
         let mut h = null_mut();
         // SAFETY: `wide` holds `len` UTF-16 units and outlives the call, which copies them.
         check(unsafe { WindowsCreateString(wide.as_ptr(), len, &mut h) }, "WindowsCreateString")?;

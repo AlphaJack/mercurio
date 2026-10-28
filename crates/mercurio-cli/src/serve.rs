@@ -130,7 +130,7 @@ async fn prune_once(p: &settings::Prune, store: &ConfigStore, storage: Option<&s
     (files, store.prune_unused_locks(p.logins).await)
 }
 
-/// Resolves on SIGINT, SIGTERM or SIGHUP (Ctrl-C elsewhere). The handlers are installed when this is called, not when it is first awaited, so a signal sent right after the listener is announced is never lost to the default action.
+/// Resolves on SIGINT, SIGTERM or SIGHUP (Ctrl-C or Ctrl-Break on Windows, Ctrl-C elsewhere). The handlers are installed when this is called, not when it is first awaited, so a signal sent right after the listener is announced is never lost to the default action.
 fn shutdown() -> impl Future<Output = ()> {
     #[cfg(unix)]
     {
@@ -145,7 +145,21 @@ fn shutdown() -> impl Future<Output = ()> {
             futures_util::future::select_all(streams.iter_mut().map(|s| Box::pin(s.recv()))).await;
         }
     }
-    #[cfg(not(unix))]
+    // Ctrl-Break too, which unlike Ctrl-C can be sent to one process group, as a supervisor would.
+    #[cfg(windows)]
+    {
+        let ctrl_break = tokio::signal::windows::ctrl_break();
+        async move {
+            match ctrl_break {
+                Ok(mut ctrl_break) => tokio::select! {
+                    _ = tokio::signal::ctrl_c() => {}
+                    _ = ctrl_break.recv() => {}
+                },
+                Err(_) => _ = tokio::signal::ctrl_c().await,
+            }
+        }
+    }
+    #[cfg(not(any(unix, windows)))]
     async {
         tokio::signal::ctrl_c().await.ok();
     }
