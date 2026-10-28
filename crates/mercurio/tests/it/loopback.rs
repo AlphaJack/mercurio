@@ -25,7 +25,7 @@ fn server(n: usize, status: u16, body: &'static str) -> (String, mpsc::Receiver<
             loop {
                 let mut h = String::new();
                 reader.read_line(&mut h).unwrap();
-                let h = h.trim_end().to_string();
+                let h = h.trim_end().to_owned();
                 if h.is_empty() {
                     break;
                 }
@@ -33,11 +33,11 @@ fn server(n: usize, status: u16, body: &'static str) -> (String, mpsc::Receiver<
                 if k.eq_ignore_ascii_case("content-length") {
                     len = v.trim().parse().unwrap();
                 }
-                headers.push((k.to_string(), v.trim().to_string()));
+                headers.push((k.to_owned(), v.trim().to_owned()));
             }
             let mut buf = vec![0; len];
             reader.read_exact(&mut buf).unwrap();
-            tx.send((line.trim_end().to_string(), headers, buf)).unwrap();
+            tx.send((line.trim_end().to_owned(), headers, buf)).unwrap();
             write!(
                 stream,
                 "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nX-Reply: yes\r\nConnection: close\r\n\r\n{body}",

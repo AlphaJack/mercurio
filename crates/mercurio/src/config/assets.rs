@@ -39,9 +39,9 @@ pub(super) fn parse_asset(tokens: &Yaml, out: &mut Parsed) {
             let cleaned: String = raw.chars().filter(|c| c.is_alphanumeric() || matches!(c, '_' | '/' | '-')).collect();
             match crate::time::zone(&cleaned) {
                 Some(tz) => {
-                    let name = tz.iana_name().map_or(cleaned, str::to_string);
+                    let name = tz.iana_name().map_or(cleaned, str::to_owned);
                     out.asset.retain(|(n, _)| n != "timezone");
-                    out.asset.push(("timezone".to_string(), AssetValue::Text(name)));
+                    out.asset.push(("timezone".to_owned(), AssetValue::Text(name)));
                 }
                 None => out.warnings.push(format!("Ignored invalid timezone \"{raw}\"")),
             }
@@ -67,14 +67,14 @@ pub(super) fn parse_asset(tokens: &Yaml, out: &mut Parsed) {
             (Yaml::Null, false) => AssetValue::Text(String::new()),
             (Yaml::Bool(b), true) => AssetValue::Flag(*b),
             (Yaml::Str(s), true) => AssetValue::Flag(parse_bool(s, false)),
-            (Yaml::Str(s), false) => AssetValue::Text(s.trim().to_string()),
+            (Yaml::Str(s), false) => AssetValue::Text(s.trim().to_owned()),
             _ => {
                 out.warnings.push(format!("Invalid asset value to \"{k}\"."));
                 continue;
             }
         };
         out.asset.retain(|(n, _)| n != k);
-        out.asset.push((k.to_string(), value));
+        out.asset.push((k.to_owned(), value));
     }
 }
 

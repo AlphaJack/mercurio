@@ -58,7 +58,7 @@ pub trait Store: Send + Sync + fmt::Debug {
 
     /// `get` as a string.
     fn get_str(&self, key: &str) -> Option<String> {
-        self.get(key).and_then(|v| v.as_str().map(str::to_string))
+        self.get(key).and_then(|v| v.as_str().map(str::to_owned))
     }
 
     /// The file steps that read the store from disk, once; run before a send.
@@ -224,14 +224,14 @@ impl Store for PersistentStore {
         if entry.expires.is_none() && st.entries.get(key) == Some(&entry) {
             return true;
         }
-        st.entries.insert(key.to_string(), entry);
+        st.entries.insert(key.to_owned(), entry);
         st.dirty = true;
         true
     }
 
     fn remember(&self, key: &str, value: Value, expires: Option<Duration>) {
         let entry = Entry { value, expires: expires.map(|d| now() + d.as_secs_f64()), saved: false };
-        lock(&self.state).entries.insert(key.to_string(), entry);
+        lock(&self.state).entries.insert(key.to_owned(), entry);
     }
 
     fn clear(&self, keys: &[&str]) -> bool {
@@ -359,7 +359,7 @@ impl Memo {
     /// Keep `value` for later attempts of this notification.
     pub fn remember(&self, key: &str, value: Value) {
         if let Some(m) = &self.slots {
-            lock(m).insert(key.to_string(), value);
+            lock(m).insert(key.to_owned(), value);
         }
     }
 

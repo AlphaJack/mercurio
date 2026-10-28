@@ -5,10 +5,10 @@ use crate::crypto;
 mod encrypt;
 mod keys;
 mod sign;
-pub mod wkd;
-pub use encrypt::encrypt;
-pub use keys::{autocrypt_header, generate};
-pub use sign::sign;
+pub(crate) mod wkd;
+pub(crate) use encrypt::encrypt;
+pub(crate) use keys::{autocrypt_header, generate};
+pub(crate) use sign::sign;
 use sign::{Key, Signer, signature_packet, subpacket};
 
 /// Packet tags.
@@ -90,7 +90,7 @@ fn dearmor(text: &str) -> Option<Vec<u8>> {
             continue;
         }
         match line.strip_prefix('=') {
-            Some(sum) if sum.len() == 4 => checksum = Some(sum.to_string()),
+            Some(sum) if sum.len() == 4 => checksum = Some(sum.to_owned()),
             _ => body.push_str(line),
         }
     }
@@ -285,7 +285,7 @@ mod tests {
                 }
                 // SMTP dot-stuffing: a leading `..` stands for `.`.
                 let line = line.strip_prefix('.').filter(|l| l.starts_with('.')).unwrap_or(line);
-                seen.lock().unwrap().push(line.to_string());
+                seen.lock().unwrap().push(line.to_owned());
                 return None;
             }
             Some(

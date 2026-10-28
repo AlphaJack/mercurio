@@ -8,7 +8,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "dingtalk",
     name: "DingTalk",
     schemes: &["dingtalk"],
@@ -105,12 +105,12 @@ impl Notify for DingTalk {
             let title = title.trim_start_matches(['#', '-', ' ']);
             payload["markdown"] = json!({
                 "title": if title.is_empty() { ctx.app_desc() } else { title },
-                "text": if title.is_empty() { msg.body.to_string() } else { format!("# {title}\n{}", msg.body) },
+                "text": if title.is_empty() { msg.body.to_owned() } else { format!("# {title}\n{}", msg.body) },
             });
             payload["msgtype"] = json!("markdown");
         } else {
             let content =
-                if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\r\n{}", msg.title, msg.body) };
+                if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}\r\n{}", msg.title, msg.body) };
             payload["text"] = json!({"content": content});
         }
 

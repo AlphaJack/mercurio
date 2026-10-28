@@ -21,7 +21,7 @@ use crate::url::ParsedUrl;
 use crate::util::json_has_value;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "bluesky",
     name: "BlueSky",
     schemes: &["bsky", "bluesky"],
@@ -68,8 +68,8 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         u.user().filter(|s| !s.is_empty()).ok_or_else(|| SERVICE.err("a BlueSky UserID/Handle must be specified"))?;
     let raw_user = user.clone();
     let (user, host) = match crate::regex!(r"^(?P<handle>[^.]+)\.+(?P<host>.+)$").captures(&user) {
-        Some(c) => (c["handle"].trim().to_string(), c["host"].trim().to_string()),
-        None => (user, DEFAULT_HOST.to_string()),
+        Some(c) => (c["handle"].trim().to_owned(), c["host"].trim().to_owned()),
+        None => (user, DEFAULT_HOST.to_owned()),
     };
     Ok(Box::new(BlueSky { user, host, password: password.map(Secret::new), raw_user, rate: Limit::shared() }))
 }
@@ -263,14 +263,14 @@ fn resolve(
 ) -> Plan {
     let (did_key, endpoint_key) = (format!("did.{handle}"), format!("endpoint.{handle}"));
     let cached = |k: &str| {
-        store.get_some(k).filter(json_has_value).map(|v| v.as_str().map_or_else(|| v.to_string(), str::to_string))
+        store.get_some(k).filter(json_has_value).map(|v| v.as_str().map_or_else(|| v.to_string(), str::to_owned))
     };
     if let (Some(did), Some(endpoint)) = (cached(&did_key), cached(&endpoint_key)) {
         return next(rl, did, endpoint);
     }
     let req = lookup(&ua, format!("https://public.api.bsky.app{XRPC_DID}")).query(&[("handle", handle.as_str())]);
     fetch(rl, req, "handle lookup", true, move |rl, content| {
-        let Some(did) = content.as_object().and_then(|o| o.get("did")).and_then(Value::as_str).map(str::to_string)
+        let Some(did) = content.as_object().and_then(|o| o.get("did")).and_then(Value::as_str).map(str::to_owned)
         else {
             return Plan::Fail(Error::Service("an unparseable BlueSky DID was returned".into()));
         };
@@ -297,7 +297,7 @@ fn resolve(
                 .and_then(|s| s.get("serviceEndpoint"))
                 .and_then(Value::as_str)
                 .filter(|e| is_secure_http_url(e) && !e.contains('?'))
-                .map(str::to_string);
+                .map(str::to_owned);
             let Some(endpoint) = endpoint else {
                 return Plan::Fail(Error::Service("failed to resolve a usable BlueSky PDS endpoint".into()));
             };
@@ -351,12 +351,12 @@ fn send_records(rl: RateLimit, s: Session, mut payloads: std::vec::IntoIter<Valu
 
 impl Notify for BlueSky {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let ua = ctx.app_id().to_string();
+        let ua = ctx.app_id().to_owned();
         let handle = if self.user.contains('.') { self.user.clone() } else { format!("{}.{}", self.user, self.host) };
-        let password = self.password.as_ref().map(|p| p.expose().to_string());
+        let password = self.password.as_ref().map(|p| p.expose().to_owned());
         let atts: Vec<(usize, Attachment)> =
             msg.attachments.iter().cloned().enumerate().map(|(i, a)| (i + 1, a)).collect();
-        let body = msg.body.to_string();
+        let body = msg.body.to_owned();
         let store = ctx.store();
 
         // A stored session skips the login.
@@ -392,7 +392,7 @@ impl Notify for BlueSky {
 
     fn url_identifier(&self) -> UrlIdentifier {
         let pw = self.password.as_ref().map(|p| p.expose());
-        UrlIdentifier::Parts(vec!["bsky".into(), self.raw_user.clone(), pw.unwrap_or_default().to_string()])
+        UrlIdentifier::Parts(vec!["bsky".into(), self.raw_user.clone(), pw.unwrap_or_default().to_owned()])
     }
 }
 

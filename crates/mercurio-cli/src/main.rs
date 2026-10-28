@@ -172,14 +172,14 @@ const DEFAULT_STORAGE_PATH: &str =
 
 /// Exit codes; `--help` lists them with their meaning.
 mod exit {
-    pub const OK: u8 = 0;
-    pub const FAILURE: u8 = 1;
-    pub const USAGE: u8 = 2;
-    pub const NO_MATCH: u8 = 3;
-    pub const PARTIAL: u8 = 4;
+    pub(crate) const OK: u8 = 0;
+    pub(crate) const FAILURE: u8 = 1;
+    pub(crate) const USAGE: u8 = 2;
+    pub(crate) const NO_MATCH: u8 = 3;
+    pub(crate) const PARTIAL: u8 = 4;
 
     /// Each code with its meaning, for `--help`.
-    pub const ALL: &[(u8, &str)] = &[
+    pub(crate) const ALL: &[(u8, &str)] = &[
         (OK, "every selected service was notified (or -d, check, services, storage succeeded)"),
         (FAILURE, "every selected service failed, or a source, attachment or stdin could not be read"),
         (USAGE, "usage error, or no URLs given or configured"),
@@ -200,7 +200,7 @@ fn parse_days(v: &str) -> Result<i64, String> {
     if v.trim().is_empty() {
         return Ok(DEFAULT_PRUNE_DAYS);
     }
-    v.trim().parse().map_err(|_| format!("{v:?} is not a number"))
+    v.trim().parse().ok().ok_or_else(|| format!("{v:?} is not a number"))
 }
 
 fn parse_type(v: &str) -> Result<NotifyType, String> {
@@ -315,7 +315,7 @@ fn unescape(s: &str) -> String {
 async fn load_attachment(spec: &str, transport: &dyn AsyncTransport) -> Result<Attachment, String> {
     let source =
         mercurio::attachment::AttachSource::parse(spec).map_err(|e| format!("{}: {e}", mercurio::redact_url(spec)))?;
-    source.load_async(transport, &mercurio::Asset::default()).await.map_err(|e| e.to_string())
+    source.load_async(transport, &Asset::default()).await.map_err(|e| e.to_string())
 }
 
 fn cmd_services(json: bool) -> ExitCode {
@@ -370,7 +370,7 @@ fn env_urls() -> Vec<String> {
 fn config_search_paths() -> Vec<String> {
     for var in ["APPRISE_CONFIG_PATH", "APPRISE_CONFIG"] {
         if let Ok(v) = std::env::var(var) {
-            return v.trim().split(['\r', '\n', ';']).filter(|p| !p.is_empty()).map(str::to_string).collect();
+            return v.trim().split(['\r', '\n', ';']).filter(|p| !p.is_empty()).map(str::to_owned).collect();
         }
     }
     default_paths()
@@ -697,7 +697,7 @@ fn cmd_serve(bind: &str, settings: &serve::ServeArgs) -> Result<u8, u8> {
 }
 
 /// Run a command on a single-threaded runtime.
-fn on_current_thread(command: impl std::future::Future<Output = Result<u8, u8>>) -> Result<u8, u8> {
+fn on_current_thread(command: impl Future<Output = Result<u8, u8>>) -> Result<u8, u8> {
     let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| {
         errln!("error: {e}");
         exit::FAILURE

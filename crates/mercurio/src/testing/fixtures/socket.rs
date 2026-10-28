@@ -68,7 +68,7 @@ fn split_head(raw: &str) -> (Vec<(String, String)>, &str) {
                 last.1.push_str(line);
             }
         } else if let Some((k, v)) = line.split_once(':') {
-            headers.push((k.to_ascii_lowercase(), v.trim_start().to_string()));
+            headers.push((k.to_ascii_lowercase(), v.trim_start().to_owned()));
         }
     }
     (headers, body)
@@ -84,7 +84,7 @@ fn param(value: &str, name: &str) -> Option<String> {
         if let Some((k, v)) = p.split_once('=')
             && k.trim().eq_ignore_ascii_case(name)
         {
-            return Some(v.trim().trim_matches('"').to_string());
+            return Some(v.trim().trim_matches('"').to_owned());
         }
     }
     None
@@ -153,7 +153,7 @@ pub fn describe(raw: &str) -> Value {
             let mut d = decode_header(v);
             if k == "cc" || k == "reply-to" {
                 let mut items: Vec<String> =
-                    d.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect();
+                    d.split(',').map(|x| x.trim().to_owned()).filter(|x| !x.is_empty()).collect();
                 items.sort();
                 d = items.join(",");
             }
@@ -177,7 +177,7 @@ struct SmtpState {
 
 fn addr(arg: &str) -> String {
     let a = arg.split_once('<').map(|(_, r)| r).unwrap_or(arg);
-    a.split('>').next().unwrap_or("").trim().to_string()
+    a.split('>').next().unwrap_or("").trim().to_owned()
 }
 
 /// A scripted SMTP server recording `sendmail` events. `fail` selects a failure: `connect`, `starttls`, `login`, `sendmail` or `refused`.
@@ -323,7 +323,7 @@ pub fn smsc(fail: Option<String>, events: Events) -> ScriptedConn {
 }
 
 fn failure(case: &Value, key: &str) -> Option<String> {
-    case.get("responses")?.as_array()?.iter().find_map(|r| r.get(key)?.as_str().map(str::to_string))
+    case.get("responses")?.as_array()?.iter().find_map(|r| r.get(key)?.as_str().map(str::to_owned))
 }
 
 fn dedupe(events: Vec<Value>) -> Vec<Value> {

@@ -21,10 +21,10 @@
 //! - **Stored state.** Apprise stores the Olm account and Megolm sessions in plain text, while mercurio seals them with AES-256-GCM under a key derived from the URL's password or access token (never stored). After a password change the old state no longer opens and the device starts over with new keys.
 
 mod server;
-pub mod sizing;
+pub(crate) mod sizing;
 
 #[cfg(feature = "service-matrix-e2ee")]
-pub mod e2ee;
+pub(crate) mod e2ee;
 #[cfg(feature = "service-matrix-e2ee")]
 use e2ee::{flow as e2ee_flow, sas};
 
@@ -45,7 +45,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::escape_html;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "matrix",
     name: "Matrix",
     schemes: &["matrix", "matrixs"],
@@ -183,7 +183,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let webhook_path = SERVICE.raw(u, "path").map(unquote);
     let e2ee = SERVICE.raw(u, "e2ee").map(|v| parse_bool(v, false));
     let autoverify = SERVICE.flag(u, "autoverify");
-    let mut mode = SERVICE.raw(u, "mode").map(str::to_string);
+    let mut mode = SERVICE.raw(u, "mode").map(str::to_owned);
     let mut user = opt(u.user());
     let mut password = opt(u.password());
     if mode.is_none() && password.is_none() && targets.is_empty() {
@@ -211,11 +211,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let webhook_path = match webhook_path.as_deref().map(str::trim) {
         Some(p) if !p.is_empty() => {
-            let p = if p.starts_with('/') { p.to_string() } else { format!("/{p}") };
-            let p = p.trim_end_matches('/').to_string();
-            if p.is_empty() { "/".to_string() } else { p }
+            let p = if p.starts_with('/') { p.to_owned() } else { format!("/{p}") };
+            let p = p.trim_end_matches('/').to_owned();
+            if p.is_empty() { "/".to_owned() } else { p }
         }
-        _ => SERVICE.default_of("path").to_string(),
+        _ => SERVICE.default_of("path").to_owned(),
     };
     let e2ee = e2ee.unwrap_or(true);
     let mode = match mode.map(|m| m.to_lowercase()).as_deref() {
@@ -305,7 +305,7 @@ impl Config {
             self.user.as_deref().unwrap_or(""),
             self.password.as_ref().map(|p| p.expose()).unwrap_or(""),
         );
-        crate::crypto::hex(&crate::crypto::sha256(id.as_bytes())).get(..16).unwrap_or_default().to_string()
+        crate::crypto::hex(&crate::crypto::sha256(id.as_bytes())).get(..16).unwrap_or_default().to_owned()
     }
 
     fn mode_str(&self) -> &'static str {
@@ -365,7 +365,7 @@ impl Matrix {
     fn webhook_url(&self) -> String {
         let cfg = &self.cfg;
         let token =
-            cfg.password.as_ref().map(|p| p.expose().to_string()).or_else(|| cfg.user.clone()).unwrap_or_default();
+            cfg.password.as_ref().map(|p| p.expose().to_owned()).or_else(|| cfg.user.clone()).unwrap_or_default();
         let base = || {
             let port = cfg.port.map(|p| format!(":{p}")).unwrap_or_default();
             format!("{}://{}{}", if cfg.secure { "https" } else { "http" }, cfg.host, port)
@@ -500,16 +500,16 @@ impl Notify for Matrix {
     fn plan(&self, m: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let cfg = &self.cfg;
         let msg = Msg {
-            title: m.title.to_string(),
-            body: m.body.to_string(),
+            title: m.title.to_owned(),
+            body: m.body.to_owned(),
             kind: m.kind,
             format: m.format,
             passthrough: m.passthrough,
             attachments: m.attachments.to_vec(),
             image_url: if cfg.include_image { ctx.asset.image_url(m.kind, ImageSize::Xy32) } else { None },
-            app_id: ctx.app_id().to_string(),
-            app_desc: ctx.app_desc().to_string(),
-            color: ctx.asset.color(m.kind).to_string(),
+            app_id: ctx.app_id().to_owned(),
+            app_desc: ctx.app_desc().to_owned(),
+            color: ctx.asset.color(m.kind).to_owned(),
         };
         if cfg.mode != Mode::Off {
             return self.webhook_plan(&msg, ctx.env().as_ref());
@@ -529,8 +529,8 @@ impl Notify for Matrix {
             passthrough: true,
             attachments: Vec::new(),
             image_url: None,
-            app_id: ctx.app_id().to_string(),
-            app_desc: ctx.app_desc().to_string(),
+            app_id: ctx.app_id().to_owned(),
+            app_desc: ctx.app_desc().to_owned(),
             color: String::new(),
         };
         server::close(self.cfg.clone(), msg, self.store(ctx), ctx.env().clone())
@@ -539,16 +539,16 @@ impl Notify for Matrix {
     fn url_identifier(&self) -> UrlIdentifier {
         let c = &self.cfg;
         let t2bot = c.mode == Mode::T2bot;
-        let token = c.t2bot_token.as_ref().map(|t| t.expose().to_string());
-        let password = c.password.as_ref().map(|p| p.expose().to_string());
+        let token = c.t2bot_token.as_ref().map(|t| t.expose().to_owned());
+        let password = c.password.as_ref().map(|p| p.expose().to_owned());
         UrlIdentifier::Parts(vec![
-            if c.secure { "matrixs" } else { "matrix" }.to_string(),
-            c.mode_str().to_string(),
-            if t2bot { token.as_deref().unwrap_or_default().to_string() } else { c.host.clone() },
+            if c.secure { "matrixs" } else { "matrix" }.to_owned(),
+            c.mode_str().to_owned(),
+            if t2bot { token.as_deref().unwrap_or_default().to_owned() } else { c.host.clone() },
             c.port.unwrap_or(if c.secure { 443 } else { 80 }).to_string(),
             if c.mode == Mode::Hookshot { c.webhook_path.clone() } else { String::new() },
-            c.user.as_deref().filter(|_| !t2bot).unwrap_or_default().to_string(),
-            password.as_deref().filter(|_| !t2bot).unwrap_or_default().to_string(),
+            c.user.as_deref().filter(|_| !t2bot).unwrap_or_default().to_owned(),
+            password.as_deref().filter(|_| !t2bot).unwrap_or_default().to_owned(),
         ])
     }
 
@@ -560,7 +560,7 @@ impl Notify for Matrix {
         }
         let title: String = title.trim().chars().take(TITLE_MAXLEN).collect();
         let body = body.trim_end();
-        let device_id = self.store(ctx).get("device_id").and_then(|v| v.as_str().map(str::to_string));
+        let device_id = self.store(ctx).get("device_id").and_then(|v| v.as_str().map(str::to_owned));
         let rich = matches!(format, NotifyFormat::Html | NotifyFormat::Markdown);
         let body_maxlen = sizing::body_char_limit(body, &title, rich, cfg.e2ee_capable(), device_id.as_deref());
         Some(Limits { title_maxlen: TITLE_MAXLEN, body_maxlen, body_max_line_count: 0 })

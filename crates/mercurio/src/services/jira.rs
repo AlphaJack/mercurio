@@ -16,7 +16,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIden
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "jira",
     name: "Jira",
     schemes: &["jira", "opsgenie"],
@@ -165,7 +165,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     let mut raw_targets = u.path_segments();
     if let Some(to) = u.param_nonempty("to") {
-        raw_targets.push(to.to_string());
+        raw_targets.push(to.to_owned());
     }
     let mut targets = Vec::new();
     for t in parse_list(raw_targets) {
@@ -209,11 +209,11 @@ impl Notify for Jira {
             .entity
             .clone()
             .or_else(|| self.alias.clone())
-            .unwrap_or_else(|| if msg.title.is_empty() { ctx.app_id().to_string() } else { msg.title.to_string() });
+            .unwrap_or_else(|| if msg.title.is_empty() { ctx.app_id().to_owned() } else { msg.title.to_owned() });
         let headers = vec![
-            ("User-Agent", ctx.app_id().to_string()),
-            ("Accepts", "application/json".to_string()),
-            ("Content-Type", "application/json".to_string()),
+            ("User-Agent", ctx.app_id().to_owned()),
+            ("Accepts", "application/json".to_owned()),
+            ("Content-Type", "application/json".to_owned()),
             ("Authorization", format!("GenieKey {}", self.apikey.expose())),
         ];
         let mut note = json!({"source": ctx.app_desc(), "note": crate::http::TEXT});
@@ -229,7 +229,7 @@ impl Notify for Jira {
             payload: Value::Null,
             batches: Vec::new(),
             note,
-            text: msg.body.to_string(),
+            text: msg.body.to_owned(),
             piece: msg.index,
         };
         if action != "new" {
@@ -246,7 +246,7 @@ impl Notify for Jira {
         let message = if title_body.chars().count() > BODY_MINLEN {
             format!("{}...", title_body.chars().take(BODY_MINLEN - 3).collect::<String>())
         } else {
-            title_body.to_string()
+            title_body.to_owned()
         };
         let mut payload = json!({
             "source": ctx.app_desc(),

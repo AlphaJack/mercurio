@@ -10,7 +10,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "youlmk",
     name: "YouLMK",
     schemes: &["youlmk"],
@@ -101,7 +101,7 @@ impl Notify for YouLmk {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let token = self.token.expose();
         let is_token = token.to_lowercase().starts_with("ylk_");
-        let url = if is_token { NOTIFY_URL.to_string() } else { format!("https://youlmk.com/k/{token}") };
+        let url = if is_token { NOTIFY_URL.to_owned() } else { format!("https://youlmk.com/k/{token}") };
         let idx = match msg.kind {
             NotifyType::Info => 0,
             NotifyType::Success => 1,

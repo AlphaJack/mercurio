@@ -10,7 +10,7 @@ use crate::url::ParsedUrl;
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "mobilemessage",
     name: "Mobile Message",
     schemes: &["mobilemessage", "mobilemsg"],

@@ -65,6 +65,6 @@ mod tests {
             assert_eq!(inner, ["b"]);
             note("a".into());
         }));
-        assert_eq!((outside, a), (Vec::<String>::new(), vec!["a".to_string()]));
+        assert_eq!((outside, a), (Vec::<String>::new(), vec!["a".to_owned()]));
     }
 }

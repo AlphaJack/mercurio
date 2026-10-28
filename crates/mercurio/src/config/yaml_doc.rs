@@ -46,7 +46,7 @@ pub(super) fn parse_yaml(content: &str, opts: &ConfigOptions) -> Parsed {
     let mut out = Parsed::default();
     let Some(doc) = document(content) else { return out };
     let Some(placeholders) = placeholders(&doc, content, opts) else { return out };
-    let declared = placeholders.as_ref().map(|p| p.schema().names().map(str::to_string).collect()).unwrap_or_default();
+    let declared = placeholders.as_ref().map(|p| p.schema().names().map(str::to_owned).collect()).unwrap_or_default();
     if let Some(tokens) = doc.get("asset").filter(|v| v.has_value()) {
         parse_asset(tokens, &mut out);
     }
@@ -151,7 +151,7 @@ impl Entries<'_> {
     fn encode_url(&mut self, url: &str) -> String {
         match self.placeholders.as_mut() {
             Some(p) => p.encode_url(url),
-            None => url.to_string(),
+            None => url.to_owned(),
         }
     }
 
@@ -207,7 +207,7 @@ impl Entries<'_> {
         let mut siblings: Vec<(String, Yaml)> = map
             .iter()
             .filter(|(k, _)| *k != url_key && k.as_str() != Some("schema"))
-            .filter_map(|(k, v)| k.as_str().map(|k| (k.to_string(), v.clone())))
+            .filter_map(|(k, v)| k.as_str().map(|k| (k.to_owned(), v.clone())))
             .collect();
         if let Some(p) = self.placeholders.as_mut() {
             siblings = siblings.into_iter().map(|(k, v)| (k, p.encode_value(&v))).collect();

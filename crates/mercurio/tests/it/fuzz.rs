@@ -196,7 +196,7 @@ fn rand_response(rng: &mut Rng) -> Response {
     };
     let mut r = Response::new(status, body);
     if rng.chance(30) {
-        r = r.with_header("Retry-After", (*rng.pick(&["1", "-1", "abc", "99999999999"])).to_string());
+        r = r.with_header("Retry-After", (*rng.pick(&["1", "-1", "abc", "99999999999"])).to_owned());
     }
     r
 }
@@ -210,7 +210,7 @@ fn seed_urls() -> Vec<String> {
         let Ok(doc) = serde_json::from_str::<serde_json::Value>(&text) else { continue };
         for case in doc["cases"].as_array().into_iter().flatten() {
             if let Some(u) = case["url"].as_str() {
-                out.push(u.to_string());
+                out.push(u.to_owned());
             }
         }
     }

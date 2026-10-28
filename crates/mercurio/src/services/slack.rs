@@ -23,7 +23,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::{html_escape_noquote, json_text, json_has_value};
 use crate::{Error, FileOp, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "slack",
     name: "Slack",
     schemes: &["slack"],
@@ -115,7 +115,7 @@ struct Slack {
 }
 
 fn delim_split(s: &str) -> Vec<String> {
-    crate::regex!(r"[ \t\r\n,#\\/]+").split(s).filter(|x| !x.is_empty()).map(str::to_string).collect()
+    crate::regex!(r"[ \t\r\n,#\\/]+").split(s).filter(|x| !x.is_empty()).map(str::to_owned).collect()
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -175,7 +175,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut bot_token = None;
     if mode.is_workflow() {
         let path: Vec<String> =
-            workflow_path.as_deref().unwrap_or("").split('/').filter(|s| !s.is_empty()).map(str::to_string).collect();
+            workflow_path.as_deref().unwrap_or("").split('/').filter(|s| !s.is_empty()).map(str::to_owned).collect();
         if explicit.is_some() {
             let expected = if mode == Mode::Workflow { 4 } else { 3 };
             if path.len() != expected {
@@ -215,7 +215,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             .and_then(|t| validate_regex(t, r"^(?:xoxe\.)?xox[abp]-[A-Z0-9-]+$", "i", true))
             .ok_or_else(|| SERVICE.err("an invalid Slack OAuth Access Token was specified"))?;
         bot_token = Some(Secret::new(t));
-        url = "https://slack.com/api/chat.postMessage".to_string();
+        url = "https://slack.com/api/chat.postMessage".to_owned();
     }
 
     let mut channels: Vec<Option<String>> = parse_list(targets).into_iter().map(Some).collect();
@@ -240,7 +240,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         include_timestamp,
         use_blocks,
         template,
-        tokens: u.query_colon.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        tokens: u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
         lookup_cache: Arc::new(Mutex::new(BTreeMap::new())),
     }))
 }
@@ -259,7 +259,7 @@ fn parse_native(url: &str) -> Option<String> {
         r"(?i)^https?://(?P<host>hooks\.slack(?P<gov>-gov)?\.com)/services/(?P<a>[A-Z0-9]+)/(?P<b>[A-Z0-9]+)/(?P<c>[A-Z0-9]+)/?(?P<params>\?.+)?\n?\z"
     );
     let c = hook.captures(url)?;
-    let mut params = c.name("params").map_or("", |m| m.as_str()).to_string();
+    let mut params = c.name("params").map_or("", |m| m.as_str()).to_owned();
     if c.name("gov").is_some() {
         let sep = if params.is_empty() { "?" } else { "&" };
         params = format!("{params}{sep}mode=gov-hook");
@@ -293,12 +293,12 @@ fn slack_links(body: &str) -> Option<String> {
     let url = crate::regex!(
         r"(?i)(?P<match>(?:<|&lt;)?[ \t]*(?P<url>(?:https?|mailto)://[^| \n]+)(?:[ \t]*\|[ \t]*(?:(?P<val>[^\n]+?)[ \t]*)?(?:>|&gt;)|(?:>|&gt;)))"
     );
-    let strip = |s: &str| s.trim().to_string();
+    let strip = |s: &str| s.trim().to_owned();
     for (re, kind) in [(channel, 0), (user, 1), (url, 2)] {
         let found: Vec<(String, String, String)> = re
             .captures_iter(&body)
             .map(|c| {
-                (c[1].to_string(), c[2].to_string(), c.name("val").map_or(String::new(), |m| m.as_str().to_string()))
+                (c[1].to_string(), c[2].to_string(), c.name("val").map_or(String::new(), |m| m.as_str().to_owned()))
             })
             .collect();
         for (m, target, val) in found {
@@ -399,20 +399,20 @@ impl Slack {
         let text = read_template(ctx, src, MAX_TEMPLATE_SIZE)?;
         let image = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy72) } else { None };
         let mut tokens = self.tokens.clone();
-        let color = ctx.asset.color(msg.kind).to_string();
+        let color = ctx.asset.color(msg.kind).to_owned();
         for (k, v) in [
-            ("app_body", msg.body.to_string()),
-            ("app_title", msg.title.to_string()),
-            ("app_type", msg.kind.as_str().to_string()),
-            ("app_id", ctx.app_id().to_string()),
-            ("app_desc", ctx.app_desc().to_string()),
+            ("app_body", msg.body.to_owned()),
+            ("app_title", msg.title.to_owned()),
+            ("app_type", msg.kind.as_str().to_owned()),
+            ("app_id", ctx.app_id().to_owned()),
+            ("app_desc", ctx.app_desc().to_owned()),
             ("app_color", color.clone()),
             ("app_color_hex", color),
             ("app_image_url", image.unwrap_or_default()),
-            ("app_url", ctx.app_url().to_string()),
+            ("app_url", ctx.app_url().to_owned()),
         ] {
             tokens.retain(|(key, _)| key != k);
-            tokens.push((k.to_string(), v));
+            tokens.push((k.to_owned(), v));
         }
         let content: Value = serde_json::from_str(&apply_template_json(&text, &tokens)?).ok()?;
         let blocks = content.get("blocks").and_then(Value::as_array).filter(|b| !b.is_empty())?;
@@ -456,7 +456,7 @@ impl Slack {
         let body = if msg.format == NotifyFormat::Markdown && msg.passthrough {
             slack_links(body).ok_or_else(unsupported)?
         } else {
-            body.to_string()
+            body.to_owned()
         };
         let title = escape_formatting(msg.title).ok_or_else(unsupported)?;
         let mut attachment = json!({"title": title, "text": body, "color": color});
@@ -651,7 +651,7 @@ impl Slack {
 }
 
 /// Markdown as Slack `mrkdwn`.
-pub fn commonmark_to_slack(body: &str) -> String {
+pub(crate) fn commonmark_to_slack(body: &str) -> String {
     super::_chat_markup::render(body, &super::_chat_markup::ANCHOR)
 }
 
@@ -674,8 +674,8 @@ impl Notify for Slack {
     }
 
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let ua = ctx.app_id().to_string();
-        let body = msg.body.to_string();
+        let ua = ctx.app_id().to_owned();
+        let body = msg.body.to_owned();
 
         if self.mode.is_workflow() {
             let payload = match &self.template {
@@ -759,12 +759,12 @@ impl Notify for Slack {
                 plans.push(Plan::Fail(Error::Message("invalid Slack target".into())).target(channel.clone()));
                 continue;
             };
-            thread_ts = c.name("thread_ts").map(|m| m.as_str().to_string());
+            thread_ts = c.name("thread_ts").map(|m| m.as_str().to_owned());
             let name = &c["channel"];
             let target = if let Some(id) = name.strip_prefix('+') {
-                id.to_string()
+                id.to_owned()
             } else if name.starts_with('@') || name.starts_with('#') {
-                name.to_string()
+                name.to_owned()
             } else {
                 format!("#{name}")
             };

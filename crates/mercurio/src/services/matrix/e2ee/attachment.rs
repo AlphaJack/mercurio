@@ -3,14 +3,14 @@
 use super::*;
 
 /// Encrypt attachment bytes (Matrix `EncryptedFile` v2, AES-256-CTR).
-pub fn encrypt_attachment(data: &[u8], env: &dyn Env) -> (Vec<u8>, Value) {
+pub(crate) fn encrypt_attachment(data: &[u8], env: &dyn Env) -> (Vec<u8>, Value) {
     let key = Zeroizing::new(random32(env));
     let mut iv = [0u8; 16];
     env.fill_random(&mut iv[..8]);
     encrypt_attachment_with(data, &key, &iv)
 }
 
-pub fn encrypt_attachment_with(data: &[u8], key: &[u8; 32], iv: &[u8; 16]) -> (Vec<u8>, Value) {
+pub(super) fn encrypt_attachment_with(data: &[u8], key: &[u8; 32], iv: &[u8; 16]) -> (Vec<u8>, Value) {
     let ct = aes_ctr(key, iv, data);
     let digest = sha256(&ct);
     let info = json!({

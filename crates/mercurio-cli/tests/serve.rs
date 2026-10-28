@@ -48,7 +48,7 @@ fn start_with(config_dir: &std::path::Path, env: &[(&str, &str)]) -> Server {
     let mut child = cmd.stdout(Stdio::piped()).spawn().unwrap();
     let mut line = String::new();
     BufReader::new(child.stdout.take().unwrap()).read_line(&mut line).unwrap();
-    let addr = line.trim().rsplit("http://").next().unwrap().to_string();
+    let addr = line.trim().rsplit("http://").next().unwrap().to_owned();
     Server { child, addr }
 }
 
@@ -74,7 +74,7 @@ fn upstream(n: usize, status: u16) -> (String, mpsc::Receiver<serde_json::Value>
                 if let Some((name, value)) = h.split_once(':')
                     && name.eq_ignore_ascii_case("user-agent")
                 {
-                    agent = value.trim().to_string();
+                    agent = value.trim().to_owned();
                 }
             }
             let mut b = vec![0; len];
@@ -107,7 +107,7 @@ fn http_full(addr: &str, method: &str, path: &str, headers: &[(&str, &str)], bod
     let mut out = String::new();
     s.read_to_string(&mut out).unwrap();
     let status = out.split_whitespace().nth(1).unwrap().parse().unwrap();
-    let (head, body) = out.split_once("\r\n\r\n").map(|(h, b)| (h.to_string(), b.to_string())).unwrap_or_default();
+    let (head, body) = out.split_once("\r\n\r\n").map(|(h, b)| (h.to_owned(), b.to_owned())).unwrap_or_default();
     (status, head, body)
 }
 
@@ -646,7 +646,7 @@ fn json_log_format_writes_one_object_per_line() {
     let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
     let mut line = String::new();
     BufReader::new(child.stdout.take().unwrap()).read_line(&mut line).unwrap();
-    let addr = line.trim().rsplit("http://").next().unwrap().to_string();
+    let addr = line.trim().rsplit("http://").next().unwrap().to_owned();
     // `/status` is not logged as a request; a refused notification is.
     assert_eq!(http(&addr, "POST", "/notify", "application/json", "{}").0, 400);
     // A graceful stop, so the request's log line is written.
@@ -862,7 +862,7 @@ fn healthcheck_flag() {
         Command::new(env!("CARGO_BIN_EXE_mercurio")).args(["serve", "--healthcheck", "--bind", bind]).status().unwrap()
     };
     assert!(check(&srv.addr).success());
-    let port = srv.addr.rsplit(':').next().unwrap().to_string();
+    let port = srv.addr.rsplit(':').next().unwrap().to_owned();
     assert!(check(&format!("0.0.0.0:{port}")).success(), "a wildcard bind is checked through loopback");
     drop(srv);
     assert_eq!(check(&format!("127.0.0.1:{port}")).code(), Some(1));
@@ -873,7 +873,7 @@ fn help_section(name: &str) -> Vec<String> {
     let out = Command::new(env!("CARGO_BIN_EXE_mercurio")).args(["serve", "--help"]).output().unwrap();
     let help = String::from_utf8(out.stdout).unwrap();
     let section = help.split_once(&format!("\n{name}:\n")).unwrap().1;
-    section.lines().take_while(|l| l.starts_with("  ")).map(|l| l.trim().to_string()).collect()
+    section.lines().take_while(|l| l.starts_with("  ")).map(|l| l.trim().to_owned()).collect()
 }
 
 /// Every documented path answers every documented method (not 404 or 405), and refuses another method with 405.
@@ -912,7 +912,7 @@ fn documented_fields_and_headers_are_read() {
             }
         }
     }
-    let code = code.split("pub(crate) const ROUTES").next().unwrap().to_string()
+    let code = code.split("pub(crate) const ROUTES").next().unwrap().to_owned()
         + code.split("pub(crate) fn help_tables").nth(1).unwrap();
     let literal = |name: &str| code.to_lowercase().contains(&format!("\"{}\"", name.to_lowercase()));
     for row in help_section("Request fields") {
@@ -959,7 +959,7 @@ fn recorder(replies: Vec<String>) -> (String, mpsc::Receiver<String>) {
 
 #[test]
 fn http_redirects_setting_and_apprise_id() {
-    let ok = || "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string();
+    let ok = || "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_owned();
     let (target, hits) = recorder(vec![ok(), ok()]);
     let moved =
         format!("HTTP/1.1 302 Found\r\nLocation: http://{target}/\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");

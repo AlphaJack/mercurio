@@ -38,7 +38,7 @@ fn sources(id: &str) -> String {
         .find(|name| {
             module(name).iter().any(|p| {
                 let text = fs::read_to_string(p).unwrap();
-                text.split("pub static SERVICE: ServiceDef")
+                text.split("pub(crate) static SERVICE: ServiceDef")
                     .nth(1)
                     .is_some_and(|s| s.contains(&format!("id: \"{id}\"")))
             })
@@ -52,7 +52,7 @@ fn sources(id: &str) -> String {
         for path in module(&name) {
             let src = fs::read_to_string(path).unwrap();
             for c in refs.captures_iter(&src) {
-                let next = c.get(1).or(c.get(2)).unwrap().as_str().to_string();
+                let next = c.get(1).or(c.get(2)).unwrap().as_str().to_owned();
                 if !module(&next).is_empty() && seen.insert(next.clone()) {
                     queue.push(next);
                 }
@@ -75,7 +75,7 @@ fn declared_params_are_read_by_the_parser() {
         // Literals outside the `SERVICE` declaration, which names every key.
         let src = sources(def.id);
         let code: String = src
-            .split("pub static SERVICE: ServiceDef")
+            .split("pub(crate) static SERVICE: ServiceDef")
             .enumerate()
             .map(|(i, part)| if i == 0 { part } else { part.split_once("\n};").map_or("", |(_, rest)| rest) })
             .collect();
@@ -197,7 +197,7 @@ fn diff(path: &str, a: &serde_json::Value, b: &serde_json::Value, out: &mut Vec<
     use serde_json::Value::{Array, Null, Object};
     match (a, b) {
         (Object(x), Object(y)) => {
-            for k in x.keys().chain(y.keys()).collect::<BTreeSet<_>>() {
+            for k in x.keys().chain(y.keys()) {
                 diff(&format!("{path}/{k}"), x.get(k).unwrap_or(&Null), y.get(k).unwrap_or(&Null), out);
             }
         }
@@ -221,7 +221,7 @@ fn short(v: &serde_json::Value) -> String {
 fn common_params_match_the_parser() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let code = ["url.rs", "target.rs"].map(|f| fs::read_to_string(root.join(f)).unwrap()).join("\n");
-    let code = code.split("pub static COMMON_PARAMS").next().unwrap().to_string()
+    let code = code.split("pub static COMMON_PARAMS").next().unwrap().to_owned()
         + code.split("pub static COMMON_PARAMS").nth(1).and_then(|s| s.split_once("\n];")).map_or("", |(_, rest)| rest);
     let declared: BTreeSet<&str> = mercurio::service::COMMON_PARAMS
         .iter()

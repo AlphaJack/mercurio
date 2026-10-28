@@ -28,7 +28,7 @@ struct Flags {
     ok: Option<bool>,
 }
 
-pub fn generate(root: &Path, services: Value) -> Result<(), String> {
+pub(crate) fn generate(root: &Path, services: Value) -> Result<(), String> {
     let Value::Array(mut services) = services else {
         return Err("mercurio services --json: expected an array".to_owned());
     };
@@ -153,7 +153,7 @@ fn module_doc(root: &Path, path: &str) -> String {
 }
 
 /// `` [`x`](target) `` (with `link`) or `` [`x`] `` becomes `` `x` ``.
-pub fn plain_code_links(text: &str, link: bool) -> String {
+pub(crate) fn plain_code_links(text: &str, link: bool) -> String {
     let mut out = String::new();
     let mut rest = text;
     while let Some((before, after)) = rest.split_once("[`") {
@@ -577,7 +577,7 @@ fn page(
 }
 
 /// The table of [`mercurio::service::COMMON_PARAMS`], for `url-parameters.md`.
-pub fn common_params_table() -> String {
+pub(crate) fn common_params_table() -> String {
     let mut out =
         vec!["| Parameter | Meaning | Type | Default | Notes |".to_owned(), "|---|---|---|---|---|".to_owned()];
     for p in mercurio::service::COMMON_PARAMS.iter().map(mercurio::service::Param::to_json) {

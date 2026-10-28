@@ -18,17 +18,17 @@ use crate::util::parse_int;
 use crate::{FileOp, Plan, Prepared, Result};
 
 /// One `USER_ROLE_DETECTION_RE` match: `(is_role, id, value)`.
-pub type Mention = (bool, String, String);
+pub(crate) type Mention = (bool, String, String);
 
 /// `USER_ROLE_DETECTION_RE.findall(text)`.
-pub fn find_mentions(text: &str) -> Vec<Mention> {
+pub(crate) fn find_mentions(text: &str) -> Vec<Mention> {
     let re = crate::regex!(r"(?i)\s*(?:<?@(&?)([0-9]+)>?|@([a-z0-9]+))");
     re.captures_iter(text)
         .map(|c| {
             (
                 c.get(1).is_some_and(|m| !m.as_str().is_empty()),
-                c.get(2).map(|m| m.as_str().to_string()).unwrap_or_default(),
-                c.get(3).map(|m| m.as_str().to_string()).unwrap_or_default(),
+                c.get(2).map(|m| m.as_str().to_owned()).unwrap_or_default(),
+                c.get(3).map(|m| m.as_str().to_owned()).unwrap_or_default(),
             )
         })
         .collect()
@@ -36,7 +36,7 @@ pub fn find_mentions(text: &str) -> Vec<Mention> {
 
 fn push_unique(v: &mut Vec<String>, s: &str) {
     if !v.iter().any(|x| x == s) {
-        v.push(s.to_string());
+        v.push(s.to_owned());
     }
 }
 
@@ -90,7 +90,7 @@ enum Template {
 }
 
 #[derive(Debug)]
-pub struct Discord {
+pub(crate) struct Discord {
     name: &'static str,
     notify_url: &'static str,
     webhook_id: Secret,
@@ -116,7 +116,7 @@ pub struct Discord {
 }
 
 /// Escape the colon that opens each `:name:` so Discord shows it as text (`2001:db8:100::1` would otherwise show an emoji for `:100:`). Escaped characters, code spans, `<...>` tokens and web links are left alone.
-pub fn escape_emojis(text: &str) -> String {
+pub(crate) fn escape_emojis(text: &str) -> String {
     let c: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len() + 8);
     let mut i = 0;
@@ -170,7 +170,7 @@ pub fn escape_emojis(text: &str) -> String {
     out
 }
 
-pub fn discord_parse(def: &'static ServiceDef, notify_url: &'static str, u: &ParsedUrl) -> Result<Discord> {
+pub(crate) fn discord_parse(def: &'static ServiceDef, notify_url: &'static str, u: &ParsedUrl) -> Result<Discord> {
     let webhook_id = validate_nonblank(&u.host())
         .ok_or_else(|| def.err(format!("an invalid {} Webhook ID was specified", def.name)))?;
     let webhook_token = u.path_segments()
@@ -229,7 +229,7 @@ pub fn discord_parse(def: &'static ServiceDef, notify_url: &'static str, u: &Par
         flags: flags.filter(|f| *f != 0),
         ping: def.raw(u, "ping").map(|p| parse_list([unquote(p)])).unwrap_or_default(),
         template,
-        tokens: u.query_colon.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        tokens: u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
         batch: def.flag_strict(u, "batch"),
         use_embeds,
         escape_emojis: def.id == "discord" && !def.flag_strict(u, "emojis"),
@@ -238,7 +238,7 @@ pub fn discord_parse(def: &'static ServiceDef, notify_url: &'static str, u: &Par
 
 fn parse_template(def: &'static ServiceDef, t: &str) -> Result<Template> {
     match crate::url::scheme_of(t) {
-        None => Ok(Template::File(t.to_string())),
+        None => Ok(Template::File(t.to_owned())),
         Some(s) if s == "file" => {
             let rest = t.split_once("://").map(|(_, r)| r).unwrap_or("");
             let path = rest.split('?').next().unwrap_or("");
@@ -252,22 +252,22 @@ fn parse_template(def: &'static ServiceDef, t: &str) -> Result<Template> {
 /// `apply_template(content, app_mode=JSON, **tokens)`.
 fn apply_template(content: &str, tokens: &[(String, String)]) -> std::result::Result<String, String> {
     if tokens.is_empty() {
-        return Ok(content.to_string());
+        return Ok(content.to_owned());
     }
     let alts: Vec<String> = tokens.iter().map(|(k, _)| crate::re::escape(k)).collect();
     let pattern = format!(r"(?i)\{{\{{\s*({})\s*\}}\}}", alts.join("|"));
     let re = crate::re::Regex::new(&pattern).map_err(|e| e.to_string())?;
     let mut missing = None;
-    let out = re.replace_all(content, |c: &crate::re::Captures| {
+    let out = re.replace_all(content, |c: &crate::re::Captures<'_>| {
         let m = c.get(0).map_or("", |m| m.as_str());
         let key = m.get(2..m.len().saturating_sub(2)).unwrap_or("").trim();
         match tokens.iter().find(|(k, _)| k == key) {
             Some((_, v)) => {
                 let s = serde_json::to_string(v).unwrap_or_default();
-                s.get(1..s.len().saturating_sub(1)).unwrap_or("").to_string()
+                s.get(1..s.len().saturating_sub(1)).unwrap_or("").to_owned()
             }
             None => {
-                missing = Some(key.to_string());
+                missing = Some(key.to_owned());
                 String::new()
             }
         }
@@ -381,7 +381,7 @@ impl Discord {
         if raw.is_empty() {
             return Err(fail("could not be accessed"));
         }
-        let raw = std::str::from_utf8(raw).map_err(|_| fail("could not be read"))?;
+        let raw = std::str::from_utf8(raw).ok().ok_or_else(|| fail("could not be read"))?;
 
         let image_url = ctx.asset.image_url(msg.kind, ImageSize::Xy256).unwrap_or_default();
         let mut tokens: Vec<(String, String)> = self.tokens.clone();
@@ -389,22 +389,22 @@ impl Discord {
             if let Some(slot) = tokens.iter_mut().find(|(key, _)| key == k) {
                 slot.1 = v;
             } else {
-                tokens.push((k.to_string(), v));
+                tokens.push((k.to_owned(), v));
             }
         };
-        set("app_body", msg.body.to_string());
-        set("app_title", msg.title.to_string());
-        set("app_type", msg.kind.as_str().to_string());
-        set("app_id", ctx.app_id().to_string());
-        set("app_desc", ctx.app_desc().to_string());
-        set("app_color", ctx.asset.color(msg.kind).to_string());
-        set("app_color_hex", ctx.asset.color(msg.kind).to_string());
+        set("app_body", msg.body.to_owned());
+        set("app_title", msg.title.to_owned());
+        set("app_type", msg.kind.as_str().to_owned());
+        set("app_id", ctx.app_id().to_owned());
+        set("app_desc", ctx.app_desc().to_owned());
+        set("app_color", ctx.asset.color(msg.kind).to_owned());
+        set("app_color_hex", ctx.asset.color(msg.kind).to_owned());
         set("app_color_int", ctx.asset.color_int(msg.kind).to_string());
         set("app_image_url", image_url);
-        set("app_url", ctx.app_url().to_string());
+        set("app_url", ctx.app_url().to_owned());
 
         let content = apply_template(raw, &tokens).map_err(|e| fail(&e))?;
-        let value: Value = serde_json::from_str(&content).map_err(|_| fail("contains invalid JSON"))?;
+        let value: Value = serde_json::from_str(&content).ok().ok_or_else(|| fail("contains invalid JSON"))?;
         let Value::Object(obj) = value else { return Err(fail("must be a JSON object")) };
         let has_content = obj.get("content").and_then(Value::as_str).is_some_and(|s| !s.is_empty());
         let embeds = obj.get("embeds").and_then(Value::as_array).filter(|a| !a.is_empty());
@@ -512,7 +512,7 @@ impl Notify for Discord {
                         .into_iter()
                         .map(|(name, value)| {
                             let value = if value.is_empty() {
-                                "```\n```".to_string()
+                                "```\n```".to_owned()
                             } else {
                                 format!("```md\n{}\n```", value.trim_end())
                             };
@@ -528,7 +528,7 @@ impl Notify for Discord {
                 payload.insert("embeds".into(), json!([embed]));
             } else {
                 let mut content =
-                    if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\r\n{}", msg.title, msg.body) };
+                    if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}\r\n{}", msg.title, msg.body) };
                 if let Some(Value::String(c)) = payload.get("content") {
                     content.push_str(c);
                 }
@@ -575,7 +575,7 @@ impl Notify for Discord {
 
         let ep = Arc::new(Endpoint {
             url: format!("{}/{}/{}", self.notify_url, self.webhook_id.expose(), self.webhook_token.expose()),
-            user_agent: ctx.app_id().to_string(),
+            user_agent: ctx.app_id().to_owned(),
             params: self.thread.clone(),
             env: ctx.env().clone(),
         });
@@ -584,7 +584,7 @@ impl Notify for Discord {
 }
 
 /// `parse_native_url` for Discord-style webhook URLs: `{scheme}://{id}/{token}/{params}`.
-pub fn native_webhook(url: &str, re: &crate::re::Regex, scheme: &str) -> Option<String> {
+pub(crate) fn native_webhook(url: &str, re: &crate::re::Regex, scheme: &str) -> Option<String> {
     let c = re.captures(url)?;
     Some(format!(
         "{scheme}://{}/{}/{}",
@@ -659,7 +659,7 @@ mod tests {
             let text = format!("{prefix}{}", piece.repeat(count));
             let start = std::time::Instant::now();
             escape_emojis(&text);
-            assert!(start.elapsed() < std::time::Duration::from_secs(2), "{piece:?}");
+            assert!(start.elapsed() < Duration::from_secs(2), "{piece:?}");
         }
     }
 
@@ -673,7 +673,7 @@ mod tests {
 
     #[test]
     fn template_tokens() {
-        let t = vec![("app_body".to_string(), "a\"b".to_string())];
+        let t = vec![("app_body".to_owned(), "a\"b".to_owned())];
         assert_eq!(apply_template("{\"c\": \"{{ app_body }}\"}", &t).unwrap(), "{\"c\": \"a\\\"b\"}");
     }
 }

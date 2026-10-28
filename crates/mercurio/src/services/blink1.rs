@@ -19,7 +19,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "blink1",
     name: "blink(1)",
     schemes: &["blink1"],
@@ -68,7 +68,7 @@ fn ranged(u: &ParsedUrl, key: &str, max: i64) -> Result<u64> {
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     // The host, unquoted, is the device serial; `_` (or nothing) means "first device".
     let serial = if !u.host.is_empty() && u.host != "_" { Some(u.host()) } else { None };
-    let serial = serial.map(|s| s.trim().to_string()).filter(|s| !s.is_empty() && s != "_");
+    let serial = serial.map(|s| s.trim().to_owned()).filter(|s| !s.is_empty() && s != "_");
     let duration_ms = ranged(u, "duration", MAX_DURATION_MS)?;
     let fade_ms = ranged(u, "fade", MAX_FADE_MS)?;
     let ledn = match u.param_nonempty("ledn").map(|v| unquote(v).to_lowercase()).as_deref() {
@@ -86,7 +86,7 @@ impl Blink1 {
             cmd = cmd.args(["--id", s.as_str()]);
         }
         cmd.args([
-            "--led".to_string(),
+            "--led".to_owned(),
             self.ledn.to_string(),
             "-m".into(),
             (fade_ms / 10 * 10).to_string(),

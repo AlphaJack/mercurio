@@ -9,13 +9,13 @@ use super::yaml::Yaml;
 use crate::url::ParsedUrl;
 
 /// Environment prefix: variable `target` reads `APPRISE_TEMPLATE_TARGET`.
-pub const ENV_PREFIX: &str = "APPRISE_TEMPLATE_";
+pub(crate) const ENV_PREFIX: &str = "APPRISE_TEMPLATE_";
 /// Longest variable name.
-pub const NAME_MAXLEN: usize = 32;
+pub(crate) const NAME_MAXLEN: usize = 32;
 /// Longest variable value in characters.
-pub const MAX_VALUE_LEN: usize = 1024;
+pub(crate) const MAX_VALUE_LEN: usize = 1024;
 /// Longest URL after substitution.
-pub const MAX_RESOLVED_URL_LEN: usize = 8192;
+pub(crate) const MAX_RESOLVED_URL_LEN: usize = 8192;
 
 /// A template problem (bad declaration, missing or invalid value).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,7 +35,7 @@ impl fmt::Display for TemplateError {
 impl std::error::Error for TemplateError {}
 
 fn terr(message: String, variable: Option<&str>) -> TemplateError {
-    TemplateError { message, variable: variable.map(str::to_string) }
+    TemplateError { message, variable: variable.map(str::to_owned) }
 }
 
 /// `TEMPLATE_VAR_RE`.
@@ -49,14 +49,14 @@ pub fn valid_name(name: &str) -> bool {
 }
 
 /// Canonical (lower-case) form of a variable name; names are case-insensitive.
-pub fn normalize_name(name: &str) -> String {
+pub(crate) fn normalize_name(name: &str) -> String {
     name.to_lowercase()
 }
 
 /// `validate_value`: text, numbers and booleans (`yes`/`no`) only; no control characters; at most 1024 characters.
 pub fn validate_value(name: &str, value: &Yaml) -> Result<String, TemplateError> {
     let v = match value {
-        Yaml::Bool(b) => if *b { "yes" } else { "no" }.to_string(),
+        Yaml::Bool(b) => if *b { "yes" } else { "no" }.to_owned(),
         Yaml::Int(_) | Yaml::Float(_) => value.to_text(),
         Yaml::Str(s) => s.clone(),
         Yaml::Null | Yaml::Seq(_) | Yaml::Map(_) => {
@@ -171,7 +171,7 @@ impl TemplateVars {
         if self.values.iter().any(|(k, _)| normalize_name(k) == n) {
             return Err(terr(format!("Template variable '{n}' was supplied more than once."), Some(&n)));
         }
-        self.values.push((name.to_string(), value.into()));
+        self.values.push((name.to_owned(), value.into()));
         Ok(self)
     }
 
@@ -221,7 +221,7 @@ impl TemplateVars {
             Some(map) => map.get(&key).cloned(),
             None => std::env::var(&key).ok(),
         };
-        v.map(|v| v.trim().to_string()).filter(|v| !v.is_empty())
+        v.map(|v| v.trim().to_owned()).filter(|v| !v.is_empty())
     }
 
     /// `resolve_values`: call value, then configuration default, then environment. Blank call/environment values read as unsupplied.
@@ -240,7 +240,7 @@ impl TemplateVars {
             if v.is_empty() {
                 continue;
             }
-            supplied.insert(n.clone(), validate_text(&n, v.to_string())?);
+            supplied.insert(n.clone(), validate_text(&n, v.to_owned())?);
         }
         let mut out = BTreeMap::new();
         for (name, default) in &schema.variables {
@@ -269,7 +269,7 @@ impl TemplateVars {
 
 /// `TemplatePlaceholderMap`: placeholders are `a<nonce>t<index>z`.
 #[derive(Debug, Clone)]
-pub struct Placeholders {
+pub(crate) struct Placeholders {
     nonce: String,
     names: Vec<String>,
     schema: TemplateSchema,
@@ -280,7 +280,7 @@ pub struct Placeholders {
 impl Placeholders {
     /// Placeholder map for `schema`, with a nonce that does not occur in `content`.
     #[expect(clippy::disallowed_methods, reason = "an internal marker that never reaches a request")]
-    pub fn new(schema: TemplateSchema, content: &str) -> Result<Self, TemplateError> {
+    pub(crate) fn new(schema: TemplateSchema, content: &str) -> Result<Self, TemplateError> {
         for _ in 0..8 {
             let nonce = crate::env::system().random_hex(8);
             if !content.contains(&format!("a{nonce}")) {
@@ -291,7 +291,7 @@ impl Placeholders {
     }
 
     /// The variables this map was built from.
-    pub fn schema(&self) -> &TemplateSchema {
+    pub(crate) fn schema(&self) -> &TemplateSchema {
         &self.schema
     }
 
@@ -299,7 +299,7 @@ impl Placeholders {
         let idx = match self.names.iter().position(|n| n == name) {
             Some(i) => i,
             None => {
-                self.names.push(name.to_string());
+                self.names.push(name.to_owned());
                 self.names.len() - 1
             }
         };
@@ -307,27 +307,27 @@ impl Placeholders {
     }
 
     /// Replace declared `${NAME}` markers; undeclared ones stay as written.
-    pub fn encode(&mut self, text: &str) -> String {
+    pub(crate) fn encode(&mut self, text: &str) -> String {
         if !text.contains("${") {
-            return text.to_string();
+            return text.to_owned();
         }
         crate::util::replace_all(var_re(), text, |c| {
             let name = normalize_name(&c["name"]);
             Some(if self.schema.contains(&name) { self.token(&name) } else { c[0].to_string() })
         })
-        .unwrap_or_else(|| text.to_string())
+        .unwrap_or_else(|| text.to_owned())
     }
 
     /// Encode only after the `://` separator so the schema stays literal.
-    pub fn encode_url(&mut self, url: &str) -> String {
+    pub(crate) fn encode_url(&mut self, url: &str) -> String {
         match url.split_once("://") {
             Some((schema, rest)) => format!("{schema}://{}", self.encode(rest)),
-            None => url.to_string(),
+            None => url.to_owned(),
         }
     }
 
     /// Encode every string value (never mapping keys).
-    pub fn encode_value(&mut self, v: &Yaml) -> Yaml {
+    pub(crate) fn encode_value(&mut self, v: &Yaml) -> Yaml {
         match v {
             Yaml::Str(s) => Yaml::Str(self.encode(s)),
             Yaml::Seq(items) => Yaml::Seq(items.iter().map(|i| self.encode_value(i)).collect()),
@@ -349,7 +349,7 @@ impl Placeholders {
     }
 
     /// Names whose placeholders occur in `text`.
-    pub fn used_in(&self, text: &str, out: &mut Vec<String>) {
+    pub(crate) fn used_in(&self, text: &str, out: &mut Vec<String>) {
         if self.names.is_empty() {
             return;
         }
@@ -358,13 +358,13 @@ impl Placeholders {
             if let Some(n) = self.name_of(m.as_str())
                 && !out.iter().any(|x| x == n)
             {
-                out.push(n.to_string());
+                out.push(n.to_owned());
             }
         }
     }
 
     /// Names still needed by a parsed URL (`used(results)`).
-    pub fn used_by(&self, u: &ParsedUrl) -> Vec<String> {
+    pub(crate) fn used_by(&self, u: &ParsedUrl) -> Vec<String> {
         let mut out = Vec::new();
         for text in parsed_texts(u) {
             self.used_in(text, &mut out);
@@ -374,12 +374,12 @@ impl Placeholders {
     }
 
     /// `${NAME}` back in place of placeholders (for display).
-    pub fn display(&self, text: &str) -> String {
+    pub(crate) fn display(&self, text: &str) -> String {
         let Some(pattern) = self.pattern().filter(|_| !self.names.is_empty()) else {
-            return text.to_string();
+            return text.to_owned();
         };
         pattern
-            .replace_all(text, |c: &crate::re::Captures| match self.name_of(&c[0]) {
+            .replace_all(text, |c: &crate::re::Captures<'_>| match self.name_of(&c[0]) {
                 Some(n) => format!("${{{}}}", n.to_uppercase()),
                 None => c[0].to_string(),
             })
@@ -388,17 +388,17 @@ impl Placeholders {
 
     fn fill(&self, text: &str, values: &BTreeMap<String, String>) -> String {
         let Some(pattern) = self.pattern().filter(|_| !self.names.is_empty()) else {
-            return text.to_string();
+            return text.to_owned();
         };
         pattern
-            .replace_all(text, |c: &crate::re::Captures| {
+            .replace_all(text, |c: &crate::re::Captures<'_>| {
                 self.name_of(&c[0]).and_then(|n| values.get(n)).cloned().unwrap_or_else(|| c[0].to_string())
             })
             .into_owned()
     }
 
     /// `substitute(results, values)`: fill every parsed field, then the whole-authority (`user@host`) and whole-user (`user:pass`) forms.
-    pub fn substitute(&self, u: &ParsedUrl, values: &BTreeMap<String, String>) -> ParsedUrl {
+    pub(crate) fn substitute(&self, u: &ParsedUrl, values: &BTreeMap<String, String>) -> ParsedUrl {
         let mut r = u.clone();
         let f = |s: &str| self.fill(s, values);
         let fo = |s: &Option<String>| s.as_deref().map(f);
@@ -412,7 +412,7 @@ impl Placeholders {
             && let Ok(port) = port.parse::<u16>()
         {
             r.port = Some(port);
-            r.host = host.to_string();
+            r.host = host.to_owned();
         }
         r.port_raw = fo(&u.port_raw);
         r.fullpath = fo(&u.fullpath);
@@ -429,7 +429,7 @@ impl Placeholders {
             *dst = src.iter().map(|(k, v)| (f(k), f(v))).collect();
         }
         if let Some(v) = r.query.get("tz") {
-            r.tz = Some(v.to_string());
+            r.tz = Some(v.to_owned());
         }
         let pat = self.pattern();
         let whole = |s: &str| pat.and_then(|p| p.find(s)).is_some_and(|m| m.start() == 0 && m.end() == s.len());
@@ -442,12 +442,12 @@ impl Placeholders {
             {
                 match cred.split_once(':') {
                     Some((user, pw)) => {
-                        r.user = Some(user.to_string());
-                        r.password = Some(pw.to_string());
+                        r.user = Some(user.to_owned());
+                        r.password = Some(pw.to_owned());
                     }
-                    None => r.user = Some(cred.to_string()),
+                    None => r.user = Some(cred.to_owned()),
                 }
-                r.host = host.to_string();
+                r.host = host.to_owned();
             }
         }
         if let Some(user) = &u.user
@@ -456,8 +456,8 @@ impl Placeholders {
         {
             let cred = f(user);
             if let Some((user, pw)) = cred.split_once(':') {
-                r.user = Some(user.to_string());
-                r.password = Some(pw.to_string());
+                r.user = Some(user.to_owned());
+                r.password = Some(pw.to_owned());
             }
         }
         r
@@ -480,7 +480,7 @@ fn parsed_texts(u: &ParsedUrl) -> Vec<&str> {
 }
 
 /// `template_in_schema`: a declared marker before the first `://`.
-pub fn in_schema(url: &str, schema: &TemplateSchema) -> Option<String> {
+pub(crate) fn in_schema(url: &str, schema: &TemplateSchema) -> Option<String> {
     let sep = url.find("://");
     for c in var_re().captures_iter(url) {
         let name = normalize_name(&c["name"]);
@@ -493,7 +493,7 @@ pub fn in_schema(url: &str, schema: &TemplateSchema) -> Option<String> {
 }
 
 /// Normalized `${NAME}` references in a YAML value (URL-shaped keys included).
-pub fn references(v: &Yaml, out: &mut Vec<String>) {
+pub(crate) fn references(v: &Yaml, out: &mut Vec<String>) {
     match v {
         Yaml::Str(s) => {
             for c in var_re().captures_iter(s) {
@@ -545,7 +545,7 @@ mod tests {
     #[test]
     fn resolution_order() {
         let s = schema("a:\nb: dflt\nc:\n");
-        let env: BTreeMap<String, String> = [("APPRISE_TEMPLATE_C".to_string(), " envc ".to_string())].into();
+        let env: BTreeMap<String, String> = [("APPRISE_TEMPLATE_C".to_owned(), " envc ".to_owned())].into();
         let vars = TemplateVars::new().with("A", "va").with("b", "  ").environment(env);
         let v = vars.resolve(&s, None).unwrap();
         assert_eq!(v["a"], "va");
@@ -562,9 +562,9 @@ mod tests {
         let enc = p.encode_url("json://${HOST}/${path}/${OTHER}");
         assert!(!enc.contains("${HOST}") && enc.contains("${OTHER}"));
         let u = crate::url::parse_url(&enc).unwrap();
-        assert_eq!(p.used_by(&u), vec!["host".to_string(), "path".to_string()]);
+        assert_eq!(p.used_by(&u), vec!["host".to_owned(), "path".to_owned()]);
         let vals: BTreeMap<String, String> =
-            [("host".to_string(), "me:pw@example.com".to_string()), ("path".to_string(), "x".to_string())].into();
+            [("host".to_owned(), "me:pw@example.com".to_owned()), ("path".to_owned(), "x".to_owned())].into();
         let r = p.substitute(&u, &vals);
         assert_eq!(r.host, "example.com");
         assert_eq!(r.user.as_deref(), Some("me"));

@@ -6,7 +6,7 @@ use crate::parse::is_hostname;
 const ZB32: &[u8; 32] = b"ybndrfg8ejkmcpqxot1uwisza345h769";
 
 /// Largest key answer accepted (Apprise's `max_response_size`).
-pub const MAX_RESPONSE: usize = 65_536;
+pub(crate) const MAX_RESPONSE: usize = 65_536;
 
 /// z-base-32 of `data`: five bits per character, the last group zero-padded.
 fn zb32(data: &[u8]) -> String {
@@ -27,7 +27,7 @@ fn zb32(data: &[u8]) -> String {
 }
 
 /// The advanced (`openpgpkey.` subdomain) and direct lookup URLs for `email`, tried in that order; `None` when it is not an address on a host name.
-pub fn urls(email: &str) -> Option<(String, String)> {
+pub(crate) fn urls(email: &str) -> Option<(String, String)> {
     let (local_orig, domain) = email.trim().split_once('@')?;
     let (local, domain) = (local_orig.to_lowercase(), domain.to_lowercase());
     if local.is_empty() || domain.is_empty() || is_hostname(&domain, false, false, false).is_none() {

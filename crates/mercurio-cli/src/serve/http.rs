@@ -11,7 +11,7 @@ use mercurio::__private::unquote_plus;
 use serde_json::{Value, json};
 
 /// Largest request body read: one attachment of `attach_size` bytes plus the other fields, and never less than [`MIN_BODY`].
-pub fn body_limit(attach_size: u64) -> usize {
+pub(super) fn body_limit(attach_size: u64) -> usize {
     usize::try_from(attach_size).unwrap_or(usize::MAX).saturating_add(FIELDS_ALLOWANCE).max(MIN_BODY)
 }
 /// Room a request body keeps for its fields beside an upload.
@@ -23,21 +23,21 @@ const PREALLOC_MAX: usize = 256 * 1024 * 1024;
 
 /// A value a handler sets on the request it is answering (`Send + Sync`, unlike `Cell`).
 #[derive(Default)]
-pub struct Slot<T>(Mutex<T>);
+pub(super) struct Slot<T>(Mutex<T>);
 
 impl<T: Clone> Slot<T> {
-    pub fn get(&self) -> T {
+    pub(super) fn get(&self) -> T {
         self.0.lock().unwrap_or_else(PoisonError::into_inner).clone()
     }
 
-    pub fn set(&self, value: T) {
+    pub(super) fn set(&self, value: T) {
         *self.0.lock().unwrap_or_else(PoisonError::into_inner) = value;
     }
 }
 
 /// What one request did, beyond what its head and status say: handlers fill it in, `observe` logs it as one event.
 #[derive(Debug, Default)]
-pub struct RequestEvent {
+pub(super) struct RequestEvent {
     /// The Config ID used.
     pub key: Option<String>,
     /// Services notified, and how many of them failed.
@@ -52,12 +52,12 @@ pub struct RequestEvent {
 }
 
 impl RequestEvent {
-    pub fn shared() -> Arc<Mutex<RequestEvent>> {
+    pub(super) fn shared() -> Arc<Mutex<RequestEvent>> {
         Arc::default()
     }
 }
 
-pub struct Req {
+pub(super) struct Req {
     pub method: String,
     pub query: Vec<(String, String)>,
     pub headers: Vec<(String, String)>,
@@ -83,7 +83,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for Req {
         let method = request.method().as_str().to_ascii_uppercase();
         let query = form_pairs(request.uri().query().unwrap_or(""));
         let headers =
-            request.headers().iter().map(|(k, v)| (k.as_str().to_string(), decode_header(v.as_bytes()))).collect();
+            request.headers().iter().map(|(k, v)| (k.as_str().to_owned(), decode_header(v.as_bytes()))).collect();
         let length: usize = request
             .headers()
             .get("content-length")
@@ -128,108 +128,108 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for Req {
 }
 
 /// A header value: UTF-8 when valid, Latin-1 otherwise.
-pub fn decode_header(value: &[u8]) -> String {
+pub(super) fn decode_header(value: &[u8]) -> String {
     match std::str::from_utf8(value) {
-        Ok(s) => s.to_string(),
+        Ok(s) => s.to_owned(),
         Err(_) => value.iter().map(|&b| char::from(b)).collect(),
     }
 }
 
 impl Req {
     /// Add to the request's [`RequestEvent`].
-    pub fn note(&self, f: impl FnOnce(&mut RequestEvent)) {
+    pub(super) fn note(&self, f: impl FnOnce(&mut RequestEvent)) {
         f(&mut self.event.lock().unwrap_or_else(PoisonError::into_inner));
     }
 
     /// A header value (first occurrence), trimmed.
-    pub fn header(&self, name: &str) -> Option<&str> {
+    pub(super) fn header(&self, name: &str) -> Option<&str> {
         self.headers.iter().find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v.trim())
     }
 
     /// A non-empty header value.
-    pub fn header_value(&self, name: &str) -> Option<&str> {
+    pub(super) fn header_value(&self, name: &str) -> Option<&str> {
         self.header(name).filter(|v| !v.is_empty())
     }
 
     /// An `X-Apprise-{name}` header.
-    pub fn x_header(&self, name: &str) -> Option<&str> {
+    pub(super) fn x_header(&self, name: &str) -> Option<&str> {
         self.header_value(&format!("X-Apprise-{name}"))
     }
 
     /// The first query string value for `name`.
-    pub fn query(&self, name: &str) -> Option<&str> {
+    pub(super) fn query(&self, name: &str) -> Option<&str> {
         self.query.iter().find(|(k, _)| k == name).map(|(_, v)| v.as_str())
     }
 
     /// Read the request body in place.
-    pub fn with_body<T>(&self, f: impl FnOnce(&[u8]) -> T) -> T {
+    pub(super) fn with_body<T>(&self, f: impl FnOnce(&[u8]) -> T) -> T {
         f(&self.body.lock().unwrap_or_else(PoisonError::into_inner))
     }
 
     /// Move the body out, leaving the request without one: its buffer becomes whatever the caller makes of it.
-    pub fn take_body(&self) -> Vec<u8> {
+    pub(super) fn take_body(&self) -> Vec<u8> {
         std::mem::take(&mut *self.body.lock().unwrap_or_else(PoisonError::into_inner))
     }
 
     /// Free the body once it is parsed, so its bytes are gone while the notification is sent.
-    pub fn release_body(&self) {
+    pub(super) fn release_body(&self) {
         drop(self.take_body());
     }
 
     /// The media type of the body, lower-cased, without parameters.
-    pub fn content_type(&self) -> String {
+    pub(super) fn content_type(&self) -> String {
         self.header("content-type").unwrap_or("").split(';').next().unwrap_or("").trim().to_ascii_lowercase()
     }
 
     /// `true` when the body is JSON (`(text|application)/(x-)?json`).
-    pub fn json_payload(&self) -> bool {
+    pub(super) fn json_payload(&self) -> bool {
         is_json_mime(&self.content_type())
     }
 
     /// See [`wants_json`].
-    pub fn wants_json(&self) -> bool {
+    pub(super) fn wants_json(&self) -> bool {
         wants_json(self.header("accept"), &self.content_type())
     }
 
     /// Accept (the request type when absent) prefers HTML: `text/html` or `text/*`.
-    pub fn wants_html_logs(&self) -> bool {
-        let accept = self.header("accept").map(str::to_string).unwrap_or_else(|| self.content_type());
+    pub(super) fn wants_html_logs(&self) -> bool {
+        let accept = self.header("accept").map(str::to_owned).unwrap_or_else(|| self.content_type());
         let accept = accept.to_ascii_lowercase();
         accept.contains("text/*") || accept.contains("text/html")
     }
 
     /// Basic Auth credentials; `None` when absent or malformed.
-    pub fn basic_auth(&self) -> Option<(String, String)> {
+    pub(super) fn basic_auth(&self) -> Option<(String, String)> {
         basic_auth(self.header("authorization")?)
     }
 }
 
 /// Either an `Accept` asking for JSON or a missing / wildcard `Accept` on a request with a JSON body (`content_type`).
-pub fn wants_json(accept: Option<&str>, content_type: &str) -> bool {
+pub(super) fn wants_json(accept: Option<&str>, content_type: &str) -> bool {
     let accept = accept.unwrap_or("");
     let accept_all = matches!(accept.trim(), "" | "*/*");
     is_json_mime(accept) || (accept_all && is_json_mime(content_type))
 }
 
 /// The credentials of an `Authorization: Basic` value, UTF-8 or else Latin-1 (OkHttp's default, used by Apprise Mobile); `None` when malformed.
-pub fn basic_auth(header: &str) -> Option<(String, String)> {
+pub(super) fn basic_auth(header: &str) -> Option<(String, String)> {
     let (scheme, value) = header.trim().split_at_checked(6)?;
     if !scheme.eq_ignore_ascii_case("basic ") {
         return None;
     }
     let decoded = decode_header(&mercurio::__private::b64_decode(value.trim())?);
     let (user, pass) = decoded.split_once(':')?;
-    Some((user.trim().to_string(), pass.to_string()))
+    Some((user.trim().to_owned(), pass.to_owned()))
 }
 
 /// `(text|application)/(x-)?json` at the start of `s`.
-pub fn is_json_mime(s: &str) -> bool {
+pub(super) fn is_json_mime(s: &str) -> bool {
     let s = s.trim_start().to_ascii_lowercase();
     ["text/json", "text/x-json", "application/json", "application/x-json"].iter().any(|m| s.starts_with(m))
 }
 
 /// Parse `a=b&c=d` (form or query string).
-pub fn form_pairs(s: &str) -> Vec<(String, String)> {
+pub(super) fn form_pairs(s: &str) -> Vec<(String, String)> {
     s.split('&')
         .filter(|p| !p.is_empty())
         .map(|p| match p.split_once('=') {
@@ -240,20 +240,20 @@ pub fn form_pairs(s: &str) -> Vec<(String, String)> {
 }
 
 /// A loose boolean: the first character decides (`y`, `1`, `t`, `e`, `a`, `+` are true).
-pub fn parse_bool(value: Option<&str>, default: bool) -> bool {
+pub(super) fn parse_bool(value: Option<&str>, default: bool) -> bool {
     match value.map(|v| v.trim().to_ascii_lowercase()) {
         Some(v) if !v.is_empty() => matches!(v.as_bytes().first(), Some(b'a' | b'y' | b'1' | b't' | b'e' | b'+')),
         _ => default,
     }
 }
 
-pub enum Body {
+pub(super) enum Body {
     Bytes(Vec<u8>),
     /// A finished axum response (a live stream), sent as it is.
     Response(Box<axum::response::Response>),
 }
 
-pub struct Reply {
+pub(super) struct Reply {
     pub status: u16,
     pub ctype: String,
     pub body: Body,
@@ -261,40 +261,40 @@ pub struct Reply {
 }
 
 impl Reply {
-    pub fn new(status: u16, ctype: &str, body: Vec<u8>) -> Reply {
-        Reply { status, ctype: ctype.to_string(), body: Body::Bytes(body), headers: Vec::new() }
+    pub(super) fn new(status: u16, ctype: &str, body: Vec<u8>) -> Reply {
+        Reply { status, ctype: ctype.to_owned(), body: Body::Bytes(body), headers: Vec::new() }
     }
 
-    pub fn text(status: u16, msg: &str) -> Reply {
+    pub(super) fn text(status: u16, msg: &str) -> Reply {
         Reply::new(status, "text/plain; charset=utf-8", msg.as_bytes().to_vec())
     }
 
-    pub fn json(status: u16, v: &Value) -> Reply {
+    pub(super) fn json(status: u16, v: &Value) -> Reply {
         Reply::new(status, "application/json", serde_json::to_vec(v).unwrap_or_default())
     }
 
-    pub fn empty(status: u16) -> Reply {
+    pub(super) fn empty(status: u16) -> Reply {
         Reply::new(status, "", Vec::new())
     }
 
-    pub fn header(mut self, k: &str, v: &str) -> Reply {
-        self.headers.push((k.to_string(), v.to_string()));
+    pub(super) fn header(mut self, k: &str, v: &str) -> Reply {
+        self.headers.push((k.to_owned(), v.to_owned()));
         self
     }
 
     /// `{"error": msg}` for JSON clients, text otherwise.
-    pub fn error(req: &Req, status: u16, msg: &str) -> Reply {
-        req.note(|ev| ev.error = Some(msg.to_string()));
+    pub(super) fn error(req: &Req, status: u16, msg: &str) -> Reply {
+        req.note(|ev| ev.error = Some(msg.to_owned()));
         Reply::error_as(req.wants_json(), status, msg)
     }
 
     /// [`Reply::error`] as JSON when `json`.
-    pub fn error_as(json: bool, status: u16, msg: &str) -> Reply {
+    pub(super) fn error_as(json: bool, status: u16, msg: &str) -> Reply {
         if json { Reply::json(status, &json!({"error": msg})) } else { Reply::text(status, msg) }
     }
 
     /// [`Reply::error`] naming the offending field.
-    pub fn field_error(req: &Req, status: u16, msg: &str, field: &str) -> Reply {
+    pub(super) fn field_error(req: &Req, status: u16, msg: &str, field: &str) -> Reply {
         req.note(|ev| ev.error = Some(format!("{field}: {msg}")));
         if req.wants_json() {
             Reply::json(status, &json!({"error": msg, "field": field}))
@@ -304,7 +304,7 @@ impl Reply {
     }
 
     /// A success message; `{"error": null}` for JSON clients.
-    pub fn ok(req: &Req, msg: &str) -> Reply {
+    pub(super) fn ok(req: &Req, msg: &str) -> Reply {
         if req.wants_json() { Reply::json(200, &json!({"error": null})) } else { Reply::text(200, msg) }
     }
 }

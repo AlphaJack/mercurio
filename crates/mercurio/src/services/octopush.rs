@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "octopush",
     name: "Octopush",
     schemes: &["octopush"],
@@ -103,7 +103,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let api_key = api_key
         .and_then(|k| validate_nonblank(&k))
         .ok_or_else(|| SERVICE.err("an invalid Octopush API Key was specified"))?;
-    let mtype = mtype.to_lowercase().trim().to_string();
+    let mtype = mtype.to_lowercase().trim().to_owned();
     let mtype = Some(&mtype)
         .filter(|m| !m.is_empty())
         .and_then(|m| TYPE_MAP.iter().find(|(k, _)| m.starts_with(k)).map(|(_, v)| *v))
@@ -137,7 +137,7 @@ impl Notify for Octopush {
         }
         let size = if self.batch { BATCH_SIZE } else { 1 };
         let chunks: Vec<Vec<String>> = self.targets.chunks(size).map(<[String]>::to_vec).collect();
-        let sender = self.sender.clone().unwrap_or_else(|| ctx.app_id().to_string());
+        let sender = self.sender.clone().unwrap_or_else(|| ctx.app_id().to_owned());
         per_target(chunks, |c| c.join(", "), |chunk| {
             let recipients: Vec<Value> = chunk.iter().map(|p| json!({"phone_number": p})).collect();
             let payload = json!({

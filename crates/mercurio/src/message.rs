@@ -146,7 +146,7 @@ impl Attachment {
         let path = path.as_ref();
         let data = std::fs::read(path)?;
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "attachment".into());
-        let mime = guess_mime(&name).to_string();
+        let mime = guess_mime(&name).to_owned();
         Ok(Self { name, mime, data: data.into() })
     }
 

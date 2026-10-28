@@ -9,7 +9,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "viber",
     name: "Viber",
     schemes: &["viber"],
@@ -55,7 +55,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let token =
         validate_nonblank(&token).ok_or_else(|| SERVICE.err("an invalid Viber authentication token was specified"))?;
     let source: String = source.trim().chars().take(SENDER_NAME_LIMIT).collect();
-    let avatar = avatar.map(|a| a.trim().to_string()).filter(|a| !a.is_empty());
+    let avatar = avatar.map(|a| a.trim().to_owned()).filter(|a| !a.is_empty());
     Ok(Box::new(Viber { token: Secret::new(token), targets: parse_list(targets), source, avatar }))
 }
 
@@ -67,7 +67,7 @@ fn check(r: &Response) -> Result<()> {
         return Err(Error::Service("unexpected JSON response from Viber".into()));
     };
     if r.status != 200 {
-        let reason = obj.get("status_message").and_then(Value::as_str).unwrap_or_default().to_string();
+        let reason = obj.get("status_message").and_then(Value::as_str).unwrap_or_default().to_owned();
         return Err(r.http_error_with(reason));
     }
     // Anything but status 0 (missing counts as -1) is a failure.

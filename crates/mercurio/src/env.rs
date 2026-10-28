@@ -80,6 +80,6 @@ impl Env for SystemEnv {
 static SYSTEM: LazyLock<Arc<dyn Env>> = LazyLock::new(|| Arc::new(SystemEnv));
 
 /// The shared [`SystemEnv`]: what transports return unless they supply their own.
-pub fn system() -> &'static Arc<dyn Env> {
+pub(crate) fn system() -> &'static Arc<dyn Env> {
     &SYSTEM
 }

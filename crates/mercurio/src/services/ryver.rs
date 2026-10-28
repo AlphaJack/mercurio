@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Error, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "ryver",
     name: "Ryver",
     schemes: &["ryver"],
@@ -91,7 +91,7 @@ impl Notify for Ryver {
                 _ => return Plan::Fail(Error::Message("unsupported formatting sequence in message".into())),
             }
         } else {
-            (msg.title.to_string(), msg.body.to_string())
+            (msg.title.to_owned(), msg.body.to_owned())
         };
         let avatar = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy72) } else { None };
         let text = if title.is_empty() { body } else { format!("**{title}**\r\n{body}") };

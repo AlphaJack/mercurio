@@ -7,7 +7,7 @@ use crate::url::ParsedUrl;
 
 use super::_discord::{discord_parse, native_webhook};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "discord",
     name: "Discord",
     schemes: &["discord"],

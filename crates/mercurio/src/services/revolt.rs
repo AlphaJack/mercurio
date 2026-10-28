@@ -15,7 +15,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::{parse_int, truncate_chars};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "revolt",
     name: "Revolt",
     schemes: &["revolt"],
@@ -158,7 +158,7 @@ impl Notify for Revolt {
             json!({"embeds": [embed]})
         } else {
             let content =
-                if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\n{}", msg.title, msg.body) };
+                if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}\n{}", msg.title, msg.body) };
             json!({"content": content})
         };
         let body = crate::http::json_with_text(&payload, msg.body);

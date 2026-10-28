@@ -7,7 +7,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "gotify",
     name: "Gotify",
     schemes: &["gotify", "gotifys"],
@@ -63,7 +63,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut entries = u.path_segments();
     let token = entries.pop().unwrap_or_default();
     let token = validate_nonblank(&token).ok_or_else(|| SERVICE.err("an invalid Gotify token was specified"))?;
-    let fullpath = if entries.is_empty() { "/".to_string() } else { format!("/{}/", entries.join("/")) };
+    let fullpath = if entries.is_empty() { "/".to_owned() } else { format!("/{}/", entries.join("/")) };
     let priority = match u.param_nonempty("priority") {
         None => 5,
         Some(p) => {

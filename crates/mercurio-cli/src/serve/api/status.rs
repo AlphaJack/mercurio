@@ -9,8 +9,8 @@ impl Server {
     pub(crate) async fn status(&self, req: &Req, key: Option<&str>) -> Reply {
         let key = match (req.x_header("Config-ID"), key) {
             (Some(h), _) if !valid_key(h) => return Reply::error(req, 400, INVALID_KEY_HEADER),
-            (Some(h), _) => Some(h.to_string()),
-            (None, k) => k.map(str::to_string),
+            (Some(h), _) => Some(h.to_owned()),
+            (None, k) => k.map(str::to_owned),
         };
         if let Some(k) = key.as_deref()
             && !self.key_ok(req, k, false).await

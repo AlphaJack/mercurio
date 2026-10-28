@@ -5,17 +5,17 @@ use crate::message::Attachment;
 use crate::parse::{EmailAddr, is_email, parse_emails};
 
 /// Attachment name fallback: `file{no:03}.{ext}` (`no` starts at 1).
-pub fn attachment_name(a: &Attachment, index: usize, ext: &str) -> String {
+pub(crate) fn attachment_name(a: &Attachment, index: usize, ext: &str) -> String {
     if a.name.is_empty() { format!("file{:03}.{ext}", index + 1) } else { a.name.clone() }
 }
 
 /// Base64 of the attachment content (`attachment.base64()`).
-pub fn attachment_b64(a: &Attachment) -> String {
+pub(crate) fn attachment_b64(a: &Attachment) -> String {
     b64(&a.data)
 }
 
 /// JSON array with `f(name, base64, attachment)` per attachment; names fall back to [`attachment_name`] with `ext`.
-pub fn attachments_json(
+pub(crate) fn attachments_json(
     atts: &[Attachment],
     ext: &str,
     f: impl Fn(String, String, &Attachment) -> serde_json::Value,
@@ -24,7 +24,7 @@ pub fn attachments_json(
 }
 
 /// Validate each entry with `is_email`, keeping the valid ones (the rest are logged and dropped).
-pub fn valid_emails<I, S>(entries: I) -> Vec<EmailAddr>
+pub(crate) fn valid_emails<I, S>(entries: I) -> Vec<EmailAddr>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -33,7 +33,7 @@ where
 }
 
 /// Insert into an insertion-ordered "set" (Vec) if not already present.
-pub fn set_add(set: &mut Vec<String>, value: String) {
+pub(crate) fn set_add(set: &mut Vec<String>, value: String) {
     if !set.contains(&value) {
         set.push(value);
     }
@@ -41,7 +41,7 @@ pub fn set_add(set: &mut Vec<String>, value: String) {
 
 /// A notification-platform recipient (novu, knock, courier).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Recipient {
+pub(crate) enum Recipient {
     /// Plain user / subscriber id.
     Id(String),
     /// A valid e-mail address (`full_email`).
@@ -51,7 +51,7 @@ pub enum Recipient {
 }
 
 /// Classify one path entry: `user@host` is an e-mail, `+<digits>` a phone number, anything else an id. Digits without `+` stay ids on purpose, since numeric user ids are common.
-pub fn recipient(entry: &str) -> Recipient {
+pub(crate) fn recipient(entry: &str) -> Recipient {
     if entry.contains('@')
         && let Some(e) = is_email(entry)
     {
@@ -62,15 +62,15 @@ pub fn recipient(entry: &str) -> Recipient {
     {
         return Recipient::Phone(format!("+{}", p.full));
     }
-    Recipient::Id(entry.to_string())
+    Recipient::Id(entry.to_owned())
 }
 
 /// API base URL from `?host=` (`host[:port][/path]` -> `https://...`; or a full `http(s)://` URL), else `default`. No trailing slash.
-pub fn api_base(u: &crate::url::ParsedUrl, default: &str) -> crate::Result<String> {
-    let Some(h) = u.param_nonempty("host") else { return Ok(default.to_string()) };
+pub(crate) fn api_base(u: &crate::url::ParsedUrl, default: &str) -> crate::Result<String> {
+    let Some(h) = u.param_nonempty("host") else { return Ok(default.to_owned()) };
     let h = crate::url::unquote(h);
     let base = if h.starts_with("http://") || h.starts_with("https://") { h } else { format!("https://{h}") };
-    let base = base.trim_end_matches('/').to_string();
+    let base = base.trim_end_matches('/').to_owned();
     let host = base.split("://").nth(1).unwrap_or("").split(['/', ':']).next().unwrap_or("");
     if crate::parse::is_hostname(host, true, true, false).is_none() {
         return Err(crate::Error::config("host", "an invalid API host was specified"));
@@ -79,12 +79,12 @@ pub fn api_base(u: &crate::url::ParsedUrl, default: &str) -> crate::Result<Strin
 }
 
 /// `:key=value` entries (double-unquoted, last one wins) for payload data.
-pub fn colon_data(u: &crate::url::ParsedUrl) -> Vec<(String, String)> {
+pub(crate) fn colon_data(u: &crate::url::ParsedUrl) -> Vec<(String, String)> {
     unquoted_pairs(&u.query_colon)
 }
 
 /// `+key` / `:key` entries double-unquoted; a key repeated after unquoting keeps its last value at its last position.
-pub fn unquoted_pairs(p: &crate::url::Pairs) -> Vec<(String, String)> {
+pub(crate) fn unquoted_pairs(p: &crate::url::Pairs) -> Vec<(String, String)> {
     let mut out: Vec<(String, String)> = Vec::new();
     for (k, v) in p.iter() {
         let k = crate::url::unquote(k);
@@ -95,7 +95,7 @@ pub fn unquoted_pairs(p: &crate::url::Pairs) -> Vec<(String, String)> {
 }
 
 /// Valid recipients of `entries` (`parse_emails` then `is_email`) as `(name, full_email)` pairs.
-pub fn email_pairs<I, S>(entries: I) -> Vec<(String, String)>
+pub(crate) fn email_pairs<I, S>(entries: I) -> Vec<(String, String)>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -104,7 +104,7 @@ where
 }
 
 /// `?cc=` / `?bcc=` without display names: de-duplicated valid addresses.
-pub fn unique_emails(value: Option<&str>) -> Vec<String> {
+pub(crate) fn unique_emails(value: Option<&str>) -> Vec<String> {
     let mut out = Vec::new();
     for e in valid_emails(crate::parse::parse_list(crate::parse::parse_list(value))) {
         set_add(&mut out, e.full_email);
@@ -113,7 +113,7 @@ pub fn unique_emails(value: Option<&str>) -> Vec<String> {
 }
 
 /// A `?cc=` / `?bcc=` style list: de-duplicated valid addresses. Each address's display name is recorded in `names` (last one wins).
-pub fn copy_list(names: &mut Vec<(String, String)>, value: Option<&str>) -> Vec<String> {
+pub(crate) fn copy_list(names: &mut Vec<(String, String)>, value: Option<&str>) -> Vec<String> {
     let mut set = Vec::new();
     for e in valid_emails(parse_emails(value, true)) {
         set_add(&mut set, e.full_email.clone());
@@ -123,11 +123,11 @@ pub fn copy_list(names: &mut Vec<(String, String)>, value: Option<&str>) -> Vec<
     set
 }
 
-pub fn text_to_html(body: &str) -> String {
+pub(crate) fn text_to_html(body: &str) -> String {
     crate::convert::text_to_html(body)
 }
 
-pub fn html_to_text(body: &str) -> String {
+pub(crate) fn html_to_text(body: &str) -> String {
     crate::convert::html_to_text(body)
 }
 

@@ -58,7 +58,7 @@ pub(crate) fn parse_head(raw: &[u8], method: Method) -> Result<Head> {
             continue;
         }
         let (name, value) = line.split_once(':').ok_or_else(|| bad("header"))?;
-        headers.push((name.trim().to_ascii_lowercase(), value.trim().to_string()));
+        headers.push((name.trim().to_ascii_lowercase(), value.trim().to_owned()));
     }
     fn values<'a>(headers: &'a [(String, String)], name: &'a str) -> impl Iterator<Item = &'a str> {
         headers.iter().filter(move |(k, _)| k == name).map(|(_, v)| v.as_str())
@@ -72,7 +72,7 @@ pub(crate) fn parse_head(raw: &[u8], method: Method) -> Result<Head> {
         match lengths.next() {
             None => None,
             Some(first) => {
-                let first = first.map_err(|_| bad("content-length"))?;
+                let first = first.ok().ok_or_else(|| bad("content-length"))?;
                 if lengths.any(|l| l != Ok(first)) {
                     return Err(bad("conflicting content-length"));
                 }

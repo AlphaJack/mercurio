@@ -3,7 +3,7 @@
 use crate::message::NotifyFormat;
 
 /// The longest an HTML entity can be, `&` and `;` included.
-pub const HTML_ENTITY_MAXLEN: usize = 33;
+pub(crate) const HTML_ENTITY_MAXLEN: usize = 33;
 
 /// First `c` in `text[start..end]` (`end` clamped to the length).
 pub(crate) fn find(text: &[char], c: char, start: usize, end: usize) -> Option<usize> {
@@ -24,7 +24,7 @@ pub(crate) fn rfind(text: &[char], c: char, start: usize, end: usize) -> Option<
 }
 
 /// Where the tag opened at `start` ends (the `>`); `None` when unclosed. A `>` inside a quoted attribute value does not end the tag.
-pub fn html_tag_end(text: &[char], start: usize, end: Option<usize>) -> Option<usize> {
+pub(crate) fn html_tag_end(text: &[char], start: usize, end: Option<usize>) -> Option<usize> {
     let end = end.unwrap_or(text.len()).min(text.len());
     let mut idx = start + 1;
     loop {
@@ -43,7 +43,7 @@ pub fn html_tag_end(text: &[char], start: usize, end: Option<usize>) -> Option<u
 }
 
 /// Move a split before any HTML entity it would divide.
-pub fn html_adjust(text: &[char], window_start: usize, split_at: usize) -> usize {
+pub(crate) fn html_adjust(text: &[char], window_start: usize, split_at: usize) -> usize {
     if split_at <= window_start || split_at > text.len() {
         return split_at;
     }
@@ -63,7 +63,7 @@ pub fn html_adjust(text: &[char], window_start: usize, split_at: usize) -> usize
 }
 
 /// Move a split out of an HTML tag.
-pub fn html_tag_adjust(text: &[char], window_start: usize, split_at: usize, window_end: Option<usize>) -> usize {
+pub(crate) fn html_tag_adjust(text: &[char], window_start: usize, split_at: usize, window_end: Option<usize>) -> usize {
     if split_at <= window_start || split_at > text.len() {
         return split_at;
     }
@@ -86,7 +86,7 @@ pub fn html_tag_adjust(text: &[char], window_start: usize, split_at: usize, wind
 }
 
 /// Move a split left when it cuts a Markdown or chat link.
-pub fn markdown_adjust(text: &[char], window_start: usize, split_at: usize) -> usize {
+pub(crate) fn markdown_adjust(text: &[char], window_start: usize, split_at: usize) -> usize {
     if split_at <= window_start || split_at > text.len() {
         return split_at;
     }
@@ -125,7 +125,7 @@ fn is_punct_ws(c: char) -> bool {
 }
 
 /// Split text within `limit` chars, preferring newlines, then spaces/tabs, then punctuation followed by whitespace, then a hard cut. HTML avoids splitting entities and tags; Markdown also protects links and escapes.
-pub fn smart_split(text: &str, limit: isize, format: NotifyFormat) -> Vec<String> {
+pub(crate) fn smart_split(text: &str, limit: isize, format: NotifyFormat) -> Vec<String> {
     if text.is_empty() || limit <= 0 {
         return vec![String::new()];
     }

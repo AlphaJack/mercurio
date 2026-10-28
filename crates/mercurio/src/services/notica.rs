@@ -6,7 +6,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Limits, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "notica",
     name: "Notica",
     schemes: &["notica", "noticas"],
@@ -64,7 +64,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let token = entries.pop().unwrap_or_default();
     let token = validate_nonblank(&token).ok_or_else(invalid)?;
-    let fullpath = if entries.is_empty() { "/".to_string() } else { format!("/{}/", entries.join("/")) };
+    let fullpath = if entries.is_empty() { "/".to_owned() } else { format!("/{}/", entries.join("/")) };
     let host = u.host();
     if host.is_empty() {
         return Ok(Box::new(Notica { token: Secret::new(token), mode: Mode::Official }));

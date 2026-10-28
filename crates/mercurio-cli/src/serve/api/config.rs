@@ -97,7 +97,7 @@ impl Server {
         if fields.contains_key("urls") {
             let raw: Vec<String> = match fields.get("urls") {
                 Some(Value::String(s)) => vec![s.clone()],
-                Some(Value::Array(a)) => a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+                Some(Value::Array(a)) => a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect(),
                 _ => Vec::new(),
             };
             let urls: Vec<String> = mercurio::__private::parse_urls(raw.iter().map(String::as_str), true)
@@ -204,7 +204,7 @@ impl Server {
                 Err(r) => return r,
             };
             match m.get("to").and_then(Value::as_str) {
-                Some(to) if valid_key(to) && to != key => (key.clone(), to.to_string()),
+                Some(to) if valid_key(to) && to != key => (key.clone(), to.to_owned()),
                 _ => {
                     let msg = "A valid destination (to), different from the source, is required";
                     return Reply::field_error(req, 400, msg, "to");
@@ -212,7 +212,7 @@ impl Server {
             }
         } else {
             let (m, _, _) = payload::form_fields(req);
-            let field = |f: &str| m.get(f).and_then(Value::as_str).map(str::trim).unwrap_or("").to_string();
+            let field = |f: &str| m.get(f).and_then(Value::as_str).map(str::trim).unwrap_or("").to_owned();
             let (from, to) = (field("from"), field("to"));
             for (name, v) in [("from", &from), ("to", &to)] {
                 if v.is_empty() {
@@ -273,7 +273,7 @@ impl Server {
         let mut urls = Vec::new();
         for s in cfg.services.iter().filter(|s| filter.matches(s.tags())) {
             let (url, def, id, template_names) = match s {
-                ConfigService::Ready(t) => (t.url().to_string(), t.service(), t.url_id(&self.asset(false)), Vec::new()),
+                ConfigService::Ready(t) => (t.url().to_owned(), t.service(), t.url_id(&self.asset(false)), Vec::new()),
                 ConfigService::Pending(p) => (p.url(), p.service(), None, p.template_names().to_vec()),
             };
             let (name, service_id) = (def.name, def.id);

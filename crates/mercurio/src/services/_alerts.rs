@@ -86,7 +86,7 @@ impl AlertJob {
                 if let Some(r) = responders {
                     payload["responders"] = r.clone();
                 }
-                let req = self.request(Method::Post, self.url.to_string(), &payload);
+                let req = self.request(Method::Post, self.url.to_owned(), &payload);
                 let (ids, memo, name) = (ids.clone(), memo.clone(), self.name);
                 plans.push(Plan::http(req, move |res| match fetch(name, res) {
                     Ok(id) if json_has_value(&id) => {

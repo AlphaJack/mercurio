@@ -4,17 +4,17 @@ use std::path::Path;
 
 const FEATURES_INCLUDE: &str = "#![doc = include_str!(concat!(env!(\"OUT_DIR\"), \"/features.md\"))]";
 
-pub fn render(root: &Path) -> Result<(), String> {
+pub(crate) fn render(root: &Path) -> Result<(), String> {
     let path = root.join("crates/mercurio/src/lib.rs");
     let source = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut lines = Vec::new();
     for line in source.lines() {
         if let Some(rest) = line.strip_prefix("//!") {
-            lines.push(rest.strip_prefix(' ').unwrap_or(rest).to_string());
+            lines.push(rest.strip_prefix(' ').unwrap_or(rest).to_owned());
         } else if line.trim() == "#![doc = env!(\"CARGO_PKG_DESCRIPTION\")]" {
-            lines.push(env!("CARGO_PKG_DESCRIPTION").to_string());
+            lines.push(env!("CARGO_PKG_DESCRIPTION").to_owned());
         } else if line.trim() == FEATURES_INCLUDE {
-            lines.extend(mercurio::FEATURES_TABLE.lines().map(str::to_string));
+            lines.extend(mercurio::FEATURES_TABLE.lines().map(str::to_owned));
         } else {
             break;
         }

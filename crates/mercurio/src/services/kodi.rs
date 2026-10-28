@@ -7,7 +7,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "kodi",
     name: "Kodi/XBMC",
     schemes: &["kodi", "xbmc", "kodis", "xbmcs"],

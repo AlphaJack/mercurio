@@ -4,7 +4,7 @@ use crate::service::{Context, Limits, Notify, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "logger",
     name: "Logger",
     schemes: &["logger"],

@@ -8,7 +8,7 @@ use mercurio::store::{CACHE_FILE, DATA_DIR, STAGING_DIR, is_valid_key};
 use tokio::fs;
 
 /// Bytes used by every file below `path`.
-pub async fn dir_size(path: &Path) -> u64 {
+pub(crate) async fn dir_size(path: &Path) -> u64 {
     let mut total = 0;
     let mut dirs = vec![path.to_path_buf()];
     while let Some(dir) = dirs.pop() {
@@ -25,7 +25,7 @@ pub async fn dir_size(path: &Path) -> u64 {
 }
 
 /// Namespaces (directories) under `path`, optionally only those starting with one of `prefixes`. Sorted.
-pub async fn scan(path: &Path, prefixes: &[String]) -> Vec<String> {
+pub(crate) async fn scan(path: &Path, prefixes: &[String]) -> Vec<String> {
     let mut out = Vec::new();
     let Ok(mut entries) = fs::read_dir(path).await else { return out };
     while let Ok(Some(e)) = entries.next_entry().await {
@@ -42,14 +42,14 @@ pub async fn scan(path: &Path, prefixes: &[String]) -> Vec<String> {
 }
 
 /// One file found by [`prune`].
-pub struct Pruned {
+pub(crate) struct Pruned {
     pub path: PathBuf,
     /// Deleted (not a dry run, and the delete worked).
     pub removed: bool,
 }
 
 /// Find (and with `action`, remove) store files under `path` not modified for `older_than`. Empty namespace directories are removed afterwards. `older_than == 0` matches everything.
-pub async fn prune(
+pub(crate) async fn prune(
     path: &Path,
     prefixes: &[String],
     older_than: Duration,

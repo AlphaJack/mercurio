@@ -12,7 +12,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIden
 use crate::url::{ParsedUrl, quote, unquote};
 use crate::{Error, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "mattermost",
     name: "Mattermost",
     schemes: &["mmost", "mmosts"],
@@ -149,13 +149,13 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     base.push_str(fullpath.trim().trim_end_matches('/'));
     let id = vec![
-        if u.secure { "mmosts" } else { "mmost" }.to_string(),
-        if mode == Mode::Bot { "bot" } else { "webhook" }.to_string(),
+        if u.secure { "mmosts" } else { "mmost" }.to_owned(),
+        if mode == Mode::Bot { "bot" } else { "webhook" }.to_owned(),
         token.clone(),
         u.host(),
-        u.port.map(|p| p.to_string()).as_deref().unwrap_or_default().to_string(),
-        fullpath.trim().to_string(),
-        user.as_deref().filter(|_| mode == Mode::Bot).unwrap_or_default().to_string(),
+        u.port.map(|p| p.to_string()).as_deref().unwrap_or_default().to_owned(),
+        fullpath.trim().to_owned(),
+        user.as_deref().filter(|_| mode == Mode::Bot).unwrap_or_default().to_owned(),
     ];
     Ok(Box::new(Mattermost {
         base,
@@ -236,7 +236,7 @@ fn bot_post(
 
 impl Notify for Mattermost {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let ua = ctx.app_id().to_string();
+        let ua = ctx.app_id().to_owned();
         match self.mode {
             Mode::Webhook => {
                 if msg.body.is_empty() {
@@ -244,7 +244,7 @@ impl Notify for Mattermost {
                 }
                 let url = format!("{}/hooks/{}", self.base, self.token.expose());
                 let image = match self.icon_url.as_deref().filter(|i| !i.is_empty()) {
-                    Some(i) => Some(i.to_string()),
+                    Some(i) => Some(i.to_owned()),
                     None if self.include_image => ctx.asset.image_url(msg.kind, ImageSize::Xy72),
                     None => None,
                 };
@@ -283,7 +283,7 @@ impl Notify for Mattermost {
                         (name, a.data.to_vec(), a.mime.clone(), ctx.env().random_hex(16))
                     })
                     .collect();
-                let body = msg.body.to_string();
+                let body = msg.body.to_owned();
                 Plan::all(self.targets.iter().map(|t| {
                     match t {
                         Target::Id(id) => bot_post(
@@ -339,8 +339,8 @@ impl Notify for Mattermost {
                                     };
                                     match obj.get("id").and_then(Value::as_str).filter(|s| !s.trim().is_empty()) {
                                         Some(id) => {
-                                            store.set(&key, Value::String(id.to_string()), Some(CHANNEL_CACHE));
-                                            bot_post(base, bearer, ua, id.to_string(), body, files, Vec::new())
+                                            store.set(&key, Value::String(id.to_owned()), Some(CHANNEL_CACHE));
+                                            bot_post(base, bearer, ua, id.to_owned(), body, files, Vec::new())
                                         }
                                         None => Plan::Fail(Error::service("Mattermost channel not found")),
                                     }

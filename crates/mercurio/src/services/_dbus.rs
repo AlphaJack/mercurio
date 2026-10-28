@@ -25,7 +25,7 @@ const FIELD_SIGNATURE: u8 = 8;
 const MAX_MESSAGE: usize = 1 << 20;
 
 /// The session bus: the first `unix:path=` or `unix:abstract=` entry of `DBUS_SESSION_BUS_ADDRESS`, else `$XDG_RUNTIME_DIR/bus` (as libdbus and sd-bus fall back).
-pub fn session_bus(env: &dyn Env) -> Result<Endpoint> {
+pub(crate) fn session_bus(env: &dyn Env) -> Result<Endpoint> {
     if let Some(addr) = env.var("DBUS_SESSION_BUS_ADDRESS").filter(|a| !a.is_empty()) {
         return parse_address(&addr)
             .map(Endpoint::unix)
@@ -119,7 +119,7 @@ fn len32(n: usize) -> u32 {
 
 /// A method call addressed to `dest`.
 #[derive(Debug, Clone)]
-pub struct MethodCall<'a> {
+pub(crate) struct MethodCall<'a> {
     pub dest: &'a str,
     pub path: &'a str,
     pub interface: &'a str,
@@ -169,14 +169,14 @@ fn hello() -> MethodCall<'static> {
 
 /// A notification hint value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Hint {
+pub(crate) enum Hint {
     Byte(u8),
     Int32(i32),
 }
 
 /// The arguments of `org.freedesktop.Notifications.Notify` (`susssasa{sv}i`); no actions.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Notification {
+pub(crate) struct Notification {
     pub app: String,
     pub icon: String,
     pub summary: String,
@@ -188,7 +188,7 @@ pub struct Notification {
 
 impl Notification {
     /// The `Notify` call (replaces-id `0`).
-    pub fn call(&self) -> MethodCall<'static> {
+    pub(crate) fn call(&self) -> MethodCall<'static> {
         let mut w = Writer::default();
         w.str(&self.app);
         w.u32(0);
@@ -347,7 +347,7 @@ enum State {
 }
 
 /// One authenticated call on a fresh connection: `AUTH EXTERNAL` with an empty identity (the bus reads the peer credentials), `Hello`, the call, its reply.
-pub struct Call {
+pub(crate) struct Call {
     call: MethodCall<'static>,
     state: State,
     lines: LineBuf,
@@ -357,7 +357,7 @@ pub struct Call {
 }
 
 impl Call {
-    pub fn new(call: MethodCall<'static>) -> Self {
+    pub(crate) fn new(call: MethodCall<'static>) -> Self {
         Self {
             call,
             state: State::AuthData,
@@ -578,7 +578,7 @@ mod tests {
         let msg = take_message(&mut rx).unwrap().unwrap();
         assert!(rx.is_empty());
         assert_eq!((msg.kind, msg.serial, msg.member.as_deref(), msg.signature.as_str()), (1, 2, Some("Notify"), "susssasa{sv}i"));
-        let hints = vec![("urgency".to_string(), 2), ("x".to_string(), -5), ("y".to_string(), 7)];
+        let hints = vec![("urgency".to_owned(), 2), ("x".to_owned(), -5), ("y".to_owned(), 7)];
         let expected = Notified {
             app: "Mercurio".into(),
             replaces_id: 0,

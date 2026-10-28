@@ -13,7 +13,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "zoom",
     name: "Zoom",
     schemes: &["zoom"],
@@ -104,7 +104,7 @@ impl Notify for Zoom {
                 .header("Content-Type", "application/json")
                 .json_text(&json!({"content": content}), msg.body)
         } else {
-            let text = if msg.title.is_empty() { msg.body.to_string() } else { format!("{}: {}", msg.title, msg.body) };
+            let text = if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}: {}", msg.title, msg.body) };
             ctx.post(format!("{base}?format=message"))
                 .header("Authorization", self.token.expose())
                 .text(text)

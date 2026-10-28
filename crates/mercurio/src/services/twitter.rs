@@ -18,7 +18,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, quote, unquote, unquote_plus};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "twitter",
     name: "Twitter",
     schemes: &["x", "twitter", "tweet"],
@@ -88,12 +88,12 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let asecret = tokens.next();
     let mode = match u.param_nonempty("mode") {
         Some(m) => Some(unquote(m)),
-        None if u.scheme.starts_with("tweet") => Some("tweet".to_string()),
+        None if u.scheme.starts_with("tweet") => Some("tweet".to_owned()),
         None => None,
     };
     let mut raw_targets: Vec<String> = Vec::new();
     if let Some(user) = u.user.as_deref().filter(|s| !s.is_empty()) {
-        raw_targets.push(user.to_string());
+        raw_targets.push(user.to_owned());
     }
     raw_targets.extend(tokens);
     if let Some(to) = u.param_nonempty("to") {
@@ -507,7 +507,7 @@ impl Notify for Arc<Twitter> {
         }
         let images: Vec<Attachment> =
             msg.attachments.iter().filter(|a| a.mime.to_ascii_lowercase().starts_with("image/")).cloned().collect();
-        let job = Job { body: msg.body.to_string(), ua: ctx.app_id().to_string(), env: ctx.env().clone() };
+        let job = Job { body: msg.body.to_owned(), ua: ctx.app_id().to_owned(), env: ctx.env().clone() };
         self.upload(images, Vec::new(), job)
     }
 
@@ -575,8 +575,8 @@ mod tests {
         for (query, lookups) in [("", 1), ("&cache=no", 2)] {
             let t = crate::parse(&format!("twitter://ckey/csecret/akey/asecret/@apprise?mode=dm{query}")).unwrap();
             let fake = crate::testing::FakeTransport::new();
-            fake.on_url("/users/by", crate::Response::new(200, br#"{"data": [{"username": "apprise", "id": "9"}]}"#.to_vec()));
-            fake.default_response(crate::Response::new(201, b"{}".to_vec()));
+            fake.on_url("/users/by", Response::new(200, br#"{"data": [{"username": "apprise", "id": "9"}]}"#.to_vec()));
+            fake.default_response(Response::new(201, b"{}".to_vec()));
             let asset = crate::Asset::default();
             for text in ["one", "two"] {
                 assert!(t.send(&crate::Message::new(text), &fake, &asset).is_success(), "{query}");

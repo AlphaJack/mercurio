@@ -29,7 +29,7 @@ impl Source {
     pub(super) fn instantiate(url: &str, format: Option<ConfigFormat>) -> Result<Source> {
         let url = match get_schema(url) {
             None => format!("file://{}", quote(url, "/")),
-            Some(s) if matches!(s.as_str(), "file" | "http" | "https") => url.to_string(),
+            Some(s) if matches!(s.as_str(), "file" | "http" | "https") => url.to_owned(),
             Some(s) => return Err(cfg_err(format!("unsupported configuration schema {s}://"))),
         };
         Source::parse(&url, format)
@@ -50,10 +50,10 @@ impl Source {
             }
             "http" | "https" => {
                 let mut headers: Vec<(String, String)> =
-                    u.query_minus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+                    u.query_minus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
                 for (k, v) in u.query_plus.iter() {
                     headers.retain(|(n, _)| n != k);
-                    headers.push((k.to_string(), v.to_string()));
+                    headers.push((k.to_owned(), v.to_owned()));
                 }
                 let mut target = format!("{}://{}", scheme, u.host());
                 if let Some(p) = u.port {
@@ -213,7 +213,7 @@ impl Loader<'_> {
                         if !path.is_absolute() {
                             path = src.config_path().join(path);
                         }
-                        (format!("file://{}", quote(&path.to_string_lossy(), "/")), "file".to_string())
+                        (format!("file://{}", quote(&path.to_string_lossy(), "/")), "file".to_owned())
                     }
                     Some(s) => {
                         if !matches!(s.as_str(), "file" | "http" | "https" | "memory") {
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn expand_vars_cases() {
         let env = |name: &str| match name {
-            "APPDATA" => Some(r"C:\Users\u\AppData\Roaming".to_string()),
+            "APPDATA" => Some(r"C:\Users\u\AppData\Roaming".to_owned()),
             "A_B" => Some("x".into()),
             "X-Y" => Some("dash".into()),
             _ => None,

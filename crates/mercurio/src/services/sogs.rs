@@ -12,7 +12,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "sogs",
     name: "Session Open Group Server",
     schemes: &["session", "sessions", "sogs"],
@@ -89,7 +89,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         return Err(SERVICE.err("the SOGS bot seed must be exactly 64 hex characters"));
     }
     let key = Ed25519KeyPair::from_seed_unchecked(&crate::crypto::unhex(&seed))
-        .map_err(|_| SERVICE.err("the SOGS bot seed could not be loaded"))?;
+        .ok().ok_or_else(|| SERVICE.err("the SOGS bot seed could not be loaded"))?;
 
     let room_re = crate::regex!(r"^[a-z0-9_-]{1,64}$");
     let rooms: Vec<String> =

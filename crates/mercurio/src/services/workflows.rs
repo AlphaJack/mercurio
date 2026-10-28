@@ -12,7 +12,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, FileOp, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "workflows",
     name: "Power Automate / Workflows (for MSTeams)",
     schemes: &["workflow", "workflows"],
@@ -115,7 +115,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         wrap: SERVICE.flag_strict(u, "wrap"),
         api_version,
         template,
-        tokens: u.query_colon.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        tokens: u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
     }))
 }
 
@@ -156,7 +156,7 @@ impl Workflows {
         let mut seen: Vec<String> = Vec::new();
         let mut entities = Vec::new();
         for c in crate::regex!(r"(?i)<at>([^<]+)</at>").captures_iter(msg.body) {
-            let key = c[1].trim().to_string();
+            let key = c[1].trim().to_owned();
             if key.is_empty() || seen.contains(&key) {
                 continue;
             }
@@ -194,23 +194,23 @@ impl Workflows {
         let fail = |why: &str| Error::Message(format!("Workflow template {why}"));
         let text = read_template(ctx, src, MAX_TEMPLATE_SIZE).ok_or_else(|| fail("could not be accessed"))?;
         let mut tokens = self.tokens.clone();
-        let color = ctx.asset.color(msg.kind).to_string();
+        let color = ctx.asset.color(msg.kind).to_owned();
         for (k, v) in [
-            ("app_body", msg.body.to_string()),
-            ("app_title", msg.title.to_string()),
-            ("app_type", msg.kind.as_str().to_string()),
-            ("app_id", ctx.app_id().to_string()),
-            ("app_desc", ctx.app_desc().to_string()),
+            ("app_body", msg.body.to_owned()),
+            ("app_title", msg.title.to_owned()),
+            ("app_type", msg.kind.as_str().to_owned()),
+            ("app_id", ctx.app_id().to_owned()),
+            ("app_desc", ctx.app_desc().to_owned()),
             ("app_color", color.clone()),
             ("app_color_hex", color),
             ("app_image_url", image.unwrap_or_default()),
-            ("app_url", ctx.app_url().to_string()),
+            ("app_url", ctx.app_url().to_owned()),
         ] {
             tokens.retain(|(key, _)| key != k);
-            tokens.push((k.to_string(), v));
+            tokens.push((k.to_owned(), v));
         }
         let applied = apply_template_json(&text, &tokens).ok_or_else(|| fail("uses an unknown token"))?;
-        let content: Value = serde_json::from_str(&applied).map_err(|_| fail("contains invalid JSON"))?;
+        let content: Value = serde_json::from_str(&applied).ok().ok_or_else(|| fail("contains invalid JSON"))?;
         let obj = content.as_object().ok_or_else(|| fail("must be a JSON object"))?;
         if obj.get("type").and_then(Value::as_str) != Some("message") {
             return Err(fail("must have 'type': 'message'"));

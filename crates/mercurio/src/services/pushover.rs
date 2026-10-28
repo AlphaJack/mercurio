@@ -26,7 +26,7 @@ const MAX_EXPIRE: i64 = 10_800;
 /// Shortest emergency `?interval=` in seconds.
 const MIN_INTERVAL: i64 = 30;
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushover",
     name: "Pushover",
     schemes: &["pover"],
@@ -107,7 +107,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut groups = Vec::new();
     let targets = parse_list(&targets);
     if targets.is_empty() {
-        devices.push(SEND_TO_ALL.to_string());
+        devices.push(SEND_TO_ALL.to_owned());
     }
     for t in targets {
         if let Some(c) = crate::regex!(r"(?i)^\s*(?:%23|#)(?P<group>[a-z0-9]+)\s*$").captures(&t) {
@@ -237,7 +237,7 @@ impl Notify for Arc<Pushover> {
     fn convert(&self, body: &str, format: NotifyFormat) -> Option<String> {
         let source = match format {
             NotifyFormat::Markdown => crate::convert::markdown_to_html(body),
-            NotifyFormat::Html => body.to_string(),
+            NotifyFormat::Html => body.to_owned(),
             NotifyFormat::Text => return None,
         };
         let reduced = html::filter(&source, &PUSHOVER_HTML);
@@ -259,10 +259,10 @@ impl Notify for Arc<Pushover> {
         }
         let ua = ctx.app_id();
         let mut base: Payload = vec![
-            ("token", self.token.expose().to_string()),
+            ("token", self.token.expose().to_owned()),
             ("priority", self.priority.to_string()),
-            ("title", if msg.title.is_empty() { ctx.app_desc().to_string() } else { msg.title.to_string() }),
-            ("message", msg.body.to_string()),
+            ("title", if msg.title.is_empty() { ctx.app_desc().to_owned() } else { msg.title.to_owned() }),
+            ("message", msg.body.to_owned()),
             ("sound", self.sound.clone()),
         ];
         if let Some(u) = &self.url {
@@ -294,7 +294,7 @@ impl Notify for Arc<Pushover> {
         let mut recipients: Vec<(String, Payload)> = Vec::new();
         if !self.devices.is_empty() {
             let mut p = base.clone();
-            p.push(("user", self.user_key.expose().to_string()));
+            p.push(("user", self.user_key.expose().to_owned()));
             p.push(("device", self.devices.join(",")));
             recipients.push(("account".into(), p));
         }

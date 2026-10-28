@@ -162,7 +162,7 @@ struct MapBuilder {
 }
 
 impl MapBuilder {
-    fn insert(&mut self, key: Yaml, value: Yaml, p: &Composer) -> R<()> {
+    fn insert(&mut self, key: Yaml, value: Yaml, p: &Composer<'_>) -> R<()> {
         if matches!(key, Yaml::Seq(_) | Yaml::Map(_)) {
             return p.err("collection keys are not supported");
         }
@@ -220,7 +220,7 @@ fn resolve_scalar(text: &str) -> Yaml {
     if let Some(f) = resolve_float(text) {
         return f;
     }
-    Yaml::Str(text.to_string())
+    Yaml::Str(text.to_owned())
 }
 
 fn resolve_int(text: &str) -> Option<Yaml> {
@@ -232,8 +232,8 @@ fn resolve_int(text: &str) -> Option<Yaml> {
     }
     let v = text.replace('_', "");
     let (sign, v) = match v.strip_prefix('-') {
-        Some(rest) => (-1i128, rest.to_string()),
-        None => (1, v.strip_prefix('+').unwrap_or(&v).to_string()),
+        Some(rest) => (-1i128, rest.to_owned()),
+        None => (1, v.strip_prefix('+').unwrap_or(&v).to_owned()),
     };
     let n = if v == "0" {
         0
@@ -264,8 +264,8 @@ fn resolve_float(text: &str) -> Option<Yaml> {
     }
     let v = text.replace('_', "").to_lowercase();
     let (sign, v) = match v.strip_prefix('-') {
-        Some(rest) => (-1.0, rest.to_string()),
-        None => (1.0, v.strip_prefix('+').unwrap_or(&v).to_string()),
+        Some(rest) => (-1.0, rest.to_owned()),
+        None => (1.0, v.strip_prefix('+').unwrap_or(&v).to_owned()),
     };
     let f = if v == ".inf" {
         f64::INFINITY

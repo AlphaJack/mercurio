@@ -13,7 +13,7 @@ use crate::{Plan, Prepared, Result};
 
 use super::_discord::find_mentions;
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "notifiarr",
     name: "Notifiarr",
     schemes: &["notifiarr"],
@@ -64,7 +64,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     if let Some(to) = u.param_nonempty("to") {
         let re = crate::regex!(r"[ \t\r\n,#\\/]+");
-        targets.extend(re.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_string));
+        targets.extend(re.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_owned));
     }
 
     if apikey.is_empty() {
@@ -118,7 +118,7 @@ impl Notify for Notifiarr {
 
         Plan::all(self.channels.iter().map(|ch| {
             let mut payload = json!({
-                "source": self.source.clone().unwrap_or_else(|| ctx.app_id().to_string()),
+                "source": self.source.clone().unwrap_or_else(|| ctx.app_id().to_owned()),
                 "type": msg.kind.as_str(),
                 "notification": {
                     "update": self.event != 0,

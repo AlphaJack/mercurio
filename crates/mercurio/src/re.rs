@@ -3,6 +3,6 @@
 //! `regex-lite` matches `\s`, `\d`, `\w` and case folding in ASCII only (`tests/it/regex_engines.rs` lists where the two differ).
 
 #[cfg(feature = "regex-unicode")]
-pub use regex::{Captures, NoExpand, Regex, escape};
+pub(crate) use regex::{Captures, NoExpand, Regex, escape};
 #[cfg(not(feature = "regex-unicode"))]
-pub use regex_lite::{Captures, NoExpand, Regex, escape};
+pub(crate) use regex_lite::{Captures, NoExpand, Regex, escape};

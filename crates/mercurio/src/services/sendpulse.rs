@@ -18,7 +18,7 @@ use crate::store::StoreRef;
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "sendpulse",
     name: "SendPulse",
     schemes: &["sendpulse"],
@@ -77,7 +77,7 @@ struct SendPulse {
 
 fn set_name(names: &mut Vec<(String, Name)>, email: &str, name: Name) {
     names.retain(|(k, _)| k != email);
-    names.push((email.to_string(), name));
+    names.push((email.to_owned(), name));
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -117,7 +117,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut from: (Name, String) = (None, String::new());
     if !user.is_empty() {
         if !host.is_empty() {
-            let local = crate::regex!(r"[\s@]+").split(&user).next().unwrap_or("").to_string();
+            let local = crate::regex!(r"[\s@]+").split(&user).next().unwrap_or("").to_owned();
             from = (None, format!("{local}@{host}"));
         } else if let Some(e) = is_email(&user) {
             from = (if e.name.is_empty() { None } else { Some(e.name) }, user.clone());
@@ -143,10 +143,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid SendPulse Client Secret was specified"))?;
 
     let template = match SERVICE.text(u, "template") {
-        Some(t) => Some(t.trim().parse::<i64>().map_err(|_| SERVICE.err("the SendPulse Template ID is invalid"))?),
+        Some(t) => Some(t.trim().parse::<i64>().ok().ok_or_else(|| SERVICE.err("the SendPulse Template ID is invalid"))?),
         None => None,
     };
-    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
 
     let mut targets = Vec::new();
     for r in parse_emails(&targets_in, true) {
@@ -234,7 +234,7 @@ fn login(
 
 impl SendPulse {
     fn name_of(&self, email: &str, app_id: &str) -> Option<String> {
-        self.names.iter().find(|(k, _)| k == email).map(|(_, v)| v.clone().unwrap_or_else(|| app_id.to_string()))
+        self.names.iter().find(|(k, _)| k == email).map(|(_, v)| v.clone().unwrap_or_else(|| app_id.to_owned()))
     }
 
     fn login_request(&self, app_id: &str) -> Request {
@@ -283,7 +283,7 @@ fn send_email(payload: Arc<Value>, token: Token, auth: Auth, app_id: String, ret
 
 impl Notify for SendPulse {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let app_id = ctx.app_id().to_string();
+        let app_id = ctx.app_id().to_owned();
         let mut email = Map::new();
         email.insert("from".into(), json!({"name": self.name_of(&self.from_addr, &app_id), "email": self.from_addr}));
         email.insert("subject".into(), json!(if msg.title.is_empty() { "<no subject>" } else { msg.title }));

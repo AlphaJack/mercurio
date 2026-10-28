@@ -28,7 +28,7 @@ fn replies(script: &Value) -> Vec<(Regex, String)> {
         .as_array()
         .map(|a| {
             a.iter()
-                .map(|r| (Regex::new(r[0].as_str().unwrap()).unwrap(), r[1].as_str().unwrap_or("").to_string()))
+                .map(|r| (Regex::new(r[0].as_str().unwrap()).unwrap(), r[1].as_str().unwrap_or("").to_owned()))
                 .collect()
         })
         .unwrap_or_default()
@@ -46,11 +46,11 @@ fn push_stream_conns(fake: &FakeTransport, case: &Value) -> Vec<Log> {
             break;
         }
         let rules = replies(&script);
-        let greeting = script.get("greeting").and_then(Value::as_str).unwrap_or("").to_string();
+        let greeting = script.get("greeting").and_then(Value::as_str).unwrap_or("").to_owned();
         let log: Log = Arc::default();
         let l = log.clone();
         let conn = ScriptedConn::lines(greeting, move |line| {
-            l.lock().unwrap().push(line.to_string());
+            l.lock().unwrap().push(line.to_owned());
             reply_for(&rules, line)
         });
         fake.push_conn(conn);

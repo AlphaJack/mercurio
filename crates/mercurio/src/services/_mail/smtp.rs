@@ -10,7 +10,7 @@ use crate::service::Secret;
 
 /// Transport security of the session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Security {
+pub(crate) enum Security {
     /// Plain text from start to end.
     Insecure,
     /// TLS from the first byte (the endpoint is opened with `tls: true`).
@@ -21,7 +21,7 @@ pub enum Security {
 
 /// One message to submit.
 #[derive(Debug, Clone)]
-pub struct Envelope {
+pub(crate) struct Envelope {
     pub from: String,
     pub recipients: Vec<String>,
     /// The full RFC 5322 message (CRLF line endings, not dot-stuffed).
@@ -30,7 +30,7 @@ pub struct Envelope {
 
 /// Everything a session needs.
 #[derive(Debug)]
-pub struct Job {
+pub(crate) struct Job {
     pub security: Security,
     /// Name announced in EHLO/HELO.
     pub helo: String,
@@ -75,7 +75,7 @@ impl Extensions {
                 Some((k, v)) => (k, v),
                 None => (line.as_str(), ""),
             };
-            ext.0.push((k.to_ascii_uppercase(), v.trim().to_string()));
+            ext.0.push((k.to_ascii_uppercase(), v.trim().to_owned()));
         }
         ext
     }
@@ -133,7 +133,7 @@ enum State {
 
 /// An SMTP session as a sans-IO state machine.
 #[derive(Debug)]
-pub struct Smtp {
+pub(crate) struct Smtp {
     job: Job,
     state: State,
     ext: Extensions,
@@ -149,7 +149,7 @@ pub struct Smtp {
 }
 
 /// A whole SMTP session; `tls` is whether the stream starts encrypted (the session does not need it).
-pub fn session(job: Job, _tls: bool) -> Smtp {
+pub(crate) fn session(job: Job, _tls: bool) -> Smtp {
     Smtp {
         job,
         state: State::Greeting,
@@ -211,7 +211,7 @@ impl Smtp {
                 continue;
             };
             let more = line.as_bytes().get(3) == Some(&b'-');
-            self.reply.push(line.get(4..).unwrap_or("").to_string());
+            self.reply.push(line.get(4..).unwrap_or("").to_owned());
             if more {
                 if self.reply.len() > 1000 {
                     self.reply.clear();
@@ -311,7 +311,7 @@ impl Smtp {
         };
         let (user, password) = self.credentials();
         let line = match MECHS[mech] {
-            "CRAM-MD5" => "AUTH CRAM-MD5".to_string(),
+            "CRAM-MD5" => "AUTH CRAM-MD5".to_owned(),
             "PLAIN" => format!("AUTH PLAIN {}", crypto::b64(format!("\0{user}\0{password}").as_bytes())),
             _ => format!("AUTH LOGIN {}", crypto::b64(user.as_bytes())),
         };
@@ -320,7 +320,7 @@ impl Smtp {
 
     fn credentials(&self) -> (String, String) {
         let user = self.job.user.clone().unwrap_or_default();
-        let password = self.job.password.as_ref().map(|p| p.expose().to_string()).unwrap_or_default();
+        let password = self.job.password.as_ref().map(|p| p.expose().to_owned()).unwrap_or_default();
         (user, password)
     }
 
@@ -450,7 +450,7 @@ mod tests {
             match m.next() {
                 Output::Write(data) => {
                     for line in String::from_utf8(data).unwrap().split_inclusive("\r\n") {
-                        let line = line.trim_end().to_string();
+                        let line = line.trim_end().to_owned();
                         if !line.is_empty() {
                             pending.push_str(reply(&line));
                             sent.push(line);

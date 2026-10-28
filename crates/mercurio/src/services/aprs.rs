@@ -18,7 +18,7 @@ use crate::transport::Endpoint;
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "aprs",
     name: "Aprs",
     schemes: &["aprs"],
@@ -111,7 +111,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 /// Message cleanup: drop `{}|~`, transliterate German umlauts, fold line breaks into single spaces, cut to 67 characters, end in CRLF.
-pub fn clean_payload(body: &str) -> String {
+pub(crate) fn clean_payload(body: &str) -> String {
     let mut s: String = body.chars().filter(|c| !matches!(c, '{' | '}' | '|' | '~')).collect();
     for (from, to) in [("Ä", "Ae"), ("Ö", "Oe"), ("Ü", "Ue"), ("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss")]
     {

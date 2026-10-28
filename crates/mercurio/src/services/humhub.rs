@@ -13,7 +13,7 @@ use crate::url::ParsedUrl;
 use crate::util::{json_text, json_has_value, parse_int};
 use crate::{Error, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "humhub",
     name: "HumHub",
     schemes: &["humhub", "humhubs"],
@@ -113,7 +113,7 @@ impl HumHub {
         let attachments = attachments.to_vec();
         let upload = self.auth(ctx.post(String::new()));
         let memo = ctx.memo.clone();
-        let container = id.to_string();
+        let container = id.to_owned();
         let env = ctx.env().clone();
         // Upload the attachments the post has not received yet.
         let uploads = move |memo: Memo, pid: Option<String>| {
@@ -144,7 +144,7 @@ impl HumHub {
             if no_attachments {
                 return Plan::Done;
             }
-            let pid = memo.recall(&message_key).and_then(|v| v.as_str().map(str::to_string));
+            let pid = memo.recall(&message_key).and_then(|v| v.as_str().map(str::to_owned));
             return uploads(memo, pid);
         }
         Plan::http(req, move |res| {

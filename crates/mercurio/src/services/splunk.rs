@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "splunk",
     name: "Splunk On-Call",
     schemes: &["splunk", "victorops"],
@@ -68,7 +68,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let routing_key = validate_regex(&routing, r"^[A-Z0-9_-]+$", "i", true)
         .ok_or_else(|| SERVICE.err("the Splunk Routing Key specified is invalid"))?;
     let entity = entity.trim_matches([' ', '\r', '\n', '\t', '\x0b', '/']);
-    let entity_id = (!entity.is_empty()).then(|| entity.to_string());
+    let entity_id = (!entity.is_empty()).then(|| entity.to_owned());
 
     let action = match param_unquoted(u, "action") {
         None => "map",

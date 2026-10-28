@@ -15,7 +15,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "smtp2go",
     name: "SMTP2Go",
     schemes: &["smtp2go"],
@@ -72,7 +72,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         return Err(SERVICE.err("invalid ~From~ email format"));
     }
     if let Some(to) = u.param_nonempty("to") {
-        segs.push(to.to_string());
+        segs.push(to.to_owned());
     }
     let targets = if segs.is_empty() {
         vec![(from_name.clone().unwrap_or_default(), from_addr.clone())]

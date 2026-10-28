@@ -11,7 +11,7 @@ use crate::env::Env;
 
 /// Why a key could not sign.
 #[derive(Debug, PartialEq, Eq)]
-pub enum SignError {
+pub(crate) enum SignError {
     /// Not an OpenPGP secret key.
     Unreadable,
     /// Locked with a passphrase (Apprise does not support those either).
@@ -24,7 +24,7 @@ pub enum SignError {
 
 impl SignError {
     /// The warning Apprise logs (or mercurio's, for the algorithm).
-    pub fn warning(&self) -> String {
+    pub(crate) fn warning(&self) -> String {
         match self {
             SignError::Unreadable => "PGP Private Key file could not be parsed".into(),
             SignError::Protected => {
@@ -146,7 +146,7 @@ pub(super) fn secret_key(data: &[u8]) -> Result<Key, SignError> {
             let (q, rest) = mpi(rest).ok_or(SignError::Unreadable)?;
             let (u, _) = mpi(rest).ok_or(SignError::Unreadable)?;
             let der = rsa_pkcs1(n, e, d, p, q, u);
-            Signer::Rsa(RsaKeyPair::from_der(&der).map_err(|_| SignError::Failed)?)
+            Signer::Rsa(RsaKeyPair::from_der(&der).ok().ok_or(SignError::Failed)?)
         }
         [point] => {
             // The native point format: 0x40, then the 32-byte key.
@@ -157,15 +157,15 @@ pub(super) fn secret_key(data: &[u8]) -> Result<Key, SignError> {
             }
             let mut seed = Zeroizing::new([0u8; 32]);
             seed[32 - secret.len()..].copy_from_slice(secret);
-            Signer::Ed25519(Ed25519KeyPair::from_seed_and_public_key(&*seed, public).map_err(|_| SignError::Failed)?)
+            Signer::Ed25519(Ed25519KeyPair::from_seed_and_public_key(&*seed, public).ok().ok_or(SignError::Failed)?)
         }
         _ => return Err(SignError::Unreadable),
     };
     // v4 fingerprint: SHA-1 over 0x99, the public part's length and the public part.
-    let len = u16::try_from(public_part.len()).map_err(|_| SignError::Unreadable)?;
+    let len = u16::try_from(public_part.len()).ok().ok_or(SignError::Unreadable)?;
     let fingerprint = crypto::sha1(&[&[0x99], len.to_be_bytes().as_slice(), public_part].concat())
         .try_into()
-        .map_err(|_| SignError::Unreadable)?;
+        .ok().ok_or(SignError::Unreadable)?;
     Ok(Key { signer, algo, fingerprint })
 }
 
@@ -209,7 +209,7 @@ pub(super) fn signature_packet(key: &Key, sig_type: u8, hashed_extra: &[u8], pre
             let mut sig = vec![0u8; pair.public().modulus_len()];
             #[expect(clippy::disallowed_methods, reason = "ring's SecureRandom is sealed; the signature does not depend on it")]
             let rng = SystemRandom::new();
-            pair.sign(&RSA_PKCS1_SHA256, &rng, &signed, &mut sig).map_err(|_| SignError::Failed)?;
+            pair.sign(&RSA_PKCS1_SHA256, &rng, &signed, &mut sig).ok().ok_or(SignError::Failed)?;
             put_mpi(&mut body, &sig);
         }
     }
@@ -217,7 +217,7 @@ pub(super) fn signature_packet(key: &Key, sig_type: u8, hashed_extra: &[u8], pre
 }
 
 /// A detached, armored signature over `data` (SHA-256, binary document) with the key's primary key, as Apprise signs, and its `micalg` label.
-pub fn sign(key: &[u8], data: &[u8], env: &dyn Env) -> Result<(String, &'static str), SignError> {
+pub(crate) fn sign(key: &[u8], data: &[u8], env: &dyn Env) -> Result<(String, &'static str), SignError> {
     let key = secret_key(key)?;
     let created = u32::try_from(env.unix_time()).unwrap_or(u32::MAX);
     let packet = signature_packet(&key, SIG_BINARY, &[], data, created)?;

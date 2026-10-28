@@ -107,51 +107,51 @@ impl Fetch {
             max_retry_wait: None,
         }
     }
-    pub fn post(path: impl Into<String>, payload: Value) -> Self {
+    pub(super) fn post(path: impl Into<String>, payload: Value) -> Self {
         Self::new(Method::Post, Path::Api(path.into()), Body::Json(payload))
     }
-    pub fn put(path: impl Into<String>, payload: Value) -> Self {
+    pub(super) fn put(path: impl Into<String>, payload: Value) -> Self {
         Self::new(Method::Put, Path::Api(path.into()), Body::Json(payload))
     }
-    pub fn get(path: impl Into<String>) -> Self {
+    pub(super) fn get(path: impl Into<String>) -> Self {
         Self::new(Method::Get, Path::Api(path.into()), Body::Empty)
     }
-    pub fn get_url(url: impl Into<String>) -> Self {
+    pub(super) fn get_url(url: impl Into<String>) -> Self {
         Self::new(Method::Get, Path::Url(url.into()), Body::Empty)
     }
-    pub fn upload(name: &str, mime: &str, data: Arc<Vec<u8>>) -> Self {
-        let mut f = Self::new(Method::Post, Path::Upload, Body::Raw(data, mime.to_string()));
+    pub(super) fn upload(name: &str, mime: &str, data: Arc<Vec<u8>>) -> Self {
+        let mut f = Self::new(Method::Post, Path::Upload, Body::Raw(data, mime.to_owned()));
         f.params.push(("filename".into(), name.into()));
         f
     }
-    pub fn param(mut self, k: &str, v: impl Into<String>) -> Self {
+    pub(super) fn param(mut self, k: &str, v: impl Into<String>) -> Self {
         self.params.push((k.into(), v.into()));
         self
     }
     #[cfg_attr(not(feature = "service-matrix-e2ee"), expect(dead_code, reason = "used by end-to-end encryption only"))]
-    pub fn ok_status(mut self, s: &'static [u16]) -> Self {
+    pub(super) fn ok_status(mut self, s: &'static [u16]) -> Self {
         self.ok_status = s;
         self
     }
-    pub fn no_auth(mut self) -> Self {
+    pub(super) fn no_auth(mut self) -> Self {
         self.auth = false;
         self
     }
-    pub fn credentials(mut self) -> Self {
+    pub(super) fn credentials(mut self) -> Self {
         self.credentials = true;
         self
     }
-    pub fn bounded(mut self, max: usize) -> Self {
+    pub(super) fn bounded(mut self, max: usize) -> Self {
         self.max_bytes = Some(max);
         self
     }
     #[cfg_attr(not(feature = "service-matrix-e2ee"), expect(dead_code, reason = "used by end-to-end encryption only"))]
-    pub fn timeout(mut self, t: Duration) -> Self {
+    pub(super) fn timeout(mut self, t: Duration) -> Self {
         self.timeout = Some(t);
         self
     }
     #[cfg_attr(not(feature = "service-matrix-e2ee"), expect(dead_code, reason = "used by end-to-end encryption only"))]
-    pub fn retry_budget(mut self, t: Duration) -> Self {
+    pub(super) fn retry_budget(mut self, t: Duration) -> Self {
         self.max_retry_wait = Some(t);
         self
     }
@@ -188,14 +188,14 @@ impl Fetched {
         Fetched { ok: false, json, status, transport: None }
     }
     /// The failure as an [`Error`]: the transport error itself, so its class survives, else the HTTP status with `reason`.
-    pub fn error(&self, reason: &str) -> Error {
+    pub(super) fn error(&self, reason: &str) -> Error {
         match &self.transport {
             Some(e) => e.clone(),
             None => Error::Http { status: self.status, reason: reason.into() },
         }
     }
     /// The reply body when the call succeeded and the body is a JSON object.
-    pub fn object(&self) -> Option<&Map<String, Value>> {
+    pub(super) fn object(&self) -> Option<&Map<String, Value>> {
         if self.ok { self.json.as_object() } else { None }
     }
 }
@@ -208,7 +208,7 @@ pub(super) use crate::util::json_has_value as has_value;
 
 /// `key` as a string; `None` for other types.
 pub(super) fn get_str(v: &Value, key: &str) -> Option<String> {
-    v.get(key).and_then(Value::as_str).map(str::to_string)
+    v.get(key).and_then(Value::as_str).map(str::to_owned)
 }
 
 fn non_empty(s: Option<&str>) -> bool {
@@ -217,23 +217,23 @@ fn non_empty(s: Option<&str>) -> bool {
 
 /// The homeserver part of a user id.
 pub(super) fn hs_of(user_id: &str) -> Option<String> {
-    user_id.split_once(':').map(|(_, hs)| hs.to_string())
+    user_id.split_once(':').map(|(_, hs)| hs.to_owned())
 }
 
 /// Matrix room id / alias / user patterns.
 pub(super) fn match_room_id(s: &str) -> Option<(String, Option<String>)> {
     let c = regex!(r"(?i)^\s*(?:!|&#33;|%21)([A-Za-z0-9._=-]+)(?:(?::|%3A)([A-Za-z0-9.-]+))?\s*$").captures(s)?;
-    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_string())))
+    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_owned())))
 }
 
 pub(super) fn match_room_alias(s: &str) -> Option<(String, Option<String>)> {
     let c = regex!(r"(?i)^\s*(?:#|%23)?([A-Za-z0-9._=-]+)(?:(?::|%3A)([A-Za-z0-9.-]+))?\s*$").captures(s)?;
-    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_string())))
+    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_owned())))
 }
 
 pub(super) fn match_user(s: &str) -> Option<(String, Option<String>)> {
     let c = regex!(r"(?i)^\s*(?:@|%40)([A-Za-z0-9._=+/-]+)(?:(?::|%3A)([A-Za-z0-9.-]+))?\s*$").captures(s)?;
-    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_string())))
+    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_owned())))
 }
 
 /// Percent-encode `s`, keeping `/`.
@@ -299,7 +299,7 @@ pub(super) struct Session {
 
 impl Session {
     // A new session, with identity values restored from the store.
-    pub fn new(cfg: Arc<Config>, msg: Arc<Msg>, store: StoreRef, env: Arc<dyn Env>) -> Self {
+    pub(super) fn new(cfg: Arc<Config>, msg: Arc<Msg>, store: StoreRef, env: Arc<dyn Env>) -> Self {
         let mut s = Session {
             cfg,
             msg,
@@ -319,7 +319,7 @@ impl Session {
             e2ee: Default::default(),
         };
         if s.cfg.mode != Mode::T2bot {
-            let get = |k: &str| s.store.get(k).and_then(|v| v.as_str().map(str::to_string));
+            let get = |k: &str| s.store.get(k).and_then(|v| v.as_str().map(str::to_owned));
             s.home_server = get("home_server");
             s.user_id = get("user_id");
             s.access_token = get("access_token");
@@ -339,7 +339,7 @@ impl Session {
         s
     }
 
-    pub fn password(&self) -> Option<&str> {
+    pub(super) fn password(&self) -> Option<&str> {
         self.cfg.password.as_ref().map(|p| p.expose())
     }
 
@@ -348,7 +348,7 @@ impl Session {
         format!("{}://{}{}", if self.cfg.secure { "https" } else { "http" }, self.cfg.host, port)
     }
 
-    pub fn e2ee_wanted(&self) -> bool {
+    pub(super) fn e2ee_wanted(&self) -> bool {
         cfg!(feature = "service-matrix-e2ee") && self.cfg.e2ee && self.cfg.secure
     }
 
@@ -359,7 +359,7 @@ impl Session {
     /// Advance and persist the transaction id after an event send.
     ///
     /// A raw token gets a fresh UUID per event: reusing one for the whole send makes homeservers drop the later events as duplicates.
-    pub fn bump_txn(&mut self) {
+    pub(super) fn bump_txn(&mut self) {
         if !self.token_is_not_password() {
             if let Txn::Uuid(u) = &mut self.txn {
                 *u = self.env.uuid4();
@@ -373,15 +373,15 @@ impl Session {
         }
     }
 
-    pub fn api_prefix(&self) -> &'static str {
+    pub(super) fn api_prefix(&self) -> &'static str {
         if self.cfg.version == Version::V3 { V3_API } else { V2_API }
     }
 
-    pub fn media_prefix(&self) -> &'static str {
+    pub(super) fn media_prefix(&self) -> &'static str {
         if self.cfg.version == Version::V3 { V3_MEDIA } else { V2_MEDIA }
     }
 
-    pub fn fail_target_with(&mut self, label: impl Into<String>, error: Error) {
+    pub(super) fn fail_target_with(&mut self, label: impl Into<String>, error: Error) {
         let error = self.rate_limited(error);
         self.outcomes.push((label.into(), Some(error)));
     }
@@ -392,7 +392,7 @@ impl Session {
         limit(e, wait)
     }
 
-    pub fn ok_target(&mut self, label: impl Into<String>) {
+    pub(super) fn ok_target(&mut self, label: impl Into<String>) {
         let label = label.into();
         self.memo.mark_delivered(&delivery_key(&label));
         self.outcomes.push((label, None));
@@ -403,12 +403,12 @@ impl Session {
         if !self.memo.is_delivered(&delivery_key(label)) {
             return false;
         }
-        self.outcomes.push((label.to_string(), None));
+        self.outcomes.push((label.to_owned(), None));
         true
     }
 
     /// `None` means discovery must run first.
-    pub fn base_url(&self) -> Option<String> {
+    pub(super) fn base_url(&self) -> Option<String> {
         if !(self.cfg.discovery && self.cfg.secure) {
             return Some(self.host_base());
         }
@@ -424,7 +424,7 @@ impl Session {
     }
 
     /// Resolve the base URL (running discovery when needed), then `k`. `Err(())` when discovery failed.
-    pub fn with_base(self, k: impl FnOnce(Session, std::result::Result<String, ()>) -> Plan + Send + 'static) -> Plan {
+    pub(super) fn with_base(self, k: impl FnOnce(Session, Result<String, ()>) -> Plan + Send + 'static) -> Plan {
         match self.base_url() {
             Some(b) => k(self, Ok(b)),
             None => self.discover(Box::new(move |s, ok| {
@@ -439,7 +439,7 @@ impl Session {
     }
 
     /// Send one request; returns `(ok, response, status)` to `k`.
-    pub fn fetch(self, f: Fetch, k: impl FnOnce(Session, Fetched) -> Plan + Send + 'static) -> Plan {
+    pub(super) fn fetch(self, f: Fetch, k: impl FnOnce(Session, Fetched) -> Plan + Send + 'static) -> Plan {
         if let Path::Url(u) = &f.path {
             let url = u.clone();
             return self.start_attempts(f, url, Box::new(k));
@@ -578,7 +578,7 @@ impl Session {
 }
 
 fn label_of(v: &Value) -> String {
-    v.as_str().map_or_else(|| v.to_string(), str::to_string)
+    v.as_str().map_or_else(|| v.to_string(), str::to_owned)
 }
 
 /// Build a session for one send and run it.

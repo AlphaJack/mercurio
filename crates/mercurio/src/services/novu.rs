@@ -22,7 +22,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "novu",
     name: "Novu",
     schemes: &["novu"],
@@ -97,7 +97,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         Some("eu") => EU_API,
         Some(_) => return Err(SERVICE.err("the Novu region specified is invalid")),
     };
-    let base = api_base(u, default).map_err(|_| SERVICE.err("an invalid Novu host was specified"))?;
+    let base = api_base(u, default).ok().ok_or_else(|| SERVICE.err("an invalid Novu host was specified"))?;
     Ok(Box::new(Novu {
         api_key: Secret::new(api_key),
         base,
@@ -106,7 +106,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         labels,
         transaction: SERVICE.text(u, "transaction"),
         data: colon_data(u),
-        headers: u.query_plus.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+        headers: u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
     }))
 }
 
@@ -142,7 +142,7 @@ impl Notify for Novu {
             })
             .target(labels.join(", "))
         });
-        Plan::all(plans.collect::<Vec<_>>())
+        Plan::all(plans)
     }
 }
 

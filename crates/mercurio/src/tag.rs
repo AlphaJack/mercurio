@@ -7,9 +7,9 @@ use std::fmt;
 use crate::parse::parse_list;
 
 /// `MATCH_ALL_TAG`: a filter token matching every service.
-pub const MATCH_ALL: &str = "all";
+pub(crate) const MATCH_ALL: &str = "all";
 /// `MATCH_ALWAYS_TAG`: services carrying it are notified by every filter.
-pub const MATCH_ALWAYS: &str = "always";
+pub(crate) const MATCH_ALWAYS: &str = "always";
 
 /// One tag with optional dispatch priority (`2:endpoint`) and retry (`endpoint:3`).
 #[derive(Debug, Clone, Default)]
@@ -61,7 +61,7 @@ impl Tag {
 }
 
 /// Parse a tag list (`"a, b c"`) into unique tags, keeping the first spelling of each name, sorted by name.
-pub fn parse_tags<I, S>(values: I) -> Vec<Tag>
+pub(crate) fn parse_tags<I, S>(values: I) -> Vec<Tag>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -161,7 +161,7 @@ impl TagFilter {
         }
         let groups = expr
             .split(',')
-            .map(|g| g.split_whitespace().map(str::to_string).collect::<Vec<_>>())
+            .map(|g| g.split_whitespace().map(str::to_owned).collect::<Vec<_>>())
             .filter(|g| !g.is_empty())
             .collect::<Vec<_>>();
         if groups.is_empty() {
@@ -218,7 +218,7 @@ impl TagFilter {
         if groups.is_empty() {
             return tags.is_empty();
         }
-        let always = [vec![MATCH_ALWAYS.to_string()]];
+        let always = [vec![MATCH_ALWAYS.to_owned()]];
         let extra: &[Vec<String>] = if self.match_always { &always } else { &[] };
         for group in groups.iter().chain(extra) {
             if group.is_empty() {

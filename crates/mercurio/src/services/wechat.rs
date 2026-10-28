@@ -11,7 +11,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIden
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "wechat",
     name: "WeChat (WeCom)",
     schemes: &["wechat"],
@@ -79,7 +79,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             tags.push(c["tag"].to_string());
         } else if let Some(c) = user_re.captures(&target) {
             let user = &c["user"];
-            users.push(if user == "all" { "@all".to_string() } else { user.to_string() });
+            users.push(if user == "all" { "@all".to_owned() } else { user.to_owned() });
         } else {
             crate::warning!("WeChat (WeCom): ignoring unrecognized target");
         }
@@ -158,7 +158,7 @@ impl Notify for WeChat {
         }
         // Serialized once: the token continuation keeps these bytes, not a copy of the text.
         let payload = bytes::Bytes::from(crate::http::json_with_text(&Value::Object(payload), msg.body));
-        let user_agent = ctx.app_id().to_string();
+        let user_agent = ctx.app_id().to_owned();
 
         let store = ctx.store();
         let send = move |token: String| {
@@ -194,7 +194,7 @@ impl Notify for WeChat {
         UrlIdentifier::Parts(vec![
             "wechat".into(),
             self.corpid.clone(),
-            self.corpsecret.expose().to_string(),
+            self.corpsecret.expose().to_owned(),
             self.agentid.to_string(),
         ])
     }

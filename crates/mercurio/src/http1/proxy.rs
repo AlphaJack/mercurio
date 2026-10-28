@@ -17,7 +17,7 @@ pub(crate) struct Proxy {
 impl Proxy {
     fn parse(s: &str) -> Option<Self> {
         let s = s.trim();
-        let s = if s.contains("://") { s.to_string() } else { format!("http://{s}") };
+        let s = if s.contains("://") { s.to_owned() } else { format!("http://{s}") };
         let url = Url::parse(&s).ok()?;
         let auth = url.userinfo.map(|(u, p)| format!("Basic {}", b64(format!("{u}:{p}").as_bytes())));
         Some(Self { tls: url.tls, host: url.host, port: url.port, auth })

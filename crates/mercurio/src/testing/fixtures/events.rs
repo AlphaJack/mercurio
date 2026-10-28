@@ -80,7 +80,7 @@ fn rules_of(v: Option<&Value>) -> Vec<(Regex, String)> {
     v.and_then(Value::as_array)
         .map(|a| {
             a.iter()
-                .filter_map(|r| Some((Regex::new(r[0].as_str()?).ok()?, r[1].as_str().unwrap_or("").to_string())))
+                .filter_map(|r| Some((Regex::new(r[0].as_str()?).ok()?, r[1].as_str().unwrap_or("").to_owned())))
                 .collect()
         })
         .unwrap_or_default()

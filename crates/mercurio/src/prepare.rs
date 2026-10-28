@@ -33,7 +33,7 @@ pub struct PreparedMessage<'m> {
 
 /// URL-level options feeding the pipeline.
 #[derive(Debug, Clone, Copy)]
-pub struct PipelineOptions {
+pub(crate) struct PipelineOptions {
     pub format_override: Option<NotifyFormat>,
     pub overflow: OverflowMode,
     /// Replace `:shortcode:` emoji in the title and body before anything else.
@@ -41,7 +41,7 @@ pub struct PipelineOptions {
 }
 
 /// The format a service receives: the override when the service accepts it, else the body format when accepted, else the service's first format. A service with one format takes the override as is.
-pub fn resolve_format(
+pub(crate) fn resolve_format(
     formats: &[NotifyFormat],
     override_: Option<NotifyFormat>,
     body: Option<NotifyFormat>,
@@ -64,7 +64,7 @@ pub fn resolve_format(
 }
 
 /// Run the whole pipeline for one service.
-pub fn prepare<'m>(
+pub(crate) fn prepare<'m>(
     def: &ServiceDef,
     service: &dyn Notify,
     opts: PipelineOptions,
@@ -106,13 +106,13 @@ pub fn prepare<'m>(
     let overflow = opts.overflow;
     let chunks = apply_overflow(&title, body, limits, overflow, format, passthrough);
     let dialect = !passthrough && service.convert("", format).is_some();
-    let mut pieces: Vec<Piece> = Vec::new();
+    let mut pieces: Vec<Piece<'_>> = Vec::new();
     for chunk in chunks {
         if !dialect {
             pieces.push(Piece { title: chunk.title, body: chunk.body, attach: false });
             continue;
         }
-        let convert_fn = |b: &str| service.convert(b, format).unwrap_or_else(|| b.to_string());
+        let convert_fn = |b: &str| service.convert(b, format).unwrap_or_else(|| b.to_owned());
         let bodies = match overflow {
             OverflowMode::Split if service.split_converted() => {
                 convert::dialect::split_html(&convert_fn(&chunk.body), limits.body_maxlen, usize::MAX)
@@ -146,14 +146,14 @@ pub fn prepare<'m>(
 
 /// A chunk produced by [`apply_overflow`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Chunk<'m> {
+pub(crate) struct Chunk<'m> {
     pub title: String,
     pub body: Cow<'m, str>,
 }
 
 /// Drop leading line breaks (`\r`, `\n`, `\x0b`, `\x0c`) and trailing whitespace.
 fn tidy_chunk(s: &str) -> String {
-    s.trim_start_matches(['\r', '\n', '\x0b', '\x0c']).trim_end().to_string()
+    s.trim_start_matches(['\r', '\n', '\x0b', '\x0c']).trim_end().to_owned()
 }
 
 fn chunk<'m>(title: impl Into<String>, body: impl Into<Cow<'m, str>>) -> Chunk<'m> {
@@ -172,7 +172,7 @@ fn trim_end_cow(body: Cow<'_, str>) -> Cow<'_, str> {
 }
 
 /// Fit a message into `limits`: a service without a title gets it merged into the body, the title is cut to `title_maxlen`, the body to `body_max_line_count` lines, then truncated or split into pieces of at most `body_maxlen` characters (`0`: unlimited). Only the first piece carries the title.
-pub fn apply_overflow<'m>(
+pub(crate) fn apply_overflow<'m>(
     title: &str,
     body: Cow<'m, str>,
     limits: Limits,
@@ -180,7 +180,7 @@ pub fn apply_overflow<'m>(
     format: NotifyFormat,
     passthrough: bool,
 ) -> Vec<Chunk<'m>> {
-    let mut title = title.trim().to_string();
+    let mut title = title.trim().to_owned();
     let mut body = trim_end_cow(body);
     if limits.title_maxlen == 0 && !title.is_empty() {
         body = match format {
@@ -202,7 +202,7 @@ pub fn apply_overflow<'m>(
         return vec![chunk(title, body)];
     }
     if limits.title_maxlen > 0 && title.chars().count() > limits.title_maxlen {
-        title = title.chars().take(limits.title_maxlen).collect::<String>().trim_end().to_string();
+        title = title.chars().take(limits.title_maxlen).collect::<String>().trim_end().to_owned();
     }
     let max = limits.body_maxlen;
     if max == 0 || body.chars().count() <= max {
@@ -218,7 +218,7 @@ pub fn apply_overflow<'m>(
         return vec![chunk(title, first)];
     }
     // A piece that was only line breaks would go out as an empty message.
-    let mut out: Vec<Chunk> =
+    let mut out: Vec<Chunk<'_>> =
         pieces.iter().map(|p| tidy_chunk(p)).filter(|p| !p.is_empty()).map(|p| chunk("", p)).collect();
     match out.first_mut() {
         Some(first) => first.title = title,

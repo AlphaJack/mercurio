@@ -9,7 +9,7 @@ use super::store::{ACCESS_DISABLED, ACCESS_LOCKED, ACCESS_PUBLIC, ACCESS_USER, A
 
 /// Who is calling, as far as this request has proven.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum Role {
+pub(super) enum Role {
     /// Authentication is switched off.
     #[default]
     Open,
@@ -22,7 +22,7 @@ pub enum Role {
 }
 
 impl Role {
-    pub fn label(self) -> &'static str {
+    pub(super) fn label(self) -> &'static str {
         match self {
             Role::User => "user",
             Role::Open | Role::Admin | Role::Anonymous => "admin",
@@ -30,7 +30,7 @@ impl Role {
     }
 }
 
-pub struct AuthSettings {
+pub(super) struct AuthSettings {
     pub required: bool,
     /// `(username, password)` of the administrator, when enabled.
     pub admin: Option<(String, String)>,
@@ -39,7 +39,7 @@ pub struct AuthSettings {
 
 /// How one key is protected (`ConfigAuthState`).
 #[derive(Debug, Clone)]
-pub struct KeyState {
+pub(super) struct KeyState {
     /// `disabled` (authentication off), `global` (no login) or `assigned`.
     pub mode: &'static str,
     pub username: Option<String>,
@@ -50,25 +50,25 @@ pub struct KeyState {
 }
 
 impl KeyState {
-    pub fn assigned(&self) -> bool {
+    pub(super) fn assigned(&self) -> bool {
         self.digest.is_some()
     }
-    pub fn configured(&self) -> bool {
+    pub(super) fn configured(&self) -> bool {
         self.mode == "assigned"
     }
-    pub fn config_locked(&self) -> bool {
+    pub(super) fn config_locked(&self) -> bool {
         [ACCESS_LOCKED, ACCESS_PUBLIC, ACCESS_DISABLED].contains(&self.access.as_str())
     }
-    pub fn public(&self) -> bool {
+    pub(super) fn public(&self) -> bool {
         self.access == ACCESS_PUBLIC
     }
-    pub fn disabled(&self) -> bool {
+    pub(super) fn disabled(&self) -> bool {
         self.access == ACCESS_DISABLED
     }
 }
 
 /// Remembers successful password checks for five minutes (hashing is slow by design); never the credentials themselves.
-pub struct Verifier {
+pub(super) struct Verifier {
     secret: [u8; 32],
     ok: Mutex<BTreeMap<Vec<u8>, Instant>>,
 }
@@ -85,7 +85,7 @@ impl Default for Verifier {
 }
 
 impl Verifier {
-    pub fn verify(&self, key: &str, user: &str, pass: &str, rec_user: Option<&str>, digest: &str) -> bool {
+    pub(super) fn verify(&self, key: &str, user: &str, pass: &str, rec_user: Option<&str>, digest: &str) -> bool {
         let mut material = Vec::new();
         for v in [key, user, pass, digest] {
             material.extend_from_slice(&(v.len() as u64).to_be_bytes());
@@ -112,9 +112,8 @@ impl Verifier {
 
 impl AuthSettings {
     /// The key's state; an unreadable login stays locked.
-    pub async fn key_state(&self, store: &ConfigStore, key: &str, config_lock: bool) -> KeyState {
-        let effective =
-            |a: &str| if config_lock && a == ACCESS_USER { ACCESS_LOCKED.to_string() } else { a.to_string() };
+    pub(super) async fn key_state(&self, store: &ConfigStore, key: &str, config_lock: bool) -> KeyState {
+        let effective = |a: &str| if config_lock && a == ACCESS_USER { ACCESS_LOCKED.to_owned() } else { a.to_owned() };
         if !self.required {
             return KeyState {
                 mode: "disabled",
@@ -145,7 +144,7 @@ impl AuthSettings {
         }
     }
 
-    pub fn is_admin(&self, creds: Option<&(String, String)>) -> bool {
+    pub(super) fn is_admin(&self, creds: Option<&(String, String)>) -> bool {
         match (&self.admin, creds) {
             (Some((u, p)), Some((cu, cp))) => {
                 let a = format!("{u}:{p}");

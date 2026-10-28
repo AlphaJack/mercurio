@@ -12,12 +12,12 @@ const CRLF: &str = "\r\n";
 const WORD_BYTES: usize = 45;
 
 /// Replace CR/LF (header injection) with spaces.
-pub fn single_line(s: &str) -> String {
+pub(crate) fn single_line(s: &str) -> String {
     s.chars().map(|c| if c == '\r' || c == '\n' { ' ' } else { c }).collect()
 }
 
 /// RFC 2047 `B` encoded words, split on character boundaries and joined by `sep`.
-pub fn encode_words(s: &str, sep: &str) -> String {
+pub(crate) fn encode_words(s: &str, sep: &str) -> String {
     let mut words = Vec::new();
     let mut chunk = String::new();
     for c in s.chars() {
@@ -34,7 +34,7 @@ pub fn encode_words(s: &str, sep: &str) -> String {
 }
 
 /// Header value: ASCII passes through (folded at whitespace), anything else becomes encoded words.
-pub fn header_value(s: &str) -> String {
+pub(crate) fn header_value(s: &str) -> String {
     let s = single_line(s);
     if s.is_ascii() { fold_ascii(&s) } else { encode_words(&s, "\r\n ") }
 }
@@ -42,7 +42,7 @@ pub fn header_value(s: &str) -> String {
 /// Fold long ASCII header values at spaces (RFC 5322 2.2.3).
 fn fold_ascii(s: &str) -> String {
     if s.len() <= MAX_LINE {
-        return s.to_string();
+        return s.to_owned();
     }
     let mut out = String::with_capacity(s.len() + 8);
     let mut line_len = 0;
@@ -63,9 +63,9 @@ fn fold_ascii(s: &str) -> String {
 }
 
 /// `Name <address>`: the name quoted when it has specials, RFC 2047 encoded when non-ASCII. An empty name gives the bare address.
-pub fn formataddr(name: &str, address: &str) -> String {
+pub(crate) fn formataddr(name: &str, address: &str) -> String {
     if name.is_empty() {
-        return address.to_string();
+        return address.to_owned();
     }
     let name = single_line(name);
     if !name.is_ascii() {
@@ -79,14 +79,14 @@ pub fn formataddr(name: &str, address: &str) -> String {
 
 /// Quoted-printable body encoding (RFC 2045 6.7) with CRLF hard breaks.
 #[cfg(test)]
-pub fn qp_encode(text: &str) -> String {
+pub(crate) fn qp_encode(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + text.len() / 8);
     qp_encode_into(&mut out, text);
     out
 }
 
 /// `qp_encode` appended to `out`.
-pub fn qp_encode_into(out: &mut String, text: &str) {
+pub(crate) fn qp_encode_into(out: &mut String, text: &str) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
     let mut rest = text;
     let mut first = true;
@@ -131,7 +131,7 @@ pub fn qp_encode_into(out: &mut String, text: &str) {
 }
 
 /// Base64 in 76-character lines.
-pub fn b64_lines(data: &[u8]) -> String {
+pub(crate) fn b64_lines(data: &[u8]) -> String {
     let enc = crypto::b64(data);
     let mut out = String::with_capacity(enc.len() + enc.len() / 38 + 2);
     for (i, chunk) in enc.as_bytes().chunks(MAX_LINE).enumerate() {
@@ -145,7 +145,7 @@ pub fn b64_lines(data: &[u8]) -> String {
 
 /// What a leaf holds: text already encoded, or text still to be quoted-printable encoded when the message is rendered (so a large body is encoded straight into the output).
 #[derive(Debug, Clone)]
-pub enum Content<'a> {
+pub(crate) enum Content<'a> {
     Encoded(String),
     Qp(std::borrow::Cow<'a, str>),
 }
@@ -169,7 +169,7 @@ impl Content<'_> {
 
 /// One node of a MIME tree.
 #[derive(Debug, Clone)]
-pub enum Part<'a> {
+pub(crate) enum Part<'a> {
     Leaf { headers: Vec<(String, String)>, content: Content<'a> },
     /// `params` go between the subtype and the boundary (`; micalg="pgp-sha256"; protocol="..."`).
     Multi { subtype: &'static str, params: String, parts: Vec<Part<'a>> },
@@ -179,12 +179,12 @@ pub enum Part<'a> {
 
 impl<'a> Part<'a> {
     /// A multipart without parameters.
-    pub fn multi(subtype: &'static str, parts: Vec<Part<'a>>) -> Part<'a> {
+    pub(crate) fn multi(subtype: &'static str, parts: Vec<Part<'a>>) -> Part<'a> {
         Part::Multi { subtype, params: String::new(), parts }
     }
 
     /// `MIMEText(text, subtype, "utf-8")`: quoted-printable.
-    pub fn text(subtype: &str, text: impl Into<std::borrow::Cow<'a, str>>) -> Part<'a> {
+    pub(crate) fn text(subtype: &str, text: impl Into<std::borrow::Cow<'a, str>>) -> Part<'a> {
         Part::Leaf {
             headers: vec![
                 ("Content-Type".into(), format!("text/{subtype}; charset=\"utf-8\"")),
@@ -195,7 +195,7 @@ impl<'a> Part<'a> {
     }
 
     /// A base64 attachment with `Content-Disposition: {disposition}; filename="..."`.
-    pub fn file(mime: &str, data: &[u8], disposition: &str, filename: &str, content_id: Option<String>) -> Part<'a> {
+    pub(crate) fn file(mime: &str, data: &[u8], disposition: &str, filename: &str, content_id: Option<String>) -> Part<'a> {
         let mime =
             if mime.contains('/') && mime.is_ascii() { single_line(mime) } else { "application/octet-stream".into() };
         let mut headers = vec![
@@ -232,7 +232,7 @@ fn boundary(env: &dyn Env) -> String {
 }
 
 /// [`render`] that consumes the tree and frees each leaf's content once it is written, so a large body is not held twice at the end.
-pub fn render_owned(headers: &[(String, String)], body: Part<'_>, env: &dyn Env) -> String {
+pub(crate) fn render_owned(headers: &[(String, String)], body: Part<'_>, env: &dyn Env) -> String {
     let mut out = String::with_capacity(content_len(&body) + 4096);
     write_headers(headers, &mut out);
     render_part_owned(body, &mut out, env);
@@ -276,7 +276,7 @@ fn write_headers(headers: &[(String, String)], out: &mut String) {
 }
 
 /// Serialise a message: `headers` first, then the MIME tree. CRLF everywhere.
-pub fn render(headers: &[(String, String)], body: &Part<'_>, env: &dyn Env) -> String {
+pub(crate) fn render(headers: &[(String, String)], body: &Part<'_>, env: &dyn Env) -> String {
     let mut out = String::with_capacity(content_len(body) + 4096);
     for (k, v) in headers {
         out.push_str(k);
@@ -325,7 +325,7 @@ fn render_part(part: &Part<'_>, out: &mut String, env: &dyn Env) {
 }
 
 /// One part on its own (its headers, a blank line, its content), as it appears inside a multipart.
-pub fn render_part_alone(part: &Part<'_>, env: &dyn Env) -> String {
+pub(crate) fn render_part_alone(part: &Part<'_>, env: &dyn Env) -> String {
     let mut out = String::new();
     render_part(part, &mut out, env);
     out
@@ -333,14 +333,14 @@ pub fn render_part_alone(part: &Part<'_>, env: &dyn Env) -> String {
 
 /// SMTP DATA payload: dot-stuffed, CRLF-terminated, without the final `.`.
 #[cfg(test)]
-pub fn dot_stuff(message: &str) -> Vec<u8> {
+pub(crate) fn dot_stuff(message: &str) -> Vec<u8> {
     let mut out = Vec::with_capacity(message.len() + 16);
     dot_stuff_into(&mut out, message);
     out
 }
 
 /// [`dot_stuff_into`] for a message nobody needs afterwards: when no line starts with a dot the message's own buffer becomes the output, with no copy.
-pub fn dot_stuff_owned(out: &mut Vec<u8>, message: String) {
+pub(crate) fn dot_stuff_owned(out: &mut Vec<u8>, message: String) {
     if message.starts_with('.') || message.contains("\r\n.") {
         dot_stuff_into(out, &message);
         return;
@@ -357,7 +357,7 @@ pub fn dot_stuff_owned(out: &mut Vec<u8>, message: String) {
 }
 
 /// `dot_stuff` appended to `out`, which is grown once for the whole message.
-pub fn dot_stuff_into(out: &mut Vec<u8>, message: &str) {
+pub(crate) fn dot_stuff_into(out: &mut Vec<u8>, message: &str) {
     out.reserve(message.len() + message.len() / 64 + 16);
     for (i, line) in message.split("\r\n").enumerate() {
         if i > 0 {
@@ -455,10 +455,10 @@ mod dot_stuff_owned_tests {
     fn owned_matches_borrowed() {
         for msg in ["", "a", "a\r\n", ".a", "a\r\n.b\r\n", "a\r\nb", "..\r\n.", "x\r\n\r\n.\r\n"] {
             let mut owned = Vec::new();
-            dot_stuff_owned(&mut owned, msg.to_string());
+            dot_stuff_owned(&mut owned, msg.to_owned());
             assert_eq!(owned, dot_stuff(msg), "{msg:?}");
             let mut appended = b"EHLO\r\n".to_vec();
-            dot_stuff_owned(&mut appended, msg.to_string());
+            dot_stuff_owned(&mut appended, msg.to_owned());
             assert_eq!(&appended[6..], &dot_stuff(msg)[..], "{msg:?}");
         }
     }

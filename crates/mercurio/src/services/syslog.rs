@@ -12,7 +12,7 @@ use crate::transport::{Datagram, DatagramTarget};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "syslog",
     name: "Syslog",
     schemes: &["syslog"],
@@ -34,7 +34,7 @@ pub static SERVICE: ServiceDef = ServiceDef {
 };
 
 /// Local syslog socket path.
-pub const SOCKET_PATH: &str = if cfg!(target_os = "macos") { "/var/run/syslog" } else { "/dev/log" };
+pub(crate) const SOCKET_PATH: &str = if cfg!(target_os = "macos") { "/var/run/syslog" } else { "/dev/log" };
 
 #[derive(Debug)]
 struct Syslog {
@@ -63,23 +63,23 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 /// `Mmm dd hh:mm:ss` in `tz` (RFC 3164 timestamp, day space-padded; libc writes local time).
-pub fn rfc3164_timestamp(secs: u64, tz: &crate::time::Zone) -> String {
+pub(crate) fn rfc3164_timestamp(secs: u64, tz: &crate::time::Zone) -> String {
     const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     let (mo, d, h, mi, s) = crate::time::local_parts(secs, tz);
     format!("{} {d:>2} {h:02}:{mi:02}:{s:02}", MONTHS[(mo as usize).saturating_sub(1) % 12])
 }
 
 /// The datagram libc `syslog(3)` sends for one message.
-pub fn format_line(pri: u32, secs: u64, tz: &crate::time::Zone, ident: &str, pid: Option<u32>, message: &str) -> String {
+pub(crate) fn format_line(pri: u32, secs: u64, tz: &crate::time::Zone, ident: &str, pid: Option<u32>, message: &str) -> String {
     let pid = pid.map(|p| format!("[{p}]")).unwrap_or_default();
     format!("<{pri}>{} {ident}{pid}: {message}", rfc3164_timestamp(secs, tz))
 }
 
 impl Notify for Syslog {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let body = if msg.title.is_empty() { msg.body.to_string() } else { format!("{}: {}", msg.title, msg.body) };
+        let body = if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}: {}", msg.title, msg.body) };
         let pri = self.facility | syslog_level(msg.kind);
-        let ident = ctx.app_id().to_string();
+        let ident = ctx.app_id().to_owned();
         let pid = std::process::id();
         let log_pid = self.log_pid;
         let log_perror = self.log_perror;

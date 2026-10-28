@@ -38,7 +38,7 @@ fn auth_login_fallback() {
     let mut pending_pw = false;
     let mut in_data = false;
     let conn = ScriptedConn::lines("220 hi\r\n", move |line| {
-        l2.lock().unwrap().push(line.to_string());
+        l2.lock().unwrap().push(line.to_owned());
         if in_data {
             if line == "." {
                 in_data = false;
@@ -86,7 +86,7 @@ fn auth_cram_md5_preferred() {
     let mut pending = false;
     let mut in_data = false;
     let conn = ScriptedConn::lines("220 hi\r\n", move |line| {
-        l2.lock().unwrap().push(line.to_string());
+        l2.lock().unwrap().push(line.to_owned());
         if in_data {
             if line == "." {
                 in_data = false;
@@ -121,9 +121,9 @@ fn auth_cram_md5_preferred() {
     let d = t.send(&Message::new("hi"), fake.as_ref(), &Asset::default());
     assert!(d.is_success(), "{d:?}");
     let log = log.lock().unwrap();
-    assert!(log.contains(&"AUTH CRAM-MD5".to_string()), "{log:?}");
+    assert!(log.contains(&"AUTH CRAM-MD5".to_owned()), "{log:?}");
     // RFC 2195's example answer.
-    assert!(log.contains(&"dGltIGI5MTNhNjAyYzdlZGE3YTQ5NWI0ZTZlNzMzNGQzODkw".to_string()), "{log:?}");
+    assert!(log.contains(&"dGltIGI5MTNhNjAyYzdlZGE3YTQ5NWI0ZTZlNzMzNGQzODkw".to_owned()), "{log:?}");
     assert!(!log.iter().any(|l| l.starts_with("AUTH PLAIN") || l.starts_with("AUTH LOGIN")), "{log:?}");
 }
 
@@ -148,7 +148,7 @@ fn xmpp_once(url: &str, mechanisms: &[&str], password: &str) -> (Delivery, Vec<V
     let written = conn.written();
     fake.push_conn(conn);
     let t = mercurio::parse(url).unwrap();
-    let d = t.send(&mercurio::Message::new("hi").title("T"), &fake, &Asset::default());
+    let d = t.send(&Message::new("hi").title("T"), &fake, &Asset::default());
     let mut ev = rec.lock().unwrap().clone();
     ev.retain(|e| e.get("_starttls").is_none());
     let w = written.lock().unwrap().clone();

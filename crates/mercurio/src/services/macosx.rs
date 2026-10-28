@@ -20,7 +20,7 @@ use crate::url::ParsedUrl;
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "macosx",
     name: "MacOSX Notification",
     schemes: &["macosx"],
@@ -93,7 +93,7 @@ fn notifier_path(ctx: &Context<'_>) -> String {
         .iter()
         .find(|p| ctx.stat(p).is_some_and(|m| m.executable))
         .map(|p| p.to_string())
-        .unwrap_or_else(|| "terminal-notifier".to_string())
+        .unwrap_or_else(|| "terminal-notifier".to_owned())
 }
 
 /// `-version` output -> major version (2 for anything before 3).
@@ -145,22 +145,22 @@ struct Send {
 
 impl Send {
     fn command(&self, version: u8) -> Command {
-        let mut cmd = Command::new(self.path.clone()).args(["-message".to_string(), esc(&self.body)]);
+        let mut cmd = Command::new(self.path.clone()).args(["-message".to_owned(), esc(&self.body)]);
         if !self.title.is_empty() {
-            cmd = cmd.args(["-title".to_string(), esc(&self.title)]);
+            cmd = cmd.args(["-title".to_owned(), esc(&self.title)]);
         }
         if let Some(c) = &self.click {
-            cmd = cmd.args(["-open".to_string(), esc(c)]);
+            cmd = cmd.args(["-open".to_owned(), esc(c)]);
         }
         if let Some(s) = &self.sound {
-            cmd = cmd.args(["-sound".to_string(), esc(s)]);
+            cmd = cmd.args(["-sound".to_owned(), esc(s)]);
         }
         if version == 2 && !self.sender.is_empty() {
-            cmd = cmd.args(["-sender".to_string(), esc(&self.sender)]);
+            cmd = cmd.args(["-sender".to_owned(), esc(&self.sender)]);
         }
         if let Some(img) = &self.image {
             let flag = if version == 2 { "-appIcon" } else { "-contentImage" };
-            cmd = super::_desktop::with_icon(cmd.args([flag.to_string(), esc(&img.path)]), Some(img));
+            cmd = super::_desktop::with_icon(cmd.args([flag.to_owned(), esc(&img.path)]), Some(img));
         }
         cmd.timeout = SEND_TIMEOUT;
         cmd
@@ -168,7 +168,7 @@ impl Send {
 
     /// `display notification` through `osascript`, the values passed as `argv` so none is read as AppleScript.
     fn osascript(&self) -> Command {
-        let mut script = "display notification (item 1 of argv)".to_string();
+        let mut script = "display notification (item 1 of argv)".to_owned();
         let mut args = vec![self.body.clone()];
         if !self.title.is_empty() {
             args.push(self.title.clone());
@@ -213,11 +213,11 @@ impl Notify for MacOSX {
         let path = notifier_path(ctx);
         let send = Send {
             path: path.clone(),
-            title: msg.title.to_string(),
-            body: msg.body.to_string(),
+            title: msg.title.to_owned(),
+            body: msg.body.to_owned(),
             click: self.click.clone(),
             sound: self.sound.clone(),
-            sender: self.sender.clone().unwrap_or_else(|| ctx.app_id().to_string()),
+            sender: self.sender.clone().unwrap_or_else(|| ctx.app_id().to_owned()),
             image: if self.include_image { ctx.asset.icon_file(msg.kind, "png") } else { None },
         };
         if let Some(v) = self.version.or_else(|| self.detected.get().copied()) {

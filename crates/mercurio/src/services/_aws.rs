@@ -11,7 +11,7 @@ use crate::http::Response;
 
 /// Credentials and endpoint of one AWS query API.
 #[derive(Debug, Clone, Copy)]
-pub struct AwsSigner<'a> {
+pub(crate) struct AwsSigner<'a> {
     pub access_key_id: &'a str,
     pub secret_access_key: &'a str,
     pub region: &'a str,
@@ -24,17 +24,17 @@ pub struct AwsSigner<'a> {
 }
 
 /// `Content-Type` sent (and signed) for AWS query APIs.
-pub const AWS_FORM_CONTENT_TYPE: &str = "application/x-www-form-urlencoded; charset=utf-8";
+pub(crate) const AWS_FORM_CONTENT_TYPE: &str = "application/x-www-form-urlencoded; charset=utf-8";
 
 /// `(YYYYMMDDTHHMMSSZ, YYYYMMDD)` for a Unix time.
-pub fn amz_dates(secs: u64) -> (String, String) {
+pub(crate) fn amz_dates(secs: u64) -> (String, String) {
     let (y, mo, d, h, mi, s) = utc_parts(secs);
     (format!("{y:04}{mo:02}{d:02}T{h:02}{mi:02}{s:02}Z"), format!("{y:04}{mo:02}{d:02}"))
 }
 
 impl AwsSigner<'_> {
     /// Headers for a signed `POST /` with the already form-encoded `payload` and the given `content_type`, at Unix time `now`. Order: Content-Type, X-Amz-Date, [X-Amz-Security-Token], Authorization.
-    pub fn sign_post(&self, payload: &str, content_type: &str, now: u64) -> Vec<(String, String)> {
+    pub(crate) fn sign_post(&self, payload: &str, content_type: &str, now: u64) -> Vec<(String, String)> {
         let (amzdate, date) = amz_dates(now);
         let scope = format!("{date}/{}/{}/aws4_request", self.region, self.service);
         let mut signed: Vec<(&str, &str)> =
@@ -54,14 +54,14 @@ impl AwsSigner<'_> {
         let signature = hex(&hmac_sha256(&k_signing, to_sign.as_bytes()));
 
         let mut headers = vec![
-            ("Content-Type".to_string(), content_type.to_string()),
-            ("X-Amz-Date".to_string(), amzdate),
+            ("Content-Type".to_owned(), content_type.to_owned()),
+            ("X-Amz-Date".to_owned(), amzdate),
         ];
         if let Some(t) = self.session_token {
-            headers.push(("X-Amz-Security-Token".to_string(), t.to_string()));
+            headers.push(("X-Amz-Security-Token".to_owned(), t.to_owned()));
         }
         headers.push((
-            "Authorization".to_string(),
+            "Authorization".to_owned(),
             format!(
                 "AWS4-HMAC-SHA256 Credential={}/{scope}, SignedHeaders={names}, Signature={signature}",
                 self.access_key_id
@@ -72,13 +72,13 @@ impl AwsSigner<'_> {
 }
 
 /// Checks an AWS region name (`us-east-1`, ...): returns the normalised region.
-pub fn aws_region(entry: &str) -> Option<String> {
+pub(crate) fn aws_region(entry: &str) -> Option<String> {
     let c = crate::regex!(r"(?i)^\s*(?P<country>[a-z]{2})-(?P<area>[a-z-]+?)-(?P<no>[0-9]+)\s*$").captures(entry)?;
     Some(format!("{}-{}-{}", c["country"].to_lowercase(), c["area"].to_lowercase(), &c["no"]))
 }
 
 /// Accept a 200 response. A 403 reports bad credentials; AWS throttling (`Throttling` / `ThrottlingException` error codes or a 429) becomes [`Error::RateLimited`] so the caller can retry.
-pub fn aws_check(res: Result<Response>) -> Result<Response> {
+pub(crate) fn aws_check(res: Result<Response>) -> Result<Response> {
     let r = res?;
     match r.status {
         200 => Ok(r),
@@ -92,7 +92,7 @@ pub fn aws_check(res: Result<Response>) -> Result<Response> {
 
 /// Text of the leaf elements named in `keep` (tag -> key). `None` when the document is not well-formed XML (callers then keep only their defaults).
 #[cfg(feature = "service-sns")]
-pub fn flatten_xml(xml: &str, keep: &[(&str, &str)]) -> Option<BTreeMap<String, String>> {
+pub(crate) fn flatten_xml(xml: &str, keep: &[(&str, &str)]) -> Option<BTreeMap<String, String>> {
     use quick_xml::events::Event;
     let kept = |tag: &str| keep.iter().find(|(t, _)| *t == tag).map(|(_, k)| k.to_string());
     let mut found = BTreeMap::new();
@@ -116,7 +116,7 @@ pub fn flatten_xml(xml: &str, keep: &[(&str, &str)]) -> Option<BTreeMap<String, 
                 if el.leaf
                     && let Some(key) = kept(&el.tag)
                 {
-                    found.insert(key, el.text.trim().to_string());
+                    found.insert(key, el.text.trim().to_owned());
                 }
             }
             Event::Text(t) => {
@@ -162,7 +162,7 @@ impl XmlEl {
             None if *root_seen => return None,
             None => *root_seen = true,
         }
-        Some(tag.to_string())
+        Some(tag.to_owned())
     }
 }
 

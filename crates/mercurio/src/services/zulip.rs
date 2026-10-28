@@ -5,7 +5,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "zulip",
     name: "Zulip",
     schemes: &["zulip"],
@@ -51,24 +51,24 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     };
     if let Some(to) = u.param_nonempty("to") {
         let delim = crate::regex!(r"[ \t\r\n,#\\/]+");
-        targets.extend(delim.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_string));
+        targets.extend(delim.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_owned));
     }
 
     let botname = u.user().unwrap_or_default();
     let bot_re = crate::regex!(r"(?i)^[A-Z0-9_-]{1,32}");
     let mut botname = bot_re
         .find(botname.trim())
-        .map(|m| m.as_str().to_string())
+        .map(|m| m.as_str().to_owned())
         .ok_or_else(|| SERVICE.err("the Zulip botname specified is invalid"))?;
     if let Some(b) = botname.strip_suffix("-bot") {
-        botname = b.to_string();
+        botname = b.to_owned();
     }
 
     let org_re = crate::regex!(r"(?i)^(?P<org>[A-Z0-9_-]{1,32})(\.(?P<hostname>[^\s]+))?");
     let host = u.host();
     let c = org_re.captures(host.trim()).ok_or_else(|| SERVICE.err("the Zulip organization specified is invalid"))?;
     let organization = c["org"].to_string();
-    let hostname = c.name("hostname").map_or("zulipchat.com", |m| m.as_str()).to_string();
+    let hostname = c.name("hostname").map_or("zulipchat.com", |m| m.as_str()).to_owned();
 
     let token = token
         .as_deref()

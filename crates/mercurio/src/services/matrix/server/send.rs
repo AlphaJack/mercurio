@@ -6,9 +6,9 @@ use super::super::{e2ee_flow, sas};
 use super::*;
 
 impl Session {
-    pub fn run(mut self) -> Plan {
+    pub(crate) fn run(mut self) -> Plan {
         if self.access_token.is_none() && self.password().is_some_and(|p| !p.is_empty()) && self.cfg.user.is_none() {
-            self.access_token = self.password().map(str::to_string);
+            self.access_token = self.password().map(str::to_owned);
             self.txn = Txn::Uuid(self.env.uuid4());
         }
         if self.access_token.is_none() {
@@ -84,7 +84,7 @@ impl Session {
         self.next_room()
     }
 
-    pub fn next_room(mut self) -> Plan {
+    pub(crate) fn next_room(mut self) -> Plan {
         let Some((label, room)) = self.queue.pop_front() else { return self.after_rooms() };
         if self.delivered(&label) {
             return self.next_room();
@@ -151,7 +151,7 @@ impl Session {
             && self.cfg.version == Version::V2
         {
             let body =
-                if self.msg.title.is_empty() { self.msg.kind.as_str().to_string() } else { self.msg.title.clone() };
+                if self.msg.title.is_empty() { self.msg.kind.as_str().to_owned() } else { self.msg.title.clone() };
             let payload = json!({"msgtype": "m.image", "url": image, "body": body});
             let path = self.message_path(&room_id);
             return self.fetch(Fetch::put(path, payload), move |mut s, r| {
@@ -209,7 +209,7 @@ impl Session {
     }
 
     /// End of `send()`. The session stays open; [`Session::logout`] runs when the target is closed.
-    pub fn finish(mut self, fatal: Option<Error>) -> Plan {
+    pub(crate) fn finish(mut self, fatal: Option<Error>) -> Plan {
         let fatal = fatal.map(|e| self.rate_limited(e));
         let done = move |s: Session| -> Plan {
             if let Some(e) = fatal {

@@ -14,7 +14,7 @@ fn crc32(data: &[u8]) -> u32 {
 }
 
 /// gzip `data` using stored (uncompressed) deflate blocks. Any gzip reader reads it.
-pub fn gzip(data: &[u8]) -> Vec<u8> {
+pub(super) fn gzip(data: &[u8]) -> Vec<u8> {
     let mut out = vec![0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 0, 0xff];
     let mut chunks = data.chunks(0xFFFF).peekable();
     if chunks.peek().is_none() {
@@ -34,7 +34,7 @@ pub fn gzip(data: &[u8]) -> Vec<u8> {
 }
 
 /// Decode a gzip file (one or more members). `None` when it is not valid gzip, fails its checksum or inflates beyond `limit` bytes.
-pub fn gunzip(data: &[u8], limit: usize) -> Option<Vec<u8>> {
+pub(super) fn gunzip(data: &[u8], limit: usize) -> Option<Vec<u8>> {
     let mut out = Vec::new();
     let mut pos = 0;
     while pos < data.len() {
@@ -247,7 +247,7 @@ impl Inflater<'_> {
 }
 
 /// SHA-224 hex digest (hash-mode file names).
-pub fn sha224_hex(data: &[u8]) -> String {
+pub(super) fn sha224_hex(data: &[u8]) -> String {
     const K: [u32; 64] = [
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98,
         0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
@@ -304,7 +304,7 @@ pub fn sha224_hex(data: &[u8]) -> String {
 const PBKDF2_ITERATIONS: u32 = 1_000_000;
 
 /// Hash `secret` with PBKDF2-HMAC-SHA256 and a random 22-character salt, written in the Django `pbkdf2_sha256$iter$salt$hash` format.
-pub fn password_hash(secret: &str) -> String {
+pub(super) fn password_hash(secret: &str) -> String {
     let salt: String = {
         const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         let mut raw = [0u8; 22];
@@ -318,7 +318,7 @@ pub fn password_hash(secret: &str) -> String {
 }
 
 /// Check `secret` against a hash in the Django `pbkdf2_sha256$iter$salt$hash` format (`pbkdf2_sha1` is also read). Other algorithms are rejected.
-pub fn password_check(secret: &str, encoded: &str) -> bool {
+pub(super) fn password_check(secret: &str, encoded: &str) -> bool {
     let mut parts = encoded.splitn(4, '$');
     let (Some(algo), Some(iter), Some(salt), Some(hash)) = (parts.next(), parts.next(), parts.next(), parts.next())
     else {

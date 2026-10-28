@@ -7,7 +7,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "parseplatform",
     name: "Parse Platform",
     schemes: &["parsep", "parseps"],
@@ -46,10 +46,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut app_id = u.user.as_deref().map(unquote).unwrap_or_default();
     let mut master_key = u.password.as_deref().map(unquote).unwrap_or_default();
     if let Some(v) = u.param_nonempty("app_id") {
-        app_id = v.to_string();
+        app_id = v.to_owned();
     }
     if let Some(v) = u.param_nonempty("master_key") {
-        master_key = v.to_string();
+        master_key = v.to_owned();
     }
     let app_id = validate_nonblank(&app_id)
         .ok_or_else(|| SERVICE.err("an invalid Parse Platform Application ID was specified"))?;
@@ -61,9 +61,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         return Err(SERVICE.err("an invalid Parse Platform device was specified"));
     }
     let devices = if device.to_lowercase() == "all" {
-        vec!["ios".to_string(), "android".to_string()]
+        vec!["ios".to_owned(), "android".to_owned()]
     } else {
-        vec![device.to_string()]
+        vec![device.to_owned()]
     };
     let mut url = format!("{}://{}", u.http_scheme(), u.host());
     if let Some(port) = u.port {

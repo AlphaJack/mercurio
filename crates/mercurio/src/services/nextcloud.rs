@@ -20,7 +20,7 @@ use crate::url::{ParsedUrl, quote, unquote};
 use crate::util::{json_text, parse_int};
 use crate::{Error, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "nextcloud",
     name: "Nextcloud",
     schemes: &["ncloud", "nclouds"],
@@ -85,7 +85,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut groups: Vec<String> = Vec::new();
     for t in parse_list(&targets) {
         if let Some(c) = is_group.captures(&t) {
-            let g = if c.get(2).is_some() { ALL_GROUP.to_string() } else { c[1].to_string() };
+            let g = if c.get(2).is_some() { ALL_GROUP.to_owned() } else { c[1].to_string() };
             if !groups.contains(&g) {
                 groups.push(g);
             }
@@ -110,11 +110,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let prefix = url_prefix.filter(|p| !p.is_empty()).map(|p| format!("/{}", p.trim_matches('/'))).unwrap_or_default();
     base.push_str(&prefix);
     let id = vec![
-        if u.secure { "nclouds" } else { "ncloud" }.to_string(),
-        u.user().as_deref().unwrap_or_default().to_string(),
-        u.password().as_deref().unwrap_or_default().to_string(),
+        if u.secure { "nclouds" } else { "ncloud" }.to_owned(),
+        u.user().as_deref().unwrap_or_default().to_owned(),
+        u.password().as_deref().unwrap_or_default().to_owned(),
         u.host(),
-        u.port.map(|p| p.to_string()).as_deref().unwrap_or_default().to_string(),
+        u.port.map(|p| p.to_string()).as_deref().unwrap_or_default().to_owned(),
         prefix,
     ];
 
@@ -132,7 +132,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 /// A JSON list entry as trimmed text.
 fn entry_text(v: &Value) -> String {
-    json_text(v).trim().to_string()
+    json_text(v).trim().to_owned()
 }
 
 /// Users listed in an OCS response; `Err` when the response is malformed.
@@ -235,11 +235,11 @@ fn discover(shared: Arc<Shared>, store: StoreRef, mut groups: Vec<String>, mut t
 impl Notify for Nextcloud {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let mut form = vec![(
-            "shortMessage".to_string(),
-            if msg.title.is_empty() { ctx.app_desc().to_string() } else { msg.title.to_string() },
+            "shortMessage".to_owned(),
+            if msg.title.is_empty() { ctx.app_desc().to_owned() } else { msg.title.to_owned() },
         )];
         if !msg.body.is_empty() {
-            form.push(("longMessage".to_string(), msg.body.to_string()));
+            form.push(("longMessage".to_owned(), msg.body.to_owned()));
         }
         let shared = Arc::new(Shared {
             base: self.base.clone(),

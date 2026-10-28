@@ -5,7 +5,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "prowl",
     name: "Prowl",
     schemes: &["prowl"],
@@ -62,14 +62,14 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 impl Notify for Prowl {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let mut payload: Vec<(&str, String)> = vec![
-            ("apikey", self.apikey.expose().to_string()),
-            ("application", ctx.app_id().to_string()),
-            ("event", msg.title.to_string()),
-            ("description", msg.body.to_string()),
+            ("apikey", self.apikey.expose().to_owned()),
+            ("application", ctx.app_id().to_owned()),
+            ("event", msg.title.to_owned()),
+            ("description", msg.body.to_owned()),
             ("priority", self.priority.to_string()),
         ];
         if let Some(pk) = &self.providerkey {
-            payload.push(("providerkey", pk.expose().to_string()));
+            payload.push(("providerkey", pk.expose().to_owned()));
         }
         let req = ctx.post(NOTIFY_URL)
             .header("Content-type", "application/x-www-form-urlencoded")

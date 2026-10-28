@@ -6,7 +6,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "join",
     name: "Join",
     schemes: &["join"],
@@ -79,7 +79,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     let mut targets = Vec::new();
     if raw_targets.is_empty() {
-        targets.push(DEFAULT_GROUP.to_string());
+        targets.push(DEFAULT_GROUP.to_owned());
     }
     for t in raw_targets {
         match group_re().captures(&t) {
@@ -97,10 +97,10 @@ impl Notify for Join {
         let icon = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy72) } else { None };
         Plan::all(self.targets.iter().map(|target| {
             let mut args: Vec<(&str, String)> = vec![
-                ("apikey", self.apikey.expose().to_string()),
+                ("apikey", self.apikey.expose().to_owned()),
                 ("priority", self.priority.to_string()),
-                ("title", msg.title.to_string()),
-                ("text", msg.body.to_string()),
+                ("title", msg.title.to_owned()),
+                ("text", msg.body.to_owned()),
             ];
             if group_re().is_match(target) || device_re.is_match(target) {
                 args.push(("deviceId", target.clone()));

@@ -12,7 +12,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "voipms",
     name: "VoIPms",
     schemes: &["voipms"],
@@ -151,8 +151,8 @@ impl Notify for Voipms {
             email: self.email.clone(),
             password: self.password.clone(),
             source: self.source.clone(),
-            body: msg.body.to_string(),
-            user_agent: ctx.app_id().to_string(),
+            body: msg.body.to_owned(),
+            user_agent: ctx.app_id().to_owned(),
         });
         send_from(c, Arc::new(self.targets.clone()), 0)
     }

@@ -120,7 +120,8 @@ impl TokioTransport {
         }
         let out = tokio::time::timeout(cmd.timeout, child.wait_with_output())
             .await
-            .map_err(|_| Error::transport(format!("{}: timed out", cmd.program)))?
+            .ok()
+            .ok_or_else(|| Error::transport(format!("{}: timed out", cmd.program)))?
             .map_err(Error::transport)?;
         Ok(CommandOutput { status: out.status.code().unwrap_or(-1), stdout: out.stdout, stderr: out.stderr })
     }
@@ -210,7 +211,10 @@ impl AsyncTransport for TokioTransport {
         Box::pin(self.send(req))
     }
     fn connect<'a>(&'a self, ep: &'a Endpoint) -> BoxFuture<'a, Result<Box<dyn AsyncConn>>> {
-        Box::pin(async move { Ok(Box::new(conn::TokioConn::connect(ep).await?) as Box<dyn AsyncConn>) })
+        Box::pin(async move {
+            let conn: Box<dyn AsyncConn> = Box::new(conn::TokioConn::connect(ep).await?);
+            Ok(conn)
+        })
     }
     fn datagram<'a>(&'a self, dg: &'a Datagram) -> BoxFuture<'a, Result<()>> {
         Box::pin(Self::datagram(dg))

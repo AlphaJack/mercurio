@@ -184,10 +184,10 @@ fn closure_def(scheme: &str, name: &str, formats: &'static [NotifyFormat], attac
     if let Some(def) = defs.iter().find(same) {
         return def;
     }
-    let scheme: &'static str = Box::leak(scheme.to_string().into_boxed_str());
+    let scheme: &'static str = Box::leak(scheme.to_owned().into_boxed_str());
     let def: &'static ServiceDef = Box::leak(Box::new(ServiceDef {
         id: Box::leak(format!("custom_{scheme}").into_boxed_str()),
-        name: Box::leak(name.to_string().into_boxed_str()),
+        name: Box::leak(name.to_owned().into_boxed_str()),
         schemes: Box::leak(vec![scheme].into_boxed_slice()),
         parse: parse_custom,
         formats,
@@ -311,11 +311,11 @@ mod tests {
         m.registry_mut()
             .register_scheme("tclosure", move |msg, hook| {
                 log.lock().unwrap().push((
-                    msg.title.to_string(),
-                    msg.body.to_string(),
-                    msg.kind.as_str().to_string(),
+                    msg.title.to_owned(),
+                    msg.body.to_owned(),
+                    msg.kind.as_str().to_owned(),
                     hook.url.host(),
-                    hook.url.param("x").map(str::to_string),
+                    hook.url.param("x").map(str::to_owned),
                     msg.attachments.len(),
                 ));
                 Plan::Done
@@ -341,8 +341,8 @@ mod tests {
         m.registry_mut()
             .register_scheme("thttp", |msg, hook| {
                 let req = Request::post(format!("https://{}/hook", hook.url.host()))
-                    .header("User-Agent", hook.context().app_id().to_string())
-                    .text(msg.body.to_string());
+                    .header("User-Agent", hook.context().app_id().to_owned())
+                    .text(msg.body.to_owned());
                 Plan::send(req)
             })
             .unwrap();
@@ -441,7 +441,7 @@ mod tests {
     struct Echo;
     impl Notify for Echo {
         fn plan(&self, msg: &Prepared<'_>, _: &Context<'_>) -> Plan {
-            Plan::send(Request::post("https://echo.test/").text(msg.body.to_string()))
+            Plan::send(Request::post("https://echo.test/").text(msg.body.to_owned()))
         }
     }
 

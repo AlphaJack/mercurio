@@ -22,7 +22,7 @@ use crate::util::xml_escape;
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "windows",
     name: "Windows Notification",
     schemes: &["windows"],
@@ -56,7 +56,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 }
 
 /// PowerShell's AppUserModelID: registered on every Windows 10 and 11, so the toast shows without registering one of our own.
-pub const POWERSHELL_APP_ID: &str = r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe";
+pub(crate) const POWERSHELL_APP_ID: &str = r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe";
 
 /// `?duration=` up to this many seconds gives a `short` toast (about 7 s on screen), above it a `long` one (about 25 s).
 const SHORT_TOAST_SECS: u64 = 7;
@@ -77,7 +77,7 @@ fn file_uri(path: &str) -> String {
 }
 
 /// The toast payload: title (when set) and body as `ToastGeneric` text, `icon` as the app logo.
-pub fn toast_xml(title: &str, body: &str, icon: Option<&str>, duration: u64) -> String {
+pub(crate) fn toast_xml(title: &str, body: &str, icon: Option<&str>, duration: u64) -> String {
     let mut xml = String::from("<toast");
     if duration > SHORT_TOAST_SECS {
         xml.push_str(" duration=\"long\"");
@@ -100,7 +100,7 @@ fn ps_str(s: &str) -> String {
 }
 
 /// The balloon script for `title`, `body` and `duration` seconds.
-pub fn balloon_script(title: &str, body: &str, duration: u64) -> String {
+pub(crate) fn balloon_script(title: &str, body: &str, duration: u64) -> String {
     format!(
         "$ErrorActionPreference = 'Stop'\n\
          Add-Type -AssemblyName System.Windows.Forms\n\
@@ -122,7 +122,7 @@ pub fn balloon_script(title: &str, body: &str, duration: u64) -> String {
 }
 
 /// `powershell.exe -EncodedCommand <UTF-16LE base64 script>`.
-pub fn balloon_command(title: &str, body: &str, duration: u64) -> Command {
+pub(crate) fn balloon_command(title: &str, body: &str, duration: u64) -> Command {
     let script = balloon_script(title, body, duration);
     let utf16: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
     let mut cmd = Command::new("powershell.exe").args([

@@ -9,7 +9,7 @@ use crate::url::ParsedUrl;
 use crate::util::escape_html;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "flock",
     name: "Flock",
     schemes: &["flock"],
@@ -85,7 +85,7 @@ impl Notify for Flock {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let title = escape_html(msg.title, false, false);
         let body =
-            if msg.format != NotifyFormat::Html { escape_html(msg.body, false, false) } else { msg.body.to_string() };
+            if msg.format != NotifyFormat::Html { escape_html(msg.body, false, false) } else { msg.body.to_owned() };
         let flockml =
             format!("<flockml>{}{}</flockml>", if title.is_empty() { String::new() } else { format!("<b>{title}</b><br/>") }, body);
         let image = if self.include_image { ctx.asset.image_url(msg.kind, ImageSize::Xy72) } else { None };
@@ -109,7 +109,7 @@ impl Notify for Flock {
         Plan::all(self.targets.iter().map(|t| {
             let mut p = payload.clone();
             p["to"] = json!(t);
-            post(NOTIFY_API.to_string(), &p).target(t.clone())
+            post(NOTIFY_API.to_owned(), &p).target(t.clone())
         }))
     }
 

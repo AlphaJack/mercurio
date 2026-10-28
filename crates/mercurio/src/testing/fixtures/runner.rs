@@ -64,7 +64,7 @@ pub fn record_fixture_with(path: &str, front: Front) -> Value {
     let mut out = Map::new();
     for case in cases {
         let name = case["name"].as_str().unwrap_or_else(|| panic!("{path}: a case has no name"));
-        let prev = out.insert(name.to_string(), record_case_with(&doc, &with_defaults(&doc, case), front));
+        let prev = out.insert(name.to_owned(), record_case_with(&doc, &with_defaults(&doc, case), front));
         assert!(prev.is_none(), "{path}: duplicate case {name}");
     }
     let mut out = Value::Object(out);
@@ -100,7 +100,7 @@ fn mask_version(v: &mut Value) {
 fn ignores(case: &Value) -> Vec<String> {
     case.get("ignore")
         .and_then(Value::as_array)
-        .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
         .unwrap_or_default()
 }
 
@@ -193,10 +193,10 @@ fn record_sends(
         .map(|m| {
             let mut msg = base.clone();
             if let Some(t) = m.get("title").and_then(Value::as_str) {
-                msg.title = t.to_string();
+                msg.title = t.to_owned();
             }
             if let Some(b) = m.get("body").and_then(Value::as_str) {
-                msg.body = b.to_string();
+                msg.body = b.to_owned();
             }
             if let Some(t) = m.get("type").and_then(Value::as_str) {
                 msg.kind = NotifyType::parse(t).unwrap_or_default();
@@ -239,10 +239,10 @@ fn request(g: &Request, ignore: &[String]) -> Value {
             continue;
         }
         let v = if masked(ignore, "header:", &lk) {
-            IGNORED.to_string()
+            IGNORED.to_owned()
         } else if lk == "content-type" && v.starts_with("multipart/") {
             // The boundary is random.
-            v.split(';').next().unwrap_or("").to_string()
+            v.split(';').next().unwrap_or("").to_owned()
         } else {
             v.clone()
         };
@@ -261,7 +261,7 @@ fn request(g: &Request, ignore: &[String]) -> Value {
             .split('&')
             .map(|p| match p.split_once('=') {
                 Some((k, _)) if masked(ignore, "query:", k) => format!("{k}={IGNORED}"),
-                _ => p.to_string(),
+                _ => p.to_owned(),
             })
             .collect();
         url = format!("{url}?{}", pairs.join("&"));
@@ -325,7 +325,7 @@ fn expand_pipeline(doc: &mut Value) {
         let mut c = base.clone();
         let query = case["query"].as_str().unwrap_or_default();
         let sep = if url.contains('?') { '&' } else { '?' };
-        let full = if query.is_empty() { url.to_string() } else { format!("{url}{sep}{query}") };
+        let full = if query.is_empty() { url.to_owned() } else { format!("{url}{sep}{query}") };
         c.insert("url".into(), json!(full));
         for (k, v) in case.as_object().into_iter().flatten().filter(|(k, _)| *k != "query") {
             c.insert(k.clone(), v.clone());
@@ -340,7 +340,7 @@ fn expand_pipeline(doc: &mut Value) {
 /// `case` with the fixture's `defaults` (`title`, `body`, `type`; built-in values when the fixture has none) filled in where the case has none.
 pub fn with_defaults(doc: &Value, case: &Value) -> Value {
     let mut case = case.clone();
-    let builtin: Map<String, Value> = DEFAULT_MESSAGE.iter().map(|(k, v)| ((*k).to_string(), json!(v))).collect();
+    let builtin: Map<String, Value> = DEFAULT_MESSAGE.iter().map(|(k, v)| ((*k).to_owned(), json!(v))).collect();
     let defaults = doc.get("defaults").and_then(Value::as_object).unwrap_or(&builtin);
     if let Some(c) = case.as_object_mut() {
         for (k, v) in defaults {
@@ -359,7 +359,7 @@ pub fn fixture_asset(doc: &Value) -> Asset {
         image_url_logo: Some("https://example.org/logo.png".into()),
         ..Asset::default()
     };
-    let field = |k: &str| doc.get("asset").and_then(|a| a.get(k)).and_then(Value::as_str).map(str::to_string);
+    let field = |k: &str| doc.get("asset").and_then(|a| a.get(k)).and_then(Value::as_str).map(str::to_owned);
     if let Some(v) = field("app_id") {
         asset.app_id = v;
     }
@@ -432,12 +432,12 @@ pub fn case_transport(case: &Value) -> Arc<FakeTransport> {
 
 /// `{FIXTURES}` in a case URL expands to the absolute `tests/fixtures/data` directory.
 pub fn fixtures_dir() -> String {
-    concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/data").to_string()
+    concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/data").to_owned()
 }
 
 /// Apply `path:<index>` and `path~<regex>` ignores to a decoded URL path (same rules as the fixtures).
 fn mask_path(path: &str, ignore: &[String]) -> String {
-    let mut path = path.to_string();
+    let mut path = path.to_owned();
     for rule in ignore {
         if let Some(re) = rule.strip_prefix("path~") {
             match crate::re::Regex::new(re) {
@@ -446,7 +446,7 @@ fn mask_path(path: &str, ignore: &[String]) -> String {
             }
         } else if let Some(index) = rule.strip_prefix("path:") {
             let index: isize = index.parse().unwrap_or_else(|_| panic!("ignore {rule:?}: not a segment index"));
-            let mut segs: Vec<String> = path.split('/').map(str::to_string).collect();
+            let mut segs: Vec<String> = path.split('/').map(str::to_owned).collect();
             let real: Vec<usize> = segs.iter().enumerate().filter(|(_, s)| !s.is_empty()).map(|(i, _)| i).collect();
             let pos = if index < 0 { real.len().checked_sub(index.unsigned_abs()) } else { Some(index as usize) };
             if let Some(&i) = pos.and_then(|p| real.get(p)) {

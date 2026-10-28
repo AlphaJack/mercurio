@@ -15,7 +15,7 @@ use crate::services::_mail::email::{Email, Flavor};
 use crate::url::ParsedUrl;
 use crate::{NotifyFormat, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "email",
     name: "E-Mail",
     schemes: &["mailto", "mailtos"],

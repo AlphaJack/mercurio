@@ -8,7 +8,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "onesignal",
     name: "OneSignal",
     schemes: &["onesignal"],
@@ -110,7 +110,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         validate_nonblank(&app).ok_or_else(|| SERVICE.err("an invalid OneSignal Application ID was specified"))?;
     let language = match language {
         Some(l) => l.trim().to_lowercase().chars().take(2).collect::<String>(),
-        None => "en".to_string(),
+        None => "en".to_owned(),
     };
     if language.chars().count() != 2 {
         return Err(SERVICE.err("an invalid OneSignal Language was specified"));
@@ -118,7 +118,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     let mut targets: [Vec<String>; 4] = Default::default();
     for t in parse_list(raw_targets) {
-        let t = t.trim().to_string();
+        let t = t.trim().to_owned();
         if t.chars().count() < 2 {
             continue;
         }
@@ -134,8 +134,8 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
 
     let custom =
-        u.query_colon.iter().map(|(k, v)| (k.to_string(), if decode { decode_b64_value(v) } else { json!(v) })).collect();
-    let postback = u.query_plus.iter().map(|(k, v)| (k.to_string(), json!(v))).collect();
+        u.query_colon.iter().map(|(k, v)| (k.to_owned(), if decode { decode_b64_value(v) } else { json!(v) })).collect();
+    let postback = u.query_plus.iter().map(|(k, v)| (k.to_owned(), json!(v))).collect();
 
     Ok(Box::new(OneSignal {
         app: Secret::new(app),
@@ -191,7 +191,7 @@ impl Notify for OneSignal {
             for (n, chunk) in targets.chunks(self.batch_size).enumerate() {
                 let batch: Vec<&str> = chunk.iter().map(|t| strip_prefix(cat, t)).collect();
                 let mut data = payload.clone();
-                data.insert((*cat).to_string(), json!(batch));
+                data.insert((*cat).to_owned(), json!(batch));
                 let req = ctx.post(NOTIFY_URL)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Authorization", format!("Basic {}", self.apikey.expose()))

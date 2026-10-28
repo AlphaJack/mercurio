@@ -5,7 +5,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pushme",
     name: "PushMe",
     schemes: &["pushme"],
@@ -47,7 +47,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 impl Notify for PushMe {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let title =
-            if self.status { format!("{} {}", ctx.asset.ascii(msg.kind), msg.title) } else { msg.title.to_string() };
+            if self.status { format!("{} {}", ctx.asset.ascii(msg.kind), msg.title) } else { msg.title.to_owned() };
         let kind = if msg.format == NotifyFormat::Markdown { "markdown" } else { "text" };
         let params = [("push_key", self.token.expose()), ("title", &title), ("content", msg.body), ("type", kind)];
         let req = ctx.post(NOTIFY_URL).query(&params);

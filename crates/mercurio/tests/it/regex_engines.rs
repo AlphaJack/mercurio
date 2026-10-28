@@ -65,7 +65,7 @@ fn literal(s: &str) -> Option<(String, &str)> {
         let body = raw.trim_start_matches('#');
         let close = format!("\"{}", "#".repeat(raw.len() - body.len()));
         let (pattern, rest) = body.strip_prefix('"')?.split_once(&close)?;
-        return Some((pattern.to_string(), rest));
+        return Some((pattern.to_owned(), rest));
     }
     let body = s.strip_prefix('"')?;
     let (mut out, mut chars) = (String::new(), body.char_indices());

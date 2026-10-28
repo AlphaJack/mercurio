@@ -3,7 +3,7 @@
 use crate::NotifyType;
 
 /// Syslog facilities in lookup order (prefix lookups depend on it). Values are the shifted facility codes (`LOG_USER = 8`).
-pub const SYSLOG_FACILITIES: &[(&str, u32)] = &[
+pub(crate) const SYSLOG_FACILITIES: &[(&str, u32)] = &[
     ("kern", 0),
     ("user", 8),
     ("mail", 16),
@@ -25,10 +25,10 @@ pub const SYSLOG_FACILITIES: &[(&str, u32)] = &[
 ];
 
 /// Default facility (`user`).
-pub const SYSLOG_DEFAULT_FACILITY: u32 = 8;
+pub(crate) const SYSLOG_DEFAULT_FACILITY: u32 = 8;
 
 /// Resolve a syslog facility name: exact name, else the first name starting with it, else invalid. `None` means "use the default".
-pub fn syslog_facility(name: Option<&str>) -> std::result::Result<u32, String> {
+pub(crate) fn syslog_facility(name: Option<&str>) -> Result<u32, String> {
     let Some(name) = name.filter(|n| !n.is_empty()) else {
         return Ok(SYSLOG_DEFAULT_FACILITY);
     };
@@ -42,7 +42,7 @@ pub fn syslog_facility(name: Option<&str>) -> std::result::Result<u32, String> {
 }
 
 /// Notify type -> syslog severity.
-pub fn syslog_level(kind: NotifyType) -> u32 {
+pub(crate) fn syslog_level(kind: NotifyType) -> u32 {
     match kind {
         NotifyType::Info => 6,
         NotifyType::Success => 5,

@@ -92,7 +92,7 @@ impl Server {
         if shared && confirm.is_some_and(|c| !c.is_string()) {
             return Reply::error(req, 400, "Valid username and password fields are required");
         }
-        let username = username.trim().to_string();
+        let username = username.trim().to_owned();
         if shared && username != current_user {
             return Reply::field_error(req, 403, "The username cannot be changed by a configuration user", "username");
         }

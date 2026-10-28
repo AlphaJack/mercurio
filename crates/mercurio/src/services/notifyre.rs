@@ -11,7 +11,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "notifyre",
     name: "Notifyre",
     schemes: &["notifyre"],
@@ -85,8 +85,8 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             is_phone_no(&s, 10).ok_or_else(|| SERVICE.err("the Notifyre source (From) phone # is invalid"))?.full
         )),
     };
-    let campaign = param_unquoted(u, "campaign").map(|c| c.trim().to_string()).filter(|c| !c.is_empty());
-    let trimmed = |k: &str| param_unquoted(u, k).map(|v| v.trim().to_string()).unwrap_or_default();
+    let campaign = param_unquoted(u, "campaign").map(|c| c.trim().to_owned()).filter(|c| !c.is_empty());
+    let trimmed = |k: &str| param_unquoted(u, k).map(|v| v.trim().to_owned()).unwrap_or_default();
     let hq = u.param_nonempty("hq").map(|v| parse_bool(v, false)).unwrap_or(true);
     Ok(Box::new(Notifyre {
         apikey: Secret::new(apikey),
@@ -120,7 +120,7 @@ impl Notify for Notifyre {
         if self.targets.is_empty() {
             return Plan::Fail(SERVICE.err("there are no valid Notifyre targets to notify"));
         }
-        let campaign = self.campaign.clone().unwrap_or_else(|| ctx.app_id().to_string());
+        let campaign = self.campaign.clone().unwrap_or_else(|| ctx.app_id().to_owned());
         let source = self.source.clone().unwrap_or_default();
         let req = ctx.post(if self.fax { FAX_URL } else { SMS_URL })
             .header("Content-Type", "application/json")

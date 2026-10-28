@@ -94,7 +94,7 @@ fn split_host_port(hostport: &str, default_port: u16) -> Result<(String, u16), S
     if host.is_empty() {
         return Err("no host".into());
     }
-    let host = if host.is_ascii() { host.to_string() } else { idna(host)? };
+    let host = if host.is_ascii() { host.to_owned() } else { idna(host)? };
     let host = host.as_str();
     if host.bytes().any(|b| b.is_ascii_control() || matches!(b, b' ' | b'%' | b'\\' | b'@' | b'[' | b']')) {
         return Err(format!("invalid host {host}"));
@@ -102,7 +102,8 @@ fn split_host_port(hostport: &str, default_port: u16) -> Result<(String, u16), S
     if !hostport.starts_with('[') && host.contains(':') {
         return Err(format!("invalid host {host}"));
     }
-    let port = if port.is_empty() { default_port } else { port.parse().map_err(|_| format!("invalid port {port}"))? };
+    let port =
+        if port.is_empty() { default_port } else { port.parse().ok().ok_or_else(|| format!("invalid port {port}"))? };
     Ok((host.to_ascii_lowercase(), port))
 }
 
@@ -112,7 +113,7 @@ fn idna(host: &str) -> Result<String, String> {
         .split('.')
         .map(
             |label| {
-                if label.is_ascii() { Some(label.to_string()) } else { punycode(label).map(|p| format!("xn--{p}")) }
+                if label.is_ascii() { Some(label.to_owned()) } else { punycode(label).map(|p| format!("xn--{p}")) }
             },
         )
         .collect::<Option<Vec<_>>>()

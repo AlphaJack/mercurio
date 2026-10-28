@@ -1,7 +1,7 @@
 //! `:shortcode:` emoji (`?emojis=yes`, `-j`, [`crate::Asset::interpret_emojis`]): GitHub's gemoji names from the `emojis` crate, applied the way Apprise's `apply_emojis` applies its own table.
 
 /// Replace every known `:name:` (case-insensitive) with its emoji. Names never contain `:`, so at each colon the text up to the next one is the only candidate; an unknown one is left as written and its closing colon may open the next.
-pub fn apply(text: &str) -> String {
+pub(crate) fn apply(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some((before, after)) = rest.split_once(':') {

@@ -4,7 +4,7 @@ use mercurio::{service::Kind, service::Param, service::ServiceDef};
 use serde_json::{Map, Value, json};
 
 /// One `schemas` entry; `enabled` is only given with `?all=yes`, as in Apprise.
-pub fn schema(d: &ServiceDef, enabled: Option<bool>) -> Value {
+pub(super) fn schema(d: &ServiceDef, enabled: Option<bool>) -> Value {
     let secure = |s: &&&str| s.ends_with('s') && d.schemes.len() > 1;
     let mut out = json!({
         "service_name": d.name,
@@ -23,7 +23,7 @@ pub fn schema(d: &ServiceDef, enabled: Option<bool>) -> Value {
 }
 
 /// The asset block of the response.
-pub fn asset(a: &mercurio::Asset) -> Value {
+pub(super) fn asset(a: &mercurio::Asset) -> Value {
     json!({
         "app_id": a.app_id,
         "app_desc": a.app_desc,

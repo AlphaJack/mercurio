@@ -43,7 +43,7 @@ pub(super) fn parse_text(content: &str) -> Parsed {
         };
         let (url, assign, include) = (c.name("url"), c.name("assign"), c.name("config"));
         if let Some(inc) = include {
-            out.includes.push(inc.as_str().trim().to_string());
+            out.includes.push(inc.as_str().trim().to_owned());
             continue;
         }
         let tags_raw = c.name("tags").map(|m| m.as_str());
@@ -82,7 +82,7 @@ pub(super) fn parse_text(content: &str) -> Parsed {
             ));
             continue;
         }
-        out.entries.push(RawEntry { url: url.as_str().trim().to_string(), tags, location: format!("line {no}") });
+        out.entries.push(RawEntry { url: url.as_str().trim().to_owned(), tags, location: format!("line {no}") });
     }
     normalize_groups(&mut groups);
     apply_groups(&mut out.entries, &groups);

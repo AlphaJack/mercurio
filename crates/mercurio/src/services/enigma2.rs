@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Error, NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "enigma2",
     name: "Enigma2",
     schemes: &["enigma2", "enigma2s"],
@@ -80,7 +80,7 @@ impl Notify for Enigma2 {
             NotifyType::Info | NotifyType::Success => 1,
         };
         let params = [
-            ("text", msg.body.to_string()),
+            ("text", msg.body.to_owned()),
             ("type", kind.to_string()),
             ("timeout", self.timeout.to_string()),
         ];

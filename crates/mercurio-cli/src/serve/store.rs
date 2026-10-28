@@ -27,14 +27,14 @@ const MAX_READ: usize = 16 * 1024 * 1024;
 const MAX_CACHED: usize = 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mode {
+pub(super) enum Mode {
     Hash,
     Simple,
     Disabled,
 }
 
 impl Mode {
-    pub fn parse(v: &str) -> Option<Mode> {
+    pub(super) fn parse(v: &str) -> Option<Mode> {
         match v.trim().to_ascii_lowercase().as_str() {
             "hash" => Some(Mode::Hash),
             "simple" => Some(Mode::Simple),
@@ -51,7 +51,7 @@ impl Mode {
 
 /// Outcome of removing something.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Cleared {
+pub(super) enum Cleared {
     Removed,
     Nothing,
     Failed,
@@ -59,7 +59,7 @@ pub enum Cleared {
 
 /// Outcome of [`ConfigStore::move_key`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Moved {
+pub(super) enum Moved {
     Done,
     NotFound,
     Conflict,
@@ -68,17 +68,17 @@ pub enum Moved {
 
 /// One per-key login.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthRecord {
+pub(super) struct AuthRecord {
     pub access: String,
     pub username: Option<String>,
     pub digest: Option<String>,
 }
 
-pub const ACCESS_USER: &str = "user";
-pub const ACCESS_LOCKED: &str = "locked";
-pub const ACCESS_PUBLIC: &str = "public";
-pub const ACCESS_DISABLED: &str = "disabled";
-pub const ACCESS_CHOICES: [&str; 4] = [ACCESS_USER, ACCESS_LOCKED, ACCESS_PUBLIC, ACCESS_DISABLED];
+pub(super) const ACCESS_USER: &str = "user";
+pub(super) const ACCESS_LOCKED: &str = "locked";
+pub(super) const ACCESS_PUBLIC: &str = "public";
+pub(super) const ACCESS_DISABLED: &str = "disabled";
+pub(super) const ACCESS_CHOICES: [&str; 4] = [ACCESS_USER, ACCESS_LOCKED, ACCESS_PUBLIC, ACCESS_DISABLED];
 
 /// What identifies one version of a file: an atomic replace changes the inode, an edit in place the size or the change time (`ctime`, which a write always moves and `touch -d` or `cp -p` cannot set back, unlike the modification time).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -134,7 +134,7 @@ impl Cache {
         }
         if content.len() <= MAX_CACHED {
             self.bytes += content.len();
-            self.configs.insert(key.to_string(), (stamp, content.to_string(), fmt));
+            self.configs.insert(key.to_owned(), (stamp, content.to_owned(), fmt));
         }
     }
 
@@ -149,7 +149,7 @@ impl Cache {
     }
 }
 
-pub struct ConfigStore {
+pub(super) struct ConfigStore {
     pub root: PathBuf,
     pub mode: Mode,
     salt: String,
@@ -157,7 +157,7 @@ pub struct ConfigStore {
 }
 
 impl ConfigStore {
-    pub fn new(root: PathBuf, mode: Mode, salt: String) -> Self {
+    pub(super) fn new(root: PathBuf, mode: Mode, salt: String) -> Self {
         ConfigStore { root, mode, salt, cache: Mutex::default() }
     }
 
@@ -165,7 +165,7 @@ impl ConfigStore {
         self.cache.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    pub fn enabled(&self) -> bool {
+    pub(super) fn enabled(&self) -> bool {
         self.mode != Mode::Disabled
     }
 
@@ -175,9 +175,9 @@ impl ConfigStore {
             Mode::Hash => {
                 let h = codec::sha224_hex(format!("{}{key}", self.salt).as_bytes());
                 let (dir, rest) = h.split_at(2);
-                (self.root.join(dir), rest.to_string())
+                (self.root.join(dir), rest.to_owned())
             }
-            Mode::Simple | Mode::Disabled => (self.root.clone(), key.to_string()),
+            Mode::Simple | Mode::Disabled => (self.root.clone(), key.to_owned()),
         }
     }
 
@@ -201,7 +201,7 @@ impl ConfigStore {
     }
 
     /// The stored configuration: `Ok(None)` when there is none, `Err` when it could not be read.
-    pub async fn get(&self, key: &str) -> Result<Option<(String, ConfigFormat)>, ()> {
+    pub(super) async fn get(&self, key: &str) -> Result<Option<(String, ConfigFormat)>, ()> {
         if !self.enabled() {
             return Ok(None);
         }
@@ -211,9 +211,9 @@ impl ConfigStore {
             if let Some(content) = self.cache().config(key, stamp, fmt) {
                 return Ok(Some((content, fmt)));
             }
-            let (stamp, raw) = read_stamped(&path).await.map_err(|_| ())?;
+            let (stamp, raw) = read_stamped(&path).await.ok().ok_or(())?;
             let raw = if self.mode == Mode::Hash { codec::gunzip(&raw, MAX_READ).ok_or(())? } else { raw };
-            let content = String::from_utf8(raw).map_err(|_| ())?;
+            let content = String::from_utf8(raw).ok().ok_or(())?;
             self.cache().set_config(key, stamp, &content, fmt);
             return Ok(Some((content, fmt)));
         }
@@ -222,7 +222,7 @@ impl ConfigStore {
     }
 
     /// Save `content` atomically, replacing the other format.
-    pub async fn put(&self, key: &str, content: &str, fmt: ConfigFormat) -> bool {
+    pub(super) async fn put(&self, key: &str, content: &str, fmt: ConfigFormat) -> bool {
         if !self.enabled() {
             return false;
         }
@@ -253,7 +253,7 @@ impl ConfigStore {
     }
 
     /// Remove the configuration (both formats and the creation marker).
-    pub async fn clear(&self, key: &str) -> Cleared {
+    pub(super) async fn clear(&self, key: &str) -> Cleared {
         if !self.enabled() {
             return Cleared::Nothing;
         }
@@ -287,7 +287,7 @@ impl ConfigStore {
     }
 
     /// `(created, modified)` of the stored configuration.
-    pub async fn file_times(&self, key: &str) -> Option<(SystemTime, SystemTime)> {
+    pub(super) async fn file_times(&self, key: &str) -> Option<(SystemTime, SystemTime)> {
         let mut found = None;
         for f in [ConfigFormat::Text, ConfigFormat::Yaml] {
             if let Ok(m) = fs::metadata(self.content_path(key, f)).await {
@@ -300,7 +300,7 @@ impl ConfigStore {
     }
 
     /// Stored keys (`simple` mode only), including keys holding only a login.
-    pub async fn keys(&self) -> Vec<String> {
+    pub(super) async fn keys(&self) -> Vec<String> {
         if self.mode != Mode::Simple {
             return Vec::new();
         }
@@ -310,7 +310,7 @@ impl ConfigStore {
             let name = e.file_name().to_string_lossy().to_string();
             if let Some(hidden) = name.strip_prefix('.') {
                 if let Some(k) = hidden.strip_suffix(".lock").filter(|k| !k.is_empty()) {
-                    keys.insert(k.to_string());
+                    keys.insert(k.to_owned());
                 }
                 continue;
             }
@@ -323,7 +323,7 @@ impl ConfigStore {
     }
 
     /// Writable check used by `/status` (touches `<dir>/.tmp_hc`).
-    pub async fn writable(&self) -> bool {
+    pub(super) async fn writable(&self) -> bool {
         writable(&self.root).await
     }
 
@@ -332,7 +332,7 @@ impl ConfigStore {
     }
 
     /// The saved login: `Ok(None)` when there is none, `Err` when unreadable.
-    pub async fn auth(&self, key: &str) -> Result<Option<AuthRecord>, ()> {
+    pub(super) async fn auth(&self, key: &str) -> Result<Option<AuthRecord>, ()> {
         let path = self.lock_path(key);
         match fs::metadata(&path).await {
             Ok(m) => {
@@ -352,11 +352,11 @@ impl ConfigStore {
             Err(_) => return Err(()),
         };
         let rec = parse_auth(&raw)?;
-        self.cache().logins.insert(key.to_string(), (stamp, rec.clone()));
+        self.cache().logins.insert(key.to_owned(), (stamp, rec.clone()));
         Ok(Some(rec))
     }
 
-    pub async fn write_auth(&self, key: &str, rec: &AuthRecord) -> bool {
+    pub(super) async fn write_auth(&self, key: &str, rec: &AuthRecord) -> bool {
         let path = self.lock_path(key);
         self.cache().logins.remove(key);
         let body = json!({"access": rec.access, "username": rec.username, "digest": rec.digest});
@@ -364,18 +364,18 @@ impl ConfigStore {
             return false;
         }
         if let Some(stamp) = file_stamp(&path).await {
-            self.cache().logins.insert(key.to_string(), (stamp, rec.clone()));
+            self.cache().logins.insert(key.to_owned(), (stamp, rec.clone()));
         }
         true
     }
 
-    pub async fn clear_auth(&self, key: &str) -> Cleared {
+    pub(super) async fn clear_auth(&self, key: &str) -> Cleared {
         self.cache().logins.remove(key);
         remove(&self.lock_path(key)).await
     }
 
     /// Refresh the login's age (a user cleared their configuration).
-    pub async fn touch_auth(&self, key: &str) {
+    pub(super) async fn touch_auth(&self, key: &str) {
         if let Ok(f) = fs::OpenOptions::new().write(true).open(self.lock_path(key)).await
             && let Err(e) = f.into_std().await.set_modified(SystemTime::now())
         {
@@ -384,7 +384,7 @@ impl ConfigStore {
     }
 
     /// Move configuration, login and creation marker to a free key.
-    pub async fn move_key(&self, from: &str, to: &str) -> Moved {
+    pub(super) async fn move_key(&self, from: &str, to: &str) -> Moved {
         if !self.enabled() {
             return Moved::Failed;
         }
@@ -442,9 +442,9 @@ impl ConfigStore {
 
 /// A `.lock` file's login; `Err` when it is not valid.
 fn parse_auth(raw: &[u8]) -> Result<AuthRecord, ()> {
-    let text = std::str::from_utf8(raw).map_err(|_| ())?;
-    let v: Value = serde_json::from_str(text.trim()).map_err(|_| ())?;
-    let access = v.get("access").and_then(Value::as_str).ok_or(())?.to_string();
+    let text = std::str::from_utf8(raw).ok().ok_or(())?;
+    let v: Value = serde_json::from_str(text.trim()).ok().ok_or(())?;
+    let access = v.get("access").and_then(Value::as_str).ok_or(())?.to_owned();
     let opt = |k: &str| -> Result<Option<String>, ()> {
         match v.get(k) {
             Some(Value::Null) => Ok(None),
@@ -480,7 +480,7 @@ async fn read_stamped(path: &Path) -> std::io::Result<(Stamp, Vec<u8>)> {
 
 impl ConfigStore {
     /// Remove logins (`.<name>.lock`) older than `older_than` whose key has no configuration, then empty `hash` directories; the count removed. As apprise-api's `authprune`.
-    pub async fn prune_unused_locks(&self, older_than: std::time::Duration) -> usize {
+    pub(super) async fn prune_unused_locks(&self, older_than: Duration) -> usize {
         let (dirs, name_ok): (Vec<PathBuf>, fn(&str) -> bool) = match self.mode {
             Mode::Disabled => return 0,
             Mode::Simple => (vec![self.root.clone()], |n| super::valid_key(n)),
@@ -543,7 +543,7 @@ async fn is_file(path: &Path) -> bool {
 }
 
 /// Writable check used by `/status` (touches `<dir>/.tmp_hc`).
-pub async fn writable(dir: &Path) -> bool {
+pub(super) async fn writable(dir: &Path) -> bool {
     fs::create_dir_all(dir).await.is_ok() && fs::write(dir.join(".tmp_hc"), b"").await.is_ok()
 }
 
@@ -611,7 +611,7 @@ mod tests {
         let (dir, store) = temp_store("cache");
         assert!(store.put("k", "json://localhost/a", ConfigFormat::Text).await);
         let file = dir.join("k.cfg");
-        let read = |s: &'static str| (s.to_string(), ConfigFormat::Text);
+        let read = |s: &'static str| (s.to_owned(), ConfigFormat::Text);
         assert_eq!(store.get("k").await, Ok(Some(read("json://localhost/a"))));
 
         // Atomic replace by another process: new inode.
@@ -645,7 +645,7 @@ mod tests {
 
         let lock = dir.join(".k.lock");
         std::fs::write(&lock, r#"{"access": "disabled", "username": null, "digest": null}"#).unwrap();
-        assert_eq!(store.auth("k").await.ok().flatten().map(|r| r.access), Some(ACCESS_DISABLED.to_string()));
+        assert_eq!(store.auth("k").await.ok().flatten().map(|r| r.access), Some(ACCESS_DISABLED.to_owned()));
 
         std::fs::write(&lock, "not json").unwrap();
         assert_eq!(store.auth("k").await, Err(()));

@@ -8,7 +8,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "trigv",
     name: "Trigv",
     schemes: &["trigv", "trigvs"],
@@ -75,7 +75,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         channels.push(c);
     }
     if channels.is_empty() {
-        channels.push("general".to_string());
+        channels.push("general".to_owned());
     }
     let urgency = q("urgency").map(|v| unquote(v).to_lowercase()).unwrap_or_else(|| SERVICE.default_of("urgency").into());
     if !matches!(urgency.as_str(), "standard" | "time_sensitive") {
@@ -86,7 +86,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             let port = u.port.filter(|p| *p != 0).map(|p| format!(":{p}")).unwrap_or_default();
             format!("{}://{}{}/api/v1/events", u.http_scheme(), h, port)
         }
-        None => DEFAULT_NOTIFY_URL.to_string(),
+        None => DEFAULT_NOTIFY_URL.to_owned(),
     };
     Ok(Box::new(Trigv {
         api_key: Secret::new(api_key),
@@ -115,13 +115,13 @@ impl Trigv {
 impl Notify for Trigv {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let resolved_title = if !msg.title.is_empty() {
-            msg.title.to_string()
+            msg.title.to_owned()
         } else if !ctx.app_desc().is_empty() {
-            ctx.app_desc().to_string()
+            ctx.app_desc().to_owned()
         } else {
             format!("{} Alert", ctx.app_id())
         };
-        let body = if msg.body.is_empty() && msg.title.is_empty() { resolved_title.clone() } else { msg.body.to_string() };
+        let body = if msg.body.is_empty() && msg.title.is_empty() { resolved_title.clone() } else { msg.body.to_owned() };
         let level = match msg.kind {
             NotifyType::Failure => "error",
             k @ (NotifyType::Info | NotifyType::Success | NotifyType::Warning) => k.as_str(),

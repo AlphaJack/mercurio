@@ -11,7 +11,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParseOptions, ParsedUrl, parse_url_with, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "rocketchat",
     name: "Rocket.Chat",
     schemes: &["rocket", "rockets"],
@@ -190,7 +190,7 @@ impl RocketChat {
 
 impl Notify for RocketChat {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let ua = ctx.app_id().to_string();
+        let ua = ctx.app_id().to_owned();
         let mut payload = json!({"text": crate::http::TEXT});
         if self.avatar
             && let Some(img) = ctx.asset.image_url(msg.kind, ImageSize::Xy128)
@@ -212,12 +212,12 @@ impl Notify for RocketChat {
             }
             Mode::Basic => {
                 let user = self.user.clone().unwrap_or_default();
-                let pass = self.password.as_ref().map_or("", Secret::expose).to_string();
+                let pass = self.password.as_ref().map_or("", Secret::expose).to_owned();
                 let login = Request::post(format!("{}/api/v1/login", self.api_url))
                     .form(&[("username", user.as_str()), ("password", pass.as_str())]);
                 let api_url = self.api_url.clone();
                 // The login continuation outlives this call, so it owns the text.
-                let text = msg.body.to_string();
+                let text = msg.body.to_owned();
                 let this = Sends {
                     users: self.users.clone(),
                     channels: self.channels.clone(),

@@ -17,7 +17,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "bark",
     name: "Bark",
     schemes: &["bark", "barks"],

@@ -11,7 +11,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "sfr",
     name: "Société Française du Radiotéléphone",
     schemes: &["sfr"],

@@ -9,7 +9,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "line",
     name: "Line",
     schemes: &["line"],
@@ -57,7 +57,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     };
     if let Some(to) = u.param_nonempty("to") {
         let re = crate::regex!(r"[ \t\r\n,#\\/]+");
-        targets.extend(re.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_string));
+        targets.extend(re.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_owned));
     }
     let token = validate_nonblank(&token).ok_or_else(|| SERVICE.err("an invalid Access Token was specified"))?;
     Ok(Box::new(Line { token: Secret::new(token), targets: parse_list(targets), include_image: SERVICE.flag_strict(u, "image") }))

@@ -7,7 +7,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "lark",
     name: "Lark (Feishu)",
     schemes: &["lark"],
@@ -42,7 +42,7 @@ fn parse_native(url: &str) -> Option<String> {
 
 impl Notify for Lark {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
-        let text = if msg.title.is_empty() { msg.body.to_string() } else { format!("{}\n{}", msg.title, msg.body) };
+        let text = if msg.title.is_empty() { msg.body.to_owned() } else { format!("{}\n{}", msg.title, msg.body) };
         let req = ctx.post(format!("https://open.larksuite.com/open-apis/bot/v2/hook/{}", self.token.expose()))
             .header("Content-Type", "application/json")
             .json_text(&json!({"msg_type": "text", "content": {"text": crate::http::TEXT}}), &text);

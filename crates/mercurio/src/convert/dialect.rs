@@ -166,7 +166,7 @@ fn longest_fitting_cut(
 }
 
 /// Split `body` into converted pieces within `limit` chars.
-pub fn split_dialect_chunk(
+pub(crate) fn split_dialect_chunk(
     body: &str,
     limit: usize,
     convert: &dyn Fn(&str) -> String,
@@ -192,7 +192,7 @@ pub fn split_dialect_chunk(
 }
 
 /// The longest converted prefix of `body` within `limit` chars.
-pub fn truncate_dialect_chunk(
+pub(crate) fn truncate_dialect_chunk(
     body: &str,
     limit: usize,
     convert: &dyn Fn(&str) -> String,
@@ -376,9 +376,9 @@ fn piece_end(atoms: &[Atom<'_>], html: &str, i: usize, stack: &Stack<'_>, limit:
 }
 
 /// Split well-nested HTML (a service's converted output) into pieces of at most `limit` chars (`0`: no limit), at most `max_pieces` of them. Cuts fall outside tags and entities, at a line break or else whitespace once the piece is at least half full, anywhere else otherwise. Tags open at a cut are closed at the end of the piece and reopened at the start of the next; a `<br>` at a cut is dropped (the piece boundary breaks the line). A piece only exceeds `limit` when a single tag (or the tags reopened in front of it) does.
-pub fn split_html(html: &str, limit: usize, max_pieces: usize) -> Vec<String> {
+pub(crate) fn split_html(html: &str, limit: usize, max_pieces: usize) -> Vec<String> {
     if limit == 0 || clen(html) <= limit {
-        return vec![html.to_string()];
+        return vec![html.to_owned()];
     }
     let atoms = atoms(html);
     let is_text = |a: &Atom<'_>| matches!(a.kind, AtomKind::Text | AtomKind::Space | AtomKind::Newline);

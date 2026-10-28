@@ -25,7 +25,7 @@ use crate::transport::Endpoint;
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "irc",
     name: "IRC",
     schemes: &["irc", "ircs"],
@@ -114,8 +114,8 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let name = SERVICE.text(u, "name");
     let nick = SERVICE.text(u, "nick");
     let user = u.user();
-    let nickname = nick.as_deref().unwrap_or("").trim().to_string();
-    let nickname = if nickname.is_empty() { user.as_deref().unwrap_or("").trim().to_string() } else { nickname };
+    let nickname = nick.as_deref().unwrap_or("").trim().to_owned();
+    let nickname = if nickname.is_empty() { user.as_deref().unwrap_or("").trim().to_owned() } else { nickname };
 
     let host = u.host();
     let mut secure = u.secure;
@@ -149,7 +149,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     for target in parse_list(&targets) {
         if let Some(c) = channel_re.captures(&target) {
             let chan = c["channel"].to_string();
-            let key = c.name("key").map(|k| k.as_str().to_string());
+            let key = c.name("key").map(|k| k.as_str().to_owned());
             match channels.iter_mut().find(|(n, _)| *n == chan) {
                 Some(entry) => entry.1 = key,
                 None => channels.push((chan, key)),
@@ -170,7 +170,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         user,
         password: u.password().map(Secret::new),
         nickname,
-        fullname: name.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()),
+        fullname: name.map(|n| n.trim().to_owned()).filter(|n| !n.is_empty()),
         mode,
         join,
         channels,
@@ -257,7 +257,7 @@ impl Client {
     /// PING and nickname-collision handling shared by every wait. Returns `Ok(true)` when the message was consumed.
     fn common(&mut self, msg: &IrcMessage) -> Result<bool> {
         if msg.is("PING") {
-            let payload = msg.ping_payload().to_string();
+            let payload = msg.ping_payload().to_owned();
             self.send(&format!("PONG :{payload}"));
             return Ok(true);
         }
@@ -428,7 +428,7 @@ impl Notify for Irc {
         } else {
             self.nickname.clone()
         };
-        let password = self.password.as_ref().map(|p| p.expose().to_string());
+        let password = self.password.as_ref().map(|p| p.expose().to_owned());
         let pass = match self.mode {
             AuthMode::Server => password.clone().filter(|p| !p.is_empty()),
             AuthMode::Znc => Some(format!(
@@ -440,17 +440,17 @@ impl Notify for Irc {
         };
         let identify = if self.mode == AuthMode::NickServ { password.filter(|p| !p.is_empty()) } else { None };
         let message = if msg.title.is_empty() {
-            msg.body.to_string()
+            msg.body.to_owned()
         } else {
-            format!("{} {}", msg.title, msg.body).trim().to_string()
+            format!("{} {}", msg.title, msg.body).trim().to_owned()
         };
         let lines: Vec<String> =
-            message.split(['\r', '\n']).filter(|l| !l.trim().is_empty()).map(str::to_string).collect();
+            message.split(['\r', '\n']).filter(|l| !l.trim().is_empty()).map(str::to_owned).collect();
         let session = Session {
             pass,
             nickname,
-            fullname: self.fullname.clone().unwrap_or_else(|| ctx.app_desc().to_string()),
-            prefix: ctx.app_id().to_string(),
+            fullname: self.fullname.clone().unwrap_or_else(|| ctx.app_desc().to_owned()),
+            prefix: ctx.app_id().to_owned(),
             identify,
             znc: self.mode == AuthMode::Znc,
             joins: self
@@ -460,7 +460,7 @@ impl Notify for Irc {
                 .collect(),
             users: self.users.clone(),
             lines,
-            quit: ctx.app_desc().to_string(),
+            quit: ctx.app_desc().to_owned(),
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.secure);
         ep.read_timeout = REGISTER_TIMEOUT;

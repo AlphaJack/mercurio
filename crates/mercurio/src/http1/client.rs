@@ -377,7 +377,7 @@ mod tests {
                         let len = head
                             .lines()
                             .find_map(|l| {
-                                l.to_ascii_lowercase().strip_prefix("content-length:").map(|v| v.trim().to_string())
+                                l.to_ascii_lowercase().strip_prefix("content-length:").map(|v| v.trim().to_owned())
                             })
                             .and_then(|v| v.parse::<usize>().ok())
                             .unwrap_or(0);

@@ -5,7 +5,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Error, NotifyType, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "signalgrid",
     name: "Signalgrid",
     schemes: &["signalgrid"],

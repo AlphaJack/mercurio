@@ -6,7 +6,7 @@ use crate::crypto;
 use crate::error::{Error, Result};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mech {
+pub(super) enum Mech {
     ScramSha512,
     ScramSha256,
     ScramSha1,
@@ -15,9 +15,9 @@ pub enum Mech {
 
 impl Mech {
     /// Strongest first.
-    pub const PREFERENCE: [Mech; 4] = [Mech::ScramSha512, Mech::ScramSha256, Mech::ScramSha1, Mech::Plain];
+    pub(super) const PREFERENCE: [Mech; 4] = [Mech::ScramSha512, Mech::ScramSha256, Mech::ScramSha1, Mech::Plain];
 
-    pub fn name(self) -> &'static str {
+    pub(super) fn name(self) -> &'static str {
         match self {
             Mech::ScramSha512 => "SCRAM-SHA-512",
             Mech::ScramSha256 => "SCRAM-SHA-256",
@@ -27,7 +27,7 @@ impl Mech {
     }
 
     /// Best SCRAM mechanism the server offers with channel binding (`SCRAM-*-PLUS`).
-    pub fn choose_plus<'a>(offered: impl IntoIterator<Item = &'a str> + Clone) -> Option<Mech> {
+    pub(super) fn choose_plus<'a>(offered: impl IntoIterator<Item = &'a str> + Clone) -> Option<Mech> {
         Mech::PREFERENCE.into_iter().filter(|m| *m != Mech::Plain).find(|m| {
             let plus = format!("{}-PLUS", m.name());
             offered.clone().into_iter().any(|o| o.trim().eq_ignore_ascii_case(&plus))
@@ -35,7 +35,7 @@ impl Mech {
     }
 
     /// Best mechanism the server offers. PLAIN is refused on an unencrypted stream (it would reveal the password).
-    pub fn choose<'a>(offered: impl IntoIterator<Item = &'a str> + Clone, encrypted: bool) -> Option<Mech> {
+    pub(super) fn choose<'a>(offered: impl IntoIterator<Item = &'a str> + Clone, encrypted: bool) -> Option<Mech> {
         Mech::PREFERENCE.into_iter().find(|m| {
             (encrypted || *m != Mech::Plain) && offered.clone().into_iter().any(|o| o.trim().eq_ignore_ascii_case(m.name()))
         })
@@ -43,7 +43,7 @@ impl Mech {
 }
 
 /// `\0user\0password`, base64.
-pub fn plain(user: &str, password: &str) -> String {
+pub(super) fn plain(user: &str, password: &str) -> String {
     crypto::b64(format!("\0{user}\0{password}").as_bytes())
 }
 
@@ -85,7 +85,7 @@ impl Hash {
 
 /// Client side of one SCRAM exchange.
 #[derive(Debug)]
-pub struct Scram {
+pub(super) struct Scram {
     hash: Hash,
     /// The GS2 header: `n,,` without channel binding, `p={type},,` with it.
     gs2: String,
@@ -105,11 +105,11 @@ fn saslname(s: &str) -> String {
 }
 
 impl Scram {
-    pub fn new(mech: Mech, user: &str, env: &dyn crate::Env) -> Scram {
+    pub(super) fn new(mech: Mech, user: &str, env: &dyn crate::Env) -> Scram {
         Scram::with_nonce(mech, user, &crypto::b64(&random24(env)))
     }
 
-    pub fn with_nonce(mech: Mech, user: &str, nonce: &str) -> Scram {
+    pub(super) fn with_nonce(mech: Mech, user: &str, nonce: &str) -> Scram {
         let hash = match mech {
             Mech::ScramSha512 => Hash::Sha512,
             Mech::ScramSha256 => Hash::Sha256,
@@ -120,30 +120,30 @@ impl Scram {
             gs2: "n,,".into(),
             binding: Vec::new(),
             first_bare: format!("n={},r={nonce}", saslname(user)),
-            nonce: nonce.to_string(),
+            nonce: nonce.to_owned(),
             server_signature: None,
         }
     }
 
     /// Bind the exchange to the TLS session: `kind` is the binding type's name (`tls-exporter`), `data` what the connection reported. The mechanism must then be sent with `-PLUS`.
-    pub fn with_binding(mut self, kind: &str, data: Vec<u8>) -> Scram {
+    pub(super) fn with_binding(mut self, kind: &str, data: Vec<u8>) -> Scram {
         self.gs2 = format!("p={kind},,");
         self.binding = data;
         self
     }
 
     /// The channel binding type in use, or `no channel binding`.
-    pub fn binding_name(&self) -> &str {
+    pub(super) fn binding_name(&self) -> &str {
         self.gs2.strip_prefix("p=").and_then(|g| g.strip_suffix(",,")).unwrap_or("no channel binding")
     }
 
     /// `client-first-message`: the GS2 header, then `n=user,r=nonce`.
-    pub fn client_first(&self) -> String {
+    pub(super) fn client_first(&self) -> String {
         format!("{}{}", self.gs2, self.first_bare)
     }
 
     /// Answer the `server-first-message` with the `client-final-message`.
-    pub fn client_final(&mut self, server_first: &str, password: &str) -> Result<String> {
+    pub(super) fn client_final(&mut self, server_first: &str, password: &str) -> Result<String> {
         let bad = || Error::service("XMPP: malformed SCRAM challenge");
         let mut nonce = None;
         let mut salt = None;
@@ -183,7 +183,7 @@ impl Scram {
     }
 
     /// Check the `server-final-message` (`v=...`).
-    pub fn verify(&self, server_final: &str) -> Result<()> {
+    pub(super) fn verify(&self, server_final: &str) -> Result<()> {
         if let Some(e) = server_final.strip_prefix("e=") {
             return Err(Error::service(format!("XMPP authentication failed: {e}")));
         }

@@ -10,7 +10,7 @@ use crate::Result;
 
 /// How a service writes `X-RateLimit-Reset`.
 #[derive(Debug, Clone, Copy)]
-pub enum Reset {
+pub(crate) enum Reset {
     /// Seconds until the window ends (Reddit).
     SecondsLeft,
     /// An RFC 3339 time (Mastodon).
@@ -18,7 +18,7 @@ pub enum Reset {
 }
 
 #[derive(Debug)]
-pub struct RateLimit {
+pub(crate) struct RateLimit {
     reset: Reset,
     /// Added to the wait, for clock skew.
     grace: Duration,
@@ -27,7 +27,7 @@ pub struct RateLimit {
 }
 
 impl RateLimit {
-    pub fn new(reset: Reset, grace: Duration) -> Arc<Self> {
+    pub(crate) fn new(reset: Reset, grace: Duration) -> Arc<Self> {
         Arc::new(RateLimit { reset, grace, state: Mutex::new((1.0, 0.0)) })
     }
 
@@ -58,7 +58,7 @@ impl RateLimit {
     }
 
     /// Send `req` once the budget allows it (the wait is worked out when execution reaches it), recording the budget of responses whose status is in `ok`.
-    pub fn send(
+    pub(crate) fn send(
         self: &Arc<Self>,
         req: Request,
         ok: &'static [u16],

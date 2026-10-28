@@ -15,7 +15,7 @@ use crate::url::{ParsedUrl, quote};
 use crate::util::json_has_value;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "kook",
     name: "Kook",
     schemes: &["kook"],
@@ -85,14 +85,14 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     for target in parse_list(&targets) {
         if let Some(user) = target.strip_prefix('@') {
             if id.is_match(user) {
-                dm_users.push(user.to_string());
+                dm_users.push(user.to_owned());
             } else {
                 crate::warning!("dropping invalid Kook DM user ID");
             }
         } else {
             let channel = target.strip_prefix('#').unwrap_or(&target);
             if id.is_match(channel) {
-                channels.push(channel.to_string());
+                channels.push(channel.to_owned());
             } else {
                 crate::warning!("dropping invalid Kook channel ID");
             }

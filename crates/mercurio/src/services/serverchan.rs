@@ -6,7 +6,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "serverchan",
     name: "ServerChan",
     schemes: &["schan"],

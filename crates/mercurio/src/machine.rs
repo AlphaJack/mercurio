@@ -7,7 +7,7 @@ use crate::error::Result;
 use crate::transport::{AsyncConn, AsyncTransport, ChannelBinding};
 
 /// A socket protocol as a state machine over bytes: [`Protocol::next`] says what it needs, [`Protocol::input`] answers [`Output::Read`] and [`Output::StartTls`] (and reports a failed [`Output::Write`]).
-pub trait Protocol: Send {
+pub(crate) trait Protocol: Send {
     /// The next thing the protocol needs.
     fn next(&mut self) -> Output;
     /// Hand the protocol what it asked for.
@@ -26,7 +26,7 @@ impl<P: Protocol + ?Sized> Protocol for &mut P {
 
 /// What the protocol needs next.
 #[derive(Debug)]
-pub enum Output {
+pub(crate) enum Output {
     /// Send these bytes, then call [`Protocol::next`] again.
     Write(Vec<u8>),
     /// Read from the peer and pass the result to [`Protocol::input`].
@@ -43,7 +43,7 @@ pub enum Output {
 
 /// The answer to an [`Output::Read`] or [`Output::StartTls`].
 #[derive(Debug)]
-pub enum Input<'a> {
+pub(crate) enum Input<'a> {
     /// Bytes from the peer; empty when it closed the stream.
     Data(&'a [u8]),
     /// The read failed.
@@ -58,16 +58,16 @@ pub enum Input<'a> {
 
 /// Received bytes cut into lines, for line-based protocols.
 #[derive(Debug, Default)]
-pub struct LineBuf(Vec<u8>);
+pub(crate) struct LineBuf(Vec<u8>);
 
 impl LineBuf {
     /// Append bytes from the peer.
-    pub fn push(&mut self, data: &[u8]) {
+    pub(crate) fn push(&mut self, data: &[u8]) {
         self.0.extend_from_slice(data);
     }
 
     /// The next complete line without its `\r\n` (or `\n`); `None` until one has arrived.
-    pub fn next_line(&mut self) -> Option<String> {
+    pub(crate) fn next_line(&mut self) -> Option<String> {
         let pos = self.0.iter().position(|b| *b == b'\n')?;
         let mut line: Vec<u8> = self.0.drain(..=pos).collect();
         line.pop();
@@ -78,24 +78,28 @@ impl LineBuf {
     }
 
     /// Everything buffered after the last line (the first binary bytes once a protocol leaves its line phase).
-    pub fn take(&mut self) -> Vec<u8> {
+    pub(crate) fn take(&mut self) -> Vec<u8> {
         std::mem::take(&mut self.0)
     }
 
     /// Drop what is buffered (plaintext left over before a TLS upgrade).
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.0.clear();
     }
 }
 
 /// Run `machine` on a real connection until it is done; waits go through `transport`.
-pub async fn drive(machine: impl Protocol, conn: &mut dyn AsyncConn, transport: &dyn AsyncTransport) -> Result<()> {
+pub(crate) async fn drive(
+    machine: impl Protocol,
+    conn: &mut dyn AsyncConn,
+    transport: &dyn AsyncTransport,
+) -> Result<()> {
     pump(machine, conn, Some(transport), &mut [0u8; crate::net::READ_CHUNK]).await
 }
 
 /// [`drive`] for a machine that never asks to wait ([`Output::Sleep`] ends it with an error), reading into `buf` (the caller's, so a connection can keep one).
 #[cfg(any(feature = "transport-tokio", feature = "transport-blocking"))]
-pub async fn run(machine: impl Protocol, conn: &mut dyn AsyncConn, buf: &mut [u8]) -> Result<()> {
+pub(crate) async fn run(machine: impl Protocol, conn: &mut dyn AsyncConn, buf: &mut [u8]) -> Result<()> {
     pump(machine, conn, None, buf).await
 }
 

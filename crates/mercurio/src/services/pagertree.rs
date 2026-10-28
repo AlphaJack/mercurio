@@ -10,7 +10,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{Pairs, ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "pagertree",
     name: "PagerTree",
     schemes: &["pagertree"],
@@ -56,7 +56,7 @@ fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
 fn twice(p: &Pairs) -> Vec<(String, String)> {
     // Later duplicate keys replace earlier ones in place.
     let pairs: Pairs = p.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
-    pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+    pairs.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect()
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -103,7 +103,7 @@ impl Notify for PagerTree {
             if self.action == "create" {
                 // Each notification creates its own alert; a retry reuses the ID so it never creates a second one.
                 let key = format!("alert_id:{}", msg.index);
-                let id = ctx.memo.recall(&key).and_then(|v| v.as_str().map(str::to_string)).unwrap_or_else(|| ctx.env().uuid4());
+                let id = ctx.memo.recall(&key).and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_else(|| ctx.env().uuid4());
                 ctx.memo.remember(&key, json!(id));
                 id
             } else {

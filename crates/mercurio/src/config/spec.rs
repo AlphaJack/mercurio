@@ -220,7 +220,7 @@ mod tests {
         let spec: BTreeSet<String> = TOP_LEVEL
             .iter()
             .flat_map(|k| std::iter::once(k.name).chain(k.aliases.iter().copied()))
-            .map(str::to_string)
+            .map(str::to_owned)
             .collect();
         // `schema` is compared on URL entries, not on the document.
         let doc_keys: BTreeSet<String> = read.iter().filter(|k| *k != "schema").cloned().collect();
@@ -241,8 +241,8 @@ mod tests {
     fn settings_match_the_loader() {
         let src = [include_str!("fold.rs"), include_str!("yaml_doc.rs")].concat();
         let read = literals(r#"(?:get\(|k == |k != |Some\()"([a-z_]+)"\)?"#, &src);
-        let spec: BTreeSet<String> = SETTINGS.iter().flat_map(|s| s.keys.iter().map(|k| (*k).to_string())).collect();
-        let top: BTreeSet<String> = TOP_LEVEL.iter().map(|k| k.name.to_string()).collect();
+        let spec: BTreeSet<String> = SETTINGS.iter().flat_map(|s| s.keys.iter().map(|k| (*k).to_owned())).collect();
+        let top: BTreeSet<String> = TOP_LEVEL.iter().map(|k| k.name.to_owned()).collect();
         let entry_keys: BTreeSet<String> = read.difference(&top).cloned().collect();
         assert!(
             entry_keys.is_subset(&spec),

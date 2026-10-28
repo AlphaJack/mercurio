@@ -8,7 +8,7 @@ use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Limits, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "wpush",
     name: "WPUSH",
     schemes: &["wpush"],
@@ -72,7 +72,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let apikey = validate_regex(&apikey, r"^WPUSH[a-z0-9]{27}$", "i", true)
         .ok_or_else(|| SERVICE.err("the WPUSH API Key is invalid"))?;
     let channels = match channel.filter(|c| !c.is_empty()) {
-        None => vec!["wechat".to_string()],
+        None => vec!["wechat".to_owned()],
         Some(c) => {
             let mut out: Vec<String> = Vec::new();
             for entry in parse_list([c.as_str()]) {
@@ -120,7 +120,7 @@ fn check(r: &crate::Response) -> Result<()> {
     if ok {
         return Ok(());
     }
-    let message = content.get("message").map(|m| m.as_str().map(str::to_string).unwrap_or_else(|| m.to_string()));
+    let message = content.get("message").map(|m| m.as_str().map(str::to_owned).unwrap_or_else(|| m.to_string()));
     Err(Error::Service(format!(
         "WPUSH code={}: {}",
         code.map(Value::to_string).unwrap_or_else(|| "None".into()),

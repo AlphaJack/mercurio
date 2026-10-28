@@ -40,7 +40,7 @@ fn queue_commands(s: &mut Session, case: &Value) {
 
 /// Each command's program and arguments, with the temporary directory (where the bundled icon is written) shown as `<tmp>`.
 fn argv(fake: &FakeTransport) -> Vec<Vec<String>> {
-    let tmp = std::env::temp_dir().to_string_lossy().trim_end_matches(['/', '\\']).to_string();
+    let tmp = std::env::temp_dir().to_string_lossy().trim_end_matches(['/', '\\']).to_owned();
     fake.commands()
         .into_iter()
         .map(|c| {
@@ -63,7 +63,7 @@ fn macosx_normalise(events: Vec<Value>) -> Vec<Value> {
         .map(|mut e| {
             if let Some(cmd) = e.get_mut("cmd").and_then(Value::as_array_mut) {
                 if let Some(Value::String(p)) = cmd.first_mut() {
-                    *p = p.rsplit('/').next().unwrap_or(p).to_string();
+                    *p = p.rsplit('/').next().unwrap_or(p).to_owned();
                 }
                 for i in 0..cmd.len() {
                     if cmd[i] == "-contentImage" && i + 1 < cmd.len() {
@@ -87,7 +87,7 @@ pub(super) const MACOSX: Comparator = Comparator {
 /// A session bus on the scripted connection: it accepts `AUTH EXTERNAL`, answers `Hello`, records each `Notify` through `record` and answers it (with an error when `fail`).
 fn fake_bus(record: impl Fn(Value) + Send + 'static, fail: bool) -> ScriptedConn {
     use crate::services::_dbus::{decode_notify, reply, take_message};
-    let tmp = std::env::temp_dir().to_string_lossy().trim_end_matches(['/', '\\']).to_string();
+    let tmp = std::env::temp_dir().to_string_lossy().trim_end_matches(['/', '\\']).to_owned();
     let mut rx: Vec<u8> = Vec::new();
     let mut serial = 0;
     ScriptedConn::bytes(Vec::new(), move |data| match data {
@@ -154,7 +154,7 @@ pub(super) const DBUS: Comparator = Comparator {
 /// libnotify's call, shown as the fields gnome sets: app, summary (the merged message), urgency and icon; no body, the daemon's timeout.
 fn gnome_event(args: Value) -> Value {
     assert_eq!((&args[1], &args[4], &args[5], &args[7]), (&json!(0), &json!(""), &json!([]), &json!(-1)));
-    let icon = args[2].as_str().filter(|i| !i.is_empty()).map(str::to_string);
+    let icon = args[2].as_str().filter(|i| !i.is_empty()).map(str::to_owned);
     json!({"gnome": {"app": args[0], "body": args[3], "urgency": args[6]["urgency"], "icon": icon}})
 }
 
@@ -349,7 +349,7 @@ impl XmppServer {
             ev.push(json!({"_starttls": true}));
             "<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>".into()
         } else if s.starts_with("<auth") {
-            let mech = attr(&s, "mechanism").unwrap().to_string();
+            let mech = attr(&s, "mechanism").unwrap().to_owned();
             let payload = crate::crypto::b64_decode(inner(&s, "auth").unwrap()).unwrap();
             let payload = String::from_utf8(payload).unwrap();
             if mech == "PLAIN" {
@@ -362,7 +362,7 @@ impl XmppServer {
                 }
             } else {
                 assert_eq!(mech, "SCRAM-SHA-1");
-                let bare = payload.strip_prefix("n,,").unwrap().to_string();
+                let bare = payload.strip_prefix("n,,").unwrap().to_owned();
                 let nonce = bare.split(',').find_map(|p| p.strip_prefix("r=")).unwrap();
                 let first = format!("r={nonce}srv,s={},i=4096", crate::crypto::b64(SALT));
                 self.scram = Some((bare.clone(), first.clone()));
@@ -434,7 +434,7 @@ impl XmppServer {
 }
 
 fn xmpp_mode(case: &Value) -> String {
-    responses(case).first().and_then(|r| r.get("xmpp")).and_then(Value::as_str).unwrap_or("ok").to_string()
+    responses(case).first().and_then(|r| r.get("xmpp")).and_then(Value::as_str).unwrap_or("ok").to_owned()
 }
 
 /// Recover the password from the case URL (only for the scripted server).
@@ -453,7 +453,7 @@ pub fn xmpp_conn(
 ) -> (ScriptedConn, Arc<Mutex<XmppServer>>) {
     let mode = xmpp_mode(case);
     let server = Arc::new(Mutex::new(XmppServer {
-        password: password.map(str::to_string).unwrap_or_else(|| url_password(case["url"].as_str().unwrap())),
+        password: password.map(str::to_owned).unwrap_or_else(|| url_password(case["url"].as_str().unwrap())),
         auth_fail: mode == "auth_fail",
         mechanisms: mechanisms.iter().map(|m| m.to_string()).collect(),
         tls: false,

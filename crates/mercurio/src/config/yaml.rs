@@ -125,7 +125,7 @@ impl fmt::Display for YamlError {
 
 impl std::error::Error for YamlError {}
 
-type R<T> = std::result::Result<T, YamlError>;
+type R<T> = Result<T, YamlError>;
 
 #[cfg(feature = "config-yaml")]
 mod parser;

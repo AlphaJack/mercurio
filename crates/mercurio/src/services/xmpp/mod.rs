@@ -22,7 +22,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
 use client::{Mode, Session};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "xmpp",
     name: "XMPP",
     schemes: &["xmpp", "xmpps"],
@@ -104,7 +104,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = Vec::new();
     for t in parse_list(&raw) {
         match normalize_jid(&t, &host) {
-            Some((jid, muc)) => targets.push((if muc { "groupchat" } else { "chat" }.to_string(), jid)),
+            Some((jid, muc)) => targets.push((if muc { "groupchat" } else { "chat" }.to_owned(), jid)),
             None => crate::warning!("dropped invalid XMPP target"),
         }
     }
@@ -127,7 +127,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .and_then(|n| validate_regex(&n, r"^[a-zA-Z0-9_]+$", "i", true))
         .or_else(|| Some(user.clone()).filter(|s| !s.is_empty()));
 
-    let xmpp_host = u.param_nonempty("xmpp").map(|v| unquote(v).trim().to_string()).filter(|v| !v.is_empty());
+    let xmpp_host = u.param_nonempty("xmpp").map(|v| unquote(v).trim().to_owned()).filter(|v| !v.is_empty());
     let default_port = if mode == Mode::Tls { 5223 } else { 5222 };
     Ok(Box::new(Xmpp {
         jid,
@@ -149,12 +149,12 @@ impl Notify for Xmpp {
         let session = Session {
             mode: self.mode,
             jid: self.jid.clone(),
-            password: self.password.expose().to_string(),
+            password: self.password.expose().to_owned(),
             roster: self.roster,
-            nick: self.nick.clone().unwrap_or_else(|| ctx.app_id().to_string()),
+            nick: self.nick.clone().unwrap_or_else(|| ctx.app_id().to_owned()),
             targets: self.targets.clone(),
-            subject: if self.subject { msg.title.to_string() } else { String::new() },
-            body: msg.body.to_string(),
+            subject: if self.subject { msg.title.to_owned() } else { String::new() },
+            body: msg.body.to_owned(),
             scramplus: self.scramplus,
         };
         let mut ep = Endpoint::new(self.host.clone(), self.port, self.mode == Mode::Tls);

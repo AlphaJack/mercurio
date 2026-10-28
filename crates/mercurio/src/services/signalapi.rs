@@ -9,7 +9,7 @@ use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Error, NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "signalapi",
     name: "Signal API",
     schemes: &["signal", "signals"],
@@ -141,7 +141,7 @@ fn signal_escape(text: &str) -> String {
 }
 
 /// Markdown as Signal styled text.
-pub fn commonmark_to_signal(body: &str) -> String {
+pub(crate) fn commonmark_to_signal(body: &str) -> String {
     crate::convert::markup::render(body, &SIGNAL)
 }
 

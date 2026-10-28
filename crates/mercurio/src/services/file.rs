@@ -9,7 +9,7 @@ use crate::services::_webhook::double_unquoted;
 use crate::url::{ParsedUrl, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "file",
     name: "File",
     schemes: &["file"],

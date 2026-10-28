@@ -7,7 +7,7 @@ use crate::url::ParsedUrl;
 use crate::util::parse_int;
 use crate::{Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "burstsms",
     name: "Burst SMS",
     schemes: &["burstsms"],
@@ -73,7 +73,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let secret = validate_regex(&secret, r"^[a-z0-9]+$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid Burst SMS API Secret was specified"))?;
     let country = match country {
-        None => "us".to_string(),
+        None => "us".to_owned(),
         Some(c) => {
             let c = c.trim().to_lowercase();
             if !COUNTRIES.contains(&c.as_str()) {

@@ -7,7 +7,7 @@ use serde_json::{Map, Value};
 use super::http::{Reply, Req, form_pairs};
 
 /// A file part from a multipart body.
-pub struct Upload {
+pub(super) struct Upload {
     pub name: String,
     pub mime: Option<String>,
     /// A slice of the request body, not a copy of it.
@@ -15,7 +15,7 @@ pub struct Upload {
 }
 
 #[derive(Default)]
-pub struct Content {
+pub(super) struct Content {
     pub fields: Map<String, Value>,
     pub uploads: Vec<Upload>,
     /// `attach` / `attachment` / `attachments` values from a form, every repeat.
@@ -26,7 +26,7 @@ pub struct Content {
 
 impl Content {
     /// A non-empty string field.
-    pub fn str(&self, key: &str) -> Option<&str> {
+    pub(super) fn str(&self, key: &str) -> Option<&str> {
         self.fields.get(key).and_then(Value::as_str).filter(|s| !s.is_empty())
     }
 
@@ -51,9 +51,9 @@ const NOTIFY_FORMATS: &[&str] = &["text", "markdown", "html"];
 const ATTACH_FIELDS: [&str; 3] = ["attach", "attachment", "attachments"];
 
 /// Form fields (`application/x-www-form-urlencoded` or multipart): the last value per name, the `(name, value)` pairs of `template[...]` and attachment fields (every repeat) and the uploaded files.
-pub type FormFields = (Map<String, Value>, Vec<(String, String)>, Vec<Upload>);
+pub(super) type FormFields = (Map<String, Value>, Vec<(String, String)>, Vec<Upload>);
 
-pub fn form_fields(req: &Req) -> FormFields {
+pub(super) fn form_fields(req: &Req) -> FormFields {
     let mut pairs = Vec::new();
     let mut uploads = Vec::new();
     if req.content_type() == "multipart/form-data" {
@@ -64,9 +64,9 @@ pub fn form_fields(req: &Req) -> FormFields {
             let name = part.name.unwrap_or_default();
             if let Some(filename) = part.filename {
                 let mime = part.content_type.map(|m| m.to_ascii_lowercase());
-                uploads.push(Upload { name: filename.trim().to_string(), mime, data: body.slice_ref(part.data) });
+                uploads.push(Upload { name: filename.trim().to_owned(), mime, data: body.slice_ref(part.data) });
             } else if let Ok(v) = std::str::from_utf8(part.data) {
-                pairs.push((name, v.to_string()));
+                pairs.push((name, v.to_owned()));
             }
         }
     } else {
@@ -85,10 +85,11 @@ pub fn form_fields(req: &Req) -> FormFields {
     (map, kept, uploads)
 }
 
-pub fn json_object(req: &Req) -> Result<Map<String, Value>, Reply> {
+pub(super) fn json_object(req: &Req) -> Result<Map<String, Value>, Reply> {
     let v: Value = req
         .with_body(|body| serde_json::from_slice::<Value>(body))
-        .map_err(|_| Reply::error(req, 400, "Invalid JSON Payload provided"))?;
+        .ok()
+        .ok_or_else(|| Reply::error(req, 400, "Invalid JSON Payload provided"))?;
     match v {
         Value::Object(m) => Ok(m),
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Array(_) => {
@@ -98,9 +99,9 @@ pub fn json_object(req: &Req) -> Result<Map<String, Value>, Reply> {
 }
 
 /// Read a notification payload. `stateless` adds the `urls` field.
-pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usize) -> Result<Content, Reply> {
+pub(super) fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usize) -> Result<Content, Reply> {
     let rules: Vec<(String, String)> =
-        req.query.iter().filter_map(|(k, v)| k.strip_prefix(':').map(|k| (k.to_string(), v.clone()))).collect();
+        req.query.iter().filter_map(|(k, v)| k.strip_prefix(':').map(|k| (k.to_owned(), v.clone()))).collect();
     let raw_format = match req.content_type().as_str() {
         "text/plain" => Some("text"),
         "text/html" => Some("html"),
@@ -109,7 +110,8 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
     };
     if let Some(fmt) = raw_format {
         let body = String::from_utf8(req.take_body())
-            .map_err(|_| Reply::error(req, 400, "The message body could not be decoded"))?;
+            .ok()
+            .ok_or_else(|| Reply::error(req, 400, "The message body could not be decoded"))?;
         let mut c = Content::default();
         c.fields.insert("body".into(), Value::String(body));
         c.fields.insert(
@@ -129,7 +131,7 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
     if !rules.is_empty() && !remap_fields(&rules, &mut data, &expected, max_depth) {
         let msg = match key {
             Some(k) => format!("Payload field mapping failed using KEY: {k}"),
-            None => "Payload field mapping failed".to_string(),
+            None => "Payload field mapping failed".to_owned(),
         };
         return Err(Reply::error(req, 400, &msg));
     }
@@ -150,12 +152,11 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
             return Err(Reply::field_error(req, 400, "The urls field must be a string or list of strings", "urls"));
         }
         if let Some(t) = data.get("template") {
-            let vars = template_from_json(t).map_err(|_| {
+            let vars = template_from_json(t).ok().ok_or_else(|| {
                 Reply::field_error(req, 400, "The template field must be an object of name/value pairs", "template")
             })?;
             c.template = vars;
         }
-        c.fields = data;
     } else {
         // NotifyForm validation: an unknown type or format, an over-long field or bad template[...] values make the whole form invalid.
         let bad_choice = |k: &str, choices: &[&str]| {
@@ -176,8 +177,8 @@ pub fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usi
         if data.get("type").and_then(Value::as_str).is_some_and(str::is_empty) {
             data.remove("type");
         }
-        c.fields = data;
     }
+    c.fields = data;
     apply_headers(req, &mut c)?;
     Ok(c)
 }
@@ -196,7 +197,7 @@ fn apply_headers(req: &Req, c: &mut Content) -> Result<(), Reply> {
         if let Some(v) = req.x_header(header)
             && !(c.has(name) || (name == "tag" && c.has("tags")))
         {
-            c.fields.insert(name.into(), Value::String(v.to_string()));
+            c.fields.insert(name.into(), Value::String(v.to_owned()));
         }
     }
     let Some(raw) = req.x_header("Template") else { return Ok(()) };
@@ -212,7 +213,7 @@ fn apply_headers(req: &Req, c: &mut Content) -> Result<(), Reply> {
         }
         entries.push((mercurio::__private::unquote_plus(k), mercurio::__private::unquote_plus(v)));
     }
-    c.template = template_vars(entries.into_iter().map(|(k, v)| (k, Value::String(v)))).map_err(|_| bad())?;
+    c.template = template_vars(entries.into_iter().map(|(k, v)| (k, Value::String(v)))).ok().ok_or_else(bad)?;
     Ok(())
 }
 
@@ -234,7 +235,7 @@ fn template_vars(entries: impl IntoIterator<Item = (String, Value)>) -> Result<O
         }
         let yaml = match value {
             Value::String(s) if s.trim().is_empty() => continue,
-            Value::String(s) => Yaml::Str(s.trim().to_string()),
+            Value::String(s) => Yaml::Str(s.trim().to_owned()),
             Value::Bool(b) => Yaml::Bool(b),
             Value::Number(n) => match n.as_i64() {
                 Some(i) => Yaml::Int(i128::from(i)),
@@ -243,8 +244,8 @@ fn template_vars(entries: impl IntoIterator<Item = (String, Value)>) -> Result<O
             Value::Null => continue,
             Value::Array(_) | Value::Object(_) => return Err(()),
         };
-        let v = mercurio::__private::validate_value(&name, &yaml).map_err(|_| ())?;
-        vars.set(&name, v).map_err(|_| ())?;
+        let v = mercurio::__private::validate_value(&name, &yaml).ok().ok_or(())?;
+        vars.set(&name, v).ok().ok_or(())?;
     }
     Ok(if vars.is_empty() { None } else { Some(vars) })
 }
@@ -263,7 +264,7 @@ fn template_from_json(v: &Value) -> Result<Option<TemplateVars>, ()> {
             let mut entries = Vec::new();
             for item in items {
                 let (k, v) = item.split_once('=').ok_or(())?;
-                entries.push((k.trim().to_string(), Value::String(v.to_string())));
+                entries.push((k.trim().to_owned(), Value::String(v.to_owned())));
             }
             template_vars(entries)
         }
@@ -280,7 +281,7 @@ fn template_from_form(pairs: &[(String, String)], data: &Map<String, Value>) -> 
             if pairs.iter().filter(|(n, _)| n == k).count() > 1 {
                 return Err(());
             }
-            entries.push((name.to_string(), Value::String(v.clone())));
+            entries.push((name.to_owned(), Value::String(v.clone())));
         }
     }
     if entries.is_empty() {
@@ -293,7 +294,7 @@ fn template_from_form(pairs: &[(String, String)], data: &Map<String, Value>) -> 
 }
 
 /// Field mapping (`?:src=dest`). Returns `false` on a bad or missing nested path and on one deeper than `max_depth` (`APPRISE_WEBHOOK_MAPPING_MAX_DEPTH`).
-pub fn remap_fields(
+pub(super) fn remap_fields(
     rules: &[(String, String)],
     payload: &mut Map<String, Value>,
     expected: &[&str],
@@ -361,7 +362,7 @@ fn parse_path(key: &str) -> Option<Vec<Step>> {
             if segment.contains(']') {
                 return None;
             }
-            steps.push(Step::Key(segment.to_string()));
+            steps.push(Step::Key(segment.to_owned()));
             continue;
         };
         let (name, mut rest) = segment.split_at(open);
@@ -369,7 +370,7 @@ fn parse_path(key: &str) -> Option<Vec<Step>> {
             return None;
         }
         if !name.is_empty() {
-            steps.push(Step::Key(name.to_string()));
+            steps.push(Step::Key(name.to_owned()));
         }
         while !rest.is_empty() {
             let inner = rest.strip_prefix('[')?;
@@ -413,10 +414,10 @@ fn valid_tag_token(t: &str) -> bool {
 }
 
 /// A parsed tag selection: alternatives of AND groups.
-pub type TagGroups = Vec<Vec<String>>;
+pub(super) type TagGroups = Vec<Vec<String>>;
 
 /// A tag expression: commas and pipes mean OR; spaces, `&` and `+` mean AND.
-pub fn parse_tag_expression(tag: &str) -> Option<TagGroups> {
+pub(super) fn parse_tag_expression(tag: &str) -> Option<TagGroups> {
     if tag.is_empty() || !tag.chars().all(|c| c.is_ascii_alphanumeric() || c.is_whitespace() || "|,_:+&-".contains(c)) {
         return None;
     }
@@ -425,7 +426,7 @@ pub fn parse_tag_expression(tag: &str) -> Option<TagGroups> {
         let tokens: Vec<String> = group
             .split(|c: char| c.is_whitespace() || c == '&' || c == '+')
             .filter(|t| !t.is_empty())
-            .map(str::to_string)
+            .map(str::to_owned)
             .collect();
         if group.trim().is_empty() {
             continue;
@@ -446,7 +447,7 @@ fn tag_list(items: &[Value]) -> Option<TagGroups> {
             Value::String(s) if valid_tag_token(s) => groups.push(vec![s.clone()]),
             Value::Array(a) => {
                 let g: Option<Vec<String>> =
-                    a.iter().map(|v| v.as_str().filter(|s| valid_tag_token(s)).map(str::to_string)).collect();
+                    a.iter().map(|v| v.as_str().filter(|s| valid_tag_token(s)).map(str::to_owned)).collect();
                 groups.push(g.filter(|g| !g.is_empty())?);
             }
             Value::String(_) | Value::Null | Value::Bool(_) | Value::Number(_) | Value::Object(_) => return None,
@@ -456,7 +457,7 @@ fn tag_list(items: &[Value]) -> Option<TagGroups> {
 }
 
 /// The request's tag (`tag`, `tags`, then the query string): `Ok(None)` when none was given.
-pub fn notify_tag(req: &Req, c: &Content) -> Result<Option<TagGroups>, ()> {
+pub(super) fn notify_tag(req: &Req, c: &Content) -> Result<Option<TagGroups>, ()> {
     let value = ["tag", "tags"]
         .iter()
         .find_map(|k| {
@@ -478,7 +479,7 @@ pub fn notify_tag(req: &Req, c: &Content) -> Result<Option<TagGroups>, ()> {
 }
 
 /// Every token names a tag other than `all`.
-pub fn tag_is_specific(groups: Option<&TagGroups>) -> bool {
+pub(super) fn tag_is_specific(groups: Option<&TagGroups>) -> bool {
     groups.is_some_and(|g: &TagGroups| {
         !g.is_empty()
             && g.iter().flatten().all(|t| {
@@ -488,11 +489,11 @@ pub fn tag_is_specific(groups: Option<&TagGroups>) -> bool {
     })
 }
 
-pub fn tag_filter(groups: &TagGroups) -> TagFilter {
+pub(super) fn tag_filter(groups: &TagGroups) -> TagFilter {
     TagFilter::any_of(groups.iter().map(|g| g.iter().map(String::as_str).collect::<Vec<_>>()))
 }
 
-pub struct AttachRules<'a> {
+pub(super) struct AttachRules<'a> {
     /// Largest attachment in bytes; `0` disables attachments.
     pub size: u64,
     /// Most attachments per request; `0` means no limit.
@@ -502,7 +503,7 @@ pub struct AttachRules<'a> {
 }
 
 /// Attachments: hosted URLs (strings or `{"url", "filename"}`), base64 (`{"base64", "filename"}`) and uploaded files. Errors carry a log message; callers answer `400 Bad Attachment`.
-pub async fn attachments(
+pub(super) async fn attachments(
     c: &mut Content,
     rules: &AttachRules<'_>,
     transport: &dyn mercurio::transport::AsyncTransport,
@@ -540,11 +541,11 @@ pub async fn attachments(
                     Some(Value::String(s)) if s.trim().len() > 250 => {
                         return Err(format!("The filename associated with attachment {no} is too long"));
                     }
-                    Some(Value::String(s)) => Some(s.trim().to_string()).filter(|s| !s.is_empty()),
+                    Some(Value::String(s)) => Some(s.trim().to_owned()).filter(|s| !s.is_empty()),
                     Some(_) => return Err(format!("An invalid filename was provided for attachment {no}")),
                 };
                 let b64 = o.get("base64").cloned();
-                let url = if b64.is_none() { o.get("url").and_then(Value::as_str).map(str::to_string) } else { None };
+                let url = if b64.is_none() { o.get("url").and_then(Value::as_str).map(str::to_owned) } else { None };
                 if b64.is_none() && url.is_none() {
                     return Err(format!("Invalid filetype was provided for attachment {no}"));
                 }
@@ -566,7 +567,7 @@ pub async fn attachments(
             if data.len() as u64 > rules.size {
                 return Err(format!("Attachment {name}'s file size is too large"));
             }
-            let mime = mercurio::__private::guess_mime(&name).to_string();
+            let mime = mercurio::__private::guess_mime(&name).to_owned();
             out.push(Attachment::new(name, mime, data));
             continue;
         }
@@ -579,7 +580,8 @@ pub async fn attachments(
             return Err(format!("Denied attachment {no} (blocked web request)"));
         }
         let mut source = mercurio::attachment::AttachSource::parse(&url)
-            .map_err(|_| format!("Failed to parse attachment {no} URL"))?;
+            .ok()
+            .ok_or_else(|| format!("Failed to parse attachment {no} URL"))?;
         if source.location() != mercurio::attachment::Location::Hosted {
             return Err(format!("Denied attachment {no} (not a hosted resource)"));
         }
@@ -604,7 +606,7 @@ pub async fn attachments(
         let mime = up
             .mime
             .filter(|m| !m.is_empty() && m != "application/octet-stream")
-            .unwrap_or_else(|| mercurio::__private::guess_mime(&name).to_string());
+            .unwrap_or_else(|| mercurio::__private::guess_mime(&name).to_owned());
         out.push(Attachment::new(name, mime, up.data));
     }
     Ok(out)
@@ -634,7 +636,7 @@ mod tests {
             .cloned()
             .unwrap_or_default();
         let rules = vec![
-            (":subject".trim_start_matches(':').to_string(), "title".to_string()),
+            (":subject".trim_start_matches(':').to_owned(), "title".to_owned()),
             ("payload".into(), "body".into()),
             ("event.items[0].x".into(), "type".into()),
             ("format".into(), "markdown".into()),

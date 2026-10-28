@@ -25,7 +25,7 @@ use crate::url::{ParsedUrl, unquote};
 use crate::util::json_has_value;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
-pub static SERVICE: ServiceDef = ServiceDef {
+pub(crate) static SERVICE: ServiceDef = ServiceDef {
     id: "simplepush",
     name: "Simplepush",
     schemes: &["spush", "simplepush"],
@@ -119,7 +119,7 @@ fn split_targets(items: &[String]) -> Vec<String> {
     let re = crate::regex!(r"[\[\];,]+");
     items
         .iter()
-        .flat_map(|a| re.split(a).map(|s| s.trim().to_string()).collect::<Vec<_>>())
+        .flat_map(|a| re.split(a).map(|s| s.trim().to_owned()).collect::<Vec<_>>())
         .filter(|s| !s.is_empty())
         .collect()
 }
@@ -149,7 +149,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut seed = None;
     if integration {
         let (cred, seed_b64) = token.split_once('.').unwrap_or((&token, ""));
-        credential = cred.to_string();
+        credential = cred.to_owned();
         seed = b64_url_decode(seed_b64).and_then(|s| <[u8; 32]>::try_from(s).ok());
         if credential == INTEGRATION_PREFIX || seed.is_none() {
             return Err(SERVICE.err("an invalid Simplepush integration token was specified"));
@@ -166,7 +166,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
                 if m.is_empty() {
                     return Err(SERVICE.err("an invalid Simplepush member was specified"));
                 }
-                members.push(m.to_string());
+                members.push(m.to_owned());
             }
         }
     }
@@ -214,7 +214,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         }
     };
     let links: Vec<String> = links_raw
-        .map(|l| crate::regex!(r"\s+").split(&l).filter(|s| !s.is_empty()).map(str::to_string).collect())
+        .map(|l| crate::regex!(r"\s+").split(&l).filter(|s| !s.is_empty()).map(str::to_owned).collect())
         .unwrap_or_default();
     if links.len() > LINKS_MAX {
         return Err(SERVICE.err("at most 25 Simplepush links can be specified"));
@@ -231,9 +231,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         shared,
         priority,
         critical_volume,
-        sptag: sptag.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
+        sptag: sptag.map(|s| s.trim().to_owned()).filter(|s| !s.is_empty()),
         links,
-        topic_auth_token: topic_auth_token.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).map(Secret::new),
+        topic_auth_token: topic_auth_token.map(|s| s.trim().to_owned()).filter(|s| !s.is_empty()).map(Secret::new),
         cache: Mutex::new(Cache::default()),
     }))))
 }
@@ -374,7 +374,7 @@ impl Inner {
         }
         let k = derive_key(self.password.as_ref()?.expose(), salt)?;
         if let Ok(mut c) = self.cache.lock() {
-            c.keys.insert(salt.to_string(), k.clone());
+            c.keys.insert(salt.to_owned(), k.clone());
         }
         Some(k)
     }
@@ -450,7 +450,7 @@ impl Inner {
             if !has_value(resp.get("passwordSalt")) {
                 return Plan::Fail(Error::Service("Simplepush returned no password salt".into()));
             }
-            let Some(salt) = resp.get("passwordSalt").and_then(Value::as_str).map(str::to_string) else {
+            let Some(salt) = resp.get("passwordSalt").and_then(Value::as_str).map(str::to_owned) else {
                 return Plan::Fail(Error::Service("Simplepush returned an unusable password salt".into()));
             };
             if let Ok(mut c) = me.cache.lock() {
@@ -610,7 +610,7 @@ impl Inner {
         Plan::http(self.step_request(&id, "upload-url", app_id), move |res| {
             let presigned = match res {
                 Ok(r) if step_ok(&r) => {
-                    r.json().and_then(|v| v.get("presignedPutUrl").and_then(Value::as_str).map(str::to_string))
+                    r.json().and_then(|v| v.get("presignedPutUrl").and_then(Value::as_str).map(str::to_owned))
                 }
                 _ => None,
             };
@@ -641,16 +641,16 @@ impl Notify for SimplePush {
             .enumerate()
             .map(|(i, a)| {
                 let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
-                let mime = if a.mime.is_empty() { "application/octet-stream".to_string() } else { a.mime.clone() };
+                let mime = if a.mime.is_empty() { "application/octet-stream".to_owned() } else { a.mime.clone() };
                 (name, mime, a.data.to_vec())
             })
             .collect();
         let m = Arc::new(Msg {
-            title: msg.title.to_string(),
-            body: msg.body.to_string(),
+            title: msg.title.to_owned(),
+            body: msg.body.to_owned(),
             markdown: msg.format == NotifyFormat::Markdown,
             files,
-            app_id: ctx.app_id().to_string(),
+            app_id: ctx.app_id().to_owned(),
             env: ctx.env().clone(),
         });
         let mut targets: Vec<(Option<&'static str>, Option<String>)> = inner
@@ -706,7 +706,7 @@ mod tests {
         let seed: [u8; 32] = b64_url_decode(SEED).unwrap().try_into().unwrap();
         let resp = json!({"adminPubkeyB64": ADMIN_PUBKEY, "wrappedKeys": [{"version": 1, "blob": WRAP}]});
         let keys = open_org_keys(&seed, resp.as_object().unwrap()).unwrap();
-        assert_eq!(keys.get(&1).unwrap(), &crate::crypto::b64_decode(MASTER_KEY).unwrap());
+        assert_eq!(keys.get(&1).unwrap(), &b64_decode(MASTER_KEY).unwrap());
         // A wrong seed cannot open it.
         assert!(open_org_keys(&[1u8; 32], resp.as_object().unwrap()).is_none());
     }
