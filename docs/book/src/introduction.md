@@ -22,14 +22,14 @@ mercurio -n failure -i markdown -b "**db-1** is down" tgram://BOT_TOKEN/CHAT_ID
 
 `-n` sets the type (`info`, `success`, `warning`, `failure`), which services
 turn into colours, icons or priorities. `-i` declares the body's markup;
-mercurio converts it for each service ([Formats](messages/formats.md)).
+Mercurio converts it for each service ([Formats](messages/formats.md)).
 `mercurio check URL...` validates URLs without sending. `-d` lists what
 would be notified. The exit code is 0 sent, 1 failed, 2 usage error, 3
 nothing matched the tags, 4 partly sent ([Command line](cli.md)).
 
 ## Use a configuration file
 
-Without URLs on the command line, mercurio reads `~/.config/apprise/apprise.conf`:
+Without URLs on the command line, Mercurio reads `~/.config/apprise/apprise.conf`:
 
 ```yaml
 version: 1
@@ -83,7 +83,7 @@ See [HTTP server](server.md).
 
 - **User guide**: the command line, URLs, configuration files, messages and
   the HTTP server. All of it applies to the library as well.
-- **Library**: using mercurio from Rust. The API reference is rustdoc
+- **Library**: using Mercurio from Rust. The API reference is rustdoc
   ([api/mercurio](api/mercurio/index.html) in the published book).
 - **Services**: one page per service: URL formats, every query parameter
   with its default, examples and known differences.

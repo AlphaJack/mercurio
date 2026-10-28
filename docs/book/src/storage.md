@@ -111,7 +111,7 @@ $ mercurio storage prune -d -S /tmp/demo/store
 abcdef12: would remove /tmp/demo/store/abcdef12/cache.json
 ```
 
-Prune and clear only remove mercurio's own files; other files in a
+Prune and clear only remove Mercurio's own files; other files in a
 namespace directory are left alone.
 
 ## In the library
@@ -131,7 +131,7 @@ m.add("json://example.com/hook")?;
 ```
 
 A YAML configuration can set the path under `asset:` (`storage_path`, a
-mercurio extension, see [Asset overrides](config/assets.md)). Each
+Mercurio extension, see [Asset overrides](config/assets.md)). Each
 `ReportEntry` carries the `url_id` of its target.
 
 `mercurio::store::PersistentStore` is usable on its own; services read

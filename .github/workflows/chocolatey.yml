@@ -1,6 +1,6 @@
-# pushes packaging/chocolatey to the mercurio package on community.chocolatey.org, with the version and checksum of the release.
+# pushes packaging/chocolatey to the Mercurio package on community.chocolatey.org, with the version and checksum of the release.
 # Secrets:
-#   CHOCOLATEY_API_KEY  API key of the community.chocolatey.org account that maintains mercurio.
+#   CHOCOLATEY_API_KEY  API key of the community.chocolatey.org account that maintains Mercurio.
 name: Chocolatey
 
 on:

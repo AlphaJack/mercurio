@@ -51,7 +51,7 @@ Other top-level keys are ignored, which makes them a convenient place for
 YAML anchors (see [Anchors](#anchors-aliases-and-merge-keys)).
 
 A file-wide `tag:` tags every entry, so nothing in that file is notified
-when mercurio runs without `--tag` (only untagged entries are). The example
+when Mercurio runs without `--tag` (only untagged entries are). The example
 above prints `no URLs matched the given tags` (exit code 3) without
 `-g`.
 
