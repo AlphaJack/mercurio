@@ -15,7 +15,7 @@ mod client;
 mod sasl;
 mod xml;
 
-use crate::parse::{parse_bool, parse_list, validate_regex};
+use crate::parse::{parse_list, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::transport::Endpoint;
 use crate::url::{ParsedUrl, unquote};
@@ -120,7 +120,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     // `xmpps://` with no (or `none`) mode means STARTTLS; any TLS mode on `xmpp://` wins over the scheme.
     let mode = if u.secure && mode == Mode::None { Mode::StartTls } else { mode };
 
-    let flag = |key: &str| u.param_nonempty(key).map(|v| parse_bool(v, false)).unwrap_or(false);
+    let flag = |key: &str| u.flag(key);
     let nick = u
         .param_nonempty("name")
         .map(unquote)

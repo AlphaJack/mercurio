@@ -455,7 +455,7 @@ fn pem(label: &str, der: &[u8]) -> String {
 
 /// The key kept in the store directory and the steps that save it: generated (with its public key) when there is none.
 fn stored_key(ctx: &Context<'_>, dir: &Path) -> Option<(EcdsaKeyPair, Plan)> {
-    if let Some(found) = PRIVATE_KEY_FILES.iter().map(|f| dir.join(f)).find(|p| ctx.stat(p).is_some_and(|m| m.is_file)) {
+    if let Some(found) = PRIVATE_KEY_FILES.iter().map(|f| dir.join(f)).find(|p| is_file(ctx, p)) {
         return Some((load_signing_key(ctx, found.to_str()?)?, Plan::Done));
     }
     let pkcs8 = EcdsaKeyPair::generate_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &ring_rng()).ok()?;
@@ -518,7 +518,7 @@ impl Notify for Vapid {
         let subfile = self.subfile.clone().or_else(|| {
             dir.as_ref()
                 .map(|d| d.join("subscriptions.json"))
-                .filter(|p| ctx.stat(p).is_some_and(|m| m.is_file))
+                .filter(|p| is_file(ctx, p))
                 .and_then(|p| p.to_str().map(str::to_owned))
         });
         let Some(loaded) = subfile.as_deref().and_then(|s| load_subscriptions(ctx, s)) else {
@@ -531,7 +531,7 @@ impl Notify for Vapid {
         let retired: Vec<String> = ctx
             .store
             .get(RETIRED_KEY)
-            .and_then(|v| v.as_array().map(|a| a.iter().filter_map(crate::util::json_string).collect()))
+            .and_then(|v| v.as_array().map(|a| crate::util::json_strings_of(a)))
             .unwrap_or_default();
         let tally = Arc::new(Mutex::new(Tally::default()));
         let now = ctx.env().unix_time();
@@ -629,6 +629,11 @@ impl Notify for Vapid {
     fn url_identifier(&self) -> UrlIdentifier {
         UrlIdentifier::parts(["vapid", self.mode.as_str(), self.subscriber.as_str()])
     }
+}
+
+/// Whether `path` is a file, as the transport sees it.
+fn is_file(ctx: &Context<'_>, path: &Path) -> bool {
+    ctx.stat(path).is_some_and(|m| m.is_file)
 }
 
 #[cfg(test)]

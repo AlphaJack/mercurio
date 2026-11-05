@@ -34,9 +34,7 @@ impl Session {
                 .json
                 .get("m.homeserver")
                 .and_then(|h| h.get("base_url"))
-                .and_then(Value::as_str)
-                .map(|b| b.trim_end_matches('/').to_owned())
-                .filter(|b| is_secure_http_url(b) && !b.contains('?'));
+                .and_then(base_url);
             let Some(base) = base else {
                 return s.discovery_failed("Base URI Discovery Failed (m.homeserver)", k);
             };
@@ -51,9 +49,7 @@ impl Session {
                 };
                 let identity = id
                     .get("base_url")
-                    .and_then(Value::as_str)
-                    .map(|b| b.trim_end_matches('/').to_owned())
-                    .filter(|b| is_secure_http_url(b) && !b.contains('?'));
+                    .and_then(base_url);
                 let Some(identity) = identity else {
                     return s.discovery_failed("Identity URI Discovery Failed", k);
                 };
@@ -198,4 +194,10 @@ impl Session {
             Plan::Done
         }))
     }
+}
+
+/// A discovered `base_url`: a secure HTTP URL without a query, with no trailing `/`.
+fn base_url(v: &Value) -> Option<String> {
+    let b = v.as_str()?.trim_end_matches('/');
+    (is_secure_http_url(b) && !b.contains('?')).then(|| b.to_owned())
 }

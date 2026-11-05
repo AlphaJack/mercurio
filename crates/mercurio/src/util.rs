@@ -107,6 +107,43 @@ pub(crate) fn split_nonempty(separators: &crate::re::Regex, text: &str) -> Vec<S
     separators.split(text).filter(|s| !s.is_empty()).map(str::to_owned).collect()
 }
 
+/// `n` as a `u32`, `u32::MAX` when it is larger.
+pub(crate) fn saturating_u32<N: TryInto<u32>>(n: N) -> u32 {
+    n.try_into().unwrap_or(u32::MAX)
+}
+
+/// The first of `options` that starts with `prefix`, when `prefix` is not empty.
+pub(crate) fn completing<'a>(options: &[&'a str], prefix: &str) -> Option<&'a str> {
+    if prefix.is_empty() { None } else { starting_with(options, prefix) }
+}
+
+/// `?` and the text of a regex match.
+pub(crate) fn query_suffix(m: crate::re::Match<'_>) -> String {
+    format!("?{}", m.as_str())
+}
+
+/// The strings of a JSON list.
+pub(crate) fn json_strings_of(list: &[Value]) -> Vec<String> {
+    list.iter().filter_map(json_string).collect()
+}
+
+/// `derive()`, once per process for each `id`: tests derive the same few slow keys again and again.
+#[cfg(any(test, feature = "testing"))]
+pub(crate) fn derive_once<K: Ord, V: Clone>(
+    cache: &std::sync::Mutex<std::collections::BTreeMap<K, V>>,
+    id: K,
+    derive: impl FnOnce() -> V,
+) -> V {
+    if let Some(v) = cache.lock().ok().and_then(|d| d.get(&id).cloned()) {
+        return v;
+    }
+    let v = derive();
+    if let Ok(mut d) = cache.lock() {
+        d.insert(id, v.clone());
+    }
+    v
+}
+
 /// A JSON object of `pairs`, each value a string.
 pub(crate) fn json_strings(pairs: &[(String, String)]) -> Map<String, Value> {
     pairs.iter().map(|(k, v)| (k.clone(), Value::String(v.clone()))).collect()

@@ -566,6 +566,10 @@ impl ParsedUrl {
     pub fn text(&self, key: &str) -> Option<String> {
         self.param_nonempty(key).map(unquote)
     }
+    /// Whether option `key` is set to a true value (`yes`, `1`, ...); false when absent.
+    pub(crate) fn flag(&self, key: &str) -> bool {
+        self.param_nonempty(key).is_some_and(|v| parse_bool(v, false))
+    }
     /// Param value as an integer (`None` when absent or not a number).
     pub fn int(&self, key: &str) -> Option<i64> {
         self.param_nonempty(key).and_then(crate::util::parse_int)

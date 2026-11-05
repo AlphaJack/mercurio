@@ -569,7 +569,7 @@ impl Email {
             return vec![spec.clone()];
         }
         let Some(dir) = ctx.store.path() else { return Vec::new() };
-        private_key_names(&self.from_addr).iter().map(|n| dir.join(n).display().to_string()).collect()
+        paths_in(&dir, &private_key_names(&self.from_addr))
     }
 
     /// Public key files to look at for `to`: `?pgppub=`, else Apprise's names in the storage folder.
@@ -578,7 +578,7 @@ impl Email {
             return vec![spec.clone()];
         }
         let Some(dir) = ctx.store.path() else { return Vec::new() };
-        public_key_names(to).iter().map(|n| dir.join(n).display().to_string()).collect()
+        paths_in(&dir, &public_key_names(to))
     }
 
     /// The first public key for `to` that could be read.
@@ -1034,4 +1034,9 @@ impl Email {
         Vec::new()
     }
 
+}
+
+/// Each of `names` in `dir`, as text.
+fn paths_in(dir: &std::path::Path, names: &[String]) -> Vec<String> {
+    names.iter().map(|n| dir.join(n).display().to_string()).collect()
 }

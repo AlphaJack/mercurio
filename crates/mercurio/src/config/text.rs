@@ -76,7 +76,7 @@ pub(super) fn parse_text(content: &str) -> Parsed {
         }
         let Some(url) = url else { continue };
         let tags = crate::parse::parse_list(tags_raw);
-        if tags.iter().any(|t| Tag::parse(t).retry.is_some()) {
+        if tags.iter().any(|t| Tag::retries(t)) {
             out.warnings.push(format!(
                 "You can not specify a retry count as part of a service tag on line {no}; use ?retry=N in the URL instead."
             ));

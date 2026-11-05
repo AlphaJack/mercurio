@@ -135,7 +135,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let password = password.filter(|p| !p.is_empty());
     let mut entries = u.path_segments();
     let lower = |k: &str| u.param_nonempty(k).map(|v| unquote(&v.trim().to_lowercase()));
-    let raw = |k: &str| u.param_nonempty(k).map(unquote);
+    let raw = |k: &str| u.text(k);
 
     let priority = lower("priority");
     let icon = lower("icon");

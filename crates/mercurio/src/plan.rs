@@ -210,11 +210,16 @@ impl Plan {
                 Box::pin(async move { session(c, t).await.map_err(|e| e.context(context)) })
             }),
             Plan::Defer(f) => Plan::defer(move || f().context(context)),
-            Plan::All(v) => Plan::All(v.into_iter().map(|p| p.context(context.clone())).collect()),
-            Plan::Chain(v) => Plan::Chain(v.into_iter().map(|p| p.context(context.clone())).collect()),
+            Plan::All(v) => Plan::All(Plan::all_in(v, &context)),
+            Plan::Chain(v) => Plan::Chain(Plan::all_in(v, &context)),
             Plan::Target(t, p) => Plan::Target(t, Box::new(p.context(context))),
             p @ (Plan::Done | Plan::Datagram(_) | Plan::Sleep(_)) => p,
         }
+    }
+
+    /// Each of `plans` with [`Plan::context`].
+    fn all_in(plans: Vec<Plan>, context: &str) -> Vec<Plan> {
+        plans.into_iter().map(|p| p.context(context)).collect()
     }
 
     fn fail_context(self, context: String) -> Plan {

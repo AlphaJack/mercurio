@@ -532,7 +532,7 @@ impl Mercurio {
             let entries = self.send_all(msg, round.iter().map(|&i| targets[i]).collect(), filter, on_entry);
             let delivered: BTreeMap<usize, bool> =
                 round.iter().copied().zip(entries.iter().map(|e| e.delivery.is_success())).collect();
-            esc.settle(|i| delivered.get(&i).copied().unwrap_or(false));
+            esc.settle(|i| delivered.get(&i) == Some(&true));
             sent.extend(round.into_iter().zip(entries));
         }
         let entries = Core::in_order(&esc, sent);
@@ -572,7 +572,7 @@ impl Mercurio {
         on_entry: &(dyn Fn(&ReportEntry) + Sync),
     ) -> Vec<ReportEntry> {
         let send = |t: &Target| {
-            let retry = filter.retry_for(t.tag_set()).map(|r| u32::try_from(r).unwrap_or(u32::MAX));
+            let retry = filter.retry_for(t.tag_set()).map(crate::util::saturating_u32);
             let transport = Blocking(self.transport.as_ref());
             let (attempts, warnings) = pollster::block_on(crate::warnings::collect(t.send_attempts_with_retry(
                 msg,

@@ -4,6 +4,7 @@
 //! - build a value, as `|e| Error::Io { e }` and `Missing::Page(path)` do
 //! - read a field, as `self.calls.lock().clone()` does, or pass fields on, as `retry_at(self.at, self.failures)`
 //! - compare with a constant, as `|r| r.level() == Level::Failure` does
+//! - set fields of `self` and maybe return it, as a builder's `{ self.name = Some(name.into()); self }` does
 
 use std::{collections::BTreeMap, str::FromStr};
 
@@ -103,7 +104,37 @@ fn reads_field(expr: &Expr) -> bool {
 }
 
 fn builds_only(stmts: &[syn::Stmt]) -> bool {
-    matches!(stmts, [syn::Stmt::Expr(e, None)] if builds(e))
+    matches!(stmts, [syn::Stmt::Expr(e, None)] if builds(e)) || sets_self(stmts)
+}
+
+/// Statements that only set or update fields of `self`, then maybe give back `self`.
+fn sets_self(stmts: &[syn::Stmt]) -> bool {
+    let (body, last) = match stmts {
+        [body @ .., syn::Stmt::Expr(Expr::Path(p), None)] if p.path.is_ident("self") => (body, true),
+        _ => (stmts, false),
+    };
+    !body.is_empty()
+        && (last || body.len() > 1 || matches!(body, [syn::Stmt::Expr(_, Some(_))]))
+        && body.iter().all(|s| matches!(s, syn::Stmt::Expr(e, Some(_)) if updates_self(e)))
+}
+
+/// An assignment to a field of `self`, or a call on `self` or one of its fields.
+fn updates_self(expr: &Expr) -> bool {
+    if let Expr::Assign(a) = expr {
+        return on_self(&a.left);
+    }
+    matches!(expr, Expr::MethodCall(c) if on_self(&c.receiver))
+}
+
+/// `self`, or a field or method call reached from it.
+fn on_self(expr: &Expr) -> bool {
+    if let Expr::Field(f) = expr {
+        return on_self(&f.base);
+    }
+    if let Expr::MethodCall(c) = expr {
+        return on_self(&c.receiver);
+    }
+    matches!(expr, Expr::Path(p) if p.path.is_ident("self"))
 }
 
 /// The tokens, with each of `params` replaced by its position, but where a field or method has its name.

@@ -68,10 +68,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         None => SERVICE.default_of("mode"),
         Some(m) => {
             let m = m.trim().to_lowercase();
-            MODES
-                .iter()
-                .copied()
-                .find(|x| !m.is_empty() && x.starts_with(&m))
+            crate::util::completing(MODES, &m)
                 .ok_or_else(|| SERVICE.err("the Zoom mode is invalid"))?
         }
     };

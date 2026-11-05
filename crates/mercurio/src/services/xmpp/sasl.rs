@@ -87,15 +87,7 @@ impl Hash {
         {
             type Derived = std::collections::BTreeMap<(usize, Vec<u8>, Vec<u8>, u32), Vec<u8>>;
             static DERIVED: std::sync::Mutex<Derived> = std::sync::Mutex::new(std::collections::BTreeMap::new());
-            let id = (len, password.to_vec(), salt.to_vec(), iterations.get());
-            if let Some(k) = DERIVED.lock().ok().and_then(|d| d.get(&id).cloned()) {
-                return k;
-            }
-            let k = derive();
-            if let Ok(mut d) = DERIVED.lock() {
-                d.insert(id, k.clone());
-            }
-            k
+            crate::util::derive_once(&DERIVED, (len, password.to_vec(), salt.to_vec(), iterations.get()), derive)
         }
         #[cfg(not(any(test, feature = "testing")))]
         derive()

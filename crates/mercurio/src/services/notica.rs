@@ -85,7 +85,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 fn parse_native(url: &str) -> Option<String> {
     let re = crate::regex!(r"(?i)^https?://notica\.us/?\??(?P<token>[^&]+)([&\s]*(?P<params>.+))?\n?$");
     let c = re.captures(url)?;
-    let params = c.name("params").map(|p| format!("?{}", p.as_str())).unwrap_or_default();
+    let params = c.name("params").map(crate::util::query_suffix).unwrap_or_default();
     Some(format!("notica://{}/{}", &c["token"], params))
 }
 

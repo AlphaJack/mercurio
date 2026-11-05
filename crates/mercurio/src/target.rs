@@ -199,7 +199,7 @@ impl Target {
                 self.tag_set.push(t);
             }
         }
-        self.tag_set.sort_by(|a, b| a.name.cmp(&b.name));
+        self.tag_set.sort_by(Tag::by_name);
         self.tags = self.tag_set.iter().map(|t| t.name.clone()).collect();
         self
     }

@@ -35,7 +35,7 @@ pub(crate) fn verify_device_keys(dev: &Value, user_id: &str, device_id: &str) ->
     };
     let signed: Map<String, Value> = obj
         .iter()
-        .filter(|(k, _)| *k != "signatures" && *k != "unsigned")
+        .filter(|(k, _)| signed(k))
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
     verify_ed25519(pk, canonical_json(&Value::Object(signed)).as_bytes(), sig)
@@ -55,7 +55,7 @@ pub(crate) fn verify_signed_by(obj: &Value, user_id: &str, public: &str) -> bool
     };
     let signed: Map<String, Value> = map
         .iter()
-        .filter(|(k, _)| *k != "signatures" && *k != "unsigned")
+        .filter(|(k, _)| signed(k))
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
     verify_ed25519(public, canonical_json(&Value::Object(signed)).as_bytes(), sig)
@@ -90,4 +90,9 @@ pub(crate) fn verify_signed_otk(otk: &Value, user_id: &str, device_id: &str, ed2
     let signed: Map<String, Value> =
         obj.iter().filter(|(k, _)| *k != "signatures").map(|(k, v)| (k.clone(), v.clone())).collect();
     verify_ed25519(ed25519_pub, canonical_json(&Value::Object(signed)).as_bytes(), sig)
+}
+
+/// Whether `key` is part of what a signature covers: not `signatures` or `unsigned`.
+fn signed(key: &str) -> bool {
+    key != "signatures" && key != "unsigned"
 }

@@ -99,8 +99,8 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
 
     let m = mode.trim().to_lowercase();
-    let jwt = match ["basic", "jwt"].iter().find(|x| !m.is_empty() && x.starts_with(&m)) {
-        Some(&"jwt") => true,
+    let jwt = match crate::util::completing(&["basic", "jwt"], &m) {
+        Some("jwt") => true,
         Some(_) => false,
         None => return Err(SERVICE.err("an invalid RingCentral Authentication Mode was specified")),
     };

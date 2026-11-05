@@ -98,10 +98,7 @@ fn mask_version(v: &mut Value) {
 }
 
 fn ignores(case: &Value) -> Vec<String> {
-    case.get("ignore")
-        .and_then(Value::as_array)
-        .map(|a| a.iter().filter_map(crate::util::json_string).collect())
-        .unwrap_or_default()
+    case.get("ignore").and_then(Value::as_array).map(|a| crate::util::json_strings_of(a)).unwrap_or_default()
 }
 
 /// What mercurio did for one case (after [`with_defaults`]).
