@@ -29,6 +29,11 @@ pub(crate) fn utf8_char_len(ch: char) -> usize {
     ch.len_utf8()
 }
 
+/// The bytes `s` takes as a JSON string's content.
+fn json_len(s: &str) -> usize {
+    s.chars().map(json_char_bytes).sum()
+}
+
 /// A character's UTF-8 cost after JSON string escaping.
 pub(crate) fn json_char_bytes(ch: char) -> usize {
     match ch {
@@ -86,7 +91,7 @@ pub(crate) fn fit_char_limit(body: &str, byte_budget: usize, cost: impl Fn(usize
 pub(crate) fn device_id_overhead_bytes(device_id: Option<&str>) -> usize {
     match device_id {
         None | Some("") => MATRIX_DEVICE_ID_FALLBACK_BYTES,
-        Some(d) => d.chars().map(json_char_bytes).sum(),
+        Some(d) => json_len(d),
     }
 }
 
@@ -100,7 +105,7 @@ pub(crate) fn title_overhead_bytes(title: &str, rich: bool) -> usize {
         return plain;
     }
     let html = crate::util::escape_html(title, false, false);
-    plain + format!("<h1>{html}</h1><br/>").chars().map(json_char_bytes).sum::<usize>()
+    plain + json_len(&format!("<h1>{html}</h1><br/>"))
 }
 
 /// Unpadded base64 length of `n` bytes.

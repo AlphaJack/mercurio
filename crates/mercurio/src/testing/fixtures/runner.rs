@@ -100,7 +100,7 @@ fn mask_version(v: &mut Value) {
 fn ignores(case: &Value) -> Vec<String> {
     case.get("ignore")
         .and_then(Value::as_array)
-        .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
+        .map(|a| a.iter().filter_map(crate::util::json_string).collect())
         .unwrap_or_default()
 }
 

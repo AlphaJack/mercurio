@@ -1,5 +1,6 @@
 //! TCP + rustls streams on tokio, upgraded to TLS in place for STARTTLS, and Unix stream sockets: the async twin of `net::NetConn`.
 
+use crate::net::unresolved;
 use std::io;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -48,7 +49,7 @@ async fn tcp_connect(host: &str, port: u16, limit: Duration) -> io::Result<TcpSt
             Err(_) => last = Some(timed_out("connect")),
         }
     }
-    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
+    Err(last.unwrap_or_else(|| unresolved(host)))
 }
 
 impl TokioConn {

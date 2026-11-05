@@ -463,7 +463,7 @@ impl Notify for Office365 {
                 }),
             );
         }
-        let from = from_email.and_then(|e| e.as_str().map(str::to_owned)).map(|e| (e, from_name));
+        let from = from_email.and_then(crate::util::json_string).map(|e| (e, from_name));
         deliver(shared, message, from)
     }
 

@@ -82,6 +82,31 @@ pub(crate) fn authority(rest: &str) -> &str {
     rest.split(['/', '?']).next().unwrap_or("")
 }
 
+/// Whether `s` has more than whitespace.
+pub(crate) fn non_blank<S: AsRef<str>>(s: &S) -> bool {
+    !s.as_ref().trim().is_empty()
+}
+
+/// The text of a JSON string.
+pub(crate) fn json_string<V: std::borrow::Borrow<Value>>(v: V) -> Option<String> {
+    v.borrow().as_str().map(str::to_owned)
+}
+
+/// The text of a regex match, parsed as a `T`.
+pub(crate) fn parse_match<T: std::str::FromStr>(m: crate::re::Match<'_>) -> Option<T> {
+    m.as_str().parse().ok()
+}
+
+/// The text of a regex match, trimmed.
+pub(crate) fn trimmed_match(m: crate::re::Match<'_>) -> String {
+    m.as_str().trim().to_owned()
+}
+
+/// The parts of `text` that `separators` splits it into, without empty ones.
+pub(crate) fn split_nonempty(separators: &crate::re::Regex, text: &str) -> Vec<String> {
+    separators.split(text).filter(|s| !s.is_empty()).map(str::to_owned).collect()
+}
+
 /// A JSON object of `pairs`, each value a string.
 pub(crate) fn json_strings(pairs: &[(String, String)]) -> Map<String, Value> {
     pairs.iter().map(|(k, v)| (k.clone(), Value::String(v.clone()))).collect()

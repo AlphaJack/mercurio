@@ -54,12 +54,12 @@ pub(crate) fn parse_rfc3339(s: &str) -> Option<f64> {
         r"^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2}):(\d{2})(\.\d+)?(?:([Zz])|([+-])(\d{2}):?(\d{2}))$"
     )
     .captures(s.trim())?;
-    let n = |i: usize| c.get(i).and_then(|m| m.as_str().parse::<i64>().ok());
+    let n = |i: usize| c.get(i).and_then(crate::util::parse_match::<i64>);
     let (month, day, hour, min, sec) = (n(2)?, n(3)?, n(4)?, n(5)?, n(6)?);
     if !(1..=12).contains(&month) || !(1..=31).contains(&day) || hour > 23 || min > 59 || sec > 60 {
         return None;
     }
-    let frac = c.get(7).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
+    let frac = c.get(7).and_then(crate::util::parse_match::<f64>).unwrap_or(0.0);
     let offset = match c.get(9).map(|m| m.as_str()) {
         Some(sign) => {
             let o = n(10)? * 3600 + n(11)? * 60;

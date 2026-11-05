@@ -531,7 +531,7 @@ impl Notify for Vapid {
         let retired: Vec<String> = ctx
             .store
             .get(RETIRED_KEY)
-            .and_then(|v| v.as_array().map(|a| a.iter().filter_map(|e| e.as_str().map(str::to_owned)).collect()))
+            .and_then(|v| v.as_array().map(|a| a.iter().filter_map(crate::util::json_string).collect()))
             .unwrap_or_default();
         let tally = Arc::new(Mutex::new(Tally::default()));
         let now = ctx.env().unix_time();

@@ -337,7 +337,7 @@ impl Notify for Mattermost {
                                             "unexpected Mattermost channel lookup response",
                                         ));
                                     };
-                                    match obj.get("id").and_then(Value::as_str).filter(|s| !s.trim().is_empty()) {
+                                    match obj.get("id").and_then(Value::as_str).filter(crate::util::non_blank) {
                                         Some(id) => {
                                             store.set(&key, Value::String(id.to_owned()), Some(CHANNEL_CACHE));
                                             bot_post(base, bearer, ua, id.to_owned(), body, files, Vec::new())

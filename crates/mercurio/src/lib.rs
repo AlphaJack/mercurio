@@ -282,6 +282,18 @@ macro_rules! warning {
     }};
 }
 pub(crate) use warning;
+
+/// `Display` for each type that has an `as_str` name.
+macro_rules! display_as_str {
+    ($($type:ty),+) => {$(
+        impl std::fmt::Display for $type {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+    )+};
+}
+pub(crate) use display_as_str;
 #[cfg(all(windows, any(feature = "transport-tokio", feature = "transport-blocking")))]
 mod winrt;
 

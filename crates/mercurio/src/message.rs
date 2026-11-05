@@ -48,11 +48,7 @@ impl NotifyType {
     }
 }
 
-impl fmt::Display for NotifyType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+crate::display_as_str!(NotifyType);
 
 /// Body markup.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -88,11 +84,7 @@ impl NotifyFormat {
     }
 }
 
-impl fmt::Display for NotifyFormat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+crate::display_as_str!(NotifyFormat);
 
 /// What to do when a message exceeds a service's limits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]

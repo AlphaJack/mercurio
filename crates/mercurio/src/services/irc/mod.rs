@@ -445,7 +445,7 @@ impl Notify for Irc {
             format!("{} {}", msg.title, msg.body).trim().to_owned()
         };
         let lines: Vec<String> =
-            message.split(['\r', '\n']).filter(|l| !l.trim().is_empty()).map(str::to_owned).collect();
+            message.split(['\r', '\n']).filter(crate::util::non_blank).map(str::to_owned).collect();
         let session = Session {
             pass,
             nickname,

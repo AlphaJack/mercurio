@@ -8,7 +8,7 @@ use crate::error::Error;
 use crate::http::{Request, Response};
 use crate::parse::{parse_list, validate_nonblank, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIdentifier};
-use crate::url::{ParsedUrl, unquote};
+use crate::url::ParsedUrl;
 use crate::{NotifyFormat, Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -54,7 +54,7 @@ struct WeChat {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let corpid = u.user().unwrap_or_default();
-    let corpsecret = u.password.as_deref().map(unquote).unwrap_or_default();
+    let corpsecret = u.password().unwrap_or_default();
     let agentid = u.host();
     let mut targets = u.path_segments();
     if let Some(to) = u.param_nonempty("to") {

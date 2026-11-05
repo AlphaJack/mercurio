@@ -225,7 +225,7 @@ fn ping_payload(args: &[&str]) -> Map<String, Value> {
         for c in re.captures_iter(arg) {
             if let Some(v) = c.name("value") {
                 push_unique(&mut parse, v.as_str());
-            } else if c.name("role").is_some_and(|r| !r.as_str().is_empty()) {
+            } else if c.name("role").is_some_and(|r| !r.is_empty()) {
                 push_unique(&mut roles, &c["id"]);
             } else if let Some(id) = c.name("id") {
                 push_unique(&mut users, id.as_str());

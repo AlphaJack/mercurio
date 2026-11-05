@@ -53,7 +53,7 @@ impl Tag {
                 name: c["tag"].to_lowercase(),
                 priority,
                 has_priority,
-                retry: c.name("retry").and_then(|m| m.as_str().parse().ok()),
+                retry: c.name("retry").and_then(crate::util::parse_match),
             };
         }
         Tag { name: v.to_lowercase(), ..Tag::default() }

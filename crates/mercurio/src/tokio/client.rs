@@ -1,5 +1,6 @@
 //! The tokio side of the HTTP client ([`crate::http1::client`]): [`TokioDial`] opens TCP and TLS connections, [`TokioStream`] reads and writes them with a timeout.
 
+use crate::net::unresolved;
 use std::io;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
@@ -126,5 +127,5 @@ async fn tcp_connect(host: &str, port: u16, budget: Duration) -> io::Result<TcpS
             Err(_) => last = Some(io::ErrorKind::TimedOut.into()),
         }
     }
-    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
+    Err(last.unwrap_or_else(|| unresolved(host)))
 }

@@ -58,7 +58,7 @@ pub trait Store: Send + Sync + fmt::Debug {
 
     /// `get` as a string.
     fn get_str(&self, key: &str) -> Option<String> {
-        self.get(key).and_then(|v| v.as_str().map(str::to_owned))
+        self.get(key).and_then(crate::util::json_string)
     }
 
     /// The file steps that read the store from disk, once; run before a send.

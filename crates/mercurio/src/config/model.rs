@@ -1,7 +1,5 @@
 //! Public configuration types and the parsed form shared by the TEXT and YAML readers.
 
-use std::fmt;
-
 use super::assets::apply_asset_value;
 use super::loader::{Loader, Source, SourceKind};
 use super::pending::PendingTarget;
@@ -46,11 +44,7 @@ impl ConfigFormat {
     }
 }
 
-impl fmt::Display for ConfigFormat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+crate::display_as_str!(ConfigFormat);
 
 /// How configurations are loaded.
 #[derive(Debug, Clone)]

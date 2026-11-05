@@ -205,7 +205,7 @@ fn check(r: &Response) -> Result<()> {
         let err = json
             .as_ref()
             .and_then(|j| j.get("error"))
-            .and_then(|e| e.as_str().map(str::to_owned))
+            .and_then(crate::util::json_string)
             .unwrap_or_else(|| "Unknown".into());
         return Err(Error::Service(format!("Pushsafer: {err}")));
     }

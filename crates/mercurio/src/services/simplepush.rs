@@ -200,7 +200,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             Some(found.ok_or_else(|| SERVICE.err("an invalid Simplepush priority was specified"))?)
         }
     };
-    let critical_volume = match volume_raw.as_deref().filter(|v| !v.trim().is_empty()) {
+    let critical_volume = match volume_raw.as_deref().filter(crate::util::non_blank) {
         None => None,
         Some(v) => {
             let f = crate::util::parse_trimmed::<f64>(v).filter(|f| *f > 0.0 && *f <= 1.0).ok_or_else(|| {

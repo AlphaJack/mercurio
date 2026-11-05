@@ -144,7 +144,7 @@ impl HumHub {
             if no_attachments {
                 return Plan::Done;
             }
-            let pid = memo.recall(&message_key).and_then(|v| v.as_str().map(str::to_owned));
+            let pid = memo.recall(&message_key).and_then(crate::util::json_string);
             return uploads(memo, pid);
         }
         Plan::http(req, move |res| {

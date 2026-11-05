@@ -319,7 +319,7 @@ impl Session {
             e2ee: Default::default(),
         };
         if s.cfg.mode != Mode::T2bot {
-            let get = |k: &str| s.store.get(k).and_then(|v| v.as_str().map(str::to_owned));
+            let get = |k: &str| s.store.get(k).and_then(crate::util::json_string);
             s.home_server = get("home_server");
             s.user_id = get("user_id");
             s.access_token = get("access_token");
