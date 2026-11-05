@@ -75,7 +75,7 @@ struct State {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     if u.user.as_deref().is_none_or(str::is_empty) {
         return Err(SERVICE.err("no Twist user was specified"));
     }

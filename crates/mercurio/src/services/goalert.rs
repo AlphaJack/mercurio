@@ -58,7 +58,7 @@ fn integration_key(s: &str) -> Option<String> {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut targets: Vec<String> = Vec::new();
     let mut path = Vec::new();
     for entry in u.path_segments() {

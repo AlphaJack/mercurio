@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use crate::util::unquoted_pairs;
+use crate::url::unquoted_pairs;
 use crate::http::{DEFAULT_CONNECT_TIMEOUT, Request};
 use crate::parse::{parse_list, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
@@ -65,7 +65,7 @@ struct AppriseApi {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let q = |k: &str| u.param_nonempty(k);
     let (token, fullpath) = if let Some(t) = q("token").or_else(|| q("to")) {
         (Some(unquote(t)), unquote(u.fullpath.as_deref().unwrap_or("")))

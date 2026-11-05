@@ -41,8 +41,6 @@ use crate::message::Attachment;
 use crate::service::Secret;
 use crate::transport::{AsyncTransport, Blocking, FileOp, FileOutput, Transport};
 
-/// Largest attachment by default (1000 MiB); the [`Asset::attachment_max_size`] default.
-pub(crate) const DEFAULT_MAX_SIZE: u64 = 1_048_576_000;
 /// Default `cache` age in seconds.
 pub(crate) const DEFAULT_CACHE_SECS: u64 = 600;
 
@@ -254,7 +252,7 @@ impl AttachSource {
     pub fn label(&self) -> String {
         match &self.kind {
             Kind::File(p) => format!("file://{}", p.display()),
-            Kind::Http(h) => crate::plan::redact_url(&h.url()),
+            Kind::Http(h) => crate::service_def::redact_url(&h.url()),
             Kind::Memory(_) => format!("memory://{}", self.name.as_deref().unwrap_or("")),
         }
     }
@@ -303,8 +301,8 @@ impl AttachSource {
 
     fn parse_http(spec: &str) -> Result<Self> {
         let opts = crate::url::ParseOptions { sanitize: false, ..Default::default() };
-        let u =
-            crate::url::parse_url_with(spec, opts).ok_or_else(|| Error::InvalidUrl(crate::plan::redact_url(spec)))?;
+        let u = crate::url::parse_url_with(spec, opts)
+            .ok_or_else(|| Error::InvalidUrl(crate::service_def::redact_url(spec)))?;
         // `?-x=` and `?+x=` both become request headers.
         let mut headers: Vec<(String, String)> =
             u.query_minus.iter().chain(u.query_plus.iter()).map(|(k, v)| (k.to_owned(), v.to_owned())).collect();

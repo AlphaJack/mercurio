@@ -236,7 +236,7 @@ fn parse_imf_fixdate(s: &str) -> Option<i64> {
     if !(1..=31).contains(&day) || h > 23 || m > 59 || sec > 60 {
         return None;
     }
-    Some(crate::time::unix_secs(year, month, day) + h * 3600 + m * 60 + sec)
+    Some(crate::calendar::unix_secs(year, month, day) + h * 3600 + m * 60 + sec)
 }
 
 /// `HTTP {status}: {reason}`, or the canonical phrase of the status when the reason is empty.

@@ -42,7 +42,7 @@ struct Evolution {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let apikey = u
         .user
         .as_deref()

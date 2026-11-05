@@ -2,6 +2,9 @@ use std::path::PathBuf;
 
 use crate::message::{NotifyFormat, NotifyType};
 
+/// Largest attachment by default (1000 MiB); the [`Asset::attachment_max_size`] default.
+pub(crate) const DEFAULT_MAX_SIZE: u64 = 1_048_576_000;
+
 /// Image sizes services request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -158,7 +161,7 @@ impl Default for Asset {
             ascii: ["[i]".into(), "[+]".into(), "[~]".into(), "[!]".into()],
             default_ascii: "[?]".into(),
             body_format: None,
-            attachment_max_size: crate::attachment::DEFAULT_MAX_SIZE,
+            attachment_max_size: DEFAULT_MAX_SIZE,
             storage_path: None,
             storage_idlen: DEFAULT_STORAGE_IDLEN,
             storage_salt: Vec::new(),

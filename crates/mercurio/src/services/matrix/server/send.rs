@@ -191,11 +191,11 @@ impl Session {
     }
 
     /// Upload every attachment once.
-    pub(super) fn upload_attachments(self, k: K<bool>) -> Plan {
+    pub(super) fn upload_attachments(self, k: Cont<Self, bool>) -> Plan {
         self.upload_one(0, Vec::new(), k)
     }
 
-    pub(super) fn upload_one(self, idx: usize, mut payloads: Vec<Value>, k: K<bool>) -> Plan {
+    pub(super) fn upload_one(self, idx: usize, mut payloads: Vec<Value>, k: Cont<Self, bool>) -> Plan {
         let Some(att) = self.msg.attachments.get(idx).cloned() else {
             let mut s = self;
             s.attachments = Some(payloads);

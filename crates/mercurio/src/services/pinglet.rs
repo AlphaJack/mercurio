@@ -67,7 +67,7 @@ fn upsert(v: &mut Vec<(String, String)>, k: String, val: String) {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut entries = u.path_segments();
     let topic = entries.pop();
     let namespace = entries.pop();

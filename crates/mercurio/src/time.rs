@@ -1,20 +1,6 @@
 //! The UTC date formats services send (RFC 3339, RFC 2822, AWS and syslog stamps), without a date crate; local times in IANA zones through `jiff` (feature `timezones`).
 
-const SECS_PER_DAY: u64 = 86_400;
-/// Days in a 400-year Gregorian cycle.
-const DAYS_PER_ERA: i64 = 146_097;
-/// Days from 0000-03-01 to 1970-01-01: the dates below count from March, so leap days end a year.
-const EPOCH_FROM_MARCH: i64 = 719_468;
-
-/// Unix seconds at midnight UTC of `year-month-day` (Howard Hinnant's `days_from_civil`).
-pub(crate) fn unix_secs(year: i64, month: i64, day: i64) -> i64 {
-    let y = if month <= 2 { year - 1 } else { year };
-    let era = y.div_euclid(400);
-    let yoe = y - era * 400;
-    let doy = (153 * (if month > 2 { month - 3 } else { month + 9 }) + 2) / 5 + day - 1;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    (era * DAYS_PER_ERA + doe - EPOCH_FROM_MARCH) * SECS_PER_DAY as i64
-}
+use crate::calendar::{DAYS_PER_ERA, EPOCH_FROM_MARCH, SECS_PER_DAY};
 
 /// UTC timestamp parts `(year, month, day, hour, minute, second)` for `secs` (Howard Hinnant's `civil_from_days`).
 pub fn utc_parts(secs: u64) -> (i64, u32, u32, u32, u32, u32) {
@@ -67,7 +53,7 @@ pub(crate) fn parse_rfc3339(s: &str) -> Option<f64> {
         }
         None => 0,
     };
-    let secs = unix_secs(n(1)?, month, day) + hour * 3600 + min * 60 + sec - offset;
+    let secs = crate::calendar::unix_secs(n(1)?, month, day) + hour * 3600 + min * 60 + sec - offset;
     Some(secs as f64 + frac)
 }
 
@@ -218,7 +204,7 @@ mod tests {
 
     #[test]
     fn unix_secs_round_trips_utc_parts() {
-        let secs = unix_secs(2026, 10, 16);
+        let secs = crate::calendar::unix_secs(2026, 10, 16);
         assert_eq!(utc_parts(secs as u64), (2026, 10, 16, 0, 0, 0));
     }
 }

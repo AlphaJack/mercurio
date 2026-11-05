@@ -70,7 +70,7 @@ struct Nextcloud {
 const GROUP_CACHE: std::time::Duration = std::time::Duration::from_secs(86400);
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut targets = u.path_segments();
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list([to]));

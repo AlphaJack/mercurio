@@ -92,7 +92,7 @@ fn normalize_jid(value: &str, default_host: &str) -> Option<(String, bool)> {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let host = u.host();
     let user = u.user().unwrap_or_default();
     let (jid, _) = normalize_jid(&user, &host).ok_or_else(|| SERVICE.err("an invalid XMPP JID was specified"))?;

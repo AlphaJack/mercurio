@@ -54,7 +54,7 @@ struct NextcloudTalk {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let targets = parse_list(u.path_segments());
     let secret = u.param("secret").filter(|s| !s.is_empty()).map(Secret::new);
     let silent = SERVICE.flag(u, "silent");

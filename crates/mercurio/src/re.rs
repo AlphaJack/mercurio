@@ -6,3 +6,14 @@
 pub(crate) use regex::{Captures, Match, NoExpand, Regex, escape};
 #[cfg(not(feature = "regex-unicode"))]
 pub(crate) use regex_lite::{Captures, Match, NoExpand, Regex, escape};
+
+/// Compile a regex once and return a `&'static Regex`.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! regex {
+    ($re:expr $(,)?) => {{
+        static RE: ::std::sync::LazyLock<$crate::__private::Regex> =
+            ::std::sync::LazyLock::new(|| $crate::__private::Regex::new($re).expect("valid regex"));
+        &*RE
+    }};
+}

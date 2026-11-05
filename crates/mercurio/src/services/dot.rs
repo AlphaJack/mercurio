@@ -57,7 +57,7 @@ struct Dot {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let q = |k: &str| u.param_nonempty(k).map(|v| unquote(v.trim()));
     let mode = match u.param_nonempty("mode") {
         Some(m) => crate::util::lower_trimmed(m),

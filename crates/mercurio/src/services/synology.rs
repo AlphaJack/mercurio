@@ -51,7 +51,7 @@ struct Synology {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let headers = u.query_plus.unquoted();
     let mut fullpath = u.fullpath.clone();
     let token = match u.param_nonempty("token") {

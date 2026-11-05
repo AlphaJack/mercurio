@@ -119,11 +119,19 @@ pub(super) fn build(parsed: Parsed, cfg: &mut Config, registry: &Registry) {
             && uses(p, &e.url)
         {
             let Some(def) = crate::url::scheme_of(&e.url).and_then(|s| registry.service_for_scheme(&s)) else {
-                cfg.warnings.push(format!("Could not load {} ({})", crate::plan::redact_url(&e.url), e.location));
+                cfg.warnings.push(format!(
+                    "Could not load {} ({})",
+                    crate::service_def::redact_url(&e.url),
+                    e.location
+                ));
                 continue;
             };
             let Some(pu) = parse_url_with(&e.url.replace("/#", "/%23"), SERVICE_URL) else {
-                cfg.warnings.push(format!("Could not load {} ({})", crate::plan::redact_url(&e.url), e.location));
+                cfg.warnings.push(format!(
+                    "Could not load {} ({})",
+                    crate::service_def::redact_url(&e.url),
+                    e.location
+                ));
                 continue;
             };
             let names = p.used_by(&pu);
@@ -145,7 +153,7 @@ pub(super) fn build(parsed: Parsed, cfg: &mut Config, registry: &Registry) {
             Ok(t) => cfg.services.push(ConfigService::Ready(t.with_tag_set(tags))),
             Err(err) => cfg.warnings.push(format!(
                 "Could not load URL {} ({}): {err}",
-                crate::plan::redact_url(&e.url),
+                crate::service_def::redact_url(&e.url),
                 e.location
             )),
         }

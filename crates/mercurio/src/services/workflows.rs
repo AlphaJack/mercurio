@@ -63,7 +63,7 @@ struct Workflows {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut entries = u.path_segments().into_iter();
     let power_automate = match u.param("powerautomate").or_else(|| u.param("pa")) {
         Some(v) => crate::parse::parse_bool(v, false),

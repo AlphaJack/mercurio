@@ -101,7 +101,7 @@ pub fn parse(url: &str) -> Result<Target> {
 pub(crate) fn parse_with(url: &str, registry: &Registry) -> Result<Target> {
     // `/#channel` is a literal '#', not a fragment.
     let url = url.replace("/#", "/%23");
-    let scheme = scheme_of(&url).ok_or_else(|| Error::InvalidUrl(crate::plan::redact_url(&url)))?;
+    let scheme = scheme_of(&url).ok_or_else(|| Error::InvalidUrl(crate::service_def::redact_url(&url)))?;
     if let Some(def) = registry.service_for_scheme(&scheme) {
         return build(def, &url, registry);
     }
@@ -210,7 +210,7 @@ impl Target {
         &self.tag_set
     }
 
-    /// The URL this target was built from. Contains secrets: never log it; use [`Target::label`] or [`crate::plan::redact_url`].
+    /// The URL this target was built from. Contains secrets: never log it; use [`Target::label`] or [`crate::redact_url`].
     pub fn url(&self) -> &str {
         &self.url
     }
@@ -379,7 +379,7 @@ impl Target {
         let mut attempts = Vec::new();
         loop {
             let started = Instant::now();
-            let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(stores.clone());
+            let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(crate::store::flushes(&stores));
             if retry > 0 {
                 ex = ex.with_tracker(&mut tracker);
             }
@@ -463,7 +463,8 @@ impl Target {
         let env = transport.env();
         let ctx = Context::new(asset, store, &memo).with_env(&env).with_tz(self.tz.as_ref());
         let plan = self.service.close(&ctx)?;
-        let mut ex = Executor::new(transport, self.exec_for(asset)).with_stores(self.stores(&ctx));
+        let mut ex =
+            Executor::new(transport, self.exec_for(asset)).with_stores(crate::store::flushes(&self.stores(&ctx)));
         let ok = ex.run(plan).await;
         Some(ex.finish(ok).await)
     }

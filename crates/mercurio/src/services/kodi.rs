@@ -48,7 +48,7 @@ struct Kodi {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let (protocol, port) = if u.scheme.starts_with("xbmc") {
         (XBMC_REMOTE_PROTOCOL, Some(u.port.unwrap_or(XBMC_DEFAULT_PORT)))
     } else {

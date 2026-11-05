@@ -48,7 +48,7 @@ struct Json {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     Ok(Box::new(Json {
         url: endpoint(u),
         method: parse_method(&SERVICE, u)?,

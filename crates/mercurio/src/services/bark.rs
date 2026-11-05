@@ -115,7 +115,7 @@ fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut targets = u.path_segments();
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list_unquoted([to]));

@@ -52,7 +52,7 @@ struct OneBot {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let token_raw = u.param_nonempty("token").map(str::to_owned).or_else(|| u.user.clone()).unwrap_or_default();
     let token = unquote(&token_raw);
     let token = if token.is_empty() { None } else { Some(Secret::new(token)) };

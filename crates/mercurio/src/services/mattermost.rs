@@ -85,7 +85,7 @@ struct Mattermost {
 const CHANNEL_CACHE: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 20);
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut tokens = u.path_segments();
     let token = tokens.pop();
     let fullpath = if tokens.is_empty() { String::new() } else { format!("/{}", tokens.join("/")) };

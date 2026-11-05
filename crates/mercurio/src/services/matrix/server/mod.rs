@@ -2,6 +2,9 @@
 //!
 //! Every step is a continuation over an owned [`Session`]: a step sends one request with [`Session::fetch`] and continues with the updated session.
 
+mod common;
+pub(super) use common::{get_str, hs_of, is_secure_http_url, match_room_alias, match_room_id, match_user, quote_path};
+use common::{label_of, non_empty};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -13,8 +16,7 @@ use crate::env::Env;
 use crate::error::Error;
 use crate::http::{Method, Request, Response};
 use crate::store::{Memo, StoreRef};
-use crate::url::quote;
-use crate::{Plan, regex};
+use crate::Plan;
 
 #[cfg(feature = "service-matrix-e2ee")]
 pub(crate) mod e2ee;
@@ -40,7 +42,9 @@ const DISCOVERY_BASE_KEY: &str = "__discovery_base";
 const DISCOVERY_IDENTITY_KEY: &str = "__discovery_identity";
 
 /// Continuation over the session.
-pub(super) type K<T> = Box<dyn FnOnce(Session, T) -> Plan + Send>;
+/// A continuation: what runs next with the session `S` and a result `T`.
+pub(super) type Cont<S, T> = Box<dyn FnOnce(S, T) -> Plan + Send>;
+pub(super) type K<T> = Cont<Session, T>;
 
 /// Matrix transaction id: a counter; a random UUID for raw access tokens (no counter can be kept for those).
 #[derive(Debug, Clone)]
@@ -208,72 +212,13 @@ fn empty() -> Value {
 
 pub(super) use crate::util::json_has_value as has_value;
 
-/// `key` as a string; `None` for other types.
-pub(super) fn get_str(v: &Value, key: &str) -> Option<String> {
-    v.get(key).and_then(Value::as_str).map(str::to_owned)
-}
 
-fn non_empty(s: Option<&str>) -> bool {
-    s.is_some_and(|s| !s.is_empty())
-}
 
-/// The homeserver part of a user id.
-pub(super) fn hs_of(user_id: &str) -> Option<String> {
-    user_id.split_once(':').map(|(_, hs)| hs.to_owned())
-}
 
-/// Matrix room id / alias / user patterns.
-pub(super) fn match_room_id(s: &str) -> Option<(String, Option<String>)> {
-    let c = regex!(r"(?i)^\s*(?:!|&#33;|%21)([A-Za-z0-9._=-]+)(?:(?::|%3A)([A-Za-z0-9.-]+))?\s*$").captures(s)?;
-    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_owned())))
-}
 
-pub(super) fn match_room_alias(s: &str) -> Option<(String, Option<String>)> {
-    let c = regex!(r"(?i)^\s*(?:#|%23)?([A-Za-z0-9._=-]+)(?:(?::|%3A)([A-Za-z0-9.-]+))?\s*$").captures(s)?;
-    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_owned())))
-}
 
-pub(super) fn match_user(s: &str) -> Option<(String, Option<String>)> {
-    let c = regex!(r"(?i)^\s*(?:@|%40)([A-Za-z0-9._=+/-]+)(?:(?::|%3A)([A-Za-z0-9.-]+))?\s*$").captures(s)?;
-    Some((c[1].to_string(), c.get(2).map(|m| m.as_str().to_owned())))
-}
 
-/// Percent-encode `s`, keeping `/`.
-pub(super) fn quote_path(s: &str) -> String {
-    quote(s, "/")
-}
 
-/// Whether `url` is a plain `https://` URL: a valid host and port, no user info, no fragment.
-pub(super) fn is_secure_http_url(url: &str) -> bool {
-    if url.contains('#') {
-        return false;
-    }
-    let Some(rest) = url.get(..8).filter(|p| p.eq_ignore_ascii_case("https://")).and_then(|_| url.get(8..)) else {
-        return false;
-    };
-    let netloc = crate::util::authority(rest);
-    if netloc.contains('@') {
-        return false;
-    }
-    let (host, port) = if let Some(stripped) = netloc.strip_prefix('[') {
-        match stripped.split_once(']') {
-            Some((h, p)) => (h, p.strip_prefix(':')),
-            None => return false,
-        }
-    } else {
-        match netloc.rsplit_once(':') {
-            Some((h, p)) => (h, Some(p)),
-            None => (netloc, None),
-        }
-    };
-    if let Some(p) = port
-        && !p.is_empty()
-        && crate::parse::port(p).is_none()
-    {
-        return false;
-    }
-    !host.is_empty() && crate::parse::is_hostname(&host.to_lowercase(), true, true, true).is_some()
-}
 
 /// Mutable delivery state threaded through every step.
 pub(super) struct Session {
@@ -495,7 +440,7 @@ impl Session {
         })
     }
 
-    fn start_attempts(self, f: Fetch, url: String, k: K<Fetched>) -> Plan {
+    fn start_attempts(self, f: Fetch, url: String, k: Cont<Self, Fetched>) -> Plan {
         let deadline = f.max_retry_wait.map(|d| Instant::now() + d);
         let f = Arc::new(f);
         self.attempt(f, url, DEFAULT_RETRIES.max(1), empty(), 500, deadline, k)
@@ -536,7 +481,7 @@ impl Session {
         last: Value,
         status: u16,
         deadline: Option<Instant>,
-        k: K<Fetched>,
+        k: Cont<Self, Fetched>,
     ) -> Plan {
         if left == 0 {
             if status == 429 {
@@ -615,9 +560,6 @@ impl Session {
     }
 }
 
-fn label_of(v: &Value) -> String {
-    v.as_str().map_or_else(|| v.to_string(), str::to_owned)
-}
 
 /// Build a session for one send and run it.
 pub(super) fn plan(cfg: Arc<Config>, msg: Msg, store: StoreRef, memo: Memo, env: Arc<dyn Env>) -> Plan {

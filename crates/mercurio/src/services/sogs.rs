@@ -63,7 +63,7 @@ fn is_hex64(s: &str) -> bool {
 
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut public_key = u.user().filter(|s| !s.is_empty());
     let mut seed = u.password.as_deref().filter(|s| !s.is_empty()).map(unquote);
     if let Some(k) = SERVICE.text(u, "key") {

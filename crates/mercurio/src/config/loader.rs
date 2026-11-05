@@ -40,7 +40,7 @@ impl Source {
     /// `C_MGR[schema].parse_url(url)`.
     fn parse(url: &str, format: Option<ConfigFormat>) -> Result<Source> {
         let scheme = get_schema(url).unwrap_or_default();
-        let unparseable = || cfg_err(format!("unparseable configuration URL {}", crate::plan::redact_url(url)));
+        let unparseable = || cfg_err(format!("unparseable configuration URL {}", crate::service_def::redact_url(url)));
         let verify_host = scheme != "file";
         let u = parse_url_with(url, ParseOptions { verify_host, ..Default::default() }).ok_or_else(unparseable)?;
         let format = u.param("format").and_then(ConfigFormat::parse).or(format);
@@ -88,7 +88,7 @@ impl Source {
     fn describe(&self) -> String {
         match &self.kind {
             SourceKind::File(p) => format!("file://{}", p.display()),
-            SourceKind::Http { url, .. } => crate::plan::redact_url(url),
+            SourceKind::Http { url, .. } => crate::service_def::redact_url(url),
             SourceKind::Memory(_) => "memory://".into(),
         }
     }
@@ -186,7 +186,10 @@ impl Loader<'_> {
             build(parsed, cfg, &self.opts.registry);
             for inc in includes {
                 if recursion == 0 {
-                    log::debug!("Recursion limit reached; ignoring Include URL: {}", crate::plan::redact_url(&inc));
+                    log::debug!(
+                        "Recursion limit reached; ignoring Include URL: {}",
+                        crate::service_def::redact_url(&inc)
+                    );
                     continue;
                 }
                 let (url, schema) = match get_schema(&inc) {
@@ -206,13 +209,13 @@ impl Loader<'_> {
                     }
                 };
                 let Ok(child) = Source::parse(&url, None) else {
-                    cfg.warnings.push(format!("Unparseable include URL {}", crate::plan::redact_url(&url)));
+                    cfg.warnings.push(format!("Unparseable include URL {}", crate::service_def::redact_url(&url)));
                     continue;
                 };
                 if schema == "file" && !src.schemas().contains(&"file") && !self.opts.insecure_includes {
                     cfg.warnings.push(format!(
                         "Including {schema}:// based configuration is prohibited. Ignoring URL {}",
-                        crate::plan::redact_url(&url)
+                        crate::service_def::redact_url(&url)
                     ));
                     continue;
                 }
