@@ -33,7 +33,6 @@ impl Server {
     }
 
     async fn notify_stored(&self, req: &Req, key: &str, mut content: Content) -> Reply {
-        req.note(|ev| ev.key = Some(key.to_owned()));
         if !self.key_ok(req, key, true).await {
             return self.key_denied(req, key);
         }
@@ -116,7 +115,7 @@ impl Server {
         }
         let urls: Vec<String> = match content.fields.get("urls") {
             Some(Value::String(s)) if !s.is_empty() => vec![s.clone()],
-            Some(Value::Array(a)) if !a.is_empty() => a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect(),
+            Some(Value::Array(a)) if !a.is_empty() => payload::strings(a),
             _ => self.s.stateless_urls.iter().cloned().collect(),
         };
         let Ok(tag) = payload::notify_tag(req, &content) else {

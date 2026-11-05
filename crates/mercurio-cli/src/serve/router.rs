@@ -198,14 +198,7 @@ fn router(server: &Arc<Server>) -> axum::Router<Arc<Server>> {
         )
         .route("/cfg", at("config_list", Gate::Admin, get(|State(s): St, req: Req| async move { s.list(&req).await })))
         .route("/cfg/@", at("config_current", Gate::Admin, get(missing).post(missing)))
-        .route(
-            "/cfg/{key}",
-            at(
-                "config",
-                Gate::Key,
-                post(|State(s): St, Key(k): Key, req: Req| async move { s.get_config(&req, Some(&k)).await }),
-            ),
-        )
+        .route("/cfg/{key}", at("config", Gate::Key, post(get_config_at)))
         .route(
             "/get",
             at(
@@ -214,14 +207,7 @@ fn router(server: &Arc<Server>) -> axum::Router<Arc<Server>> {
                 post(|State(s): St, req: Req| async move { s.get_config(&req, None).await }),
             ),
         )
-        .route(
-            "/get/{key}",
-            at(
-                "get",
-                Gate::Key,
-                post(|State(s): St, Key(k): Key, req: Req| async move { s.get_config(&req, Some(&k)).await }),
-            ),
-        )
+        .route("/get/{key}", at("get", Gate::Key, post(get_config_at)))
         .route(
             "/add",
             at("add_by_header", Gate::Header, post(|State(s): St, req: Req| async move { s.add(&req, None).await })),
@@ -294,6 +280,16 @@ fn router(server: &Arc<Server>) -> axum::Router<Arc<Server>> {
             ),
         )
 }
+/// `POST /cfg/{key}` and `POST /get/{key}`: the configuration stored under `key`.
+async fn get_config_at(State(s): St, Key(k): Key, req: Req) -> Reply {
+    s.get_config(&req, Some(&k)).await
+}
+
+/// A request header, decoded and trimmed.
+fn header(headers: &axum::http::HeaderMap, name: &str) -> Option<String> {
+    headers.get(name).map(|v| http::decode_header(v.as_bytes()).trim().to_owned())
+}
+
 /// Proves who is calling (Basic Auth), for [`Req::role`], and answers `401` to anonymous callers the route's [`Gate`] does not admit.
 async fn authorize(
     server: Arc<Server>,
@@ -305,17 +301,17 @@ async fn authorize(
     let auth = &server.s.auth;
     let (role, admitted) = {
         // `Request` is not `Sync`: no reference to it may live across the `await` below.
-        let header = |name| request.headers().get(name).map(|v| http::decode_header(v.as_bytes()).trim().to_owned());
+        let headers = request.headers();
         let role = if !auth.required {
             Role::Open
-        } else if auth.is_admin(header("authorization").and_then(|h| http::basic_auth(&h)).as_ref()) {
+        } else if auth.is_admin(header(headers, "authorization").and_then(|h| http::basic_auth(&h)).as_ref()) {
             Role::Admin
         } else {
             Role::Anonymous
         };
         let admitted = match gate {
             Gate::Key => true,
-            Gate::Header => header("x-apprise-config-id").is_some_and(|h| !h.is_empty()),
+            Gate::Header => header(headers, "x-apprise-config-id").is_some_and(|h| !h.is_empty()),
             Gate::Admin => false,
         };
         (role, admitted)
@@ -345,9 +341,9 @@ async fn observe(
     let method = request.method().as_str().to_ascii_uppercase();
     let route = request.extensions().get::<axum::extract::MatchedPath>().map(|p| p.as_str().to_owned());
     let (apprise_id, recursion, bytes_in) = {
-        let header = |name| request.headers().get(name).map(|v| http::decode_header(v.as_bytes()).trim().to_owned());
-        let bytes_in = header("content-length").and_then(|v| v.parse::<u64>().ok());
-        (header("x-apprise-id"), header("x-apprise-recursion-count"), bytes_in)
+        let headers = request.headers();
+        let bytes_in = header(headers, "content-length").and_then(|v| v.parse::<u64>().ok());
+        (header(headers, "x-apprise-id"), header(headers, "x-apprise-recursion-count"), bytes_in)
     };
     let response = next.run(request).await;
     let view = response.extensions().get::<View>().map_or("<unnamed view>", |v| v.0);

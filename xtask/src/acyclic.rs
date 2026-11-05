@@ -121,9 +121,9 @@ fn mermaid_id(module: &str) -> String {
 /// The occurrences in each file of the library that rust-analyzer indexes.
 fn index(root: &Path, name: &str) -> Result<Vec<Vec<Occurrence>>> {
     let dir = env::temp_dir().join(format!("{name}-acyclic"));
-    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    fs::create_dir_all(&dir).map_err(crate::io_error(&dir))?;
     let (config, index) = (dir.join("config.json"), dir.join("index.scip"));
-    fs::write(&config, CONFIG).map_err(|e| format!("{}: {e}", config.display()))?;
+    fs::write(&config, CONFIG).map_err(crate::io_error(&config))?;
     let out = Command::new("rust-analyzer")
         .arg("scip")
         .arg(root)
@@ -139,21 +139,18 @@ fn index(root: &Path, name: &str) -> Result<Vec<Vec<Occurrence>>> {
     }
     let prefix = format!("rust-analyzer cargo {name} ");
     let local = |symbol: &str| Some(symbol.strip_prefix(&prefix)?.split_once(' ')?.1.to_owned());
-    let documents: Vec<Vec<Occurrence>> =
-        documents(&fs::read(&index).map_err(|e| format!("{}: {e}", index.display()))?)
-            .into_iter()
-            .filter(|(path, _)| path.starts_with("src/") && path != MAIN)
-            .map(|(path, occurrences)| {
-                let mut occurrences: Vec<Occurrence> = occurrences
-                    .into_iter()
-                    .filter_map(|o| Some(Occurrence { symbol: local(&o.symbol)?, ..o }))
-                    .collect();
-                let source = fs::read_to_string(root.join(&path)).map_err(|e| format!("{path}: {e}"))?;
-                mark_bodies(&mut occurrences, &source);
-                mark_foreign(&mut occurrences, &source);
-                Ok(occurrences)
-            })
-            .collect::<Result<_>>()?;
+    let documents: Vec<Vec<Occurrence>> = documents(&fs::read(&index).map_err(crate::io_error(&index))?)
+        .into_iter()
+        .filter(|(path, _)| path.starts_with("src/") && path != MAIN)
+        .map(|(path, occurrences)| {
+            let mut occurrences: Vec<Occurrence> =
+                occurrences.into_iter().filter_map(|o| Some(Occurrence { symbol: local(&o.symbol)?, ..o })).collect();
+            let source = fs::read_to_string(root.join(&path)).map_err(|e| format!("{path}: {e}"))?;
+            mark_bodies(&mut occurrences, &source);
+            mark_foreign(&mut occurrences, &source);
+            Ok(occurrences)
+        })
+        .collect::<Result<_>>()?;
     if documents.is_empty() {
         return Err(format!("{} indexes no file of {name}", index.display()));
     }
