@@ -1,6 +1,6 @@
 //! Exotel (`exotel://`): SMS through the Exotel API.
 
-use super::_telephony::{phone_entries, param_unquoted, unquote_or_empty};
+use super::_telephony::{phone_entries, unquote_or_empty};
 use crate::parse::{is_phone_no, parse_phone_no_unquoted, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -81,11 +81,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(s) = SERVICE.text(u, "sid") {
         sid = s;
     }
-    let apikey = param_unquoted(u, "apikey").or_else(|| param_unquoted(u, "key"));
+    let apikey = u.text("apikey").or_else(|| u.text("key"));
     if let Some(s) = SERVICE.text(u, "from") {
         source = s;
     }
-    if let Some(s) = param_unquoted(u, "source") {
+    if let Some(s) = u.text("source") {
         source = s;
     }
     if let Some(to) = u.param_nonempty("to") {

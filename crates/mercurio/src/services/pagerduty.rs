@@ -68,17 +68,12 @@ struct PagerDuty {
     dedup: Option<String>,
 }
 
-/// Non-empty query value, unquoted a second time.
-fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
-    u.param_nonempty(key).map(unquote)
-}
-
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let apikey = param_unquoted(u, "apikey").unwrap_or_else(|| u.host());
-    let integration = param_unquoted(u, "integrationkey").unwrap_or_else(|| u.user().unwrap_or_default());
+    let apikey = u.text("apikey").unwrap_or_else(|| u.host());
+    let integration = u.text("integrationkey").unwrap_or_else(|| u.user().unwrap_or_default());
     let mut path = u.path_segments().into_iter();
-    let source = param_unquoted(u, "source").or_else(|| path.next());
-    let component = param_unquoted(u, "component").or_else(|| path.next());
+    let source = u.text("source").or_else(|| path.next());
+    let component = u.text("component").or_else(|| path.next());
 
     let apikey =
         validate_nonblank(&apikey).ok_or_else(|| SERVICE.err("an invalid Pager Duty API Key was specified"))?;
@@ -104,10 +99,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let severity = match SERVICE.text(u, "severity") {
         None => None,
         Some(s) => Some(
-            SEVERITIES
-                .iter()
-                .copied()
-                .find(|x| x.starts_with(s.as_str()))
+            crate::util::starting_with(SEVERITIES, &s)
                 .ok_or_else(|| SERVICE.err("the PagerDuty severity specified is invalid"))?,
         ),
     };
@@ -115,10 +107,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         None => "trigger",
         Some(a) => {
             let a = a.trim().to_lowercase();
-            ACTIONS
-                .iter()
-                .copied()
-                .find(|x| x.starts_with(a.as_str()))
+            crate::util::starting_with(ACTIONS, &a)
                 .ok_or_else(|| SERVICE.err("the PagerDuty action specified is invalid"))?
         }
     };
@@ -144,7 +133,7 @@ impl Notify for PagerDuty {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let resolve = self.action == "resolve" || (self.action == "map" && msg.kind == NotifyType::Success);
         let dedup = self.dedup.clone().or_else(|| {
-            let first = msg.body.split('\n').next().unwrap_or_default().trim();
+            let first = crate::util::first_line(msg.body);
             (self.action != "trigger").then(|| crate::crypto::hex(&crate::crypto::sha256(first.as_bytes())))
         });
         let url = if self.eu {

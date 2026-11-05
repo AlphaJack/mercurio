@@ -21,6 +21,11 @@ impl NotifyType {
     /// Every type: info, success, warning, failure.
     pub const ALL: [NotifyType; 4] = [Self::Info, Self::Success, Self::Warning, Self::Failure];
 
+    /// The first type whose name starts with `prefix`: `w` is [`NotifyType::Warning`].
+    pub(crate) fn starting_with(prefix: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|t| t.as_str().starts_with(prefix))
+    }
+
     /// Lower-case name: `info`, `success`, `warning` or `failure`.
     pub fn as_str(self) -> &'static str {
         match self {

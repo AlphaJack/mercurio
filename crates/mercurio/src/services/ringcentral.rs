@@ -8,7 +8,7 @@
 
 use serde_json::{Value, json};
 
-use super::_telephony::{Form, http_err, param_unquoted, unquote_or_empty, valid_phones};
+use super::_telephony::{Form, http_err, unquote_or_empty, valid_phones};
 use crate::env::Env;
 use crate::crypto::b64;
 use crate::error::Error;
@@ -80,18 +80,18 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     } else {
         (Some(unquote_or_empty(u.user.as_deref())), unquote_or_empty(u.password.as_deref()))
     };
-    let environment = param_unquoted(u, "env");
-    if let Some(t) = param_unquoted(u, "token") {
+    let environment = u.text("env");
+    if let Some(t) = u.text("token") {
         token = t;
     }
-    let mode = param_unquoted(u, "mode").unwrap_or_else(|| if token.chars().count() > 60 { "jwt" } else { "basic" }.to_owned());
-    if let Some(s) = param_unquoted(u, "secret") {
+    let mode = u.text("mode").unwrap_or_else(|| if token.chars().count() > 60 { "jwt" } else { "basic" }.to_owned());
+    if let Some(s) = u.text("secret") {
         client_secret = Some(s);
     }
-    if let Some(s) = param_unquoted(u, "from") {
+    if let Some(s) = u.text("from") {
         source = Some(s);
     }
-    if let Some(s) = param_unquoted(u, "source") {
+    if let Some(s) = u.text("source") {
         source = Some(s);
     }
     if let Some(to) = u.param_nonempty("to") {

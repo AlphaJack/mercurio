@@ -1,7 +1,7 @@
 //! SMS Manager (`smsmgr://`, `smsmanager://`): SMS through the SMS Manager API.
 
 use super::_sms::PHONE_TARGETS;
-use super::_telephony::{phone_entries, param_unquoted, unquote_or_empty};
+use super::_telephony::{phone_entries, unquote_or_empty};
 use crate::parse::{parse_phone_no_unquoted, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -49,7 +49,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut apikey = unquote_or_empty(u.user.as_deref());
     let mut targets = parse_phone_no_unquoted([u.host.as_str()], false);
     targets.extend(u.path_segments());
-    let sender = param_unquoted(u, "from").or_else(|| param_unquoted(u, "sender"));
+    let sender = u.text("from").or_else(|| u.text("sender"));
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));
     }

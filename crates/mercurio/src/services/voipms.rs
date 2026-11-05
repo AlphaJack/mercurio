@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
-use super::_telephony::{http_err, param_unquoted, unquote_or_empty};
+use super::_telephony::{http_err, unquote_or_empty};
 use crate::error::Error;
 use crate::http::Request;
 use crate::parse::{is_email, is_phone_no, parse_phone_no, parse_phone_no_unquoted};
@@ -50,7 +50,7 @@ struct Voipms {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
-    let source = match param_unquoted(u, "from") {
+    let source = match u.text("from") {
         Some(f) => Some(f),
         None if !targets.is_empty() => Some(targets.remove(0)),
         None => None,

@@ -49,10 +49,6 @@ struct PagerTree {
     meta_extras: Vec<(String, String)>,
 }
 
-fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
-    u.param_nonempty(key).map(unquote)
-}
-
 fn twice(p: &Pairs) -> Vec<(String, String)> {
     // Later duplicate keys replace earlier ones in place.
     let pairs: Pairs = p.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
@@ -60,21 +56,21 @@ fn twice(p: &Pairs) -> Vec<(String, String)> {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let integration = param_unquoted(u, "id").or_else(|| param_unquoted(u, "integration")).unwrap_or_else(|| u.host());
+    let integration = u.text("id").or_else(|| u.text("integration")).unwrap_or_else(|| u.host());
     let integration = validate_regex(&integration, r"^int_[a-zA-Z0-9\-_]{7,14}$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid PagerTree Integration ID was specified"))?;
-    let thirdparty = match param_unquoted(u, "tid")
-        .or_else(|| param_unquoted(u, "thirdparty"))
-        .or_else(|| param_unquoted(u, "dedup"))
+    let thirdparty = match u.text("tid")
+        .or_else(|| u.text("thirdparty"))
+        .or_else(|| u.text("dedup"))
     {
         Some(t) => Some(
             validate_nonblank(&t).ok_or_else(|| SERVICE.err("an invalid PagerTree third party ID was specified"))?,
         ),
         None => None,
     };
-    let action = param_unquoted(u, "action").and_then(|a| ACTIONS.iter().copied().find(|x| *x == a)).unwrap_or(SERVICE.default_of("action"));
-    let urgency = param_unquoted(u, "urgency").and_then(|a| URGENCIES.iter().copied().find(|x| *x == a));
-    let tags = match param_unquoted(u, "tags") {
+    let action = u.text("action").and_then(|a| ACTIONS.iter().copied().find(|x| *x == a)).unwrap_or(SERVICE.default_of("action"));
+    let urgency = u.text("urgency").and_then(|a| URGENCIES.iter().copied().find(|x| *x == a));
+    let tags = match u.text("tags") {
         Some(t) => parse_list(parse_list([t])),
         None => Vec::new(),
     };
@@ -108,7 +104,7 @@ impl Notify for PagerTree {
                 id
             } else {
                 // Other actions need the same ID from one notification to the next: the title, or the body's first line.
-                let key = if msg.title.is_empty() { msg.body.split('\n').next().unwrap_or_default().trim() } else { msg.title };
+                let key = if msg.title.is_empty() { crate::util::first_line(msg.body) } else { msg.title };
                 crate::crypto::hex(&crate::crypto::sha256(key.as_bytes()))
             }
         });

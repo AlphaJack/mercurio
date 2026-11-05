@@ -124,25 +124,18 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
     let action = match SERVICE.text(u, "action") {
         None => SERVICE.default_of("action"),
-        Some(a) => ACTIONS
-            .iter()
-            .copied()
-            .find(|x| x.starts_with(a.as_str()))
+        Some(a) => crate::util::starting_with(ACTIONS, &a)
             .ok_or_else(|| SERVICE.err(format!("the Jira action specified ({a}) is invalid")))?,
     };
 
     let mut mapping = ["note", "close", "new", "new"];
     for (k, v) in u.query_colon.iter() {
         let (k, v) = (unquote(k), unquote(v));
-        let idx = NotifyType::ALL
-            .iter()
-            .position(|t| t.as_str().starts_with(k.as_str()))
+        let idx = NotifyType::starting_with(&k)
+            .map(|t| t as usize)
             .ok_or_else(|| SERVICE.err(format!("the Jira mapping key specified ({k}) is invalid")))?;
         let lower = v.to_lowercase();
-        let action = ACTIONS[1..]
-            .iter()
-            .copied()
-            .find(|x| x.starts_with(lower.as_str()))
+        let action = crate::util::starting_with(&ACTIONS[1..], &lower)
             .ok_or_else(|| SERVICE.err(format!("the Jira mapping value specified ({v}) is invalid")))?;
         mapping[idx] = action;
     }

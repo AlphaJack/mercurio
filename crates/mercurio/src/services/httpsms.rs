@@ -3,7 +3,7 @@
 use super::_sms::PHONE_TARGETS;
 use serde_json::json;
 
-use super::_telephony::{param_unquoted, source_and_targets, unquote_or_empty};
+use super::_telephony::{source_and_targets, unquote_or_empty};
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -44,7 +44,7 @@ struct HttpSms {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let apikey = param_unquoted(u, "key").unwrap_or_else(|| unquote_or_empty(u.user.as_deref()));
+    let apikey = u.text("key").unwrap_or_else(|| unquote_or_empty(u.user.as_deref()));
     let apikey = validate_nonblank(&apikey).ok_or_else(|| SERVICE.err("an invalid API Key was specified"))?;
     let (source, targets) =
         source_and_targets(u, 10).ok_or_else(|| SERVICE.err("the Account (From) Phone # specified is invalid"))?;

@@ -50,22 +50,15 @@ struct Signl4 {
     action: &'static str,
 }
 
-fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
-    u.param_nonempty(key).map(unquote)
-}
-
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let secret = param_unquoted(u, "secret").unwrap_or_else(|| u.host());
+    let secret = u.text("secret").unwrap_or_else(|| u.host());
     let secret = validate_nonblank(&secret)
         .ok_or_else(|| SERVICE.err("an invalid SIGNL4 team or integration secret was specified"))?;
     let action = match SERVICE.text(u, "action") {
         None => "trigger",
         Some(a) => {
             let a = a.trim().to_lowercase();
-            ACTIONS
-                .iter()
-                .copied()
-                .find(|x| x.starts_with(a.as_str()))
+            crate::util::starting_with(ACTIONS, &a)
                 .ok_or_else(|| SERVICE.err("the SIGNL4 action specified is invalid"))?
         }
     };
@@ -74,7 +67,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         service: SERVICE.text(u, "service"),
         location: SERVICE.text(u, "location"),
         alerting_scenario: SERVICE.text(u, "alerting_scenario"),
-        filtering: param_unquoted(u, "filtering").map(|f| parse_bool(&f, false)).unwrap_or(false),
+        filtering: u.text("filtering").map(|f| parse_bool(&f, false)).unwrap_or(false),
         external_id: SERVICE.text(u, "external_id").or_else(|| u.param_nonempty("dedup").map(unquote)),
         status: SERVICE.text(u, "status"),
         action,
@@ -111,7 +104,7 @@ impl Notify for Signl4 {
             _ => None,
         });
         let external_id = self.external_id.clone().or_else(|| {
-            let key = if msg.title.is_empty() { msg.body.split('\n').next().unwrap_or_default().trim() } else { msg.title };
+            let key = if msg.title.is_empty() { crate::util::first_line(msg.body) } else { msg.title };
             (self.action != "trigger").then(|| crate::crypto::hex(&crate::crypto::sha256(key.as_bytes())))
         });
         opt("X-S4-ExternalID", &external_id);

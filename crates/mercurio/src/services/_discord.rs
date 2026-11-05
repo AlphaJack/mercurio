@@ -34,7 +34,14 @@ pub(crate) fn find_mentions(text: &str) -> Vec<Mention> {
         .collect()
 }
 
-fn push_unique(v: &mut Vec<String>, s: &str) {
+/// An embed field with `value` as a Markdown code block.
+pub(crate) fn md_field(name: &str, value: &str) -> Value {
+    let value = if value.is_empty() { "```\n```".to_owned() } else { format!("```md\n{}\n```", value.trim_end()) };
+    json!({"name": name, "value": value})
+}
+
+/// Adds `s` to `v` unless it is there already.
+pub(crate) fn push_unique(v: &mut Vec<String>, s: &str) {
     if !v.iter().any(|x| x == s) {
         v.push(s.to_owned());
     }
@@ -510,14 +517,7 @@ impl Notify for Discord {
                     );
                     fields = sections
                         .into_iter()
-                        .map(|(name, value)| {
-                            let value = if value.is_empty() {
-                                "```\n```".to_owned()
-                            } else {
-                                format!("```md\n{}\n```", value.trim_end())
-                            };
-                            json!({"name": name, "value": value})
-                        })
+                        .map(|(name, value)| md_field(&name, &value))
                         .collect();
                     embed.insert("description".into(), json!(description));
                     if !fields.is_empty() {

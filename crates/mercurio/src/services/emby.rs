@@ -2,6 +2,7 @@
 //!
 //! The login session lives as long as the parsed URL (a non-persistent store entry): later sends only look up the client sessions and post. [`Target::close`](crate::Target::close) logs out.
 
+use super::_emby::parse_with;
 use crate::Result;
 use crate::service::{Notify, Param, ServiceDef};
 use crate::url::ParsedUrl;
@@ -31,5 +32,5 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
 };
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    super::_emby::parse_with(u, &SERVICE)
+    parse_with(u, &SERVICE)
 }

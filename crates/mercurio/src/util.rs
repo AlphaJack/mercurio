@@ -3,6 +3,16 @@
 use serde_json::{Map, Value};
 
 /// Escapes `&`, `<` and `>` only.
+/// The first line of `text`, trimmed.
+pub(crate) fn first_line(text: &str) -> &str {
+    text.split('\n').next().unwrap_or_default().trim()
+}
+
+/// The first of `options` that starts with `prefix`.
+pub(crate) fn starting_with<'a>(options: &[&'a str], prefix: &str) -> Option<&'a str> {
+    options.iter().copied().find(|x| x.starts_with(prefix))
+}
+
 pub(crate) fn html_escape_noquote(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
