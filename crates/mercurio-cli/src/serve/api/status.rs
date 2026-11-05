@@ -3,7 +3,8 @@
 use serde_json::{Value, json};
 
 use super::super::http::{Reply, Req, parse_bool};
-use super::super::{INVALID_KEY_HEADER, Server, details, store, valid_key};
+use super::super::key::{INVALID_KEY_HEADER, valid_key};
+use super::super::{Server, details, store};
 
 impl Server {
     pub(crate) async fn status(&self, req: &Req, key: Option<&str>) -> Reply {

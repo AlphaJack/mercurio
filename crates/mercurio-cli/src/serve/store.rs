@@ -483,7 +483,7 @@ impl ConfigStore {
     pub(super) async fn prune_unused_locks(&self, older_than: Duration) -> usize {
         let (dirs, name_ok): (Vec<PathBuf>, fn(&str) -> bool) = match self.mode {
             Mode::Disabled => return 0,
-            Mode::Simple => (vec![self.root.clone()], |n| super::valid_key(n)),
+            Mode::Simple => (vec![self.root.clone()], |n| super::key::valid_key(n)),
             Mode::Hash => {
                 let mut dirs = Vec::new();
                 if let Ok(mut entries) = fs::read_dir(&self.root).await {

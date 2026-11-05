@@ -1,14 +1,13 @@
 //! Sending a notification and rendering its result: the logs of the call as text, HTML or `{"error", "details"}`.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, SystemTime};
 
 use axum::response::IntoResponse;
 use axum::response::sse::{Event, KeepAlive, Sse};
 use mercurio::{AsyncMercurio, Message, Report, TagFilter, TemplateVars, transport::BoxFuture};
 use serde_json::{Value, json};
-use tokio::sync::mpsc;
+use tokio::sync::{OwnedSemaphorePermit, mpsc};
 
 use super::http::{Body, Reply, Req};
 
@@ -192,41 +191,11 @@ fn log_event(l: &LogEntry) -> Event {
     sse("log", &json!({"level": l.level, "asctime": l.asctime(), "message": l.message, "service": l.service}))
 }
 
-/// Live streams currently admitted (`APPRISE_STREAM_WORKER_COUNT` + `APPRISE_STREAM_QUEUE_SIZE`).
-pub(super) struct StreamSlots {
-    active: AtomicUsize,
-    capacity: usize,
-}
-
-impl StreamSlots {
-    pub(super) fn new(capacity: usize) -> Arc<StreamSlots> {
-        Arc::new(StreamSlots { active: AtomicUsize::new(0), capacity })
-    }
-
-    pub(super) fn try_admit(self: &Arc<Self>) -> Option<StreamSlot> {
-        let prev = self.active.fetch_add(1, Ordering::SeqCst);
-        if prev >= self.capacity {
-            self.active.fetch_sub(1, Ordering::SeqCst);
-            return None;
-        }
-        Some(StreamSlot(self.clone()))
-    }
-}
-
-/// Releases its admission when the response is done.
-pub(super) struct StreamSlot(Arc<StreamSlots>);
-
-impl Drop for StreamSlot {
-    fn drop(&mut self) {
-        self.0.active.fetch_sub(1, Ordering::SeqCst);
-    }
-}
-
 /// Called once a streamed job has finished, with its report and logs.
 pub(super) type OnDone = Box<dyn FnOnce(Report, Vec<LogEntry>) -> BoxFuture<'static, ()> + Send>;
 
 /// Runs the job in a task, sending a `log` event as each service finishes and a final `result` event; `done` gets the report and logs. While idle the stream sends a heartbeat comment.
-pub(super) fn stream(job: Job, level: u8, slot: StreamSlot, heartbeat: Duration, done: OnDone) -> Reply {
+pub(super) fn stream(job: Job, level: u8, slot: OwnedSemaphorePermit, heartbeat: Duration, done: OnDone) -> Reply {
     let (tx, rx) = mpsc::unbounded_channel::<Event>();
     let send = move |tx: &mpsc::UnboundedSender<Event>, event: Event| {
         if tx.send(event).is_err() {
