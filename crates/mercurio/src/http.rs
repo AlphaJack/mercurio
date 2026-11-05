@@ -267,7 +267,7 @@ impl Request {
 
     /// First value of header `name` (case-insensitive).
     pub fn header_value(&self, name: &str) -> Option<&str> {
-        self.headers.iter().find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v.as_str())
+        header_in(&self.headers, name)
     }
 
     /// JSON body with `Content-Type: application/json` (unless already set).
@@ -390,7 +390,7 @@ impl Request {
 
     /// Body as UTF-8 text (lossy).
     pub fn body_text(&self) -> String {
-        String::from_utf8_lossy(&self.body).into_owned()
+        lossy_text(&self.body)
     }
 }
 
@@ -431,12 +431,12 @@ impl Response {
 
     /// First value of header `name` (case-insensitive).
     pub fn header(&self, name: &str) -> Option<&str> {
-        self.headers.iter().find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v.as_str())
+        header_in(&self.headers, name)
     }
 
     /// Body as UTF-8 text (lossy).
     pub fn text(&self) -> String {
-        String::from_utf8_lossy(&self.body).into_owned()
+        lossy_text(&self.body)
     }
 
     /// Parsed JSON body, if it is JSON.
@@ -680,6 +680,16 @@ pub fn parse_multipart(content_type: &str, body: &[u8]) -> Vec<Value> {
             Value::Object(obj)
         })
         .collect()
+}
+
+/// The first value of header `name` in `headers`, any case.
+fn header_in<'a>(headers: &'a [(String, String)], name: &str) -> Option<&'a str> {
+    headers.iter().find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v.as_str())
+}
+
+/// `body` as UTF-8 text, invalid bytes replaced.
+fn lossy_text(body: &[u8]) -> String {
+    String::from_utf8_lossy(body).into_owned()
 }
 
 #[cfg(test)]

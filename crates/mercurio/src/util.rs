@@ -144,6 +144,25 @@ pub(crate) fn derive_once<K: Ord, V: Clone>(
     v
 }
 
+/// Decode a variable byte integer; returns (value, bytes used).
+pub(crate) fn decode_varint(data: &[u8]) -> Option<(usize, usize)> {
+    let mut value = 0usize;
+    let mut mult = 1usize;
+    for (i, b) in data.iter().enumerate().take(4) {
+        value += (*b as usize & 0x7f) * mult;
+        if b & 0x80 == 0 {
+            return Some((value, i + 1));
+        }
+        mult *= 128;
+    }
+    None
+}
+
+/// A copy of what `m` holds, even after a panic poisoned it.
+pub(crate) fn held<T: Clone>(m: &std::sync::Mutex<T>) -> T {
+    m.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
+}
+
 /// A JSON object of `pairs`, each value a string.
 pub(crate) fn json_strings(pairs: &[(String, String)]) -> Map<String, Value> {
     pairs.iter().map(|(k, v)| (k.clone(), Value::String(v.clone()))).collect()

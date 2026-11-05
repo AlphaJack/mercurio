@@ -4,6 +4,7 @@
 
 use std::cell::RefCell;
 use std::future::Future;
+use std::mem::take;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
@@ -30,7 +31,7 @@ pub(crate) fn note(message: String) {
 pub(crate) async fn collect<F: Future>(fut: F) -> (F::Output, Vec<String>) {
     let sink = Sink::default();
     let out = Collecting { inner: Box::pin(fut), sink: sink.clone() }.await;
-    let warnings = sink.lock().map(|mut l| std::mem::take(&mut *l)).unwrap_or_default();
+    let warnings = sink.lock().map(|mut l| take(&mut *l)).unwrap_or_default();
     (out, warnings)
 }
 

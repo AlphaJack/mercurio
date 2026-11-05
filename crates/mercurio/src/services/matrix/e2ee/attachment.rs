@@ -19,7 +19,7 @@ pub(super) fn encrypt_attachment_with(data: &[u8], key: &[u8; 32], iv: &[u8; 16]
             "kty": "oct",
             "key_ops": ["encrypt", "decrypt"],
             "alg": "A256CTR",
-            "k": b64url_nopad(key),
+            "k": crate::crypto::b64_url_nopad(key),
             "ext": true,
         },
         "iv": b64enc(iv),

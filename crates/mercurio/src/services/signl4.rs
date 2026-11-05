@@ -81,22 +81,12 @@ impl Notify for Signl4 {
         payload.insert("title".into(), json!(title));
         payload.insert("body".into(), json!(crate::http::TEXT));
         payload.insert("X-S4-SourceSystem".into(), json!(ctx.app_id()));
-        let mut opt = |k: &str, v: &Option<String>| {
-            if let Some(v) = v {
-                payload.insert(k.into(), json!(v));
-            }
-        };
-        opt("X-S4-Service", &self.service);
-        opt("X-S4-AlertingScenario", &self.alerting_scenario);
-        opt("X-S4-Location", &self.location);
+        put(&mut payload, "X-S4-Service", self.service.as_deref());
+        put(&mut payload, "X-S4-AlertingScenario", self.alerting_scenario.as_deref());
+        put(&mut payload, "X-S4-Location", self.location.as_deref());
         if self.filtering {
             payload.insert("X-S4-Filtering".into(), json!(true));
         }
-        let mut opt = |k: &str, v: &Option<String>| {
-            if let Some(v) = v {
-                payload.insert(k.into(), json!(v));
-            }
-        };
         let status = self.status.clone().or(match self.action {
             "resolve" => Some("resolved".into()),
             "map" if msg.kind == NotifyType::Success => Some("resolved".into()),
@@ -107,10 +97,17 @@ impl Notify for Signl4 {
             let key = if msg.title.is_empty() { crate::util::first_line(msg.body) } else { msg.title };
             (self.action != "trigger").then(|| crate::crypto::hex(&crate::crypto::sha256(key.as_bytes())))
         });
-        opt("X-S4-ExternalID", &external_id);
-        opt("X-S4-Status", &status);
+        put(&mut payload, "X-S4-ExternalID", external_id.as_deref());
+        put(&mut payload, "X-S4-Status", status.as_deref());
         let req = Request::post(format!("https://connect.signl4.com/webhook/{}/", self.secret.expose()))
             .json_text(&Value::Object(payload), msg.body);
         Plan::send_expect(req, &[200, 201, 202])
+    }
+}
+
+/// Sets `key` in `payload` to `value`, when there is one.
+fn put(payload: &mut Map<String, Value>, key: &str, value: Option<&str>) {
+    if let Some(v) = value {
+        payload.insert(key.into(), json!(v));
     }
 }

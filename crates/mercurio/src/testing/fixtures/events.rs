@@ -119,11 +119,11 @@ pub(super) fn record(
     let mut s = Session::default();
     (c.setup)(&mut s, case);
     let msgs = [super::case_message(case)];
-    let (mut attempts, _) =
+    let (attempts, _) =
         super::runner::run_sends(front, target, &msgs, &s.fake, &super::fixture_asset(doc), false).remove(0);
-    let delivery = attempts.pop().map(|a| a.delivery).unwrap_or_default();
+    let delivery = crate::target::last_delivery(attempts);
     let ok = delivery.is_success();
-    let mut out = super::outcome(ok, delivery.errors().map(ToString::to_string).collect());
+    let mut out = super::outcome(ok, super::error_texts(&delivery));
     let http = s.fake.requests();
     if !http.is_empty() {
         out["requests"] = super::requests(&http, ignore);

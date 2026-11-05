@@ -28,7 +28,7 @@ cargo xtask try 'gotify://real.host/TOKEN'         # send real test messages wit
 `xtask/tests/conventions` checks these with `syn`, and `cargo xtask acyclic` with rust-analyzer:
 
 - Modules and items do not depend on each other in a cycle. A module may use its ancestors' types, but not call their free functions: a helper that a parent and its children share goes in a module of its own. `cargo xtask acyclic` checks it, and `cargo xtask acyclic --mermaid` draws the module graph.
-- Each thing is done in one place: no two functions or closures have the same body, and no chain of three calls or more is written out three times. Name it instead. The library is not checked yet.
+- Each thing is done in one place: no two functions or closures in a package have the same body, and no chain of three calls or more is written out three times. Name it instead. Bodies that only build a value, read or pass on fields, names and constants, compare with a constant or set fields of `self` are exempt.
 - Paths are joined a component at a time, `dir.join("a").join("b")`, as Windows shows `dir.join("a/b")` with both separators. An absolute Unix path starts from its first component, `Path::new("/usr").join("bin")`.
 
 ## Checks

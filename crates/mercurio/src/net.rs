@@ -135,6 +135,11 @@ impl rustls::client::danger::ServerCertVerifier for NoVerify {
 /// Bytes asked for in one read of a socket.
 pub(crate) const READ_CHUNK: usize = 4096;
 
+/// The transport error when `host` resolves to no address.
+pub(crate) fn unresolved_error(host: &str) -> Error {
+    Error::transport(unresolved(host))
+}
+
 /// The error when `host` resolves to no address.
 pub(crate) fn unresolved(host: &str) -> std::io::Error {
     std::io::Error::new(std::io::ErrorKind::NotFound, format!("cannot resolve {host}"))

@@ -588,7 +588,7 @@ impl AttachmentSet {
 
     /// Load every attachment; the first failure aborts.
     pub fn load(&self, transport: &dyn Transport, asset: &Asset) -> Result<Vec<Attachment>> {
-        pollster::block_on(self.load_async(&Blocking(transport), asset))
+        self.items.iter().map(|s| s.load(transport, asset)).collect()
     }
 
     /// [`AttachmentSet::load`] on an [`AsyncTransport`].

@@ -78,23 +78,10 @@ struct Packet {
     body: Vec<u8>,
 }
 
-fn decode_varint(data: &[u8]) -> Option<(usize, usize)> {
-    let mut value = 0usize;
-    let mut mult = 1usize;
-    for (i, b) in data.iter().enumerate().take(4) {
-        value += (*b as usize & 0x7f) * mult;
-        if b & 0x80 == 0 {
-            return Some((value, i + 1));
-        }
-        mult *= 128;
-    }
-    None
-}
-
 fn split_packets(mut data: &[u8]) -> Vec<Packet> {
     let mut out = Vec::new();
     while data.len() >= 2 {
-        let Some((len, n)) = decode_varint(&data[1..]) else { break };
+        let Some((len, n)) = crate::util::decode_varint(&data[1..]) else { break };
         let start = 1 + n;
         if data.len() < start + len {
             break;
@@ -113,7 +100,7 @@ fn read_str(body: &[u8], pos: &mut usize) -> String {
 }
 
 fn skip_props(body: &[u8], pos: &mut usize) {
-    let (len, n) = decode_varint(&body[*pos..]).unwrap();
+    let (len, n) = crate::util::decode_varint(&body[*pos..]).unwrap();
     *pos += n + len;
 }
 
@@ -207,7 +194,7 @@ fn mqtt_events(fake: &FakeTransport, broker: Option<&MqttBroker>) -> Vec<Value> 
     let (Some(broker), Some(ep)) = (broker, fake.endpoints().first().cloned()) else {
         return out;
     };
-    let data = broker.written.lock().unwrap().clone();
+    let data = crate::util::held(&broker.written);
     let mut level = 4;
     for p in split_packets(&data) {
         match p.kind {

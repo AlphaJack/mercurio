@@ -410,7 +410,7 @@ impl Slack {
         }
         let content: Value = serde_json::from_str(&apply_template_json(&text, &tokens)?).ok()?;
         let blocks = content.get("blocks").and_then(Value::as_array).filter(|b| !b.is_empty())?;
-        if !blocks.iter().all(|b| b.get("type").is_some_and(Value::is_string)) {
+        if !blocks.iter().all(super::_chat::typed_block) {
             return None;
         }
         content.is_object().then_some(content)

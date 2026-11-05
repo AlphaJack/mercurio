@@ -227,7 +227,7 @@ fn parse_config(u: &ParsedUrl) -> Result<Config> {
     }
 
     let client_id = client_id
-        .and_then(|c| validate_regex(&c, r"^[a-z0-9-]+$", "i", true))
+        .and_then(|c| valid_id(&c))
         .ok_or_else(|| SERVICE.err("an invalid Office 365 Client OAuth2 ID was specified"))?;
     let secret = validate_nonblank(&secret)
         .ok_or_else(|| SERVICE.err("an invalid Office 365 Client OAuth2 Secret was specified"))?;
@@ -236,7 +236,7 @@ fn parse_config(u: &ParsedUrl) -> Result<Config> {
     } else {
         Some(
             tenant
-                .and_then(|t| validate_regex(&t, r"^[a-z0-9-]+$", "i", true))
+                .and_then(|t| valid_id(&t))
                 .ok_or_else(|| SERVICE.err("an invalid Office 365 Tenant was specified"))?,
         )
     };
@@ -688,6 +688,11 @@ fn upload_chunks(
         None => Plan::Fail(Error::Service("could not upload Office 365 attachment".into())),
     })
     .context("upload")
+}
+
+/// `id` when it is an Azure client or tenant id: letters, digits and `-`.
+fn valid_id(id: &str) -> Option<String> {
+    validate_regex(id, r"^[a-z0-9-]+$", "i", true)
 }
 
 #[cfg(test)]

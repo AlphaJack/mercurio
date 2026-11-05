@@ -212,6 +212,13 @@ impl Escalation {
         (!batch.is_empty()).then_some(batch)
     }
 
+    /// [`Escalation::settle`] with the entries sent for `round`, in its order.
+    pub(crate) fn settle_entries(&mut self, round: &[usize], entries: &[ReportEntry]) {
+        let delivered: BTreeMap<usize, bool> =
+            round.iter().copied().zip(entries.iter().map(|e| e.delivery.is_success())).collect();
+        self.settle(|i| delivered.get(&i) == Some(&true));
+    }
+
     /// Record the round: a chain whose group all delivered is done, any other moves on to its next group.
     pub(crate) fn settle(&mut self, delivered: impl Fn(usize) -> bool) {
         #[expect(clippy::needless_collect, reason = "the loop writes to the fields that pending() borrows")]
@@ -530,9 +537,7 @@ impl Mercurio {
         let mut sent = Vec::new();
         while let Some(round) = esc.round() {
             let entries = self.send_all(msg, round.iter().map(|&i| targets[i]).collect(), filter, on_entry);
-            let delivered: BTreeMap<usize, bool> =
-                round.iter().copied().zip(entries.iter().map(|e| e.delivery.is_success())).collect();
-            esc.settle(|i| delivered.get(&i) == Some(&true));
+            esc.settle_entries(&round, &entries);
             sent.extend(round.into_iter().zip(entries));
         }
         let entries = Core::in_order(&esc, sent);

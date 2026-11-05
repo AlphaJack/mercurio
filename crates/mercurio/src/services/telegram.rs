@@ -602,7 +602,7 @@ impl Job {
         let Some(blocks) = blocks else {
             return Err(fail("must contain a non-empty 'blocks' list"));
         };
-        if !blocks.iter().all(|b| b.get("type").is_some_and(Value::is_string)) {
+        if !blocks.iter().all(super::_chat::typed_block) {
             return Err(fail("contains a block missing a 'type' string"));
         }
         Ok(content)

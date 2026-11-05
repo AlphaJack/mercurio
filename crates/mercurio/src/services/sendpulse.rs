@@ -136,10 +136,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     set_name(&mut names, &from.1, from.0.clone());
 
     let client_id = client_id
-        .and_then(|c| validate_regex(&c, KEY_RE, "i", true))
+        .and_then(|c| valid_key(&c))
         .ok_or_else(|| SERVICE.err("an invalid SendPulse Client ID was specified"))?;
     let client_secret = client_secret
-        .and_then(|c| validate_regex(&c, KEY_RE, "i", true))
+        .and_then(|c| valid_key(&c))
         .ok_or_else(|| SERVICE.err("an invalid SendPulse Client Secret was specified"))?;
 
     let template = match SERVICE.text(u, "template") {
@@ -252,7 +252,7 @@ type Auth = (Request, StoreRef);
 /// One e-mail post; on `401` log in again once and retry (`_fetch(retry=1)`).
 fn send_email(payload: Arc<Value>, token: Token, auth: Auth, app_id: String, retry: bool) -> Plan {
     Plan::defer(move || {
-        let bearer = token.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
+        let bearer = crate::util::held(&token);
         let req = Request::post(EMAIL_URL)
             .header("User-Agent", app_id.as_str())
             .header("Content-Type", "application/json")
@@ -348,6 +348,11 @@ impl Notify for SendPulse {
     fn url_identifier(&self) -> UrlIdentifier {
         UrlIdentifier::parts(["sendpulse", self.client_id.expose(), self.client_secret.expose()])
     }
+}
+
+/// `key` when it is a SendPulse client id or secret.
+fn valid_key(key: &str) -> Option<String> {
+    validate_regex(key, KEY_RE, "i", true)
 }
 
 #[cfg(test)]

@@ -88,13 +88,23 @@ pub(crate) fn read_template(ctx: &Context<'_>, src: &TemplateSrc, max: u64) -> O
     load_template(ctx, src, max).ok()
 }
 
+/// Whether a Block Kit block names its `type`.
+pub(crate) fn typed_block(block: &Value) -> bool {
+    block.get("type").is_some_and(Value::is_string)
+}
+
+/// A regex for the `{{ token }}` placeholders of `tokens`, any case.
+pub(crate) fn token_regex(tokens: &[(String, String)]) -> Result<crate::re::Regex, String> {
+    let alts: Vec<String> = tokens.iter().map(|(k, _)| crate::re::escape(k)).collect();
+    crate::re::Regex::new(&format!(r"(?i)\{{\{{\s*({})\s*\}}\}}", alts.join("|"))).map_err(|e| e.to_string())
+}
+
 /// Fill `{{ token }}` placeholders in a JSON template (values JSON-escaped). Keys match case-insensitively but are looked up exactly: a case mismatch returns `None`.
 pub(crate) fn apply_template_json(template: &str, tokens: &[(String, String)]) -> Option<String> {
     if tokens.is_empty() {
         return Some(template.to_owned());
     }
-    let alts: Vec<String> = tokens.iter().map(|(k, _)| crate::re::escape(k)).collect();
-    let re = crate::re::Regex::new(&format!(r"(?i)\{{\{{\s*({})\s*\}}\}}", alts.join("|"))).ok()?;
+    let re = token_regex(tokens).ok()?;
     crate::util::replace_all(&re, template, |c| {
         let key = c[0].strip_prefix("{{")?.strip_suffix("}}")?.trim();
         // Later duplicates win.

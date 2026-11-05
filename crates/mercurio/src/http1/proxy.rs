@@ -2,6 +2,7 @@
 
 use crate::crypto::b64;
 use crate::http1::url::Url;
+use std::env::var;
 
 /// A forward proxy from the environment: HTTP or HTTPS, optionally with Basic credentials.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,7 +35,7 @@ pub(crate) struct ProxyEnv {
 
 impl ProxyEnv {
     pub(crate) fn from_env() -> Self {
-        Self::from_lookup(|name| std::env::var(name).ok())
+        Self::from_lookup(|name| var(name).ok())
     }
 
     pub(crate) fn from_lookup(get: impl Fn(&str) -> Option<String>) -> Self {

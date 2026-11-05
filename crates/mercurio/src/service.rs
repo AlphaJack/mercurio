@@ -1,5 +1,6 @@
 //! The contract every service implements.
 
+use crate::parse::parse_bool;
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
@@ -118,16 +119,13 @@ impl ServiceDef {
 
     /// A yes/no parameter: its value read with [`crate::parse::parse_bool`], falling back to the declared default (`Param::bool`).
     pub fn flag(&self, u: &ParsedUrl, key: &str) -> bool {
-        let default = crate::parse::parse_bool(self.default_of(key), false);
-        self.raw(u, key).map_or(default, |v| crate::parse::parse_bool(v, default))
+        let default = parse_bool(self.default_of(key), false);
+        self.raw(u, key).map_or(default, |v| parse_bool(v, default))
     }
 
     /// A yes/no parameter where only a yes word turns it on: the declared default when absent, `false` for any other value (also empty).
     pub fn flag_strict(&self, u: &ParsedUrl, key: &str) -> bool {
-        self.raw(u, key).map_or_else(
-            || crate::parse::parse_bool(self.default_of(key), false),
-            |v| crate::parse::parse_bool(v, false),
-        )
+        self.raw(u, key).map_or_else(|| parse_bool(self.default_of(key), false), |v| parse_bool(v, false))
     }
 
     /// A whole-number parameter; `None` when absent or not a number.
