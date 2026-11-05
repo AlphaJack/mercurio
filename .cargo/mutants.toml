@@ -1,0 +1,15 @@
+# The mutants run on Linux with every default feature. Files this build never compiles would always be missed.
+exclude_globs = [
+  "xtask/**",
+  "crates/mercurio/src/services/windows.rs",
+  "crates/mercurio/src/services/macosx.rs",
+  "crates/mercurio/src/winrt.rs",
+  # Test doubles and the fixture runner: they check the code, they are not what it does.
+  "crates/mercurio/src/testing/**",
+]
+
+# Mutants dealt out one by one, so that shards finish together.
+sharding = "round-robin"
+
+# A mutant whose build takes three times the unmutated one is stopped.
+build_timeout_multiplier = 3.0

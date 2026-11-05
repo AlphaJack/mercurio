@@ -2,3 +2,8 @@
 # every core busy.
 [profile.default]
 slow-timeout = { period = "20s", terminate-after = 3 }
+
+# Unit tests are fast: one that a mutant holds up fails after 20 seconds.
+[[profile.default.overrides]]
+filter = 'kind(lib) | kind(bin)'
+slow-timeout = { period = "10s", terminate-after = 2 }
