@@ -58,11 +58,8 @@ impl Dial for TokioDial {
     fn tls<'a>(&'a self, io: TokioStream, host: &'a str, verify: bool) -> BoxFuture<'a, Result<TokioStream>> {
         Box::pin(async move {
             let name = crate::net::server_name(host)?;
-            let tls = self
-                .connector(verify)?
-                .connect(name, io.io)
-                .await
-                .map_err(|e| Error::transport(format!("TLS handshake: {e}")))?;
+            let tls =
+                self.connector(verify)?.connect(name, io.io).await.map_err(Error::transport_at("TLS handshake"))?;
             Ok(TokioStream { io: Box::new(tls), rt: io.rt })
         })
     }
@@ -129,5 +126,5 @@ async fn tcp_connect(host: &str, port: u16, budget: Duration) -> io::Result<TcpS
             Err(_) => last = Some(io::ErrorKind::TimedOut.into()),
         }
     }
-    Err(last.unwrap_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("cannot resolve {host}"))))
+    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
 }

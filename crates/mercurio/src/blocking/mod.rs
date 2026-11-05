@@ -38,7 +38,7 @@ impl Default for BlockingTransport {
 impl BlockingTransport {
     /// A transport whose `User-Agent` is `Mercurio/<version>`; requests that set their own keep it.
     pub fn new() -> Self {
-        Self::with_user_agent(format!("Mercurio/{}", env!("CARGO_PKG_VERSION")))
+        Self::with_user_agent(crate::transport::USER_AGENT)
     }
 
     /// A transport with a custom default `User-Agent`.
@@ -66,7 +66,7 @@ impl Transport for BlockingTransport {
                     .to_socket_addrs()
                     .map_err(Error::transport)?
                     .next()
-                    .ok_or_else(|| Error::transport(format!("cannot resolve {host}")))?;
+                    .ok_or_else(|| Error::transport(crate::net::unresolved(host)))?;
                 let sock = UdpSocket::bind(unbound_addr(&addr)).map_err(Error::transport)?;
                 sock.send_to(&dg.payload, addr).map_err(Error::transport)?;
                 Ok(())
@@ -98,9 +98,9 @@ impl Transport for BlockingTransport {
             let path = std::path::Path::new(path);
             if std::fs::read(path).ok().as_deref() != Some(*bytes) {
                 if let Some(dir) = path.parent() {
-                    std::fs::create_dir_all(dir).map_err(|e| Error::transport(format!("{}: {e}", dir.display())))?;
+                    std::fs::create_dir_all(dir).map_err(Error::transport_at(dir.display()))?;
                 }
-                std::fs::write(path, bytes).map_err(|e| Error::transport(format!("{}: {e}", path.display())))?;
+                std::fs::write(path, bytes).map_err(Error::transport_at(path.display()))?;
             }
         }
         let mut proc = Proc::new(&cmd.program);
@@ -110,7 +110,7 @@ impl Transport for BlockingTransport {
             .stderr(Stdio::piped());
         #[cfg(windows)]
         std::os::windows::process::CommandExt::creation_flags(&mut proc, crate::transport::NO_WINDOW);
-        let mut child = proc.spawn().map_err(|e| Error::transport(format!("{}: {e}", cmd.program)))?;
+        let mut child = proc.spawn().map_err(Error::transport_at(&cmd.program))?;
         if let Some(input) = &cmd.stdin
             && let Some(mut stdin) = child.stdin.take()
         {
@@ -131,7 +131,7 @@ fn tcp_connect(host: &str, port: u16, timeout: Duration) -> io::Result<TcpStream
             Err(e) => last = Some(e),
         }
     }
-    Err(last.unwrap_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("cannot resolve {host}"))))
+    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
 }
 
 enum Inner {
@@ -154,8 +154,7 @@ impl NetConn {
         if let Some(path) = &ep.unix {
             return Self::connect_unix(ep, path);
         }
-        let tcp = tcp_connect(&ep.host, ep.port, ep.connect_timeout)
-            .map_err(|e| Error::transport(format!("{}:{}: {e}", ep.host, ep.port)))?;
+        let tcp = tcp_connect(&ep.host, ep.port, ep.connect_timeout).map_err(Error::transport_at(ep.address()))?;
         tcp.set_read_timeout(Some(ep.read_timeout)).ok();
         tcp.set_write_timeout(Some(ep.read_timeout)).ok();
         let mut c = NetConn { inner: Inner::Plain(tcp), host: ep.host.clone(), verify: ep.verify_tls };
@@ -167,7 +166,7 @@ impl NetConn {
 
     #[cfg(unix)]
     fn connect_unix(ep: &Endpoint, path: &str) -> Result<Self> {
-        let sock = crate::net::unix_connect(path).map_err(|e| Error::transport(format!("{}: {e}", ep.address())))?;
+        let sock = crate::net::unix_connect(path).map_err(Error::transport_at(ep.address()))?;
         sock.set_read_timeout(Some(ep.read_timeout)).ok();
         sock.set_write_timeout(Some(ep.read_timeout)).ok();
         Ok(NetConn { inner: Inner::Unix(sock), host: String::new(), verify: ep.verify_tls })
@@ -197,7 +196,7 @@ impl Conn for NetConn {
             .map_err(Error::transport)?;
         let mut stream = StreamOwned::new(conn, tcp);
         while stream.conn.is_handshaking() {
-            stream.conn.complete_io(&mut stream.sock).map_err(|e| Error::transport(format!("TLS handshake: {e}")))?;
+            stream.conn.complete_io(&mut stream.sock).map_err(Error::transport_at("TLS handshake"))?;
         }
         self.inner = Inner::Tls(Box::new(stream));
         Ok(())

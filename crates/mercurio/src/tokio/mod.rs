@@ -40,7 +40,7 @@ impl Default for TokioTransport {
 impl TokioTransport {
     /// A transport whose `User-Agent` is `Mercurio/<version>`; requests that set their own keep it.
     pub fn new() -> Self {
-        Self::with_user_agent(format!("Mercurio/{}", env!("CARGO_PKG_VERSION")))
+        Self::with_user_agent(crate::transport::USER_AGENT)
     }
 
     /// A transport with a custom default `User-Agent`.
@@ -74,7 +74,7 @@ impl TokioTransport {
                     .await
                     .map_err(Error::transport)?
                     .next()
-                    .ok_or_else(|| Error::transport(format!("cannot resolve {host}")))?;
+                    .ok_or_else(|| Error::transport(crate::net::unresolved(host)))?;
                 let sock = tokio::net::UdpSocket::bind(unbound_addr(&addr)).await.map_err(Error::transport)?;
                 sock.send_to(&dg.payload, addr).await.map_err(Error::transport)?;
             }
@@ -95,13 +95,9 @@ impl TokioTransport {
             let path = Path::new(path);
             if tokio::fs::read(path).await.ok().as_deref() != Some(*bytes) {
                 if let Some(dir) = path.parent() {
-                    tokio::fs::create_dir_all(dir)
-                        .await
-                        .map_err(|e| Error::transport(format!("{}: {e}", dir.display())))?;
+                    tokio::fs::create_dir_all(dir).await.map_err(Error::transport_at(dir.display()))?;
                 }
-                tokio::fs::write(path, bytes)
-                    .await
-                    .map_err(|e| Error::transport(format!("{}: {e}", path.display())))?;
+                tokio::fs::write(path, bytes).await.map_err(Error::transport_at(path.display()))?;
             }
         }
         let mut proc = tokio::process::Command::new(&cmd.program);
@@ -112,7 +108,7 @@ impl TokioTransport {
             .kill_on_drop(true);
         #[cfg(windows)]
         proc.creation_flags(crate::transport::NO_WINDOW);
-        let mut child = proc.spawn().map_err(|e| Error::transport(format!("{}: {e}", cmd.program)))?;
+        let mut child = proc.spawn().map_err(Error::transport_at(&cmd.program))?;
         if let Some(input) = &cmd.stdin
             && let Some(mut stdin) = child.stdin.take()
         {
@@ -129,7 +125,7 @@ impl TokioTransport {
     async fn file(op: &FileOp) -> Result<FileOutput> {
         use tokio::fs;
         let path = op.path();
-        let err = |e: io::Error| Error::transport(format!("{}: {e}", path.display()));
+        let err = Error::transport_at::<io::Error>(path.display());
         match op {
             FileOp::Stat { .. } => match fs::metadata(path).await {
                 Ok(m) => Ok(FileOutput::Meta(Some(file_meta(&m)))),
@@ -137,23 +133,23 @@ impl TokioTransport {
                 Err(e) => Err(err(e)),
             },
             FileOp::Read { max, .. } => {
-                let m = fs::metadata(path).await.map_err(err)?;
+                let m = fs::metadata(path).await.map_err(&err)?;
                 if !m.is_file() || (*max > 0 && m.len() > *max) {
                     return Err(Error::Message(format!("{}: not a file of at most {max} bytes", path.display())));
                 }
-                fs::read(path).await.map(FileOutput::Bytes).map_err(err)
+                fs::read(path).await.map(FileOutput::Bytes).map_err(&err)
             }
             FileOp::Append { data, .. } => {
-                let mut f = fs::OpenOptions::new().append(true).create(true).open(path).await.map_err(err)?;
-                f.write_all(data).await.map_err(err)?;
+                let mut f = fs::OpenOptions::new().append(true).create(true).open(path).await.map_err(&err)?;
+                f.write_all(data).await.map_err(&err)?;
                 Ok(FileOutput::Done)
             }
             FileOp::WriteAtomic { data, private, .. } => {
-                write_atomic(path, data, *private).await.map_err(err)?;
+                write_atomic(path, data, *private).await.map_err(&err)?;
                 Ok(FileOutput::Done)
             }
             FileOp::CreateDir { private, .. } => {
-                create_dir(path, *private).await.map_err(err)?;
+                create_dir(path, *private).await.map_err(&err)?;
                 Ok(FileOutput::Done)
             }
             FileOp::Remove { .. } => match fs::remove_file(path).await {
@@ -161,10 +157,10 @@ impl TokioTransport {
                 _ => Ok(FileOutput::Done),
             },
             FileOp::Touch { .. } => {
-                let f = fs::File::options().write(true).open(path).await.map_err(err)?;
+                let f = fs::File::options().write(true).open(path).await.map_err(&err)?;
                 #[expect(clippy::disallowed_methods, reason = "the transport touches files on the real clock")]
                 let now = std::time::SystemTime::now();
-                f.into_std().await.set_modified(now).map_err(err)?;
+                f.into_std().await.set_modified(now).map_err(&err)?;
                 Ok(FileOutput::Done)
             }
         }
