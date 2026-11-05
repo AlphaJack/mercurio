@@ -39,7 +39,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{bot_token}/{targets}",
     ],
     tokens: &[
-        Param::new("bot_token", "Bot Token").required().secret().pattern("^(bot)?(?P<key>[0-9]+:[a-z0-9_-]+)$"),
+        Param::new("bot_token", "Bot Token").secret_key("^(bot)?(?P<key>[0-9]+:[a-z0-9_-]+)$"),
         Param::new("target_user", "Target Chat ID").pattern("^((-?[0-9]{1,32})|([a-z_-][a-z0-9_-]+))$"),
         Param::new("targets", "Targets").list("/").group(&["target_user"]),
     ],
@@ -224,7 +224,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         content_before,
         markdown_ver,
         template,
-        tokens: r.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
+        tokens: r.query_colon.owned(),
     }))
 }
 

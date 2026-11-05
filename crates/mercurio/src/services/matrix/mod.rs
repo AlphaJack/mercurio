@@ -411,10 +411,8 @@ impl Matrix {
         Ok(match self.cfg.mode {
             Mode::Slack => {
                 let fix = |s: &str| -> Result<String> {
-                    if s.contains("\r*\n") {
-                        return Err(Error::Service("Matrix Slack formatting failed".into()));
-                    }
-                    Ok(s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;"))
+                    super::_chat_markup::slack_escape(s)
+                        .ok_or_else(|| Error::Service("Matrix Slack formatting failed".into()))
                 };
                 let ts = env.unix_time_f64();
                 json!({

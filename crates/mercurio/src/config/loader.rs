@@ -49,8 +49,7 @@ impl Source {
                 SourceKind::File(path_decode(&unquote(&path)))
             }
             "http" | "https" => {
-                let mut headers: Vec<(String, String)> =
-                    u.query_minus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+                let mut headers: Vec<(String, String)> = u.query_minus.owned();
                 for (k, v) in u.query_plus.iter() {
                     headers.retain(|(n, _)| n != k);
                     headers.push((k.to_owned(), v.to_owned()));

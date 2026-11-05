@@ -61,7 +61,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         return Err(SERVICE.err("you must specify at least one event you wish to trigger on"));
     }
     // `+key=value` adds and `-key` removes payload values (see the module docs).
-    let add_tokens = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+    let add_tokens = u.query_plus.owned();
     // Removals match without case, so `-Value1` drops `value1` (Apprise #1831).
     let del_tokens = u.query_minus.iter().map(|(k, _)| k.to_lowercase()).collect();
     Ok(Box::new(Ifttt { webhook_id: Secret::new(webhook_id), events, add_tokens, del_tokens }))

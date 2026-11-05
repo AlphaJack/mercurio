@@ -29,7 +29,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}:{from_email}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[A-Z0-9._-]+$"),
+        Param::new("apikey", "API Key").secret_key("^[A-Z0-9._-]+$"),
         Param::new("from_email", "Source Email").email().required(),
         Param::new("target_email", "Target Email").email(),
         Param::new("targets", "Targets").list("/").group(&["target_email"]),
@@ -80,7 +80,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let cc = unique_emails(u.param_nonempty("cc"));
     let bcc = unique_emails(u.param_nonempty("bcc"));
     let template = SERVICE.text(u, "template");
-    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+    let template_data = u.query_plus.owned();
     Ok(Box::new(SendGrid { apikey: Secret::new(apikey), from_email, targets, cc, bcc, template, template_data }))
 }
 

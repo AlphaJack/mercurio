@@ -27,7 +27,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("targets", "Targets").list("/").group(&["to_channel", "to_user"]),
         Param::new("to_channel", "To Channel ID").pattern("^[A-Z0-9_]+$").prefix("#"),
         Param::new("to_user", "To User ID").pattern("^[A-Z0-9_]+$").prefix("@"),
-        Param::new("token", "Access Key").required().secret().pattern("^[a-z0-9-]+$"),
+        Param::new("token", "Access Key").secret_key("^[a-z0-9-]+$"),
     ],
     params: &[
         Param::new("image", "Include Image").bool(true),

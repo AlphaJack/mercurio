@@ -17,7 +17,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[a-z0-9]{32}$"),
+        Param::new("apikey", "API Key").secret_key("^[a-z0-9]{32}$"),
         Param::new("device", "Device ID").pattern("^[a-z0-9]{32}$"),
         Param::new("device_name", "Device Name"),
         Param::new("group", "Group").choice(&["all", "android", "chrome", "windows10", "phone", "tablet", "pc"]),
@@ -63,7 +63,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         None => 0,
         Some(p) => {
             let p = unquote(p).to_lowercase();
-            PRIORITY_MAP.iter().find(|(k, _)| p.starts_with(k)).map(|(_, v)| *v).unwrap_or(0)
+            crate::util::by_prefix(PRIORITY_MAP, &p)
         }
     };
 

@@ -506,7 +506,7 @@ impl Notify for Arc<Twitter> {
             return Plan::Fail(Error::Message("no valid Twitter targets to notify".into()));
         }
         let images: Vec<Attachment> =
-            msg.attachments.iter().filter(|a| a.mime.to_ascii_lowercase().starts_with("image/")).cloned().collect();
+            msg.attachments.iter().filter(|a| a.is_image()).cloned().collect();
         let job = Job { body: msg.body.to_owned(), ua: ctx.app_id().to_owned(), env: ctx.env().clone() };
         self.upload(images, Vec::new(), job)
     }

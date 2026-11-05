@@ -85,7 +85,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         }
     };
     let dedup = SERVICE.text(u, "dedup").map(|d| d.trim().to_owned());
-    let meta = u.query_plus.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
+    let meta = u.query_plus.unquoted();
 
     let mut keys = Vec::new();
     for t in parse_list(&targets) {
@@ -138,7 +138,7 @@ impl Notify for GoAlert {
             payload.insert("dedup".into(), json!(d));
         }
         if !self.meta.is_empty() {
-            let meta: Map<String, Value> = self.meta.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+            let meta: Map<String, Value> = crate::util::json_strings(&self.meta);
             payload.insert("meta".into(), Value::Object(meta));
         }
         let payload = Value::Object(payload);

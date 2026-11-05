@@ -22,7 +22,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("target_topic", "Target Topic").int(),
         Param::new("target_user", "Target User ID").pattern(r"^UID_[^\s]+$"),
         Param::new("targets", "Targets").list("/").required().group(&["target_topic", "target_user"]),
-        Param::new("token", "App Token").required().secret().pattern(r"^AT_[^\s]+$"),
+        Param::new("token", "App Token").secret_key(r"^AT_[^\s]+$"),
     ],
     params: &[
         Param::sets("to", &["targets"]),

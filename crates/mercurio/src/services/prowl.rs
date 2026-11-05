@@ -17,7 +17,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}/{providerkey}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[A-Za-z0-9]{40}$"),
+        Param::new("apikey", "API Key").secret_key("^[A-Za-z0-9]{40}$"),
         Param::new("providerkey", "Provider Key").secret().pattern("^[A-Za-z0-9]{40}$"),
     ],
     params: &[
@@ -45,7 +45,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let providerkey = u.path_segments().into_iter().next();
     let priority = {
         let p = SERVICE.text_or_default(u, "priority").to_lowercase();
-        PRIORITY_MAP.iter().find(|(k, _)| p.starts_with(k)).map(|(_, v)| *v).unwrap_or(0)
+        crate::util::by_prefix(PRIORITY_MAP, &p)
     };
     let apikey = validate_regex(&apikey, KEY_RE, "i", true)
         .ok_or_else(|| SERVICE.err("an invalid Prowl API Key was specified"))?;

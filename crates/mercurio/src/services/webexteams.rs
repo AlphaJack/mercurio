@@ -24,7 +24,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("access_token", "Bot Access Token").required().secret(),
         Param::new("targets", "Room IDs").list("/"),
-        Param::new("token", "Webhook Token").required().secret().pattern("^[a-z0-9]{80,160}$"),
+        Param::new("token", "Webhook Token").secret_key("^[a-z0-9]{80,160}$"),
     ],
     params: &[
         Param::new("mode", "Mode").choice(&["webhook", "bot"]),

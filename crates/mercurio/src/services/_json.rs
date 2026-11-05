@@ -5,17 +5,21 @@ use serde_json::{Map, Value, json};
 use crate::Prepared;
 use crate::crypto::b64;
 
-/// `version`, `title`, `message` (as a placeholder, see [`encode`]), `attachments` (name, base64 data, MIME type) and `type`.
-pub(crate) fn object(msg: &Prepared<'_>) -> Map<String, Value> {
-    let attachments: Vec<Value> = msg
-        .attachments
+/// Each attachment as `{filename, base64, mimetype}`; a missing name becomes `file001.dat`.
+pub(crate) fn attachment_list(attachments: &[crate::message::Attachment]) -> Vec<Value> {
+    attachments
         .iter()
         .enumerate()
         .map(|(i, a)| {
             let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
             json!({"filename": name, "base64": b64(&a.data), "mimetype": a.mime})
         })
-        .collect();
+        .collect()
+}
+
+/// `version`, `title`, `message` (as a placeholder, see [`encode`]), `attachments` (name, base64 data, MIME type) and `type`.
+pub(crate) fn object(msg: &Prepared<'_>) -> Map<String, Value> {
+    let attachments = attachment_list(msg.attachments);
     let mut payload = Map::new();
     payload.insert("version".into(), json!("1.0"));
     payload.insert("title".into(), json!(msg.title));

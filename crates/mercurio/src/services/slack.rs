@@ -13,6 +13,7 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use super::_chat::{TemplateSrc, apply_template_json, read_template, template_fetches, template_files, template_source};
+use super::_chat_markup::slack_escape;
 use crate::env::Env;
 use crate::asset::ImageSize;
 use crate::http::{Method, Multipart, Request, Response};
@@ -43,16 +44,16 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{access_token}/{targets}",
     ],
     tokens: &[
-        Param::new("access_token", "OAuth Access Token").required().secret().pattern(r"^(?:xoxe\.)?xox[abp]-[A-Z0-9-]+$"),
+        Param::new("access_token", "OAuth Access Token").secret_key(r"^(?:xoxe\.)?xox[abp]-[A-Z0-9-]+$"),
         Param::new("botname", "Bot Name"),
         Param::new("target_channels", "Target Channel").prefix("#"),
         Param::new("target_email", "Target Email").email(),
         Param::new("target_encoded_id", "Target Encoded ID").prefix("+"),
         Param::new("target_user", "Target User").prefix("@"),
         Param::new("targets", "Targets").list("/").group(&["target_channels", "target_email", "target_encoded_id", "target_user"]),
-        Param::new("token_a", "Token A").required().secret().pattern("^[A-Z0-9]+$"),
-        Param::new("token_b", "Token B").required().secret().pattern("^[A-Z0-9]+$"),
-        Param::new("token_c", "Token C").required().secret().pattern("^[A-Za-z0-9]+$"),
+        Param::new("token_a", "Token A").secret_key("^[A-Z0-9]+$"),
+        Param::new("token_b", "Token B").secret_key("^[A-Z0-9]+$"),
+        Param::new("token_c", "Token C").secret_key("^[A-Za-z0-9]+$"),
         Param::new("workflow_path", "Workflow Path").secret(),
     ],
     params: &[
@@ -240,7 +241,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         include_timestamp,
         use_blocks,
         template,
-        tokens: u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
+        tokens: u.query_colon.owned(),
         lookup_cache: Arc::new(Mutex::new(BTreeMap::new())),
     }))
 }
@@ -274,16 +275,9 @@ fn sub_literal_ci(body: &str, needle: &str, repl: &str) -> Option<String> {
 }
 
 /// `_re_formatting_rules.sub(...)`; `None` on the unmapped `"\r*\n"` (KeyError).
-fn escape_formatting(s: &str) -> Option<String> {
-    if s.contains("\r*\n") {
-        return None;
-    }
-    Some(s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;"))
-}
-
 /// Slack-ify `<!channel>`, `<@user>` and `<url|label>` references in a passthrough Markdown body.
 fn slack_links(body: &str) -> Option<String> {
-    let mut body = escape_formatting(body)?;
+    let mut body = slack_escape(body)?;
     let channel = crate::regex!(
         r"(?i)(?P<match>(?:<|&lt;)?[ \t]*!(?P<channel>[^| \n]+)(?:[ \t]*\|[ \t]*(?:(?P<val>[^\n]+?)[ \t]*)?(?:>|&gt;)|(?:>|&gt;)))"
     );
@@ -458,7 +452,7 @@ impl Slack {
         } else {
             body.to_owned()
         };
-        let title = escape_formatting(msg.title).ok_or_else(unsupported)?;
+        let title = slack_escape(msg.title).ok_or_else(unsupported)?;
         let mut attachment = json!({"title": title, "text": body, "color": color});
         let mut payload = json!({"mrkdwn": msg.format == NotifyFormat::Markdown});
         if let Some(img) = &image {

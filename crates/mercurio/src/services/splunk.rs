@@ -21,7 +21,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{routing_key}@{apikey}/{entity_id}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[A-Z0-9_-]+$"),
+        Param::new("apikey", "API Key").secret_key("^[A-Z0-9_-]+$"),
         Param::new("entity_id", "Entity ID"),
         Param::new("routing_key", "Target Routing Key").required().pattern("^[A-Z0-9_-]+$"),
     ],

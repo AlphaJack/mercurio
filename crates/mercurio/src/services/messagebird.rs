@@ -26,7 +26,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}/{source}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern(KEY_RE),
+        Param::new("apikey", "API Key").secret_key(KEY_RE),
         Param::new("source", "Source Phone No").required().pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("targets", "Targets").list("/").group(&["target_phone"]),

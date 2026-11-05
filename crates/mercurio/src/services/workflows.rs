@@ -28,8 +28,8 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname").required(),
         Param::new("port", "Port").port(),
-        Param::new("signature", "Signature").required().secret().pattern("^[a-z0-9_-]+$"),
-        Param::new("workflow", "Workflow ID").required().secret().pattern("^[A-Z0-9_-]+$"),
+        Param::new("signature", "Signature").secret_key("^[a-z0-9_-]+$"),
+        Param::new("workflow", "Workflow ID").secret_key("^[A-Z0-9_-]+$"),
     ],
     params: &[
         Param::sets("id", &["workflow"]),
@@ -87,7 +87,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid Workflows ID was specified"))?;
     let signature = signature
         .as_deref()
-        .and_then(|s| validate_regex(s, r"^[a-z0-9_-]+$", "i", true))
+        .and_then(crate::parse::validate_id)
         .ok_or_else(|| SERVICE.err("an invalid Signature was specified"))?;
     let routing_id = match routing_id {
         Some(r) => Some(
@@ -115,7 +115,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         wrap: SERVICE.flag_strict(u, "wrap"),
         api_version,
         template,
-        tokens: u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
+        tokens: u.query_colon.owned(),
     }))
 }
 

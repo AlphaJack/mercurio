@@ -30,7 +30,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     ],
     tokens: &[
         Param::new("bot_token", "Bot Token").required().secret(),
-        Param::new("target_channel", "Channel ID").required().secret().pattern("^[a-z0-9_-]+$"),
+        Param::new("target_channel", "Channel ID").secret_key("^[a-z0-9_-]+$"),
         Param::new("targets", "Targets").list("/").required().group(&["target_channel"]),
     ],
     params: &[

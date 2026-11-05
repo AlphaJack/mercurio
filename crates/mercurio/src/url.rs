@@ -46,6 +46,14 @@ impl Pairs {
     pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
         self.0.iter().map(|(k, v)| (k.as_str(), v.as_str()))
     }
+    /// The entries as owned pairs, collected into `C`.
+    pub(crate) fn owned<C: FromIterator<(String, String)>>(&self) -> C {
+        self.0.iter().cloned().collect()
+    }
+    /// The entries with keys and values unquoted, collected into `C`.
+    pub(crate) fn unquoted<C: FromIterator<(String, String)>>(&self) -> C {
+        self.0.iter().map(|(k, v)| (unquote(k), unquote(v))).collect()
+    }
     /// Number of entries.
     pub fn len(&self) -> usize {
         self.0.len()

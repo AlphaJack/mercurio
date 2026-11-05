@@ -18,7 +18,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"),
+        Param::new("apikey", "API Key").secret_key("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"),
     ],
     ..ServiceDef::DEFAULTS
 };

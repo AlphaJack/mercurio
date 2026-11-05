@@ -147,7 +147,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         project,
         keyfile,
         targets: parse_list(&targets),
-        data: u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
+        data: u.query_plus.owned(),
         include_image,
         image_src,
         priority,
@@ -265,7 +265,7 @@ impl Fcm {
             Color::Asset => Some(ctx.asset.color(msg.kind).to_owned()),
             Color::Rgb(c) => Some(format!("#{c}")),
         };
-        let data: Map<String, Value> = self.data.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+        let data: Map<String, Value> = crate::util::json_strings(&self.data);
         let mut message = json!({"notification": {"title": msg.title, "body": crate::http::TEXT}});
         if let Some(c) = color {
             message["android"] = json!({"notification": {"color": c}});

@@ -396,7 +396,7 @@ impl Email {
         let cc_raw = u.param_nonempty("cc");
         let bcc_raw = u.param_nonempty("bcc");
         let reply_raw = u.param_nonempty("reply");
-        let headers: Vec<(String, String)> = u.query_plus.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
+        let headers: Vec<(String, String)> = u.query_plus.unquoted();
 
         let mut user = u.user();
         let password = u.password();

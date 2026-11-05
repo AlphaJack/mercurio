@@ -18,7 +18,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{token}",
     ],
     tokens: &[
-        Param::new("token", "Bot Token").required().secret().pattern("^[a-z0-9-]+$"),
+        Param::new("token", "Bot Token").secret_key("^[a-z0-9-]+$"),
     ],
     ..ServiceDef::DEFAULTS
 };

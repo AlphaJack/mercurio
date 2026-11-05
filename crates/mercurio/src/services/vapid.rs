@@ -136,7 +136,7 @@ fn webpush_origin(endpoint: &str) -> Option<String> {
     if !scheme.eq_ignore_ascii_case("https") {
         return None;
     }
-    let netloc = rest.split(['/', '?']).next().unwrap_or("");
+    let netloc = crate::util::authority(rest);
     if netloc.contains('@') {
         return None;
     }

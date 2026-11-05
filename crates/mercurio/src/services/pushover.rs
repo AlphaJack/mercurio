@@ -122,7 +122,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let sound = SERVICE.text_or_default(&r, "sound").to_lowercase();
     let priority = {
         let p = SERVICE.text_or_default(&r, "priority").to_lowercase();
-        PRIORITY_MAP.iter().find(|(k, _)| p.starts_with(k)).map(|(_, v)| *v).unwrap_or(0)
+        crate::util::by_prefix(PRIORITY_MAP, &p)
     };
     let emergency = if priority == EMERGENCY {
         let interval = SERVICE.int_or_default(&r, "interval");
@@ -197,7 +197,7 @@ impl Pushover {
             return Plan::Fail(Error::Message("Pushover attachment size exceeds the limit".into()));
         }
         // Unsupported attachments are dropped; the message still goes out.
-        let attach = attach.filter(|a| a.mime.to_ascii_lowercase().starts_with("image/"));
+        let attach = attach.filter(|a| a.is_image());
         Plan::http(self.request(payload, attach, ua, env), |res| match res {
             Ok(r) if r.status == 200 => Plan::Done,
             Ok(r) if r.status == 401 => {

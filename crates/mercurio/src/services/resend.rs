@@ -29,7 +29,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}:{from_addr}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[A-Z0-9._-]+$"),
+        Param::new("apikey", "API Key").secret_key("^[A-Z0-9._-]+$"),
         Param::new("from_addr", "Source Email").email().required(),
         Param::new("target_email", "Target Email").email(),
         Param::new("targets", "Targets").list("/").group(&["target_email"]),
