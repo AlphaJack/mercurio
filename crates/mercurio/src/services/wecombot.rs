@@ -44,7 +44,7 @@ fn parse_native(url: &str) -> Option<String> {
         r"(?i)^https?://qyapi\.weixin\.qq\.com/cgi-bin/webhook/send/?\?key=(?P<key>[A-Z0-9_-]+)/?&?(?P<params>.+)?$"
     )
     .captures(url)?;
-    let params = caps.name("params").map(|m| format!("?{}", m.as_str())).unwrap_or_default();
+    let params = caps.name("params").map(crate::util::query_suffix).unwrap_or_default();
     Some(format!("wecombot://{}{params}", &caps["key"]))
 }
 

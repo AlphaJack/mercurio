@@ -73,8 +73,7 @@ fn check(r: &Response) -> Result<()> {
     // Anything but status 0 (missing counts as -1) is a failure.
     let status = match obj.get("status") {
         None => Some(-1),
-        Some(Value::Number(n)) => n.as_i64().or_else(|| n.as_f64().map(|f| f.trunc() as i64)),
-        Some(Value::String(s)) => crate::util::parse_trimmed::<i64>(s),
+        Some(v @ (Value::Number(_) | Value::String(_))) => crate::util::json_int(v),
         Some(Value::Bool(b)) => Some(i64::from(*b)),
         Some(_) => None,
     };

@@ -9,7 +9,7 @@ use crate::http::Response;
 use crate::parse::validate_regex;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
-use crate::util::{json_text, parse_int};
+use crate::util::json_text;
 use crate::{Error, Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -113,7 +113,7 @@ fn accepted(r: &Response, batch: &[String]) -> Vec<String> {
         let digits: String = raw.chars().filter(|c| c.is_numeric()).collect();
         let number = digits.trim_start_matches('0').to_owned();
         numbers.insert(number.clone());
-        let code = entry.get("statusCode").and_then(|v| v.as_i64().or_else(|| v.as_str().and_then(parse_int)));
+        let code = entry.get("statusCode").and_then(crate::util::json_int);
         if code.is_some_and(|c| RECIPIENT_OK.contains(&c)) {
             ok.push(number);
         }

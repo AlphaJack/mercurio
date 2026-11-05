@@ -198,8 +198,7 @@ fn token_from(r: &Response) -> Result<(String, Duration)> {
     let obj = json.as_object().ok_or_else(|| Error::Service("invalid response from SendPulse server".into()))?;
     let token = obj.get("access_token").and_then(crate::util::scalar_text);
     let expires = match obj.get("expires_in") {
-        Some(Value::Number(n)) => n.as_i64().or_else(|| n.as_f64().map(|f| f.trunc() as i64)),
-        Some(Value::String(s)) => crate::util::parse_trimmed::<i64>(s),
+        Some(v @ (Value::Number(_) | Value::String(_))) => crate::util::json_int(v),
         Some(Value::Bool(b)) => Some(*b as i64),
         _ => None,
     };

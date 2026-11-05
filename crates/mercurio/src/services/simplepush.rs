@@ -19,7 +19,7 @@ use crate::env::Env;
 use crate::crypto::{b64, b64_decode, b64_url_decode, hmac_sha256, sha256, sha512};
 use crate::error::Error;
 use crate::http::{Request, Response};
-use crate::parse::{parse_bool, parse_list_unquoted, validate_nonblank};
+use crate::parse::{parse_list_unquoted, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::util::json_has_value;
@@ -135,10 +135,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list_unquoted([to]));
     }
-    let arg = |k: &str| u.param_nonempty(k).map(unquote);
+    let arg = |k: &str| u.text(k);
     let (priority_raw, volume_raw, sptag, links_raw, topic_auth_token) =
         (arg("priority"), arg("critical_volume"), arg("sptag"), arg("links"), arg("topic_auth_token"));
-    let flag = |k: &str| u.param_nonempty(k).map(|v| parse_bool(v, false)).unwrap_or(false);
+    let flag = |k: &str| u.flag(k);
     let (broadcast, shared) = (flag("broadcast"), flag("shared"));
     let password = password.filter(|p| !p.is_empty());
 
@@ -243,17 +243,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 fn derive_key(password: &str, salt: &str) -> Option<([u8; 32], String)> {
     #[cfg(any(test, feature = "testing"))]
     {
-        type Derived = BTreeMap<(String, String), ([u8; 32], String)>;
+        type Derived = BTreeMap<(String, String), Option<([u8; 32], String)>>;
         static DERIVED: Mutex<Derived> = Mutex::new(BTreeMap::new());
-        let id = (password.to_owned(), salt.to_owned());
-        if let Some(k) = DERIVED.lock().ok().and_then(|d| d.get(&id).cloned()) {
-            return Some(k);
-        }
-        let k = argon2_key(password, salt)?;
-        if let Ok(mut d) = DERIVED.lock() {
-            d.insert(id, k.clone());
-        }
-        Some(k)
+        crate::util::derive_once(&DERIVED, (password.to_owned(), salt.to_owned()), || argon2_key(password, salt))
     }
     #[cfg(not(any(test, feature = "testing")))]
     argon2_key(password, salt)

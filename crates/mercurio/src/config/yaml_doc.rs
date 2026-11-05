@@ -207,7 +207,7 @@ impl Entries<'_> {
         let mut siblings: Vec<(String, Yaml)> = map
             .iter()
             .filter(|(k, _)| *k != url_key && k.as_str() != Some("schema"))
-            .filter_map(|(k, v)| k.as_str().map(|k| (k.to_owned(), v.clone())))
+            .filter_map(|(k, v)| Some((k.as_str()?.to_owned(), v.clone())))
             .collect();
         if let Some(p) = self.placeholders.as_mut() {
             siblings = siblings.into_iter().map(|(k, v)| (k, p.encode_value(&v))).collect();
@@ -277,7 +277,7 @@ impl Entries<'_> {
                 return None;
             }
         }
-        if tags.iter().any(|t| Tag::parse(t).retry.is_some()) {
+        if tags.iter().any(|t| Tag::retries(t)) {
             warnings.push(format!(
                 "You can not specify a retry count as part of a service tag (YAML entry #{no}, item #{item_no})"
             ));

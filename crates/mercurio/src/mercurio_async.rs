@@ -130,7 +130,7 @@ impl AsyncMercurio {
             let entries = self.send_all(msg, round.iter().map(|&i| targets[i]).collect(), filter, on_entry).await;
             let delivered: BTreeMap<usize, bool> =
                 round.iter().copied().zip(entries.iter().map(|e| e.delivery.is_success())).collect();
-            esc.settle(|i| delivered.get(&i).copied().unwrap_or(false));
+            esc.settle(|i| delivered.get(&i) == Some(&true));
             sent.extend(round.into_iter().zip(entries));
         }
         let entries = Core::in_order(&esc, sent);
@@ -171,7 +171,7 @@ impl AsyncMercurio {
                 if let Some(gap) = throttle_wait(t, last.get(t.def.id).copied()) {
                     transport.sleep(gap).await;
                 }
-                let retry = filter.retry_for(t.tag_set()).map(|r| u32::try_from(r).unwrap_or(u32::MAX));
+                let retry = filter.retry_for(t.tag_set()).map(crate::util::saturating_u32);
                 let (attempts, warnings) = crate::warnings::collect(t.send_attempts_with_retry(
                     msg,
                     transport,

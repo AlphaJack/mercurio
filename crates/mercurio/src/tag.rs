@@ -39,6 +39,16 @@ impl fmt::Display for Tag {
 }
 
 impl Tag {
+    /// Orders tags by name.
+    pub(crate) fn by_name(a: &Tag, b: &Tag) -> std::cmp::Ordering {
+        a.name.cmp(&b.name)
+    }
+
+    /// Whether `text` is a tag with a retry count, as `alerts:3`.
+    pub(crate) fn retries(text: &str) -> bool {
+        Tag::parse(text).retry.is_some()
+    }
+
     /// Parse `[priority:]name[:retry]`; anything else is a plain name (lower-cased, trimmed).
     pub fn parse(value: &str) -> Tag {
         let v = value.trim_matches(|c: char| c.is_whitespace());
@@ -73,7 +83,7 @@ where
             out.push(t);
         }
     }
-    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out.sort_by(Tag::by_name);
     out
 }
 

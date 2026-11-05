@@ -373,7 +373,7 @@ impl Twitter {
         }
         Plan::all(payloads.into_iter().map(|p| {
             let req = Self::json_post(TWEET_URL, &ctx.ua, &p);
-            self.fetch(req, &ctx.env, Box::new(|res| Plan::from_result(res.map(|_| ()))))
+            self.fetch(req, &ctx.env, Box::new(done_when_ok))
         }))
     }
 
@@ -403,7 +403,7 @@ impl Twitter {
                 for (name, id) in &targets {
                     let req = Self::json_post(&format!("{DM_URL}{id}/messages"), &ctx.ua, p);
                     plans.push(
-                        me.fetch(req, &ctx.env, Box::new(|res| Plan::from_result(res.map(|_| ())))).target(format!("@{name}")),
+                        me.fetch(req, &ctx.env, Box::new(done_when_ok)).target(format!("@{name}")),
                     );
                 }
             }
@@ -515,6 +515,11 @@ impl Notify for Arc<Twitter> {
         Some(Limits { body_maxlen: if self.mode == Mode::Dm { 10000 } else { 280 }, ..SERVICE.limits })
     }
 
+}
+
+/// Done when the request succeeded, whatever it answered.
+fn done_when_ok(res: Result<Value>) -> Plan {
+    Plan::from_result(res.map(|_| ()))
 }
 
 #[cfg(test)]
