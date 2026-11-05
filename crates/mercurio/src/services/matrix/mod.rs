@@ -20,13 +20,10 @@
 //! - **Device verification.** Apprise shares room keys with every device whose keys are self-signed, while mercurio pins each device's keys on first use and, for users who publish cross-signing keys, pins their master key and shares only with devices their self-signing key signed. A changed master key or a device that is not cross-signed gets no room keys, with a warning.
 //! - **Stored state.** Apprise stores the Olm account and Megolm sessions in plain text, while mercurio seals them with AES-256-GCM under a key derived from the URL's password or access token (never stored). After a password change the old state no longer opens and the device starts over with new keys.
 
+mod content;
 mod server;
 pub(crate) mod sizing;
 
-#[cfg(feature = "service-matrix-e2ee")]
-pub(crate) mod e2ee;
-#[cfg(feature = "service-matrix-e2ee")]
-use e2ee::{flow as e2ee_flow, sas};
 
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
@@ -320,46 +317,6 @@ impl Config {
     }
 }
 
-fn html_body(msg: &Msg) -> String {
-    if msg.passthrough && msg.format == NotifyFormat::Markdown {
-        crate::convert::markdown_to_html_plain(&msg.body)
-    } else {
-        msg.body.clone()
-    }
-}
-
-fn plain_fallback(msg: &Msg) -> String {
-    if msg.passthrough || !matches!(msg.format, NotifyFormat::Html | NotifyFormat::Markdown) {
-        msg.body.clone()
-    } else {
-        crate::convert::html_to_text(&msg.body)
-    }
-}
-
-fn rich(msg: &Msg) -> bool {
-    matches!(msg.format, NotifyFormat::Html | NotifyFormat::Markdown)
-}
-
-/// The `m.room.message` content (also the plaintext of encrypted events).
-pub(crate) fn message_content(cfg: &Config, msg: &Msg) -> Value {
-    let title = if msg.title.is_empty() { String::new() } else { format!("# {}\r\n", msg.title) };
-    let mut payload = json!({
-        "msgtype": format!("m.{}", cfg.msgtype),
-        "body": format!("{title}{}", plain_fallback(msg)),
-    });
-    if rich(msg) {
-        let mut title_html = String::new();
-        if !msg.title.is_empty() {
-            title_html = format!("<h1>{}</h1>", escape_html(&msg.title, false, false));
-            if msg.format != NotifyFormat::Markdown {
-                title_html.push_str("<br/>");
-            }
-        }
-        payload["format"] = json!("org.matrix.custom.html");
-        payload["formatted_body"] = json!(format!("{title_html}{}", html_body(msg)));
-    }
-    payload
-}
 
 impl Matrix {
     fn webhook_url(&self) -> String {
@@ -389,11 +346,11 @@ impl Matrix {
                 title.push_str("<br/>");
             }
         }
-        format!("{title}{}", html_body(msg))
+        format!("{title}{}", content::html_body(msg))
     }
 
     fn matrix_payload(&self, msg: &Msg) -> Value {
-        let text = if rich(msg) {
+        let text = if content::rich(msg) {
             Self::rich_html(msg)
         } else if msg.title.is_empty() {
             msg.body.clone()
@@ -437,8 +394,8 @@ impl Matrix {
             }
             Mode::Hookshot => {
                 let mut p = json!({"username": self.display_name(msg), "text": ""});
-                if rich(msg) {
-                    let plain = plain_fallback(msg);
+                if content::rich(msg) {
+                    let plain = content::plain_fallback(msg);
                     p["text"] = json!(if msg.title.is_empty() { plain } else { format!("{}\r\n{plain}", msg.title) });
                     p["html"] = json!(Self::rich_html(msg));
                 } else {

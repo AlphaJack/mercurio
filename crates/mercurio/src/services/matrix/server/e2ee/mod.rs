@@ -6,12 +6,12 @@
 //!
 //! References: <https://gitlab.matrix.org/matrix-org/olm/-/blob/master/docs/olm.md>, <https://gitlab.matrix.org/matrix-org/olm/-/blob/master/docs/megolm.md>, <https://spec.matrix.org/v1.11/client-server-api/#end-to-end-encryption>.
 
-pub(super) mod flow;
-pub(super) mod sas;
-pub(super) mod vault;
+pub(in super::super) mod flow;
+pub(in super::super) mod sas;
+pub(in super::super) mod vault;
 
 mod attachment;
-pub(super) mod keys;
+pub(in super::super) mod keys;
 mod megolm;
 mod olm;
 pub(crate) use attachment::encrypt_attachment;
@@ -358,6 +358,16 @@ fn split_keys(keys: &[u8]) -> (Zeroizing<[u8; 32]>, Zeroizing<[u8; 32]>, [u8; 16
     m.copy_from_slice(&keys[32..64]);
     iv.copy_from_slice(&keys[64..80]);
     (a, m, iv)
+}
+
+/// E2EE state of one send.
+#[derive(Debug, Default)]
+pub(in super::super) struct E2ee {
+    pub account: Option<OlmAccount>,
+    /// Setup succeeded; encryption is still decided per room.
+    pub capable: bool,
+    /// Why setup failed: encrypted rooms fail with it (never plaintext).
+    pub setup_error: Option<crate::Error>,
 }
 
 #[cfg(test)]

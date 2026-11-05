@@ -6,7 +6,7 @@ use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
 use ring::hkdf;
 use serde_json::{Value, json};
 
-use super::super::server::{CACHE_EXPIRY, Session, has_value};
+use super::super::{CACHE_EXPIRY, Session, has_value};
 use crate::crypto::{b64, b64_decode};
 
 /// Marks a sealed value in the store.
@@ -22,7 +22,7 @@ fn key(s: &Session) -> Option<LessSafeKey> {
 }
 
 /// Seal `v` and store it under `name`; stored as it is when the URL has no secret.
-pub(in super::super) fn set(s: &Session, name: &str, v: Value) -> bool {
+pub(in super::super::super) fn set(s: &Session, name: &str, v: Value) -> bool {
     let sealed = match key(s) {
         Some(k) => seal(s, &k, name, &v),
         None => Some(v),
@@ -39,7 +39,7 @@ fn seal(s: &Session, k: &LessSafeKey, name: &str, v: &Value) -> Option<Value> {
 }
 
 /// The value stored under `name`, opened; `None` when absent or when it no longer opens.
-pub(in super::super) fn get(s: &Session, name: &str) -> Option<Value> {
+pub(in super::super::super) fn get(s: &Session, name: &str) -> Option<Value> {
     let v = s.store.get(name).filter(has_value)?;
     if v.get(SEALED).is_none() {
         // Written before sealing existed (or without a secret): sealed from now on.
@@ -61,4 +61,17 @@ fn open(k: &LessSafeKey, name: &str, v: &Value) -> Option<Value> {
     let mut data = b64_decode(v.get("c")?.as_str()?)?;
     let plain = k.open_in_place(Nonce::assume_unique_for_key(nonce), Aad::from(name.as_bytes()), &mut data).ok()?;
     serde_json::from_slice(plain).ok()
+}
+
+pub(in super::super::super) fn binding_key(s: &Session) -> String {
+    match &s.e2ee.account {
+        None => String::new(),
+        Some(a) => format!(
+            "{}|{}|{}|{}",
+            s.user_id.as_deref().unwrap_or(""),
+            s.device_id.as_deref().unwrap_or(""),
+            a.identity_key(),
+            a.signing_key()
+        ),
+    }
 }

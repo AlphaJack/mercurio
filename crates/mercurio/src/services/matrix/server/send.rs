@@ -1,8 +1,8 @@
 //! The delivery flow: authenticate, resolve users and rooms, then post each message and attachment and report every target.
 
-use super::super::message_content;
+use super::super::content::message_content;
 #[cfg(feature = "service-matrix-e2ee")]
-use super::super::{e2ee_flow, sas};
+use super::e2ee::{flow as e2ee_flow, sas};
 use super::*;
 
 impl Session {
@@ -82,24 +82,6 @@ impl Session {
             return e2ee_flow::setup(self, Box::new(|s, ()| s.next_room()));
         }
         self.next_room()
-    }
-
-    pub(crate) fn next_room(mut self) -> Plan {
-        let Some((label, room)) = self.queue.pop_front() else { return self.after_rooms() };
-        if self.delivered(&label) {
-            return self.next_room();
-        }
-        self.room_join(
-            room,
-            Box::new(move |mut s, room_id| match room_id {
-                None => {
-                    crate::warning!("Could not join Matrix room {label}.");
-                    s.fail_target_with(label, Error::Service("could not join the room".into()).context("room join"));
-                    s.next_room()
-                }
-                Some(rid) => s.deliver(label, rid),
-            }),
-        )
     }
 
     pub(super) fn deliver(self, label: String, room_id: String) -> Plan {
@@ -206,24 +188,6 @@ impl Session {
             sas::refresh_verified_state(&self);
         }
         self.finish(None)
-    }
-
-    /// End of `send()`. The session stays open; [`Session::logout`] runs when the target is closed.
-    pub(crate) fn finish(mut self, fatal: Option<Error>) -> Plan {
-        let fatal = fatal.map(|e| self.rate_limited(e));
-        let done = move |s: Session| -> Plan {
-            if let Some(e) = fatal {
-                return Plan::Fail(e);
-            }
-            if s.outcomes.is_empty() {
-                return Plan::Done;
-            }
-            Plan::all(s.outcomes.into_iter().map(|(label, e)| match e {
-                None => Plan::Done.target(label),
-                Some(e) => Plan::Fail(e).target(label),
-            }))
-        };
-        done(self)
     }
 
     /// Upload every attachment once.

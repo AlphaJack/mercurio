@@ -16,6 +16,8 @@ use crate::store::{Memo, StoreRef};
 use crate::url::quote;
 use crate::{Plan, regex};
 
+#[cfg(feature = "service-matrix-e2ee")]
+pub(crate) mod e2ee;
 mod auth;
 mod rooms;
 mod send;
@@ -294,10 +296,46 @@ pub(super) struct Session {
     /// The wait a 429 asked for when the back-off gave up on it; the next failure is reported as rate limited, so `?retry=` waits that long.
     throttled: Option<Duration>,
     #[cfg(feature = "service-matrix-e2ee")]
-    pub e2ee: super::e2ee_flow::E2ee,
+    pub e2ee: e2ee::E2ee,
 }
 
 impl Session {
+    pub(crate) fn next_room(mut self) -> Plan {
+        let Some((label, room)) = self.queue.pop_front() else { return self.after_rooms() };
+        if self.delivered(&label) {
+            return self.next_room();
+        }
+        self.room_join(
+            room,
+            Box::new(move |mut s, room_id| match room_id {
+                None => {
+                    crate::warning!("Could not join Matrix room {label}.");
+                    s.fail_target_with(label, Error::Service("could not join the room".into()).context("room join"));
+                    s.next_room()
+                }
+                Some(rid) => s.deliver(label, rid),
+            }),
+        )
+    }
+
+    /// End of `send()`. The session stays open; [`Session::logout`] runs when the target is closed.
+    pub(crate) fn finish(mut self, fatal: Option<Error>) -> Plan {
+        let fatal = fatal.map(|e| self.rate_limited(e));
+        let done = move |s: Session| -> Plan {
+            if let Some(e) = fatal {
+                return Plan::Fail(e);
+            }
+            if s.outcomes.is_empty() {
+                return Plan::Done;
+            }
+            Plan::all(s.outcomes.into_iter().map(|(label, e)| match e {
+                None => Plan::Done.target(label),
+                Some(e) => Plan::Fail(e).target(label),
+            }))
+        };
+        done(self)
+    }
+
     // A new session, with identity values restored from the store.
     pub(super) fn new(cfg: Arc<Config>, msg: Arc<Msg>, store: StoreRef, env: Arc<dyn Env>) -> Self {
         let mut s = Session {
@@ -335,7 +373,7 @@ impl Session {
             s.txn = Txn::Counter(n);
         }
         #[cfg(feature = "service-matrix-e2ee")]
-        super::e2ee_flow::restore(&mut s);
+        e2ee::flow::restore(&mut s);
         s
     }
 
