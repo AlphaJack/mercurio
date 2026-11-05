@@ -150,7 +150,7 @@ impl Notify for SparkPost {
                 .collect();
             content.insert("attachments".into(), Value::Array(atts));
         }
-        let tokens: Map<String, Value> = self.tokens.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+        let tokens: Map<String, Value> = crate::util::json_strings(&self.tokens);
 
         let url = format!("{}/transmissions/", self.api);
         let mut plans = Vec::new();
@@ -168,7 +168,7 @@ impl Notify for SparkPost {
                 recipients.push(entry);
             }
             let header_to = &batch[0].1;
-            let mut headers: Map<String, Value> = self.headers.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+            let mut headers: Map<String, Value> = crate::util::json_strings(&self.headers);
             if !cc.is_empty() {
                 for addr in &cc {
                     let mut entry = json!({"address": {"email": addr, "header_to": header_to}});

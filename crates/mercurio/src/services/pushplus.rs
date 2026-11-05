@@ -23,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     ],
     tokens: &[
         Param::new("targets", "Group Topics").list("/"),
-        Param::new("token", "User Token").required().secret().pattern("^[a-z0-9_-]{32,64}$"),
+        Param::new("token", "User Token").secret_key("^[a-z0-9_-]{32,64}$"),
     ],
     params: &[
         Param::new("channel", "Channel").choice(&["wechat", "webhook", "cp", "mail", "sms"]).default("wechat").aliases(&["mode"]).inferred(),

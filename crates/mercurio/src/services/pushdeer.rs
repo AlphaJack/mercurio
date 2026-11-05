@@ -20,7 +20,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("host", "Hostname"),
         Param::new("port", "Port").port(),
-        Param::new("pushkey", "Pushkey").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("pushkey", "Pushkey").secret_key("^[a-z0-9]+$"),
     ],
     ..ServiceDef::DEFAULTS
 };

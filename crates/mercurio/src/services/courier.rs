@@ -95,7 +95,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         template: SERVICE.text(u, "template"),
         channels: u.param_nonempty("channels").map(|c| crate::parse::parse_list_unsorted([unquote(c)])).unwrap_or_default(),
         data: colon_data(u),
-        headers: u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
+        headers: u.query_plus.owned(),
     }))
 }
 

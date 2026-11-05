@@ -592,7 +592,7 @@ impl Runner<'_> {
 pub fn redact_url(url: &str) -> String {
     match url.split_once("://") {
         Some((scheme, rest)) => {
-            let host = rest.split(['/', '?']).next().unwrap_or("");
+            let host = crate::util::authority(rest);
             let host = host.rsplit('@').next().unwrap_or(host);
             let host = if secret_host(scheme) { "***" } else { host };
             format!("{scheme}://{host}/...")
@@ -606,7 +606,7 @@ fn secret_host(scheme: &str) -> bool {
     let Some(def) = crate::services::ALL.iter().find(|d| d.handles(scheme)) else { return false };
     def.templates.iter().any(|template| {
         let rest = template.split_once("://").map_or("", |(_, r)| r);
-        let slot = rest.split(['/', '?']).next().unwrap_or("");
+        let slot = crate::util::authority(rest);
         let slot = slot.rsplit('@').next().unwrap_or(slot);
         // The host is the slot's first token; `{path}{token}` may follow it without a `/`.
         let host = slot.strip_prefix('{').and_then(|t| t.split_once('}')).map(|(key, _)| key);

@@ -37,12 +37,12 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{source}/{client_id}/{secret}/{targets}",
     ],
     tokens: &[
-        Param::new("client_id", "Client ID").required().secret().pattern("^[a-z0-9-]+$"),
+        Param::new("client_id", "Client ID").secret_key("^[a-z0-9-]+$"),
         Param::new("secret", "Client Secret").required().secret(),
         Param::new("source", "Account Email or Object ID").required(),
         Param::new("target_email", "Target Email").email(),
         Param::new("targets", "Targets").list("/").group(&["target_email"]),
-        Param::new("tenant", "Tenant Domain").required().secret().pattern("^[a-z0-9-]+$"),
+        Param::new("tenant", "Tenant Domain").secret_key("^[a-z0-9-]+$"),
     ],
     params: &[
         Param::new("bcc", "Blind Carbon Copy").list(", "),

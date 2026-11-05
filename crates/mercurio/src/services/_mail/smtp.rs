@@ -57,14 +57,14 @@ fn smtp_error(what: &str, r: &Reply) -> Error {
 
 /// Advertised EHLO extensions (upper-cased keyword -> parameters).
 #[derive(Debug, Default)]
-struct Extensions(Vec<(String, String)>);
+struct Extensions(crate::url::Pairs);
 
 impl Extensions {
     fn has(&self, key: &str) -> bool {
-        self.0.iter().any(|(k, _)| k == key)
+        self.0.contains(key)
     }
     fn params(&self, key: &str) -> Option<&str> {
-        self.0.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
+        self.0.get(key)
     }
     /// The extensions of a 250 EHLO reply (its first line is the greeting).
     fn from_ehlo(r: &Reply) -> Self {
@@ -75,7 +75,11 @@ impl Extensions {
                 Some((k, v)) => (k, v),
                 None => (line.as_str(), ""),
             };
-            ext.0.push((k.to_ascii_uppercase(), v.trim().to_owned()));
+            let key = k.to_ascii_uppercase();
+            // The first line for a keyword counts, as before.
+            if !ext.0.contains(&key) {
+                ext.0.insert(key, v.trim());
+            }
         }
         ext
     }

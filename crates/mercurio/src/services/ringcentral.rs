@@ -34,9 +34,9 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{token}@{client_id}/{secret}/{from_phone}/{targets}",
     ],
     tokens: &[
-        Param::new("client_id", "Client ID").required().secret().pattern("^[a-z0-9_-]+$"),
+        Param::new("client_id", "Client ID").secret_key("^[a-z0-9_-]+$"),
         Param::new("from_phone", "From Phone No").required(),
-        Param::new("secret", "Client Secret").required().secret().pattern("^[a-z0-9_-]+$"),
+        Param::new("secret", "Client Secret").secret_key("^[a-z0-9_-]+$"),
         Param::new("target_phone", "Target Phone No").prefix("+"),
         Param::new("targets", "Targets").list("/").group(&["target_phone"]),
         Param::new("token", "Token / Password").required().secret(),
@@ -108,7 +108,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid RingCentral Client ID was specified"))?;
     let client_secret = client_secret
         .as_deref()
-        .and_then(|s| validate_regex(s, r"^[a-z0-9_-]+$", "i", true))
+        .and_then(crate::parse::validate_id)
         .ok_or_else(|| SERVICE.err("an invalid RingCentral Client Secret was specified"))?;
     let token = if jwt {
         validate_regex(&token, r"^[a-z0-9._-]+$", "i", true)

@@ -7,7 +7,7 @@ use serde_json::json;
 use crate::crypto::{hex, hmac_sha256};
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::url::{ParsedUrl, unquote};
+use crate::url::ParsedUrl;
 use crate::{Error, Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -59,7 +59,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let secret = u.param("secret").filter(|s| !s.is_empty()).map(Secret::new);
     let silent = SERVICE.flag(u, "silent");
     let url_prefix = SERVICE.text(u, "url_prefix");
-    let headers = u.query_plus.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
+    let headers = u.query_plus.unquoted();
 
     if secret.is_none() && (u.user.is_none() || u.password.is_none()) {
         return Err(SERVICE.err("specify a Nextcloud Talk user and password or bot secret"));

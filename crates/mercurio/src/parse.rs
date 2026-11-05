@@ -453,6 +453,11 @@ static VALIDATE_CACHE: LazyLock<Mutex<RegexCache>> = LazyLock::new(|| Mutex::new
 /// Compiled patterns kept at most. mercurio's services use about a hundred; a caller passing patterns built at run time empties the cache when it fills.
 const MAX_CACHED_REGEXES: usize = 256;
 
+/// `value` stripped when it is an id of letters, digits, `_` and `-`.
+pub(crate) fn validate_id(value: &str) -> Option<String> {
+    validate_regex(value, r"^[a-z0-9_-]+$", "i", true)
+}
+
 /// `value` (trimmed when `strip`) when it matches `pattern`.
 ///
 /// The pattern is anchored at the start only. `flags` is a subset of `imsx`.

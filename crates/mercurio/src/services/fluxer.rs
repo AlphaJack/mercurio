@@ -43,8 +43,8 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("host", "Hostname"),
         Param::new("path", "Path").default("/api/"),
         Param::new("port", "Port").port(),
-        Param::new("webhook_id", "Webhook ID").required().secret().pattern("^[0-9]{10,}$"),
-        Param::new("webhook_token", "Webhook Token").required().secret().pattern(r"^[A-Za-z0-9_\-]{16,}$"),
+        Param::new("webhook_id", "Webhook ID").secret_key("^[0-9]{10,}$"),
+        Param::new("webhook_token", "Webhook Token").secret_key(r"^[A-Za-z0-9_\-]{16,}$"),
     ],
     params: &[
         Param::new("avatar", "Avatar Image").bool(true),

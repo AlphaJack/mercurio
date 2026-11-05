@@ -106,7 +106,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         labels,
         transaction: SERVICE.text(u, "transaction"),
         data: colon_data(u),
-        headers: u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
+        headers: u.query_plus.owned(),
     }))
 }
 

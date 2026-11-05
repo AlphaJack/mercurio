@@ -8,7 +8,7 @@ use crate::asset::ImageSize;
 use crate::message::NotifyType;
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::url::{ParsedUrl, unquote};
+use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -111,7 +111,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
                 .ok_or_else(|| SERVICE.err("the PagerDuty action specified is invalid"))?
         }
     };
-    let details = u.query_plus.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
+    let details = u.query_plus.unquoted();
     Ok(Box::new(PagerDuty {
         apikey: Secret::new(apikey),
         integration_key: Secret::new(integration_key),

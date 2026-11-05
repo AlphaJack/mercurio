@@ -36,8 +36,8 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{user}:{password}@{app_id}/{app_secret}/{targets}",
     ],
     tokens: &[
-        Param::new("app_id", "Application ID").required().secret().pattern("^[a-z0-9_-]+$"),
-        Param::new("app_secret", "Application Secret").required().secret().pattern("^[a-z0-9_-]+$"),
+        Param::new("app_id", "Application ID").secret_key("^[a-z0-9_-]+$"),
+        Param::new("app_secret", "Application Secret").secret_key("^[a-z0-9_-]+$"),
         Param::new("password", "Password").required().secret(),
         Param::new("target_subreddit", "Target Subreddit"),
         Param::new("targets", "Targets").list("/").required().group(&["target_subreddit"]),
@@ -139,7 +139,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid Reddit App ID was specified"))?;
     let client_secret = app_secret
         .as_deref()
-        .and_then(|s| validate_regex(s, r"^[a-z0-9_-]+$", "i", true))
+        .and_then(crate::parse::validate_id)
         .ok_or_else(|| SERVICE.err("an invalid Reddit App Secret was specified"))?;
     let subreddits = parse_list(targets)
         .into_iter()

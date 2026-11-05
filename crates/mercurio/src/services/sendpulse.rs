@@ -32,8 +32,8 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{user}@{host}/{client_id}/{client_secret}/{targets}",
     ],
     tokens: &[
-        Param::new("client_id", "Client ID").required().secret().pattern("^[A-Z0-9._-]+$"),
-        Param::new("client_secret", "Client Secret").required().secret().pattern("^[A-Z0-9._-]+$"),
+        Param::new("client_id", "Client ID").secret_key("^[A-Z0-9._-]+$"),
+        Param::new("client_secret", "Client Secret").secret_key("^[A-Z0-9._-]+$"),
         Param::new("host", "Domain").required(),
         Param::new("target_email", "Target Email").email(),
         Param::new("targets", "Targets").list("/").group(&["target_email"]),
@@ -146,7 +146,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         Some(t) => Some(crate::util::parse_trimmed::<i64>(&t).ok_or_else(|| SERVICE.err("the SendPulse Template ID is invalid"))?),
         None => None,
     };
-    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+    let template_data = u.query_plus.owned();
 
     let mut targets = Vec::new();
     for r in parse_emails(&targets_in, true) {
@@ -301,7 +301,7 @@ impl Notify for SendPulse {
             email.insert("attachments_binary".into(), Value::Object(atts));
         }
         if let Some(t) = self.template {
-            let vars: Map<String, Value> = self.template_data.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+            let vars: Map<String, Value> = crate::util::json_strings(&self.template_data);
             email.insert("template".into(), json!({"id": t, "variables": vars}));
         }
         let recipient = |e: &String| {

@@ -155,9 +155,9 @@ impl Attachment {
         Ok(Self { name, mime, data: data.into() })
     }
 
-    /// `true` when the MIME type is `image/*`.
+    /// `true` when the MIME type is `image/*`, in any case.
     pub fn is_image(&self) -> bool {
-        self.mime.starts_with("image/")
+        self.mime.get(..6).is_some_and(|p| p.eq_ignore_ascii_case("image/"))
     }
 }
 

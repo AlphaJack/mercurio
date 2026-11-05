@@ -23,9 +23,9 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{service_plan_id}:{api_token}@{from_phone}/{targets}",
     ],
     tokens: &[
-        Param::new("api_token", "Auth Token").required().secret().pattern("^[a-f0-9]+$"),
+        Param::new("api_token", "Auth Token").secret_key("^[a-f0-9]+$"),
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
-        Param::new("service_plan_id", "Account SID").required().secret().pattern("^[a-f0-9]+$"),
+        Param::new("service_plan_id", "Account SID").secret_key("^[a-f0-9]+$"),
         Param::new("short_code", "Target Short Code").pattern("^[0-9]{5,6}$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("targets", "Targets").list("/").group(&["short_code", "target_phone"]),

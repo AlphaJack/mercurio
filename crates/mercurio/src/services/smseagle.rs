@@ -162,7 +162,7 @@ impl Notify for SmsEagle {
         let attachments: Vec<Value> = msg
             .attachments
             .iter()
-            .filter(|a| a.mime.to_ascii_lowercase().starts_with("image/"))
+            .filter(|a| a.is_image())
             .map(|a| json!({"content_type": a.mime, "content": b64(&a.data)}))
             .collect();
         let message =

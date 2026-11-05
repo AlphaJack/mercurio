@@ -19,10 +19,10 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{template}@{authkey}/{targets}",
     ],
     tokens: &[
-        Param::new("authkey", "Authentication Key").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("authkey", "Authentication Key").secret_key("^[a-z0-9]+$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         PHONE_TARGETS,
-        Param::new("template", "Template ID").required().secret().pattern("^[a-z0-9 _-]+$"),
+        Param::new("template", "Template ID").secret_key("^[a-z0-9 _-]+$"),
     ],
     params: &[
         Param::new("short_url", "Short URL").bool(false),

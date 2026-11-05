@@ -23,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{api_key}@{host}",
     ],
     tokens: &[
-        Param::new("api_key", "API Key").required().secret().pattern("^trgv_[a-zA-Z0-9]{8}_[a-zA-Z0-9]{32}$"),
+        Param::new("api_key", "API Key").secret_key("^trgv_[a-zA-Z0-9]{8}_[a-zA-Z0-9]{32}$"),
         Param::new("host", "API Hostname"),
         Param::new("port", "Port").port(),
         Param::new("target_channel", "Target Channel"),

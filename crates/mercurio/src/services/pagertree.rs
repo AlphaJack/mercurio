@@ -7,7 +7,7 @@ use serde_json::{Map, Value, json};
 use crate::message::NotifyType;
 use crate::parse::{parse_list, validate_nonblank, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
-use crate::url::{Pairs, ParsedUrl, unquote};
+use crate::url::{Pairs, ParsedUrl};
 use crate::{Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -51,8 +51,8 @@ struct PagerTree {
 
 fn twice(p: &Pairs) -> Vec<(String, String)> {
     // Later duplicate keys replace earlier ones in place.
-    let pairs: Pairs = p.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
-    pairs.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect()
+    let pairs: Pairs = p.unquoted();
+    pairs.owned()
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -114,7 +114,7 @@ impl Notify for PagerTree {
             let title = if msg.title.is_empty() { ctx.app_desc() } else { msg.title };
             payload.insert("title".into(), json!(title));
             payload.insert("description".into(), json!(crate::http::TEXT));
-            let meta: Map<String, Value> = self.meta_extras.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+            let meta: Map<String, Value> = crate::util::json_strings(&self.meta_extras);
             payload.insert("meta".into(), Value::Object(meta));
             payload.insert("tags".into(), json!(self.tags));
             if let Some(urg) = self.urgency {

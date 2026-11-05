@@ -343,6 +343,11 @@ impl Param {
         self.aliases = keys;
         self
     }
+    /// A required secret matching `regex`: an API key or token.
+    #[must_use]
+    pub(crate) const fn secret_key(self, regex: &'static str) -> Self {
+        self.required().secret().pattern(regex)
+    }
     /// [`Param::pattern`].
     #[must_use]
     pub const fn pattern(mut self, regex: &'static str) -> Self {

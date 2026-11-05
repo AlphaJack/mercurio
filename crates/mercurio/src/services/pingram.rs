@@ -25,7 +25,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{type}@{apikey}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern(r"^pingram_(sk|pk)_[\w.-]+$"),
+        Param::new("apikey", "API Key").secret_key(r"^pingram_(sk|pk)_[\w.-]+$"),
         Param::new("target_email", "Target Email").email(),
         Param::new("target_id", "Target ID").prefix("@"),
         Param::new("target_sms", "Target SMS"),
@@ -136,7 +136,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let cc = SERVICE.text(u, "cc");
     let bcc = SERVICE.text(u, "bcc");
-    let tokens: Vec<(String, String)> = u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+    let tokens: Vec<(String, String)> = u.query_colon.owned();
 
     let apikey = apikey
         .as_deref()
