@@ -30,7 +30,7 @@ pub enum ConfigFormat {
 impl ConfigFormat {
     /// Parse `text` or `yaml` (case-insensitive, surrounding whitespace ignored).
     pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
+        match crate::util::lower_trimmed(s).as_str() {
             "text" => Some(Self::Text),
             "yaml" => Some(Self::Yaml),
             _ => None,

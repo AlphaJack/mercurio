@@ -463,7 +463,8 @@ pub(crate) fn html_to_markdown(html: &str) -> String {
                         } else {
                             out.block()
                         }
-                        let start = Token::attr(&attrs, "start").and_then(|s| s.trim().parse().ok()).unwrap_or(1);
+                        let start =
+                            Token::attr(&attrs, "start").and_then(|s| crate::util::parse_trimmed(&s)).unwrap_or(1);
                         lists.push(Some(start));
                     }
                     "li" => {

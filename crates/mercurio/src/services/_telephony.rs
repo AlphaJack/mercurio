@@ -5,12 +5,7 @@ use serde_json::Value;
 use crate::error::Error;
 use crate::http::Response;
 use crate::parse::{PhoneNo, is_phone_no, parse_phone_no};
-use crate::url::{ParsedUrl, unquote};
-
-/// `v` unquoted; empty when absent.
-pub(crate) fn unquote_or_empty(v: Option<&str>) -> String {
-    v.map(unquote).unwrap_or_default()
-}
+use crate::url::ParsedUrl;
 
 /// `parse_phone_no(targets)` followed by `is_phone_no(target, min_len)`: each raw entry with its parse result.
 pub(crate) fn phone_entries<I, S>(targets: I, min_len: usize) -> Vec<(String, Option<PhoneNo>)>

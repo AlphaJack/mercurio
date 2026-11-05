@@ -74,7 +74,7 @@ fn check(r: &Response) -> Result<()> {
     let status = match obj.get("status") {
         None => Some(-1),
         Some(Value::Number(n)) => n.as_i64().or_else(|| n.as_f64().map(|f| f.trunc() as i64)),
-        Some(Value::String(s)) => s.trim().parse::<i64>().ok(),
+        Some(Value::String(s)) => crate::util::parse_trimmed::<i64>(s),
         Some(Value::Bool(b)) => Some(i64::from(*b)),
         Some(_) => None,
     };

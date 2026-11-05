@@ -78,7 +78,7 @@ fn decode_b64_value(v: &str) -> Value {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let user = u.user.as_deref().map(unquote).unwrap_or_default();
+    let user = u.user().unwrap_or_default();
     let (mut app, mut template) = match u.password.as_deref().filter(|p| !p.is_empty()) {
         None => (user, None),
         Some(p) => (unquote(p), Some(user)),

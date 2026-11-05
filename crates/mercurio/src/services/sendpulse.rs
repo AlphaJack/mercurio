@@ -143,7 +143,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid SendPulse Client Secret was specified"))?;
 
     let template = match SERVICE.text(u, "template") {
-        Some(t) => Some(t.trim().parse::<i64>().ok().ok_or_else(|| SERVICE.err("the SendPulse Template ID is invalid"))?),
+        Some(t) => Some(crate::util::parse_trimmed::<i64>(&t).ok_or_else(|| SERVICE.err("the SendPulse Template ID is invalid"))?),
         None => None,
     };
     let template_data = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
@@ -199,7 +199,7 @@ fn token_from(r: &Response) -> Result<(String, Duration)> {
     let token = obj.get("access_token").and_then(crate::util::scalar_text);
     let expires = match obj.get("expires_in") {
         Some(Value::Number(n)) => n.as_i64().or_else(|| n.as_f64().map(|f| f.trunc() as i64)),
-        Some(Value::String(s)) => s.trim().parse::<i64>().ok(),
+        Some(Value::String(s)) => crate::util::parse_trimmed::<i64>(s),
         Some(Value::Bool(b)) => Some(*b as i64),
         _ => None,
     };

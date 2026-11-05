@@ -53,7 +53,7 @@ struct WeChat {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let corpid = u.user.as_deref().map(unquote).unwrap_or_default();
+    let corpid = u.user().unwrap_or_default();
     let corpsecret = u.password.as_deref().map(unquote).unwrap_or_default();
     let agentid = u.host();
     let mut targets = u.path_segments();

@@ -87,7 +87,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .map(|(_, v)| *v)
         .ok_or_else(|| SERVICE.err(format!("Unsupported APRS-IS server locale. Received: {locale}.")))?;
     let d = SERVICE.text_or_default(u, "delay");
-    let delay = match d.trim().parse::<f64>().ok() {
+    let delay = match crate::util::parse_trimmed::<f64>(&d) {
         Some(v) if (0.0..5.0).contains(&v) => v,
         _ => return Err(SERVICE.err(format!("Unsupported APRS-IS delay ({d}) specified."))),
     };

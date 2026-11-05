@@ -74,7 +74,22 @@ pub(crate) fn remap_payload<'a>(
 
 /// A decimal integer with optional sign, surrounding whitespace ignored.
 pub(crate) fn parse_int(s: &str) -> Option<i64> {
+    parse_trimmed(s)
+}
+
+/// `s` without its surrounding whitespace, parsed as a `T`.
+pub(crate) fn parse_trimmed<T: std::str::FromStr>(s: &str) -> Option<T> {
     s.trim().parse().ok()
+}
+
+/// `s` with each run of whitespace made one space, and none at the ends.
+pub(crate) fn one_line(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// `s` in lower case, without surrounding whitespace.
+pub(crate) fn lower_trimmed(s: &str) -> String {
+    s.to_lowercase().trim().to_owned()
 }
 
 /// Whether `v` holds a value: false for `null`, `false`, zero, empty strings, empty arrays and empty objects.

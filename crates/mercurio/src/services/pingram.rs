@@ -129,7 +129,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let message_type = if let Some(t) = u.param_nonempty("type") {
         Some(unquote(t))
     } else {
-        u.user.as_deref().filter(|s| !s.is_empty()).map(unquote)
+        u.user().filter(|s| !s.is_empty())
     };
     if let Some(to) = u.param_nonempty("to") {
         targets.push(unquote(to));

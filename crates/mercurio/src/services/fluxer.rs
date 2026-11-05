@@ -265,7 +265,7 @@ fn send(base: Arc<Request>, body: Arc<SendBody>, retries: u32) -> Plan {
         Ok(r) if r.status == 429 => {
             let delay = r
                 .header("Retry-After")
-                .and_then(|v| v.trim().parse::<f64>().ok())
+                .and_then(crate::util::parse_trimmed::<f64>)
                 .filter(|d| d.is_finite())
                 .unwrap_or(DEFAULT_DELAY_SEC)
                 .clamp(DEFAULT_DELAY_SEC, 3600.0);

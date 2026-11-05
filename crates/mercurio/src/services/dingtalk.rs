@@ -91,7 +91,7 @@ fn signature(secret: &str, timestamp: &str) -> String {
 
 /// Whitespace runs collapsed to single spaces, ends trimmed.
 fn collapse_ws(s: &str) -> String {
-    s.split_whitespace().collect::<Vec<_>>().join(" ")
+    crate::util::one_line(s)
 }
 
 impl Notify for DingTalk {

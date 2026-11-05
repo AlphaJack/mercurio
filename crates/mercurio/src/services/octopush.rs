@@ -103,7 +103,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let api_key = api_key
         .and_then(|k| validate_nonblank(&k))
         .ok_or_else(|| SERVICE.err("an invalid Octopush API Key was specified"))?;
-    let mtype = mtype.to_lowercase().trim().to_owned();
+    let mtype = crate::util::lower_trimmed(&mtype);
     let mtype = Some(&mtype)
         .filter(|m| !m.is_empty())
         .and_then(|m| TYPE_MAP.iter().find(|(k, _)| m.starts_with(k)).map(|(_, v)| *v))

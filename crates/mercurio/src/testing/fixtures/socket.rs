@@ -53,7 +53,7 @@ fn decode_header(v: &str) -> String {
         prev_word = true;
     }
     out.push_str(v.get(last..).unwrap_or_default());
-    out.split_whitespace().collect::<Vec<_>>().join(" ")
+    crate::util::one_line(&out)
 }
 
 fn split_head(raw: &str) -> (Vec<(String, String)>, &str) {

@@ -451,7 +451,7 @@ impl Response {
     /// A short, single-line excerpt of the body for error messages.
     pub fn snippet(&self) -> String {
         let t = self.text();
-        let t = t.split_whitespace().collect::<Vec<_>>().join(" ");
+        let t = crate::util::one_line(&t);
         if t.chars().count() > 200 { format!("{}...", t.chars().take(200).collect::<String>()) } else { t }
     }
 

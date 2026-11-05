@@ -73,7 +73,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let namespace = entries.pop();
     let fullpath = if entries.is_empty() { "/".to_owned() } else { format!("/{}/", entries.join("/")) };
 
-    let mut token = u.user.as_deref().filter(|s| !s.is_empty()).map(unquote);
+    let mut token = u.user().filter(|s| !s.is_empty());
     if let Some(t) = u.param_nonempty("token") {
         token = Some(unquote(t));
     }

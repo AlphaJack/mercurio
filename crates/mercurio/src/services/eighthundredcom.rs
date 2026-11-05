@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::_telephony::{Form, source_and_targets, unquote_or_empty};
+use super::_telephony::{Form, source_and_targets};
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -44,7 +44,7 @@ struct Eight00com {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let token = u.text("token").unwrap_or_else(|| unquote_or_empty(u.user.as_deref()));
+    let token = u.text("token").unwrap_or_else(|| u.user().unwrap_or_default());
     let token =
         validate_nonblank(&token).ok_or_else(|| SERVICE.err("an 800.com Personal Access Token must be specified"))?;
     let (source, targets) =

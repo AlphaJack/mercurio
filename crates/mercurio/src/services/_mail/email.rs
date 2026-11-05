@@ -649,7 +649,7 @@ impl Email {
             (Flavor::DeltaChat, Pgp::None) => Self::chat_subject(msg.body),
             (Flavor::Email, _) => msg.title.to_owned(),
         };
-        let subject: String = subject.split_whitespace().collect::<Vec<_>>().join(" ");
+        let subject: String = crate::util::one_line(&subject);
         let msgid_host = if self.smtp_host.is_empty() {
             self.from_addr.split('@').nth(1).unwrap_or("localhost").to_owned()
         } else {

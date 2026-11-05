@@ -187,7 +187,7 @@ fn printable(c: char) -> bool {
 
 fn subject(title: &str) -> String {
     let s: String = title.chars().map(|c| if printable(c) { c } else { ' ' }).collect();
-    s.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(TOPIC_TITLE_MAXLEN).collect()
+    crate::util::one_line(&s).chars().take(TOPIC_TITLE_MAXLEN).collect()
 }
 
 impl Notify for Arc<Sns> {

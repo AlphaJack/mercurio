@@ -3,7 +3,7 @@
 use super::_sms::{PHONE_TARGETS, no_targets, per_target, to_param, valid_phones};
 use crate::parse::{is_phone_no, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::url::{ParsedUrl, unquote};
+use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -40,7 +40,7 @@ struct Clickatell {
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
     let apikey = u.host();
-    let mut source = u.user.as_deref().filter(|s| !s.is_empty()).map(unquote);
+    let mut source = u.user().filter(|s| !s.is_empty());
     targets.extend(to_param(u));
     if let Some(v) = SERVICE.text(u, "from") {
         source = Some(v);

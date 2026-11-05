@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
-use super::_telephony::{http_err, unquote_or_empty};
+use super::_telephony::http_err;
 use crate::error::Error;
 use crate::http::Request;
 use crate::parse::{is_email, is_phone_no, parse_phone_no, parse_phone_no_unquoted};
@@ -57,7 +57,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     };
     // The URL is `{password}:{email user}@{email domain}`.
     let password = u.user();
-    let email = format!("{}@{}", unquote_or_empty(u.password.as_deref()), u.host());
+    let email = format!("{}@{}", u.password().unwrap_or_default(), u.host());
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));
     }
