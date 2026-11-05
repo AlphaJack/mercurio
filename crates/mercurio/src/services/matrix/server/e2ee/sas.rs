@@ -7,8 +7,8 @@ use std::time::{Duration, Instant};
 use serde_json::{Map, Value, json};
 
 use super::{XKey, b64dec, b64enc, canonical_json, hkdf_sha256, hmac_sha256, sha256, verify_device_keys};
-use super::flow::binding_key;
-use super::super::server::{CACHE_EXPIRY, Fetch, K, Session, has_value};
+use super::vault::binding_key;
+use super::super::{CACHE_EXPIRY, Fetch, K, Session, has_value};
 use crate::Plan;
 use crate::env::Env;
 
@@ -322,7 +322,7 @@ fn store_verified_binding(s: &Session) -> bool {
 }
 
 /// Extend trust for the verified identity.
-pub(in super::super) fn refresh_verified_state(s: &Session) -> bool {
+pub(in super::super::super) fn refresh_verified_state(s: &Session) -> bool {
     let Some(binding) = s.store.get("e2ee_device_binding").filter(has_value) else { return false };
     if s.store.get("e2ee_verified_binding").as_ref() != Some(&binding)
         || s.user_id.as_deref().is_none_or(str::is_empty)
@@ -350,7 +350,7 @@ pub(in super::super) fn refresh_verified_state(s: &Session) -> bool {
 }
 
 /// Complete one same-user SAS verification.
-pub(in super::super) fn auto_verify(s: Session, k: K<bool>) -> Plan {
+pub(in super::super::super) fn auto_verify(s: Session, k: K<bool>) -> Plan {
     let binding = s.store.get("e2ee_device_binding");
     if binding.as_ref().is_some_and(has_value) && s.store.get("e2ee_verified_binding") == binding {
         return k(s, true);
