@@ -8,7 +8,8 @@ use std::time::Duration;
 
 use serde_json::json;
 
-use super::_email_api::{attachments_json, cc_for, copy_list, email_set, except, set_name, with_names};
+use super::_email_api::{attachments_json, copy_list, email_set, set_name, with_names};
+use super::_recipients::{cc_for, except};
 use super::_mail::mime::formataddr;
 use crate::parse::{is_email, parse_emails, parse_list, validate_nonblank};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};

@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
-use super::_email_api::set_add;
+use super::_recipients::set_add;
 use crate::asset::ImageSize;
 use crate::error::Error;
 use crate::parse::{is_email, is_phone_no, parse_emails, parse_list, parse_list_unsorted, validate_regex};

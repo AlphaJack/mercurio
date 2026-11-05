@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use super::_email_api::{cc_for, except};
+use super::_recipients::{cc_for, except};
 use crate::env::Env;
 use crate::error::Error;
 use crate::http::Request;
