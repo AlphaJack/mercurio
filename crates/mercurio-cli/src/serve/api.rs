@@ -2,5 +2,6 @@
 
 mod auth;
 mod config;
+mod key;
 mod notify;
 mod status;

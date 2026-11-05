@@ -5,7 +5,8 @@ use serde_json::{Value, json};
 use super::super::auth::{KeyState, Role};
 use super::super::http::{Reply, Req};
 use super::super::store::{self, Cleared};
-use super::super::{Server, codec, payload, resolve_key};
+use super::super::{Server, codec, payload};
+use super::key::resolve_key;
 
 impl Server {
     pub(crate) async fn auth_view(&self, req: &Req, key: Option<&str>) -> Reply {

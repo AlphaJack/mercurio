@@ -9,9 +9,10 @@ use mercurio::transport::TokioTransport;
 
 use super::auth::Role;
 use super::http::{self, Reply, Req};
+use super::key::{MISSING_KEY, valid_key};
 use super::settings::Settings;
 use super::store::ConfigStore;
-use super::{MISSING_KEY, Server, auth, metrics, notify, valid_key};
+use super::{Server, auth, metrics};
 
 /// The HTTP API: paths, methods, purpose. [`router`] implements it; the `routes_match_the_router` test checks every row against it.
 pub(crate) const ROUTES: &[(&str, &str, &str)] = &[
@@ -76,7 +77,8 @@ pub(crate) fn help_tables() -> String {
 /// The HTTP API as one service: [`router`] behind the panic, load, timeout and body limits, with [`observe`] logging each request.
 pub(super) fn app(s: Settings) -> tower_http::normalize_path::NormalizePath<axum::Router> {
     let store = ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
-    let streams = notify::StreamSlots::new(s.stream_slots);
+    // Live streams admitted at once (`APPRISE_STREAM_WORKER_COUNT` + `APPRISE_STREAM_QUEUE_SIZE`).
+    let streams = Arc::new(tokio::sync::Semaphore::new(s.stream_slots.min(tokio::sync::Semaphore::MAX_PERMITS)));
     let server = Arc::new(Server {
         transport: Arc::new(TokioTransport::new()),
         s,

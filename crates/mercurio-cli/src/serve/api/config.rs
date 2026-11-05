@@ -9,8 +9,10 @@ use serde_json::{Map, Value, json};
 
 use super::super::auth::Role;
 use super::super::http::{self, Reply, Req, parse_bool};
+use super::super::key::valid_key;
 use super::super::store::{Cleared, Mode, Moved};
-use super::super::{DENIED, Server, payload, resolve_key, valid_key};
+use super::super::{DENIED, Server, payload};
+use super::key::resolve_key;
 
 impl Server {
     pub(crate) async fn list(&self, req: &Req) -> Reply {

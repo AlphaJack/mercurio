@@ -581,6 +581,28 @@ fn live_streams_log_levels_and_storage() {
 }
 
 #[test]
+fn live_streams_past_the_slots_get_503() {
+    let env = [("APPRISE_STREAM_WORKER_COUNT", "1"), ("APPRISE_STREAM_QUEUE_SIZE", "0")];
+    let s = start_with(&tmpdir("stream-slots"), &env);
+    // An upstream that never answers holds the one slot.
+    let silent = TcpListener::bind("127.0.0.1:0").unwrap();
+    let urls = format!("urls=json://{}&body=held", silent.local_addr().unwrap());
+    let mut held = TcpStream::connect(&s.addr).unwrap();
+    let head = "POST /notify?stream=yes HTTP/1.1\r\nHost: x\r\nContent-Type: application/x-www-form-urlencoded";
+    write!(held, "{head}\r\nContent-Length: {}\r\n\r\n{urls}", urls.len()).unwrap();
+    let mut line = String::new();
+    let mut reader = BufReader::new(held);
+    while !line.contains(": connected") {
+        line.clear();
+        reader.read_line(&mut line).unwrap();
+    }
+    let ct = ("Content-Type", "application/x-www-form-urlencoded");
+    let (code, head, _) = http_full(&s.addr, "POST", "/notify?stream=yes", &[ct], &urls);
+    assert_eq!(code, 503);
+    assert!(head.contains("Retry-After: 15") || head.contains("retry-after: 15"), "{head}");
+}
+
+#[test]
 fn live_streams_apply_yaml_asset_overrides() {
     let s = start(&tmpdir("stream-asset"));
     let (up, rx) = upstream(2, 200);
