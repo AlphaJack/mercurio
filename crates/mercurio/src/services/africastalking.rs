@@ -4,9 +4,9 @@ use std::collections::HashSet;
 
 use serde_json::Value;
 
-use super::_sms::{no_targets, per_target, to_param};
+use super::_sms::{PHONE_TARGETS, batches, no_targets, numbers_keeping_plus, per_target, to_param};
 use crate::http::Response;
-use crate::parse::{is_phone_no, parse_phone_no, validate_regex};
+use crate::parse::validate_regex;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::util::{json_text, parse_int};
@@ -26,7 +26,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("apikey", "API Key").required().secret().pattern("^[A-Z0-9_-]+$"),
         Param::new("appuser", "App User Name").required().pattern("^[A-Z0-9_-]+$"),
         Param::new("target_phone", "Target Phone"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::sets("apikey", &["apikey"]),
@@ -87,13 +87,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         }
         None => MODES[0].1,
     };
-    let targets = parse_phone_no(&targets, true, false)
-        .into_iter()
-        .filter_map(|t| {
-            let p = is_phone_no(&t, 10)?;
-            Some(if t.trim_start().starts_with('+') { format!("+{}", p.full) } else { p.full })
-        })
-        .collect();
+    let targets = numbers_keeping_plus(&targets);
     Ok(Box::new(AfricasTalking {
         appuser,
         apikey: Secret::new(apikey),
@@ -150,7 +144,7 @@ impl Notify for AfricasTalking {
             return no_targets("Africas Talking");
         }
         let size = if self.batch { BATCH_SIZE } else { 1 };
-        let chunks: Vec<Vec<String>> = self.targets.chunks(size).map(<[String]>::to_vec).collect();
+        let chunks = batches(&self.targets, size);
         per_target(
             chunks,
             |c| c.join(","),

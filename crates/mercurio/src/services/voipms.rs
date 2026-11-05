@@ -1,5 +1,6 @@
 //! VoIP.ms (`voipms://`): SMS through the VoIP.ms API.
 
+use super::_sms::PHONE_TARGETS;
 use std::sync::Arc;
 
 use serde_json::Value;
@@ -27,7 +28,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
         Param::new("password", "Password").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::sets("from", &["from_phone"]),

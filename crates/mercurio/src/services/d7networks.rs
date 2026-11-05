@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
+use super::_sms::{PHONE_TARGETS, full_numbers, no_targets, per_target, to_param};
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -23,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     ],
     tokens: &[
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
         Param::new("token", "API Access Token").required().secret(),
     ],
     params: &[
@@ -102,7 +102,7 @@ impl Notify for D7Networks {
                 .header("Accept", "application/json")
                 .bearer(self.token.expose())
                 .json_text(&payload, msg.body);
-            Plan::send_check(req, |r| expect(r, &[201, 200]))
+            Plan::send_expect(req, &[201, 200])
         })
     }
 

@@ -1,5 +1,6 @@
 //! httpSMS (`httpsms://`): SMS sent from your Android phone through the httpSMS API.
 
+use super::_sms::PHONE_TARGETS;
 use serde_json::json;
 
 use super::_telephony::{param_unquoted, source_and_targets, unquote_or_empty};
@@ -23,7 +24,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("apikey", "API Key").required().secret(),
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::new("from", "From Phone No").pattern(r"^\+?[0-9\s)(+-]+$"),

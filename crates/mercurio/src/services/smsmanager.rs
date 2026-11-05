@@ -1,5 +1,6 @@
 //! SMS Manager (`smsmgr://`, `smsmanager://`): SMS through the SMS Manager API.
 
+use super::_sms::PHONE_TARGETS;
 use super::_telephony::{phone_entries, param_unquoted, unquote_or_empty};
 use crate::parse::{parse_phone_no_unquoted, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -19,7 +20,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("apikey", "API Key").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::new("batch", "Batch Mode").bool(false),

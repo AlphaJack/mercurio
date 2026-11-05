@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::_sms::{expect, no_targets, per_target, to_param};
+use super::_sms::{PHONE_TARGETS, no_targets, per_target, to_param};
 use crate::parse::{is_phone_no, parse_phone_no, parse_phone_no_unquoted};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -23,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
         Param::new("password", "Password").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
         Param::new("user", "User Name").required(),
     ],
     params: &[
@@ -94,7 +94,7 @@ impl Notify for BulkVs {
                 .header("Accept", "application/json")
                 .basic_auth(&self.user, Some(self.password.expose()))
                 .json_text(&payload, msg.body);
-            Plan::send_check(req, |r| expect(r, &[200]))
+            Plan::send_expect(req, &[200])
         })
     }
 

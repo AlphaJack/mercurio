@@ -8,7 +8,7 @@
 
 use serde_json::json;
 
-use super::_sms::{expect, no_targets, per_target, to_param};
+use super::_sms::{no_targets, per_target, to_param};
 use crate::parse::{is_phone_no, parse_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -103,7 +103,7 @@ impl Notify for MessageBird {
         per_target(self.targets.clone(), String::clone, |target| {
             let body = json!({"from": from, "to": format!("+{target}"), "text": crate::http::TEXT, "category": self.category});
             let req = ctx.post(&url).header("Authorization", format!("Bearer {}", self.apikey.expose())).json_text(&body, msg.body);
-            Plan::send_check(req, |r| expect(r, &[200, 201, 202]))
+            Plan::send_expect(req, &[200, 201, 202])
         })
     }
 }

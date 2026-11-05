@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use super::_sms::{expect, no_targets, per_target};
+use super::_sms::{no_targets, per_target};
 use crate::parse::{is_phone_no, parse_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -193,7 +193,7 @@ impl Notify for Twilio {
                     .header("Accept", "application/json")
                     .basic_auth(&user, Some(self.auth_token.expose()))
                     .form(&form);
-                Plan::send_check(req, |r| expect(r, &[201, 200]))
+                Plan::send_expect(req, &[201, 200])
             },
         )
     }
