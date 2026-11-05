@@ -26,7 +26,7 @@ pub(crate) fn find_mentions(text: &str) -> Vec<Mention> {
     re.captures_iter(text)
         .map(|c| {
             (
-                c.get(1).is_some_and(|m| !m.as_str().is_empty()),
+                c.get(1).is_some_and(|m| !m.is_empty()),
                 c.get(2).map(|m| m.as_str().to_owned()).unwrap_or_default(),
                 c.get(3).map(|m| m.as_str().to_owned()).unwrap_or_default(),
             )

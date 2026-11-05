@@ -41,6 +41,11 @@ type Members = BTreeMap<String, BTreeMap<String, (String, String)>>;
 /// User -> device -> curve25519 key.
 type DeviceSet = BTreeMap<String, BTreeMap<String, String>>;
 
+/// Records `device` of `user`, with its identity key, in `set`.
+fn note(set: &mut DeviceSet, user: &str, device: &str, identity_key: &str) {
+    set.entry(user.to_owned()).or_default().insert(device.to_owned(), identity_key.to_owned());
+}
+
 /// Who holds the key of a room's current outbound Megolm session.
 #[derive(Debug, Default)]
 struct Shared {
@@ -655,14 +660,14 @@ fn build_key_shares(
             }
             let Some(otk) = their_otk.filter(|o| !o.is_empty()) else {
                 no_otk += 1;
-                skipped.entry(uid.clone()).or_default().insert(dev_id.clone(), their_ik.clone());
+                note(&mut skipped, uid, dev_id, their_ik);
                 continue;
             };
             let mut olm = match acct.create_outbound_session(their_ik, &otk, s.env.as_ref()) {
                 Ok(o) => o,
                 Err(e) => {
                     log::debug!("Matrix E2EE: failed to build Olm session for {uid} / {dev_id}: {e}");
-                    skipped.entry(uid.clone()).or_default().insert(dev_id.clone(), their_ik.clone());
+                    note(&mut skipped, uid, dev_id, their_ik);
                     continue;
                 }
             };
@@ -679,7 +684,7 @@ fn build_key_shares(
                 dev_id.clone(),
                 json!({"algorithm": OLM_ALGORITHM, "ciphertext": {their_ik.clone(): ct}, "sender_key": acct.identity_key()}),
             );
-            sent.entry(uid.clone()).or_default().insert(dev_id.clone(), their_ik.clone());
+            note(&mut sent, uid, dev_id, their_ik);
         }
         out.insert(uid.clone(), Value::Object(per_user));
     }

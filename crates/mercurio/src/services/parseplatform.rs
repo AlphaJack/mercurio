@@ -4,7 +4,7 @@ use serde_json::json;
 
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
-use crate::url::{ParsedUrl, unquote};
+use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -44,7 +44,7 @@ struct ParsePlatform {
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     crate::parse::require_host(u, &SERVICE)?;
     let mut app_id = u.user().unwrap_or_default();
-    let mut master_key = u.password.as_deref().map(unquote).unwrap_or_default();
+    let mut master_key = u.password().unwrap_or_default();
     if let Some(v) = u.param_nonempty("app_id") {
         app_id = v.to_owned();
     }

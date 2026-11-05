@@ -205,11 +205,7 @@ impl ErrorClass {
     }
 }
 
-impl fmt::Display for ErrorClass {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+crate::display_as_str!(ErrorClass);
 
 /// Parse a `Retry-After` value (RFC 9110 10.2.3): delta-seconds or an IMF-fixdate (`Sun, 06 Nov 1994 08:49:37 GMT`), relative to `now`. A date in the past is zero. The obsolete RFC 850 and asctime forms are rejected.
 pub(crate) fn parse_retry_after(value: &str, now: SystemTime) -> Option<Duration> {

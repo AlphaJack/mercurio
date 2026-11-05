@@ -2,6 +2,8 @@
 
 pub(crate) mod client;
 
+use crate::net::unresolved;
+use crate::transport::USER_AGENT;
 use std::fmt;
 use std::io::{self, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs, UdpSocket};
@@ -38,7 +40,7 @@ impl Default for BlockingTransport {
 impl BlockingTransport {
     /// A transport whose `User-Agent` is `Mercurio/<version>`; requests that set their own keep it.
     pub fn new() -> Self {
-        Self::with_user_agent(crate::transport::USER_AGENT)
+        Self::with_user_agent(USER_AGENT)
     }
 
     /// A transport with a custom default `User-Agent`.
@@ -66,7 +68,7 @@ impl Transport for BlockingTransport {
                     .to_socket_addrs()
                     .map_err(Error::transport)?
                     .next()
-                    .ok_or_else(|| Error::transport(crate::net::unresolved(host)))?;
+                    .ok_or_else(|| Error::transport(unresolved(host)))?;
                 let sock = UdpSocket::bind(unbound_addr(&addr)).map_err(Error::transport)?;
                 sock.send_to(&dg.payload, addr).map_err(Error::transport)?;
                 Ok(())
@@ -131,7 +133,7 @@ fn tcp_connect(host: &str, port: u16, timeout: Duration) -> io::Result<TcpStream
             Err(e) => last = Some(e),
         }
     }
-    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
+    Err(last.unwrap_or_else(|| unresolved(host)))
 }
 
 enum Inner {

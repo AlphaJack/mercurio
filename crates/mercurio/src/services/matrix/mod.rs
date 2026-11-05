@@ -558,7 +558,7 @@ impl Notify for Matrix {
         }
         let title: String = title.trim().chars().take(TITLE_MAXLEN).collect();
         let body = body.trim_end();
-        let device_id = self.store(ctx).get("device_id").and_then(|v| v.as_str().map(str::to_owned));
+        let device_id = self.store(ctx).get("device_id").and_then(crate::util::json_string);
         let rich = matches!(format, NotifyFormat::Html | NotifyFormat::Markdown);
         let body_maxlen = sizing::body_char_limit(body, &title, rich, cfg.e2ee_capable(), device_id.as_deref());
         Some(Limits { title_maxlen: TITLE_MAXLEN, body_maxlen, body_max_line_count: 0 })

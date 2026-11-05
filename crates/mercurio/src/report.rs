@@ -35,11 +35,7 @@ impl Status {
     }
 }
 
-impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+crate::display_as_str!(Status);
 
 /// One delivery attempt of one URL.
 #[derive(Debug, Clone)]

@@ -48,7 +48,7 @@ impl Pairs {
     }
     /// The entries as owned pairs, collected into `C`.
     pub(crate) fn owned<C: FromIterator<(String, String)>>(&self) -> C {
-        self.0.iter().cloned().collect()
+        self.0.clone().into_iter().collect()
     }
     /// The entries with keys and values unquoted, collected into `C`.
     pub(crate) fn unquoted<C: FromIterator<(String, String)>>(&self) -> C {
@@ -228,8 +228,8 @@ fn parse_raw(url: &str, default_schema: &str, opts: ParseOptions) -> Option<Pars
     let caps = url_parts(url)?;
     let scheme =
         caps.name("schema").map(|m| m.as_str().trim().to_lowercase()).unwrap_or_else(|| default_schema.to_owned());
-    let host_part = caps.name("path").map(|m| m.as_str().trim().to_owned()).unwrap_or_default();
-    let query_string = caps.name("query").map(|m| m.as_str().trim().to_owned());
+    let host_part = caps.name("path").map(crate::util::trimmed_match).unwrap_or_default();
+    let query_string = caps.name("query").map(crate::util::trimmed_match);
 
     let mut out = ParsedUrl {
         scheme,

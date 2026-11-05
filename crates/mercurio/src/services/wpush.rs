@@ -51,7 +51,7 @@ struct WPush {
 }
 
 fn non_blank(v: Option<String>) -> Option<String> {
-    v.filter(|s| !s.trim().is_empty())
+    v.filter(crate::util::non_blank)
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
@@ -120,7 +120,7 @@ fn check(r: &crate::Response) -> Result<()> {
     if ok {
         return Ok(());
     }
-    let message = content.get("message").map(|m| m.as_str().map(str::to_owned).unwrap_or_else(|| m.to_string()));
+    let message = content.get("message").map(|m| crate::util::json_string(m).unwrap_or_else(|| m.to_string()));
     Err(Error::Service(format!(
         "WPUSH code={}: {}",
         code.map(Value::to_string).unwrap_or_else(|| "None".into()),

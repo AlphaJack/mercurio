@@ -1,5 +1,6 @@
 //! The blocking side of the HTTP client ([`crate::http1::client`]): [`StdDial`] opens TCP and TLS connections with `std::net` and rustls, [`StdStream`] reads and writes them under socket timeouts. Every future it returns is complete when polled.
 
+use crate::net::unresolved;
 use std::future::ready;
 use std::io::{self, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
@@ -205,5 +206,5 @@ fn tcp_connect(host: &str, port: u16, budget: Duration) -> io::Result<TcpStream>
             Err(e) => last = Some(e),
         }
     }
-    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
+    Err(last.unwrap_or_else(|| unresolved(host)))
 }

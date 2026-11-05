@@ -123,12 +123,6 @@ fn post(req: Request, retry: u32) -> Plan {
     })
 }
 
-impl SparkPost {
-    fn batch_size(&self) -> usize {
-        chunk_size(self.batch, BATCH_SIZE)
-    }
-}
-
 impl Notify for SparkPost {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         if self.targets.is_empty() {
@@ -154,7 +148,7 @@ impl Notify for SparkPost {
 
         let url = format!("{}/transmissions/", self.api);
         let mut plans = Vec::new();
-        for batch in self.targets.chunks(self.batch_size()) {
+        for batch in self.targets.chunks(chunk_size(self.batch, BATCH_SIZE)) {
             let mut cc: Vec<&String> = cc_only(&self.cc, &self.bcc).collect();
             let mut bcc: Vec<&String> = self.bcc.iter().collect();
             let mut recipients = Vec::new();

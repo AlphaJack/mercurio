@@ -5,6 +5,8 @@
 pub(crate) mod client;
 mod conn;
 
+use crate::net::unresolved;
+use crate::transport::USER_AGENT;
 use std::fmt;
 use std::io;
 use std::path::Path;
@@ -40,7 +42,7 @@ impl Default for TokioTransport {
 impl TokioTransport {
     /// A transport whose `User-Agent` is `Mercurio/<version>`; requests that set their own keep it.
     pub fn new() -> Self {
-        Self::with_user_agent(crate::transport::USER_AGENT)
+        Self::with_user_agent(USER_AGENT)
     }
 
     /// A transport with a custom default `User-Agent`.
@@ -74,7 +76,7 @@ impl TokioTransport {
                     .await
                     .map_err(Error::transport)?
                     .next()
-                    .ok_or_else(|| Error::transport(crate::net::unresolved(host)))?;
+                    .ok_or_else(|| Error::transport(unresolved(host)))?;
                 let sock = tokio::net::UdpSocket::bind(unbound_addr(&addr)).await.map_err(Error::transport)?;
                 sock.send_to(&dg.payload, addr).await.map_err(Error::transport)?;
             }

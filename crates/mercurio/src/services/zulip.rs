@@ -51,7 +51,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     };
     if let Some(to) = u.param_nonempty("to") {
         let delim = crate::regex!(r"[ \t\r\n,#\\/]+");
-        targets.extend(delim.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_owned));
+        targets.extend(crate::util::split_nonempty(delim, &unquote(to)));
     }
 
     let botname = u.user().unwrap_or_default();

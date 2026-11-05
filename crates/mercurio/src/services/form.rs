@@ -99,7 +99,7 @@ fn parse_attach_as(spec: &str) -> Option<(String, bool)> {
         Some((format!("{pre}{{}}{}", &c["id1b"]), true))
     } else {
         let id = &c["id2"];
-        if c.name("wc2").is_some_and(|m| !m.as_str().is_empty()) { Some((format!("{id}{{}}"), true)) } else { Some((id.to_owned(), false)) }
+        if c.name("wc2").is_some_and(|m| !m.is_empty()) { Some((format!("{id}{{}}"), true)) } else { Some((id.to_owned(), false)) }
     }
 }
 

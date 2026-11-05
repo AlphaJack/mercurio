@@ -61,6 +61,11 @@ pub enum Location {
     Inaccessible,
 }
 
+/// The query of a `file://` or `memory://` spec, after its `?`.
+fn query_part<'a>(caps: &crate::re::Captures<'a>) -> &'a str {
+    caps.get(2).and_then(|m| m.as_str().strip_prefix('?')).unwrap_or("")
+}
+
 impl Location {
     /// Parse `local`, `hosted` or `inaccessible` (case-insensitive).
     pub fn parse(s: &str) -> Option<Self> {
@@ -278,14 +283,14 @@ impl AttachSource {
         let re = crate::regex!(r"(?i)^\s*file://(?P<path>[^?]+)(\?.*)?$");
         let caps = re.captures(spec).ok_or_else(|| Error::InvalidUrl("file://...".into()))?;
         let path = crate::url::unquote(&caps["path"]);
-        let query = query_pairs(caps.get(2).and_then(|m| m.as_str().strip_prefix('?')).unwrap_or(""));
+        let query = query_pairs(query_part(&caps));
         Self::file(path).apply_options(&query)
     }
 
     fn parse_memory(spec: &str) -> Result<Self> {
         let re = crate::regex!(r"(?i)^\s*memory://(?P<path>[^?]*)(\?.*)?$");
         let caps = re.captures(spec).ok_or_else(|| Error::InvalidUrl("memory://...".into()))?;
-        let query = query_pairs(caps.get(2).and_then(|m| m.as_str().strip_prefix('?')).unwrap_or(""));
+        let query = query_pairs(query_part(&caps));
         let path = crate::url::unquote(&caps["path"]);
         let name = path.rsplit('/').next().unwrap_or("").to_owned();
         let s = Self::build(Kind::Memory(Vec::new()));
@@ -398,7 +403,7 @@ impl AttachSource {
         if let Some(m) = &self.mime {
             return m.clone();
         }
-        if let Some(d) = detected.filter(|d| !d.trim().is_empty()) {
+        if let Some(d) = detected.filter(crate::util::non_blank) {
             return d.to_owned();
         }
         name.and_then(guess_mime).unwrap_or(UNKNOWN_MIME).to_owned()

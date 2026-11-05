@@ -139,13 +139,6 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }))
 }
 
-impl Mailgun {
-    fn batch_size(&self) -> usize {
-        chunk_size(self.batch, BATCH_SIZE)
-    }
-
-}
-
 impl Notify for Mailgun {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         if self.targets.is_empty() {
@@ -166,7 +159,7 @@ impl Notify for Mailgun {
 
         let url = format!("{}{}/messages", self.api, self.host);
         let mut plans = Vec::new();
-        for batch in self.targets.chunks(self.batch_size()) {
+        for batch in self.targets.chunks(chunk_size(self.batch, BATCH_SIZE)) {
             let mut cc: Vec<&String> = cc_only(&self.cc, &self.bcc).collect();
             let mut bcc: Vec<&String> = self.bcc.iter().collect();
             let mut to = Vec::new();

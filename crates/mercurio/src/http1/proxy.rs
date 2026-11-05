@@ -43,7 +43,7 @@ impl ProxyEnv {
         }
         let var = |upper: &str| {
             let lower = upper.to_ascii_lowercase();
-            [upper, lower.as_str()].into_iter().find_map(|n| get(n).filter(|v| !v.trim().is_empty()))
+            [upper, lower.as_str()].into_iter().find_map(|n| get(n).filter(crate::util::non_blank))
         };
         let all = var("ALL_PROXY").and_then(|v| Proxy::parse(&v));
         Self {

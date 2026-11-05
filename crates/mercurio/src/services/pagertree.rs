@@ -99,7 +99,7 @@ impl Notify for PagerTree {
             if self.action == "create" {
                 // Each notification creates its own alert; a retry reuses the ID so it never creates a second one.
                 let key = format!("alert_id:{}", msg.index);
-                let id = ctx.memo.recall(&key).and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_else(|| ctx.env().uuid4());
+                let id = ctx.memo.recall(&key).and_then(crate::util::json_string).unwrap_or_else(|| ctx.env().uuid4());
                 ctx.memo.remember(&key, json!(id));
                 id
             } else {

@@ -64,7 +64,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     if let Some(to) = u.param_nonempty("to") {
         let re = crate::regex!(r"[ \t\r\n,#\\/]+");
-        targets.extend(re.split(&unquote(to)).filter(|s| !s.is_empty()).map(str::to_owned));
+        targets.extend(crate::util::split_nonempty(re, &unquote(to)));
     }
 
     if apikey.is_empty() {
