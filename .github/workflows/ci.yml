@@ -101,7 +101,7 @@ jobs:
         if: runner.os == 'macOS'
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
         with:
           tool: cargo-nextest
       - name: Test
@@ -147,7 +147,7 @@ jobs:
         shell: pwsh
         run: Set-MpPreference -DisableRealtimeMonitoring $true
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
         with:
           tool: cargo-nextest
       - name: Test
@@ -178,7 +178,7 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Install mdbook
-        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
         with:
           tool: mdbook
       - name: Build docs
@@ -212,7 +212,7 @@ jobs:
           persist-credentials: false
 
       - name: Install zizmor
-        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
         with:
           tool: zizmor
 
