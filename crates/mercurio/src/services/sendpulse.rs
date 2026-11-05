@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
-use super::_email_api::{attachment_b64, attachment_name, html_to_text};
+use super::_email_api::{attachment_b64, attachment_name, cc_for, except, html_to_text};
 use crate::crypto::b64;
 use crate::http::{Request, Response};
 use crate::parse::{is_email, parse_emails, validate_regex};
@@ -314,9 +314,8 @@ impl Notify for SendPulse {
         let mut payloads = Vec::new();
         for target in &self.targets {
             // Every cc/bcc entry is sent, built afresh for each target.
-            let cc: Vec<Value> =
-                self.cc.iter().filter(|e| !self.bcc.contains(e) && *e != target).map(recipient).collect();
-            let bcc: Vec<Value> = self.bcc.iter().filter(|e| *e != target).map(recipient).collect();
+            let cc: Vec<Value> = cc_for(&self.cc, &self.bcc, target).map(recipient).collect();
+            let bcc: Vec<Value> = except(&self.bcc, target).map(recipient).collect();
             let mut email = email.clone();
             email.insert("to".into(), json!([recipient(target)]));
             if !cc.is_empty() {

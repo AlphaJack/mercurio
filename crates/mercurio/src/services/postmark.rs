@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use serde_json::json;
 
-use super::_email_api::{attachments_json};
+use super::_email_api::{attachments_json, cc_for, copy_list, email_set, except, set_name, with_names};
 use super::_mail::mime::formataddr;
 use crate::parse::{is_email, parse_emails, parse_list, validate_nonblank};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
@@ -58,11 +58,6 @@ struct Postmark {
     reply_to: Vec<String>,
 }
 
-fn set_name(names: &mut Vec<(String, String)>, email: &str, name: &str) {
-    names.retain(|(k, _)| k != email);
-    names.push((email.to_owned(), name.to_owned()));
-}
-
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let apikey = u.text("apikey").unwrap_or_else(|| u.user().unwrap_or_default());
     let mut targets_in: Vec<String> = Vec::new();
@@ -106,36 +101,15 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             }
         }
     }
-    let collect =|entries: Vec<String>, named: bool, names: &mut Vec<(String, String)>| {
-        let mut set: Vec<String> = Vec::new();
-        for r in parse_emails(&entries, true) {
-            if let Some(e) = is_email(&r) {
-                if named {
-                    set_name(names, &e.full_email, &e.name);
-                }
-                if !set.contains(&e.full_email) {
-                    set.push(e.full_email);
-                }
-            }
-        }
-        set
-    };
-    let cc = collect(u.list("cc"), true, &mut names);
-    let bcc = collect(u.list("bcc"), false, &mut names);
-    let reply_to = collect(u.param_nonempty("reply").map(|v| vec![v.to_owned()]).unwrap_or_default(), true, &mut names);
+    let cc = copy_list(&mut names, u.list("cc"));
+    let bcc = email_set(u.list("bcc"));
+    let reply_to = copy_list(&mut names, u.param_nonempty("reply"));
     Ok(Box::new(Postmark { apikey: Secret::new(apikey), from, targets, names, cc, bcc, reply_to }))
 }
 
 impl Postmark {
     fn named(&self, addrs: &[&String]) -> String {
-        addrs
-            .iter()
-            .map(|a| {
-                let n = self.names.iter().find(|(k, _)| k == *a).map(|(_, v)| v.as_str()).unwrap_or("");
-                formataddr(n, a)
-            })
-            .collect::<Vec<_>>()
-            .join(",")
+        with_names(&self.names, addrs).join(",")
     }
 }
 
@@ -158,9 +132,9 @@ impl Notify for Postmark {
                     }));
         }
         let plans = self.targets.iter().map(|target| {
-            let cc: Vec<&String> = self.cc.iter().filter(|e| !self.bcc.contains(e) && *e != target).collect();
-            let bcc: Vec<&String> = self.bcc.iter().filter(|e| *e != target).collect();
-            let reply: Vec<&String> = self.reply_to.iter().filter(|e| *e != target).collect();
+            let cc: Vec<&String> = cc_for(&self.cc, &self.bcc, target).collect();
+            let bcc: Vec<&String> = except(&self.bcc, target).collect();
+            let reply: Vec<&String> = except(&self.reply_to, target).collect();
             let mut payload = base.clone();
             payload["To"] = json!(target);
             if !cc.is_empty() {
