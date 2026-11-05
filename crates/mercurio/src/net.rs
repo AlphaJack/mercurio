@@ -135,6 +135,11 @@ impl rustls::client::danger::ServerCertVerifier for NoVerify {
 /// Bytes asked for in one read of a socket.
 pub(crate) const READ_CHUNK: usize = 4096;
 
+/// The error when `host` resolves to no address.
+pub(crate) fn unresolved(host: &str) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::NotFound, format!("cannot resolve {host}"))
+}
+
 /// Connect a Unix stream socket: a path, or a Linux abstract name after a leading NUL.
 #[cfg(unix)]
 pub(crate) fn unix_connect(path: &str) -> std::io::Result<std::os::unix::net::UnixStream> {

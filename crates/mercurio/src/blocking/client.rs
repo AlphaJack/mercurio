@@ -205,5 +205,5 @@ fn tcp_connect(host: &str, port: u16, budget: Duration) -> io::Result<TcpStream>
             Err(e) => last = Some(e),
         }
     }
-    Err(last.unwrap_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("cannot resolve {host}"))))
+    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
 }

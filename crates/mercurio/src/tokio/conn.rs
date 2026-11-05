@@ -48,7 +48,7 @@ async fn tcp_connect(host: &str, port: u16, limit: Duration) -> io::Result<TcpSt
             Err(_) => last = Some(timed_out("connect")),
         }
     }
-    Err(last.unwrap_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("cannot resolve {host}"))))
+    Err(last.unwrap_or_else(|| crate::net::unresolved(host)))
 }
 
 impl TokioConn {
@@ -56,9 +56,8 @@ impl TokioConn {
         if let Some(path) = &ep.unix {
             return Self::connect_unix(ep, path);
         }
-        let tcp = tcp_connect(&ep.host, ep.port, ep.connect_timeout)
-            .await
-            .map_err(|e| Error::transport(format!("{}:{}: {e}", ep.host, ep.port)))?;
+        let tcp =
+            tcp_connect(&ep.host, ep.port, ep.connect_timeout).await.map_err(Error::transport_at(ep.address()))?;
         let mut c = TokioConn {
             inner: Inner::Plain(tcp),
             host: ep.host.clone(),
@@ -74,10 +73,10 @@ impl TokioConn {
     /// Connecting a local socket does not block, so the std connect (which also reaches Linux abstract sockets) is used.
     #[cfg(unix)]
     fn connect_unix(ep: &Endpoint, path: &str) -> Result<Self> {
-        let failed = |e: io::Error| Error::transport(format!("{}: {e}", ep.address()));
-        let sock = crate::net::unix_connect(path).map_err(failed)?;
-        sock.set_nonblocking(true).map_err(failed)?;
-        let sock = tokio::net::UnixStream::from_std(sock).map_err(failed)?;
+        let failed = Error::transport_at::<io::Error>(ep.address());
+        let sock = crate::net::unix_connect(path).map_err(&failed)?;
+        sock.set_nonblocking(true).map_err(&failed)?;
+        let sock = tokio::net::UnixStream::from_std(sock).map_err(&failed)?;
         Ok(TokioConn { inner: Inner::Unix(sock), host: String::new(), verify: ep.verify_tls, timeout: ep.read_timeout })
     }
 
@@ -103,7 +102,7 @@ impl TokioConn {
         let stream = timeout(self.timeout, connector.connect(crate::net::server_name(&self.host)?, tcp))
             .await
             .unwrap_or_else(|_| Err(timed_out("TLS handshake")))
-            .map_err(|e| Error::transport(format!("TLS handshake: {e}")))?;
+            .map_err(Error::transport_at("TLS handshake"))?;
         self.inner = Inner::Tls(Box::new(stream));
         Ok(())
     }
