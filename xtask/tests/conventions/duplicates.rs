@@ -2,7 +2,8 @@
 //! written out again and again. A body is compared with its own parameters renamed, so `|a| a.len()` and
 //! `|b| b.len()` are the same. Some bodies say nothing twice, and tests may repeat themselves. Those that only:
 //! - build a value, as `|e| Error::Io { e }` and `Missing::Page(path)` do
-//! - read a field, as `self.calls.lock().clone()` does, or pass fields on, as `retry_at(self.at, self.failures)`
+//! - read a field, as `self.calls.lock().clone()` does, or pass fields, names and constants on, as
+//!   `retry_at(self.at, self.failures)` and `find(&self.headers, name)` do
 //! - compare with a constant, as `|r| r.level() == Level::Failure` does
 //! - set fields of `self` and maybe return it, as a builder's `{ self.name = Some(name.into()); self }` does
 
@@ -18,7 +19,7 @@ use syn::{
 use super::is_test;
 
 /// The packages whose `src` is checked.
-const PACKAGES: &[&str] = &["crates/mercurio-cli", "xtask"];
+const PACKAGES: &[&str] = &["crates/mercurio", "crates/mercurio-cli", "xtask"];
 
 /// Bodies of fewer tokens are too short to say the same thing twice: `{ Ok(()) }`, `self.name.clone()`.
 const SHORTEST_BODY: usize = 10;
@@ -77,12 +78,29 @@ fn builds(expr: &Expr) -> bool {
         return builds_only(&b.block.stmts);
     }
     if let Expr::Call(call) = expr {
-        return constructor(&call.func) || call.args.iter().all(reads_field);
+        return constructor(&call.func) || call.args.iter().all(passes_on);
     }
     if let Expr::Binary(b) = expr {
         return matches!(b.op, syn::BinOp::Eq(_) | syn::BinOp::Ne(_)) && (constant(&b.left) || constant(&b.right));
     }
+    if let Expr::Macro(m) = expr {
+        // `matches!(self.inner, Inner::Tls(_))` compares a field with a pattern.
+        return m.mac.path.is_ident("matches")
+            && m.mac.tokens.clone().into_iter().next().is_some_and(|t| t.to_string() == "self");
+    }
     matches!(expr, Expr::Struct(_) | Expr::Tuple(_)) || reads_field(expr)
+}
+
+/// A field of `self`, a constant, or a name in scope, maybe borrowed or viewed with an argument-free method.
+fn passes_on(expr: &Expr) -> bool {
+    if let Expr::Reference(r) = expr {
+        return passes_on(&r.expr);
+    }
+    if let Expr::MethodCall(call) = expr {
+        return call.args.is_empty() && passes_on(&call.receiver);
+    }
+    let name = matches!(expr, Expr::Path(p) if p.path.get_ident().is_some());
+    name || constant(expr) || reads_field(expr)
 }
 
 /// A tuple struct or an enum variant, named with a capital: `Missing::Page`.

@@ -128,9 +128,7 @@ impl AsyncMercurio {
         let mut sent = Vec::new();
         while let Some(round) = esc.round() {
             let entries = self.send_all(msg, round.iter().map(|&i| targets[i]).collect(), filter, on_entry).await;
-            let delivered: BTreeMap<usize, bool> =
-                round.iter().copied().zip(entries.iter().map(|e| e.delivery.is_success())).collect();
-            esc.settle(|i| delivered.get(&i) == Some(&true));
+            esc.settle_entries(&round, &entries);
             sent.extend(round.into_iter().zip(entries));
         }
         let entries = Core::in_order(&esc, sent);

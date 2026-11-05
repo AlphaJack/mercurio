@@ -9,6 +9,7 @@
 //! - Both files are re-read on every send.
 //! - Expired endpoints are never pruned from the subscription file (Apprise rewrites a writable one) and no starter file is written.
 
+use std::mem::take;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -589,7 +590,7 @@ impl Notify for Vapid {
 
         let store = ctx.store();
         let finish = Plan::defer(move || {
-            let t = tally.lock().map(|mut t| std::mem::take(&mut *t)).unwrap_or_default();
+            let t = tally.lock().map(|mut t| take(&mut *t)).unwrap_or_default();
             // The user's file is never rewritten; expired entries are only remembered.
             if !t.expired.is_empty() {
                 let mut r = retired;

@@ -97,6 +97,11 @@ fn split_unparseable(arg: &str) -> Vec<String> {
 }
 
 /// `$` inside a lookahead: end of string or a final `\n`.
+/// Whether a match may end before `rest`: at its end, or where `la` matches.
+fn ends_or(la: &Regex) -> impl Fn(&str) -> bool + '_ {
+    move |r| at_end(r) || la.is_match(r)
+}
+
 fn at_end(rest: &str) -> bool {
     rest.is_empty() || rest == "\n"
 }
@@ -149,11 +154,11 @@ where
         let found = if prefix {
             let core = regex!(r"(?i)^(?:[a-z]{1,32}:)?(?:[+(][+(\s]{0,32})?[0-9][0-9()\s-]{1,32}[0-9]$");
             let la = regex!(r"(?i)^(?:[a-z]{1,32}:)?[\s,+(]+[0-9]");
-            findall_lookahead(arg, core, |r| at_end(r) || la.is_match(r), false, 140)
+            findall_lookahead(arg, core, ends_or(la), false, 140)
         } else {
             let core = regex!(r"^(?:[+(][+(\s]{0,32})?[0-9][0-9()\s-]{1,32}[0-9]$");
             let la = regex!(r"^[\s,+(]+[0-9]");
-            findall_lookahead(arg, core, |r| at_end(r) || la.is_match(r), false, 100)
+            findall_lookahead(arg, core, ends_or(la), false, 100)
         };
         if !found.is_empty() {
             out.extend(found);
@@ -314,7 +319,7 @@ where
         }
         let trimmed = arg.trim_end();
         let found = if arg.contains("://") {
-            findall_lookahead(trimmed, core, |r| at_end(r) || la.is_match(r), true, usize::MAX)
+            findall_lookahead(trimmed, core, ends_or(la), true, usize::MAX)
         } else {
             Vec::new()
         };

@@ -68,7 +68,7 @@ impl Transport for BlockingTransport {
                     .to_socket_addrs()
                     .map_err(Error::transport)?
                     .next()
-                    .ok_or_else(|| Error::transport(unresolved(host)))?;
+                    .ok_or_else(|| crate::net::unresolved_error(host))?;
                 let sock = UdpSocket::bind(unbound_addr(&addr)).map_err(Error::transport)?;
                 sock.send_to(&dg.payload, addr).map_err(Error::transport)?;
                 Ok(())

@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use std::fmt;
 
 use crate::message::{NotifyFormat, OverflowMode};
-use crate::parse::{is_hostname, parse_bool};
+use crate::parse::{is_hostname, parse_bool, parse_list};
 use crate::regex;
 use crate::service::Param;
 
@@ -576,7 +576,7 @@ impl ParsedUrl {
     }
     /// Param value split into a list (`a,b c` -> `[a, b, c]`).
     pub fn list(&self, key: &str) -> Vec<String> {
-        self.param_nonempty(key).map(|v| crate::parse::parse_list([v])).unwrap_or_default()
+        self.param_nonempty(key).map(|v| parse_list([v])).unwrap_or_default()
     }
     /// `http`/`https` depending on `secure`.
     pub fn http_scheme(&self) -> &'static str {
@@ -614,6 +614,17 @@ pub fn unquote(s: &str) -> String {
         }
     }
     String::from_utf8_lossy(&out).into_owned()
+}
+
+/// The pairs of an `application/x-www-form-urlencoded` text.
+pub(crate) fn parse_form(s: &str) -> Vec<(String, String)> {
+    s.split('&')
+        .filter(|p| !p.is_empty())
+        .map(|p| match p.split_once('=') {
+            Some((k, v)) => (unquote_plus(k), unquote_plus(v)),
+            None => (unquote_plus(p), String::new()),
+        })
+        .collect()
 }
 
 /// [`unquote`] with `+` as a space.

@@ -139,19 +139,6 @@ pub(crate) fn encode_varint(mut n: usize, out: &mut Vec<u8>) {
     }
 }
 
-/// Decode a variable byte integer; returns (value, bytes used).
-pub(crate) fn decode_varint(data: &[u8]) -> Option<(usize, usize)> {
-    let mut value = 0usize;
-    let mut mult = 1usize;
-    for (i, b) in data.iter().enumerate().take(4) {
-        value += (*b as usize & 0x7f) * mult;
-        if b & 0x80 == 0 {
-            return Some((value, i + 1));
-        }
-        mult *= 128;
-    }
-    None
-}
 
 fn put_str(out: &mut Vec<u8>, s: &[u8]) {
     let len = s.len().min(u16::MAX as usize);
@@ -234,7 +221,7 @@ pub(crate) struct Packet {
 fn take_packet(buf: &mut Vec<u8>) -> Result<Option<Packet>> {
     let Some(&head) = buf.first() else { return Ok(None) };
     let len_bytes = &buf[1..buf.len().min(5)];
-    let Some((len, used)) = decode_varint(len_bytes) else {
+    let Some((len, used)) = crate::util::decode_varint(len_bytes) else {
         if len_bytes.len() == 4 {
             return Err(Error::transport("MQTT: malformed remaining length"));
         }
@@ -483,9 +470,9 @@ mod tests {
             let mut out = Vec::new();
             encode_varint(n, &mut out);
             assert_eq!(out, bytes, "encode {n}");
-            assert_eq!(decode_varint(&bytes), Some((n, bytes.len())), "decode {n}");
+            assert_eq!(crate::util::decode_varint(&bytes), Some((n, bytes.len())), "decode {n}");
         }
-        assert_eq!(decode_varint(&[0x80, 0x80, 0x80, 0x80, 0x01]), None);
+        assert_eq!(crate::util::decode_varint(&[0x80, 0x80, 0x80, 0x80, 0x01]), None);
     }
 
     #[test]

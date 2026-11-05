@@ -1,5 +1,6 @@
 //! Configuration sources (files, HTTP, memory) and `include` handling.
 
+use std::env::var;
 use std::path::{Path, PathBuf};
 
 use super::model::{Config, ConfigFormat, ConfigOptions, MAX_BUFFER_SIZE, cfg_err};
@@ -95,7 +96,7 @@ impl Source {
 /// `path_decode`: expand `~` (Windows: `%VAR%`, `$VAR`, `${VAR}`), make absolute.
 pub(super) fn path_decode(path: &str) -> PathBuf {
     let expanded = if cfg!(windows) {
-        PathBuf::from(expand_vars(path, |name| std::env::var(name).ok()))
+        PathBuf::from(expand_vars(path, |name| var(name).ok()))
     } else if path == "~" || path.starts_with("~/") {
         match std::env::var_os("HOME") {
             Some(home) => PathBuf::from(home).join(path.trim_start_matches('~').trim_start_matches('/')),

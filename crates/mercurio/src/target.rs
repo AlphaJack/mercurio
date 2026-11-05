@@ -1,5 +1,6 @@
 //! [`Target`]: a parsed URL bound to its service, and its delivery with `?retry=` / `?wait=` handling.
 
+use crate::parse::{parse_bool, parse_list};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::{Arc, LazyLock, OnceLock};
@@ -140,7 +141,7 @@ impl Target {
         Target {
             storage: Box::new(Storage {
                 id_material,
-                persistent: parsed.param("store").is_none_or(|v| crate::parse::parse_bool(v, true)),
+                persistent: parsed.param("store").is_none_or(|v| parse_bool(v, true)),
                 store: OnceLock::new(),
             }),
             def,
@@ -157,7 +158,7 @@ impl Target {
             },
             redirect_set: parsed.query.get("redirect").is_some(),
             tz: parsed.tz.as_deref().and_then(crate::time::zone),
-            emojis: parsed.query.get("emojis").map(|v| crate::parse::parse_bool(v, false)),
+            emojis: parsed.query.get("emojis").map(|v| parse_bool(v, false)),
             retry: parsed.retry.unwrap_or(0).min(MAX_RETRY),
             wait: Duration::from_secs_f64(parsed.wait.unwrap_or(DEFAULT_WAIT).clamp(0.0, MAX_WAIT)),
             scheme: parsed.scheme.clone(),
@@ -166,7 +167,7 @@ impl Target {
             url: parsed.original.clone(),
             asset_overrides: None,
         }
-        .with_tags(parsed.param("tag").map(|t| crate::parse::parse_list([t])).unwrap_or_default())
+        .with_tags(parsed.param("tag").map(|t| parse_list([t])).unwrap_or_default())
     }
 
     /// The service definition behind this target.
@@ -478,7 +479,7 @@ impl Target {
 }
 
 /// The outcomes of the last attempt (none when nothing was attempted).
-fn last_delivery(mut attempts: Vec<Attempt>) -> Delivery {
+pub(crate) fn last_delivery(mut attempts: Vec<Attempt>) -> Delivery {
     attempts.pop().map(|a| a.delivery).unwrap_or_default()
 }
 

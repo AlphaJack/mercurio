@@ -261,9 +261,7 @@ fn apply_template(content: &str, tokens: &[(String, String)]) -> std::result::Re
     if tokens.is_empty() {
         return Ok(content.to_owned());
     }
-    let alts: Vec<String> = tokens.iter().map(|(k, _)| crate::re::escape(k)).collect();
-    let pattern = format!(r"(?i)\{{\{{\s*({})\s*\}}\}}", alts.join("|"));
-    let re = crate::re::Regex::new(&pattern).map_err(|e| e.to_string())?;
+    let re = super::_chat::token_regex(tokens)?;
     let mut missing = None;
     let out = re.replace_all(content, |c: &crate::re::Captures<'_>| {
         let m = c.get(0).map_or("", |m| m.as_str());

@@ -415,7 +415,7 @@ impl Notify for Mastodon {
         let job = Job { cfg: self.0.clone(), ua: ctx.app_id().to_owned(), env: ctx.env().clone(), body, format: msg.format, uploads };
 
         if self.0.visibility == "direct" && self.0.targets.is_empty() {
-            if let Some(me) = self.0.whoami.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone() {
+            if let Some(me) = crate::util::held(&self.0.whoami) {
                 return job.start(Some(me));
             }
             let req = self

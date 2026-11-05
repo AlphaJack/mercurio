@@ -10,7 +10,6 @@ use crate::message::{Attachment, Message, NotifyFormat, NotifyType};
 use crate::report::Attempt;
 use crate::testing::FakeTransport;
 use crate::transport::Blocking;
-use crate::url::unquote_plus;
 
 use crate::http::parse_multipart;
 
@@ -155,11 +154,21 @@ fn record_case_with(doc: &Value, case: &Value, front: Front) -> Value {
     if case.get("sends").is_some() || case.get("messages").is_some() {
         return record_sends(case, target, &fake, &asset, &ignore, front);
     }
-    let (mut attempts, _) = run_sends(front, target, &[case_message(case)], &fake, &asset, true).remove(0);
-    let delivery = attempts.pop().map(|a| a.delivery).unwrap_or_default();
-    let mut out = outcome(delivery.is_success(), delivery.errors().map(ToString::to_string).collect());
+    let (attempts, _) = run_sends(front, target, &[case_message(case)], &fake, &asset, true).remove(0);
+    let delivery = crate::target::last_delivery(attempts);
+    let mut out = outcome(delivery.is_success(), error_texts(&delivery));
     out["requests"] = requests(&fake.requests(), &ignore);
     out
+}
+
+/// The errors of `delivery`, as text.
+pub(crate) fn error_texts(delivery: &crate::Delivery) -> Vec<String> {
+    delivery.errors().map(ToString::to_string).collect()
+}
+
+/// Whether a scripted response says `"error": true`.
+pub(crate) fn scripted_error(r: &Value) -> bool {
+    r.get("error").and_then(Value::as_bool).unwrap_or(false)
 }
 
 /// `{valid, ok, errors}` of a delivery.
@@ -207,7 +216,7 @@ fn record_sends(
         .into_iter()
         .map(|(attempts, after)| {
             let last = attempts.last().map(|a| &a.delivery);
-            let errors = last.map(|d| d.errors().map(ToString::to_string).collect()).unwrap_or_default();
+            let errors = last.map(error_texts).unwrap_or_default();
             let mut send = outcome(last.is_some_and(|d| d.is_success()), errors);
             send.as_object_mut().unwrap().remove("valid");
             send["attempts"] = json!(attempts.len());
@@ -281,7 +290,7 @@ fn body(g: &Request, ignore: &[String]) -> Value {
         return json!({"json": v});
     }
     if lct.starts_with("application/x-www-form-urlencoded") {
-        let pairs: Vec<Value> = parse_form(&g.body_text())
+        let pairs: Vec<Value> = crate::url::parse_form(&g.body_text())
             .into_iter()
             .map(|(k, v)| if masked(ignore, "form:", &k) { json!([k, IGNORED]) } else { json!([k, v]) })
             .collect();
@@ -417,7 +426,7 @@ pub fn case_transport(case: &Value) -> Arc<FakeTransport> {
             if !has_ct {
                 resp = resp.with_header("Content-Type", "application/json");
             }
-            if r.get("error").and_then(Value::as_bool).unwrap_or(false) {
+            if scripted_error(r) {
                 fake.fail(crate::Error::transport("scripted connection error"));
             } else {
                 fake.respond_with(resp);
@@ -453,16 +462,6 @@ fn mask_path(path: &str, ignore: &[String]) -> String {
         }
     }
     path
-}
-
-fn parse_form(s: &str) -> Vec<(String, String)> {
-    s.split('&')
-        .filter(|p| !p.is_empty())
-        .map(|p| match p.split_once('=') {
-            Some((k, v)) => (unquote_plus(k), unquote_plus(v)),
-            None => (unquote_plus(p), String::new()),
-        })
-        .collect()
 }
 
 /// Set the value at a JSON pointer (`/a/0/b`, `*` matches any key/index) to null.

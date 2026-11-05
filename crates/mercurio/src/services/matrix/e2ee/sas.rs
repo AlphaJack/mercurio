@@ -623,7 +623,7 @@ fn handle_request(s: Session, v: Verifier, sender: String, content: Value, k: VK
                 &from_device,
                 json!({"transaction_id": txn, "from_device": own_device, "methods": [METHOD]}),
                 false,
-                Box::new(move |s, v, ok| k(s, v, if ok { None } else { Some(false) })),
+                sent_or_failed(k),
             )
         }),
     )
@@ -651,7 +651,7 @@ fn handle_start(s: Session, mut v: Verifier, sender: String, content: Value, k: 
         &device,
         accept,
         false,
-        Box::new(move |s, v, ok| k(s, v, if ok { None } else { Some(false) })),
+        sent_or_failed(k),
     )
 }
 
@@ -694,7 +694,7 @@ fn handle_key(s: Session, mut v: Verifier, sender: String, content: Value, k: VK
                 &device2,
                 mac_content,
                 false,
-                Box::new(move |s, v, ok| k(s, v, if ok { None } else { Some(false) })),
+                sent_or_failed(k),
             )
         }),
     )
@@ -764,6 +764,11 @@ fn peer_keys(s: Session, v: Verifier, user_id: String, device_id: String, k: VKe
         }
         k(s, v, Some(keys))
     })
+}
+
+/// `k` once an event is sent: it carries on when the event went out, and fails the verification when it did not.
+fn sent_or_failed(k: VK) -> VB {
+    Box::new(move |s, v, ok| k(s, v, if ok { None } else { Some(false) }))
 }
 
 #[cfg(test)]

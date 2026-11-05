@@ -5,7 +5,6 @@
 pub(crate) mod client;
 mod conn;
 
-use crate::net::unresolved;
 use crate::transport::USER_AGENT;
 use std::fmt;
 use std::io;
@@ -76,7 +75,7 @@ impl TokioTransport {
                     .await
                     .map_err(Error::transport)?
                     .next()
-                    .ok_or_else(|| Error::transport(unresolved(host)))?;
+                    .ok_or_else(|| crate::net::unresolved_error(host))?;
                 let sock = tokio::net::UdpSocket::bind(unbound_addr(&addr)).await.map_err(Error::transport)?;
                 sock.send_to(&dg.payload, addr).await.map_err(Error::transport)?;
             }

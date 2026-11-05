@@ -87,9 +87,6 @@ pub(crate) fn b64dec(s: &str) -> CResult<Vec<u8>> {
         .ok().ok_or(CryptoError("invalid base64"))
 }
 
-fn b64url_nopad(data: &[u8]) -> String {
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(data)
-}
 
 pub(crate) fn hmac_sha256(key: &[u8], data: &[u8]) -> [u8; 32] {
     let tag = ring::hmac::sign(&ring::hmac::Key::new(ring::hmac::HMAC_SHA256, key), data);
@@ -664,7 +661,7 @@ pub(crate) mod tests {
         assert_eq!(aes_ctr(&key, &iv, &ct), b"hello world");
         assert_eq!(info["v"], "v2");
         assert_eq!(info["key"]["alg"], "A256CTR");
-        assert_eq!(info["key"]["k"], b64url_nopad(&key));
+        assert_eq!(info["key"]["k"], crate::crypto::b64_url_nopad(&key));
         assert_eq!(info["iv"], b64enc(&iv));
         assert_eq!(b64enc(&[0xfb; 16]), "+/v7+/v7+/v7+/v7+/v7+w");
         assert_eq!(info["hashes"]["sha256"], b64enc(&sha256(&ct)));

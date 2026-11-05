@@ -15,7 +15,7 @@ use crate::http::{Multipart, Request, Response};
 use crate::message::Attachment;
 use crate::parse::{parse_bool, parse_list, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::url::{ParsedUrl, quote, unquote, unquote_plus};
+use crate::url::{ParsedUrl, quote, unquote};
 use crate::{Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -182,14 +182,7 @@ impl OAuth1<'_> {
             ("oauth_consumer_key", self.consumer_key),
             ("oauth_token", self.token),
         ];
-        let mut params: Vec<(String, String)> = query
-            .split('&')
-            .filter(|p| !p.is_empty())
-            .map(|p| match p.split_once('=') {
-                Some((k, v)) => (unquote_plus(k), unquote_plus(v)),
-                None => (unquote_plus(p), String::new()),
-            })
-            .collect();
+        let mut params: Vec<(String, String)> = crate::url::parse_form(query);
         params.extend(body_params.iter().cloned());
         params.extend(oauth.iter().map(|(k, v)| (k.to_string(), v.to_string())));
         let mut encoded: Vec<(String, String)> = params.iter().map(|(k, v)| (escape(k), escape(v))).collect();

@@ -26,7 +26,7 @@ fn responses(case: &Value) -> Vec<Value> {
 /// Map `{"exit", "stdout", "error"}` responses onto queued command outputs.
 fn queue_commands(s: &mut Session, case: &Value) {
     for r in responses(case) {
-        if r.get("error").and_then(Value::as_bool).unwrap_or(false) {
+        if super::scripted_error(&r) {
             s.fake.push_command_output(Err(Error::transport("scripted spawn failure")));
         } else {
             s.fake.push_command_output(Ok(CommandOutput {
@@ -140,7 +140,7 @@ fn bus_events(s: &Session) -> Vec<Value> {
     for ep in s.fake.endpoints() {
         assert_eq!(ep.unix.as_deref(), Some("/run/user/1000/bus"));
     }
-    s.events.lock().unwrap().clone()
+    crate::util::held(&s.events)
 }
 
 pub(super) const DBUS: Comparator = Comparator {
@@ -189,7 +189,7 @@ fn queue_windows(s: &mut Session, case: &Value) {
     for r in responses(case) {
         if r.get("toast").and_then(Value::as_str) == Some("error") {
             s.fake.push_native_result(Err(Error::Service("scripted toast failure".into())));
-        } else if r.get("error").and_then(Value::as_bool).unwrap_or(false) {
+        } else if super::scripted_error(&r) {
             s.fake.push_command_output(Err(Error::transport("scripted spawn failure")));
         } else {
             s.fake.push_command_output(Ok(CommandOutput {
@@ -488,7 +488,7 @@ fn setup_xmpp(s: &mut Session, case: &Value) {
 }
 
 fn xmpp_events(s: &Session, _: &Value) -> Vec<Value> {
-    let mut events = s.events.lock().unwrap().clone();
+    let mut events = crate::util::held(&s.events);
     let starttls = events.iter().any(|e| e.get("_starttls").is_some());
     events.retain(|e| e.get("_starttls").is_none());
     let eps = s.fake.endpoints();
