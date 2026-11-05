@@ -890,7 +890,8 @@ fn healthcheck_flag() {
     let port = srv.addr.rsplit(':').next().unwrap().to_owned();
     assert!(check(&format!("0.0.0.0:{port}")).success(), "a wildcard bind is checked through loopback");
     drop(srv);
-    assert_eq!(check(&format!("127.0.0.1:{port}")).code(), Some(1));
+    // Port 0 never accepts: the freed port could already serve another test running in parallel.
+    assert_eq!(check("127.0.0.1:0").code(), Some(1));
 }
 
 /// The `Endpoints:` section of `mercurio serve --help`, as (paths, methods).
