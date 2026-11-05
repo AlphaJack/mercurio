@@ -285,6 +285,54 @@ pub struct IconFile {
     pub bundled: Option<&'static [u8]>,
 }
 
+impl Asset {
+    /// Applies one configuration `asset:` override.
+    pub(crate) fn apply(&mut self, key: &str, v: &AssetValue) {
+        let a = self;
+        if let (AssetValue::Flag(f), "pgp_autogen") = (v, key) {
+            a.pgp_autogen = *f;
+            return;
+        }
+        let AssetValue::Text(t) = v else { return };
+        match key {
+            "app_id" => a.app_id = t.clone(),
+            "app_desc" => a.app_desc = t.clone(),
+            "app_url" => a.app_url = t.clone(),
+            "default_html_color" => a.default_color = t.clone(),
+            "default_ascii_chars" => a.default_ascii = t.clone(),
+            "default_extension" => a.default_extension = t.clone(),
+            "theme" => a.theme = t.clone(),
+            "image_url_mask" => a.image_url_mask = Some(t.clone()).filter(|s| !s.is_empty()),
+            "image_url_logo" => a.image_url_logo = Some(t.clone()).filter(|s| !s.is_empty()),
+            "image_path_mask" => a.image_path_mask = Some(t.clone()),
+            "storage_path" => {
+                a.storage_path =
+                    Some(crate::paths::path_decode(t)).filter(|p| !t.is_empty() && !p.as_os_str().is_empty())
+            }
+            "timezone" => a.timezone = Some(t.clone()),
+            _ => {}
+        }
+    }
+
+    /// This asset with each of `overrides` applied in order.
+    pub(crate) fn with_overrides(&self, overrides: &[(String, AssetValue)]) -> Asset {
+        let mut a = self.clone();
+        for (k, v) in overrides {
+            a.apply(k, v);
+        }
+        a
+    }
+}
+
+/// A YAML `asset:` override value: text or a flag.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AssetValue {
+    /// A string value.
+    Text(String),
+    /// A boolean value (`yes`/`no`, `true`/`false`).
+    Flag(bool),
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

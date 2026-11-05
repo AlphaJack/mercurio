@@ -16,6 +16,7 @@
 mod assets;
 mod fold;
 mod groups;
+mod load;
 mod loader;
 mod model;
 mod pending;
@@ -25,9 +26,10 @@ mod text;
 pub mod yaml;
 mod yaml_doc;
 
+pub use crate::asset_def::AssetValue;
 pub use loader::{default_paths, expand_path};
-pub use model::{AssetValue, Config, ConfigFormat, ConfigOptions, ConfigService};
-pub use pending::PendingTarget;
+pub use model::PendingTarget;
+pub use model::{Config, ConfigFormat, ConfigOptions, ConfigService};
 pub use text::detect_format;
 
 #[cfg(test)]

@@ -2,41 +2,15 @@
 
 use super::assets::parse_asset;
 use super::fold::{alias_tokens, fold_url, str_items, update};
+use super::fold::{get_schema, yaml_set};
 use super::groups::{apply_groups, normalize_groups, parse_groups};
 use super::model::{ConfigOptions, Parsed, RawEntry};
 use super::pending::{dropped, url_parses, uses};
 use super::template::{self, Placeholders, TemplateSchema};
-use super::text::get_schema;
 use super::yaml::{self, Yaml};
 use crate::parse::parse_urls;
 use crate::registry::Registry;
 use crate::tag::Tag;
-
-/// `parse_list(value, cast=str)` over YAML values.
-pub(super) fn yaml_list(v: &Yaml, out: &mut Vec<String>) {
-    match v {
-        Yaml::Str(s) => out.extend(crate::parse::parse_list_unsorted([s.as_str()])),
-        Yaml::Seq(items) => {
-            for i in items {
-                yaml_list(i, out);
-            }
-        }
-        Yaml::Bool(_) | Yaml::Null => {}
-        other @ (Yaml::Int(_) | Yaml::Float(_) | Yaml::Map(_)) => {
-            if other.has_value() {
-                out.extend(crate::parse::parse_list_unsorted([other.to_text()]));
-            }
-        }
-    }
-}
-
-pub(super) fn yaml_set(v: &Yaml) -> Vec<String> {
-    let mut out = Vec::new();
-    yaml_list(v, &mut out);
-    out.sort();
-    out.dedup();
-    out
-}
 
 /// One YAML URL entry: the URL (if it parsed), its schema and the settings written under it.
 type YamlItem = (Option<String>, String, Vec<(String, Yaml)>);

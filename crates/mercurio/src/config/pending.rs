@@ -3,14 +3,14 @@
 use std::fmt;
 use std::sync::Arc;
 
-use super::model::{AssetValue, Config, ConfigService, Parsed};
+use super::model::{Config, ConfigService, Parsed, PendingTarget};
 use super::template::{self, Placeholders, TemplateError, TemplateVars};
 use crate::error::{Error, Result};
-use crate::registry::{Handler, Registry, custom_notify};
+use crate::registry::{Registry, custom_notify};
 use crate::service::ServiceDef;
-use crate::tag::{Tag, parse_tags};
+use crate::tag::parse_tags;
 use crate::target::Target;
-use crate::url::{ParseOptions, ParsedUrl, parse_url_with};
+use crate::url::{ParseOptions, parse_url_with};
 
 pub(super) fn uses(p: &Placeholders, text: &str) -> bool {
     let mut v = Vec::new();
@@ -45,21 +45,6 @@ pub(super) fn dropped(url: &str, p: Option<&Placeholders>, registry: &Registry) 
     let mut missing: Vec<String> = wanted.into_iter().filter(|w| !have.contains(w)).collect();
     missing.sort();
     missing.into_iter().next()
-}
-
-/// A configuration entry waiting for `${NAME}` values.
-pub struct PendingTarget {
-    def: &'static ServiceDef,
-    /// The closure of a [`crate::CustomScheme`] service.
-    handler: Option<Arc<Handler>>,
-    parsed: ParsedUrl,
-    placeholders: Arc<Placeholders>,
-    names: Vec<String>,
-    /// Tags from the configuration entry.
-    pub tags: Vec<Tag>,
-    /// Where the entry was read, e.g. `line 3` or `YAML entry #1, item #2`.
-    pub location: String,
-    pub(super) asset: Vec<(String, AssetValue)>,
 }
 
 impl fmt::Debug for PendingTarget {

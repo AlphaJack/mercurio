@@ -34,7 +34,6 @@ use crate::message::{NotifyFormat, Prepared};
 use crate::plan::Plan;
 use crate::service::{Context, Notify, ServiceDef};
 use crate::store::{Memo, StoreRef};
-use crate::target::Target;
 use crate::url::ParsedUrl;
 
 /// A closure-based notifier: one call per message piece.
@@ -137,16 +136,6 @@ impl Registry {
     /// Runtime services, in registration order.
     pub fn registered(&self) -> impl Iterator<Item = &'static ServiceDef> + '_ {
         self.entries.iter().map(|e| e.def)
-    }
-
-    /// The service handling `scheme`: compiled-in services first ([`crate::service_for_scheme`]), then this registry's.
-    pub fn service_for_scheme(&self, scheme: &str) -> Option<&'static ServiceDef> {
-        crate::target::service_for_scheme(scheme).or_else(|| self.lookup(scheme))
-    }
-
-    /// [`crate::parse`](crate::parse()) with this registry's services too.
-    pub fn parse(&self, url: &str) -> Result<Target> {
-        crate::target::parse_with(url, self)
     }
 
     /// The runtime service handling `scheme`.

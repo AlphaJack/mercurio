@@ -1,34 +1,10 @@
 //! YAML `asset:` overrides.
 
-use super::loader::path_decode;
-use super::model::{AssetValue, Parsed};
+use super::model::Parsed;
 use super::spec::{ASSET_KEYS, ASSET_SKIPPED};
 use super::yaml::Yaml;
-use crate::asset::Asset;
+use crate::asset_def::AssetValue;
 use crate::parse::parse_bool;
-
-pub(super) fn apply_asset_value(a: &mut Asset, key: &str, v: &AssetValue) {
-    if let (AssetValue::Flag(f), "pgp_autogen") = (v, key) {
-        a.pgp_autogen = *f;
-        return;
-    }
-    let AssetValue::Text(t) = v else { return };
-    match key {
-        "app_id" => a.app_id = t.clone(),
-        "app_desc" => a.app_desc = t.clone(),
-        "app_url" => a.app_url = t.clone(),
-        "default_html_color" => a.default_color = t.clone(),
-        "default_ascii_chars" => a.default_ascii = t.clone(),
-        "default_extension" => a.default_extension = t.clone(),
-        "theme" => a.theme = t.clone(),
-        "image_url_mask" => a.image_url_mask = Some(t.clone()).filter(|s| !s.is_empty()),
-        "image_url_logo" => a.image_url_logo = Some(t.clone()).filter(|s| !s.is_empty()),
-        "image_path_mask" => a.image_path_mask = Some(t.clone()),
-        "storage_path" => a.storage_path = Some(path_decode(t)).filter(|p| !t.is_empty() && !p.as_os_str().is_empty()),
-        "timezone" => a.timezone = Some(t.clone()),
-        _ => {}
-    }
-}
 
 pub(super) fn parse_asset(tokens: &Yaml, out: &mut Parsed) {
     let Some(map) = tokens.as_map() else { return };
@@ -81,7 +57,6 @@ pub(super) fn parse_asset(tokens: &Yaml, out: &mut Parsed) {
 #[cfg(test)]
 mod spec_tests {
     use super::super::spec::{ASSET_KEYS, asset_value};
-    use super::apply_asset_value;
     use crate::asset::Asset;
     use crate::config::AssetValue;
 
@@ -91,12 +66,12 @@ mod spec_tests {
         for key in ASSET_KEYS {
             let mut a = Asset::default();
             if key.flag && !key.effect.is_empty() {
-                apply_asset_value(&mut a, key.name, &AssetValue::Flag(false));
+                a.apply(key.name, &AssetValue::Flag(false));
                 assert_ne!(a, Asset::default(), "{} is not applied", key.name);
                 assert_eq!(asset_value(&a, key.name).as_deref(), Some("no"), "{}", key.name);
                 continue;
             }
-            apply_asset_value(&mut a, key.name, &AssetValue::Text("x1".into()));
+            a.apply(key.name, &AssetValue::Text("x1".into()));
             if key.effect.is_empty() {
                 assert_eq!(a, Asset::default(), "{} has no effect but changed the asset", key.name);
                 assert_eq!(asset_value(&a, key.name), None, "{}", key.name);

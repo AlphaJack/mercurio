@@ -1,17 +1,16 @@
 //! Public configuration types and the parsed form shared by the TEXT and YAML readers.
 
-use super::assets::apply_asset_value;
-use super::loader::{Loader, Source, SourceKind};
-use super::pending::PendingTarget;
-use super::spec::ASSET_KEYS;
+use crate::asset_def::AssetValue;
+use std::sync::Arc;
+
 use super::template::Placeholders;
-use super::text::detect_format;
-use crate::asset::Asset;
-use crate::error::{Error, Result};
+use crate::error::Error;
+use crate::registry::Handler;
 use crate::registry::Registry;
+use crate::service::ServiceDef;
 use crate::tag::Tag;
 use crate::target::Target;
-use crate::transport::{AsyncTransport, Blocking, Transport};
+use crate::url::ParsedUrl;
 
 /// Largest configuration read (`max_buffer_size`, 128 KiB).
 pub(super) const MAX_BUFFER_SIZE: usize = 131072;
@@ -73,15 +72,6 @@ impl Default for ConfigOptions {
     }
 }
 
-/// A YAML `asset:` override value: text or a flag.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AssetValue {
-    /// A string value.
-    Text(String),
-    /// A boolean value (`yes`/`no`, `true`/`false`).
-    Flag(bool),
-}
-
 /// One loaded service: ready to send or waiting for template values.
 // Short-lived (moved into `Mercurio` right after loading); boxing the common `Ready` case would only add an allocation per service.
 #[expect(clippy::large_enum_variant, reason = "short-lived; boxing `Ready` would add an allocation per service")]
@@ -114,72 +104,19 @@ pub struct Config {
     pub warnings: Vec<String>,
 }
 
-impl Config {
-    /// Load a configuration from a path, `file://`, `http://` or `https://` URL.
-    pub fn load(source: &str, transport: &dyn Transport, opts: &ConfigOptions) -> Result<Config> {
-        pollster::block_on(Self::load_async(source, &Blocking(transport), opts))
-    }
-
-    /// [`Config::load`] on an [`AsyncTransport`].
-    pub async fn load_async(source: &str, transport: &dyn AsyncTransport, opts: &ConfigOptions) -> Result<Config> {
-        let src = Source::instantiate(source, opts.format)?;
-        Ok(Self::from_source(src, transport, opts).await)
-    }
-
-    /// Load configuration text held in memory. `format` is detected when `None`; an undetectable format is an error.
-    pub fn from_text(
-        content: &str,
-        format: Option<ConfigFormat>,
-        transport: &dyn Transport,
-        opts: &ConfigOptions,
-    ) -> Result<Config> {
-        pollster::block_on(Self::from_text_async(content, format, &Blocking(transport), opts))
-    }
-
-    /// [`Config::from_text`] on an [`AsyncTransport`] (includes are read through it).
-    pub async fn from_text_async(
-        content: &str,
-        format: Option<ConfigFormat>,
-        transport: &dyn AsyncTransport,
-        opts: &ConfigOptions,
-    ) -> Result<Config> {
-        let format = format.or(opts.format).or_else(|| detect_format(content));
-        let Some(format) = format else {
-            return Err(cfg_err("the format of the configuration could not be detected"));
-        };
-        let src = Source { kind: SourceKind::Memory(content.to_owned()), format: Some(format) };
-        Ok(Self::from_source(src, transport, opts).await)
-    }
-
-    async fn from_source(src: Source, transport: &dyn AsyncTransport, opts: &ConfigOptions) -> Config {
-        let mut cfg = Config::default();
-        Loader { transport, opts }.services(&src, opts.recursion, &mut cfg).await;
-        cfg.apply_asset();
-        cfg
-    }
-
-    /// The asset overrides applied to `base`.
-    pub fn asset_for(&self, base: &Asset) -> Asset {
-        let mut a = base.clone();
-        for (k, v) in &self.asset {
-            apply_asset_value(&mut a, k, v);
-        }
-        a
-    }
-
-    fn apply_asset(&mut self) {
-        if !self.asset.iter().any(|(k, _)| ASSET_KEYS.iter().any(|a| a.name == k && !a.effect.is_empty())) {
-            return;
-        }
-        let overrides = self.asset.clone();
-        for s in &mut self.services {
-            let ov = overrides.clone();
-            match s {
-                ConfigService::Ready(t) => t.set_asset_overrides(ov),
-                ConfigService::Pending(p) => p.asset = ov,
-            }
-        }
-    }
+/// A configuration entry waiting for `${NAME}` values.
+pub struct PendingTarget {
+    pub(super) def: &'static ServiceDef,
+    /// The closure of a [`crate::CustomScheme`] service.
+    pub(super) handler: Option<Arc<Handler>>,
+    pub(super) parsed: ParsedUrl,
+    pub(super) placeholders: Arc<Placeholders>,
+    pub(super) names: Vec<String>,
+    /// Tags from the configuration entry.
+    pub tags: Vec<Tag>,
+    /// Where the entry was read, e.g. `line 3` or `YAML entry #1, item #2`.
+    pub location: String,
+    pub(super) asset: Vec<(String, AssetValue)>,
 }
 
 pub(super) fn cfg_err(reason: impl Into<String>) -> Error {
