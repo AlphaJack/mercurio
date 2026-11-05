@@ -26,7 +26,7 @@ fn responses(case: &Value) -> Vec<Value> {
 /// Map `{"exit", "stdout", "error"}` responses onto queued command outputs.
 fn queue_commands(s: &mut Session, case: &Value) {
     for r in responses(case) {
-        if super::scripted_error(&r) {
+        if super::events::scripted_error(&r) {
             s.fake.push_command_output(Err(Error::transport("scripted spawn failure")));
         } else {
             s.fake.push_command_output(Ok(CommandOutput {
@@ -189,7 +189,7 @@ fn queue_windows(s: &mut Session, case: &Value) {
     for r in responses(case) {
         if r.get("toast").and_then(Value::as_str) == Some("error") {
             s.fake.push_native_result(Err(Error::Service("scripted toast failure".into())));
-        } else if super::scripted_error(&r) {
+        } else if super::events::scripted_error(&r) {
             s.fake.push_command_output(Err(Error::transport("scripted spawn failure")));
         } else {
             s.fake.push_command_output(Ok(CommandOutput {

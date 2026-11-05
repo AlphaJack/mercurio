@@ -7,7 +7,6 @@
 
 use std::sync::{Arc, Mutex};
 
-use crate::re::Regex;
 use serde_json::Value;
 
 use crate::testing::FakeTransport;
@@ -56,88 +55,7 @@ impl Comparator {
     };
 }
 
-const BUILTIN: &[Comparator] = &[
-    super::socket::SMTP,
-    super::socket::SMPP,
-    super::stream::LINES,
-    super::stream::MQTT,
-    super::stream::SYSLOG,
-    super::stream::RSYSLOG,
-    super::desktop::MACOSX,
-    super::desktop::DBUS,
-    super::desktop::GNOME,
-    super::desktop::WINDOWS,
-    super::desktop::BLINK1,
-    super::desktop::XMPP,
-];
-
-/// The comparator for a fixture's `service`, if it records events.
-pub fn comparator(service: &str) -> Option<&'static Comparator> {
-    BUILTIN.iter().find(|c| c.services.contains(&service))
-}
-
-fn rules_of(v: Option<&Value>) -> Vec<(Regex, String)> {
-    v.and_then(Value::as_array)
-        .map(|a| {
-            a.iter()
-                .filter_map(|r| Some((Regex::new(r[0].as_str()?).ok()?, r[1].as_str().unwrap_or("").to_owned())))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn normalise_strings(v: &mut Value, rules: &[(Regex, String)]) {
-    match v {
-        Value::String(s) => {
-            for (re, rep) in rules {
-                *s = re.replace_all(s, rep.as_str()).into_owned();
-            }
-        }
-        Value::Array(a) => {
-            for x in a {
-                normalise_strings(x, rules);
-            }
-        }
-        Value::Object(m) => {
-            for x in m.values_mut() {
-                normalise_strings(x, rules);
-            }
-        }
-        Value::Null | Value::Bool(_) | Value::Number(_) => {}
-    }
-}
-
-/// Run one valid case through `c` and record what mercurio did.
-pub(super) fn record(
-    c: &Comparator,
-    doc: &Value,
-    case: &Value,
-    target: crate::Target,
-    ignore: &[String],
-    front: super::Front,
-) -> Value {
-    let mut s = Session::default();
-    (c.setup)(&mut s, case);
-    let msgs = [super::case_message(case)];
-    let (attempts, _) =
-        super::runner::run_sends(front, target, &msgs, &s.fake, &super::fixture_asset(doc), false).remove(0);
-    let delivery = crate::target::last_delivery(attempts);
-    let ok = delivery.is_success();
-    let mut out = super::outcome(ok, super::error_texts(&delivery));
-    let http = s.fake.requests();
-    if !http.is_empty() {
-        out["requests"] = super::requests(&http, ignore);
-    }
-    if !ok && !c.events_on_failure {
-        return out;
-    }
-    let mut rules = rules_of(doc.get("normalise"));
-    rules.extend(rules_of(case.get("normalise")));
-    let mut events = Value::Array((c.normalise)((c.events)(&s, case)));
-    normalise_strings(&mut events, &rules);
-    for ptr in ignore.iter().filter_map(|i| i.strip_prefix("events:")) {
-        super::runner::blank(&mut events, ptr);
-    }
-    out["events"] = events;
-    out
+/// Whether a scripted response says `"error": true`.
+pub(crate) fn scripted_error(r: &Value) -> bool {
+    r.get("error").and_then(Value::as_bool).unwrap_or(false)
 }
