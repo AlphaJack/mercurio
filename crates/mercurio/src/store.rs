@@ -77,13 +77,24 @@ pub trait Store: Send + Sync + fmt::Debug {
 /// Shared handle to a [`Store`]; cheap to clone into plan continuations.
 pub type StoreRef = Arc<dyn Store>;
 
+/// For each of `stores`, what gives the file steps that save it.
+pub(crate) fn flushes(stores: &[StoreRef]) -> Vec<crate::plan::Flush> {
+    stores
+        .iter()
+        .map(|s| {
+            let s = s.clone();
+            let flush: crate::plan::Flush = Arc::new(move || s.clone().flush());
+            flush
+        })
+        .collect()
+}
+
 /// Caches untouched for this long are removed by `mercurio storage prune`: 31 days.
 pub const DEFAULT_FILE_EXPIRY: Duration = Duration::from_secs(2_678_400);
 
 /// Name of the cache file inside a namespace directory.
 pub const CACHE_FILE: &str = "cache.json";
-/// Directory of a namespace where writes are staged before they replace a file.
-pub const STAGING_DIR: &str = "tmp";
+pub use crate::transport_def::STAGING_DIR;
 /// Directory of a namespace for the files services keep (keys, subscriptions).
 pub const DATA_DIR: &str = "var";
 

@@ -65,6 +65,11 @@ impl State {
     }
 }
 
+/// The state behind `m`, even after a panic poisoned it.
+fn lock(m: &Mutex<State>) -> MutexGuard<'_, State> {
+    m.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
 pub(crate) struct Semaphore {
     state: Mutex<State>,
 }
@@ -75,19 +80,19 @@ impl Semaphore {
     }
 
     fn lock(&self) -> MutexGuard<'_, State> {
-        self.state.lock().unwrap_or_else(PoisonError::into_inner)
+        lock(&self.state)
     }
 
     /// Wait for a permit without blocking the thread. Dropping the future gives up its place in the queue.
     pub(crate) fn acquire(&self) -> Acquire<'_> {
-        Acquire { sem: self, id: None }
+        Acquire { state: &self.state, id: None }
     }
 
     /// Park the thread until a permit is free.
     pub(crate) fn acquire_blocking(&self) -> Permit<'_> {
         let mut state = self.lock();
         if state.try_take(None) {
-            return Permit(self);
+            return Permit(&self.state);
         }
         let id = state.enqueue(Wake::Thread(std::thread::current()));
         loop {
@@ -95,7 +100,7 @@ impl Semaphore {
             std::thread::park();
             state = self.lock();
             if state.try_take(Some(id)) {
-                return Permit(self);
+                return Permit(&self.state);
             }
         }
     }
@@ -103,11 +108,11 @@ impl Semaphore {
 
 /// A held permit; dropping it frees it for the next waiter.
 #[must_use]
-pub(crate) struct Permit<'a>(&'a Semaphore);
+pub(crate) struct Permit<'a>(&'a Mutex<State>);
 
 impl Drop for Permit<'_> {
     fn drop(&mut self) {
-        let mut state = self.0.lock();
+        let mut state = lock(self.0);
         state.permits += 1;
         state.wake_first();
     }
@@ -115,7 +120,7 @@ impl Drop for Permit<'_> {
 
 /// The future of [`Semaphore::acquire`].
 pub(crate) struct Acquire<'a> {
-    sem: &'a Semaphore,
+    state: &'a Mutex<State>,
     /// The place in the queue, once it has one.
     id: Option<u64>,
 }
@@ -125,10 +130,10 @@ impl<'a> Future for Acquire<'a> {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Permit<'a>> {
         let this = self.get_mut();
-        let mut state = this.sem.lock();
+        let mut state = lock(this.state);
         if state.try_take(this.id) {
             this.id = None;
-            return Poll::Ready(Permit(this.sem));
+            return Poll::Ready(Permit(this.state));
         }
         match this.id {
             Some(id) => {
@@ -145,7 +150,7 @@ impl<'a> Future for Acquire<'a> {
 impl Drop for Acquire<'_> {
     fn drop(&mut self) {
         if let Some(id) = self.id {
-            let mut state = self.sem.lock();
+            let mut state = lock(self.state);
             let first = state.queue.front().is_some_and(|(i, _)| *i == id);
             state.queue.retain(|(i, _)| *i != id);
             if first {

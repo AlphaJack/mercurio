@@ -398,6 +398,9 @@ pub struct Command {
     pub files: Vec<(String, &'static [u8])>,
 }
 
+/// Directory of a namespace where writes are staged before they replace a file.
+pub const STAGING_DIR: &str = "tmp";
+
 /// The `User-Agent` the built-in transports send when a request sets none.
 pub(crate) const USER_AGENT: &str = concat!("Mercurio/", env!("CARGO_PKG_VERSION"));
 
@@ -461,7 +464,7 @@ pub enum FileOp {
     Read { path: PathBuf, max: u64 },
     /// Append `data` in one write, creating the file when missing (its directory must exist).
     Append { path: PathBuf, data: Vec<u8> },
-    /// Replace `path` with `data` atomically: staged in a [`crate::store::STAGING_DIR`] directory next to it (created when missing), then renamed. `private`: `0600` files, `0700` directories.
+    /// Replace `path` with `data` atomically: staged in a [`STAGING_DIR`] directory next to it (created when missing), then renamed. `private`: `0600` files, `0700` directories.
     WriteAtomic { path: PathBuf, data: Vec<u8>, private: bool },
     /// Create `path` and its parents; `private`: `0700`.
     CreateDir { path: PathBuf, private: bool },
@@ -625,7 +628,7 @@ pub(crate) const PRIVATE_DIR_MODE: u32 = 0o700;
 /// The staging directory of `path` and a fresh file name in it.
 #[expect(clippy::disallowed_methods, reason = "transports name their temporary files")]
 pub(crate) fn staging(path: &Path) -> (PathBuf, PathBuf) {
-    let dir = path.parent().unwrap_or(Path::new(".")).join(crate::store::STAGING_DIR);
+    let dir = path.parent().unwrap_or(Path::new(".")).join(STAGING_DIR);
     let file = dir.join(format!(".{}-{}.tmp", std::process::id(), crate::env::system().random_hex(6)));
     (dir, file)
 }
@@ -665,7 +668,7 @@ mod tests {
         let op = FileOp::WriteAtomic { path: path.clone(), data: b"k".to_vec(), private: true };
         assert_eq!(std_file(&op).unwrap(), FileOutput::Done);
         assert_eq!(std::fs::read(&path).unwrap(), b"k");
-        assert_eq!(std::fs::read_dir(dir.join("ns").join(crate::store::STAGING_DIR)).unwrap().count(), 0);
+        assert_eq!(std::fs::read_dir(dir.join("ns").join(STAGING_DIR)).unwrap().count(), 0);
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;

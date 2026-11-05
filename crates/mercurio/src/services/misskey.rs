@@ -40,7 +40,7 @@ struct Misskey {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let token = if let Some(t) = u.param_nonempty("token") {
         Some(unquote(t))
     } else if u.password.as_deref().is_none_or(str::is_empty) && u.user.as_deref().is_some_and(|s| !s.is_empty()) {

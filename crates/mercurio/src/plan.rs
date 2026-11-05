@@ -7,19 +7,13 @@ use std::time::{Duration, Instant};
 
 use crate::error::{Error, Result};
 use crate::http::{DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, Request, Response};
-use crate::store::StoreRef;
 use crate::transport::{
     AsyncConn, AsyncTransport, BoxFuture, Command, CommandOutput, Datagram, Endpoint, FileOp, FileOutput, NativeCall,
 };
 
-/// Continuation receiving the outcome of an HTTP request.
-pub(crate) type Then = Box<dyn FnOnce(Result<Response>) -> Plan + Send>;
-/// Continuation receiving the outcome of a process run.
-pub(crate) type ThenCommand = Box<dyn FnOnce(Result<CommandOutput>) -> Plan + Send>;
-/// Continuation receiving the outcome of an in-process OS call.
-pub(crate) type ThenNative = Box<dyn FnOnce(Result<()>) -> Plan + Send>;
-/// Continuation receiving the outcome of a file operation.
-pub(crate) type ThenFile = Box<dyn FnOnce(Result<FileOutput>) -> Plan + Send>;
+/// Gives the file steps that save one store's unsaved changes.
+pub(crate) type Flush = std::sync::Arc<dyn Fn() -> Plan + Send + Sync>;
+
 /// A conversation over a connected stream (SMTP, IRC, MQTT, ...). The transport is there for its timer ([`AsyncTransport::sleep`]).
 pub(crate) type Session =
     Box<dyn for<'c> FnOnce(&'c mut dyn AsyncConn, &'c dyn AsyncTransport) -> BoxFuture<'c, Result<()>> + Send>;
@@ -51,7 +45,7 @@ pub enum Plan {
     /// Record a failure for the current target.
     Fail(Error),
     /// Send a request, then continue with the closure.
-    Http(Request, Then),
+    Http(Request, Box<dyn FnOnce(Result<Response>) -> Plan + Send>),
     /// Run every plan, even after failures (one per target, typically).
     All(Vec<Plan>),
     /// Run plans in order; stop at the first failure.
@@ -63,11 +57,11 @@ pub enum Plan {
     /// Send one datagram (UDP or Unix socket).
     Datagram(Datagram),
     /// Run a local program.
-    Command(Command, ThenCommand),
+    Command(Command, Box<dyn FnOnce(Result<CommandOutput>) -> Plan + Send>),
     /// Make an in-process OS call, then continue with the closure.
-    Native(NativeCall, ThenNative),
+    Native(NativeCall, Box<dyn FnOnce(Result<()>) -> Plan + Send>),
     /// Run a file system operation, then continue with the closure.
-    File(FileOp, ThenFile),
+    File(FileOp, Box<dyn FnOnce(Result<FileOutput>) -> Plan + Send>),
     /// Build the plan lazily when execution reaches it.
     Defer(Box<dyn FnOnce() -> Plan + Send>),
     /// Wait before continuing (e.g. server-advised back-off).
@@ -332,7 +326,7 @@ impl DeliveryTracker {
 struct Runner<'a> {
     transport: &'a dyn AsyncTransport,
     /// Flushed when the send is over, and before every I/O step with [`ExecOptions::flush_each_step`].
-    stores: Vec<StoreRef>,
+    stores: Vec<Flush>,
     opts: ExecOptions,
     last_io: Option<Instant>,
     out: Vec<Outcome>,
@@ -379,7 +373,7 @@ impl<'a> Executor<'a> {
     }
 
     /// Flush `stores` before every I/O step, so values saved by one step's continuation are on disk before the next.
-    pub(crate) fn with_stores(mut self, stores: Vec<StoreRef>) -> Self {
+    pub(crate) fn with_stores(mut self, stores: Vec<Flush>) -> Self {
         self.runner.stores = stores;
         self
     }
@@ -443,7 +437,7 @@ pub(crate) async fn run_files(plan: Plan, transport: &dyn AsyncTransport) {
 impl Runner<'_> {
     async fn flush(&self) {
         for s in &self.stores {
-            run_files(s.clone().flush(), self.transport).await;
+            run_files(s(), self.transport).await;
         }
     }
 
@@ -504,7 +498,7 @@ impl Runner<'_> {
                 let req = self.apply(req);
                 self.flush_step().await;
                 self.throttle().await;
-                log::debug!("{} {}", req.method, redact_url(&req.url));
+                log::debug!("{} {}", req.method, crate::url::log_form(&req.url, |_| false));
                 let res = self.transport.http(&req).await;
                 if let Ok(r) = &res {
                     log::debug!("-> HTTP {}", r.status);
@@ -589,59 +583,6 @@ impl Runner<'_> {
                 self.transport.sleep(d).await;
                 true
             }
-        }
-    }
-}
-
-/// Strip userinfo, path and query from a URL for logging, and mask the host as `***` when the service's URL templates put a secret there (Telegram's bot token, Pushover's token, Discord's webhook id): `tgram://***/...`.
-pub fn redact_url(url: &str) -> String {
-    match url.split_once("://") {
-        Some((scheme, rest)) => {
-            let host = crate::util::authority(rest);
-            let host = host.rsplit('@').next().unwrap_or(host);
-            let host = if secret_host(scheme) { "***" } else { host };
-            format!("{scheme}://{host}/...")
-        }
-        None => "<url>".into(),
-    }
-}
-
-/// Whether a compiled-in service handling `scheme` has a template whose host slot holds a secret token.
-fn secret_host(scheme: &str) -> bool {
-    let Some(def) = crate::services::ALL.iter().find(|d| d.handles(scheme)) else { return false };
-    def.templates.iter().any(|template| {
-        let rest = template.split_once("://").map_or("", |(_, r)| r);
-        let slot = crate::util::authority(rest);
-        let slot = slot.rsplit('@').next().unwrap_or(slot);
-        // The host is the slot's first token; `{path}{token}` may follow it without a `/`.
-        let host = slot.strip_prefix('{').and_then(|t| t.split_once('}')).map(|(key, _)| key);
-        host.is_some_and(|key| def.tokens.iter().any(|p| p.key == key && p.secret))
-    })
-}
-
-#[cfg(test)]
-mod redact_tests {
-    use super::redact_url;
-
-    #[cfg(all(
-        feature = "service-telegram",
-        feature = "service-pushover",
-        feature = "service-discord",
-        feature = "service-ntfy",
-        feature = "service-gotify"
-    ))]
-    #[test]
-    fn secrets_in_the_host_slot_are_masked() {
-        for (url, shown) in [
-            ("tgram://123456789:AAbotTOKENsecret/12345", "tgram://***/..."),
-            ("pover://userkey@apptoken", "pover://***/..."),
-            ("discord://webhookid/webhooktoken", "discord://***/..."),
-            ("ntfys://user:pass@ntfy.sh/topic", "ntfys://ntfy.sh/..."),
-            ("gotify://host/APPTOKEN", "gotify://host/..."),
-            ("foo://user:secret@host/path", "foo://host/..."),
-            ("no scheme", "<url>"),
-        ] {
-            assert_eq!(redact_url(url), shown, "{url}");
         }
     }
 }

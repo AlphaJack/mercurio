@@ -243,11 +243,6 @@ pub(crate) fn replace_all(
     Some(out)
 }
 
-/// Query pairs with keys and values percent-decoded.
-pub(crate) fn unquoted_pairs(p: &crate::url::Pairs) -> Vec<(String, String)> {
-    p.iter().map(|(k, v)| (crate::url::unquote(k), crate::url::unquote(v))).collect()
-}
-
 #[cfg(test)]
 mod escape_tests {
     use super::*;

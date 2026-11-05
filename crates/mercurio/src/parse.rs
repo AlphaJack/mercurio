@@ -6,21 +6,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::re::Regex;
+use crate::regex;
 
 use crate::url::unquote;
 
-/// Compile a regex once and return a `&'static Regex`.
-#[macro_export]
-#[doc(hidden)]
-macro_rules! regex {
-    ($re:expr $(,)?) => {{
-        static RE: ::std::sync::LazyLock<$crate::__private::Regex> =
-            ::std::sync::LazyLock::new(|| $crate::__private::Regex::new($re).expect("valid regex"));
-        &*RE
-    }};
-}
-
-/// Parse a yes/no word by its first two letters (`yes`, `on`, `true`, `enable`, `1`, ... and their negatives); anything else is `default`.
 /// `s` as a port: digits only, 1 to 65535.
 pub(crate) fn port(s: &str) -> Option<u16> {
     s.bytes().all(|b| b.is_ascii_digit()).then(|| s.parse().ok()).flatten().filter(|p| *p > 0)
@@ -413,14 +402,6 @@ pub(crate) fn is_ipaddr(addr: &str, ipv4: bool, ipv6: bool) -> Option<String> {
         }
     }
     None
-}
-
-/// For services that connect to the URL host: reject a host that is not a hostname or IP address. Also reject a port that is not a valid number.
-pub(crate) fn require_host(u: &crate::url::ParsedUrl, def: &'static crate::service::ServiceDef) -> crate::Result<()> {
-    if u.port_raw.is_some() || is_hostname(&u.host, true, true, true).is_none() {
-        return Err(def.err("an invalid hostname or port was specified"));
-    }
-    Ok(())
 }
 
 /// Validate a hostname or IP address. Returns the normalised hostname.

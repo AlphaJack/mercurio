@@ -59,7 +59,7 @@ const PRIORITY_MAP: &[(&str, i64)] = &[
 ];
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut entries = u.path_segments();
     let token = entries.pop().unwrap_or_default();
     let token = validate_nonblank(&token).ok_or_else(|| SERVICE.err("an invalid Gotify token was specified"))?;

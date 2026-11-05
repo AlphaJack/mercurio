@@ -39,7 +39,7 @@ struct Occurrence {
 type Result<T> = std::result::Result<T, String>;
 
 /// The packages checked, each in `crates/<name>`.
-const PACKAGES: &[&str] = &["mercurio-cli"];
+const PACKAGES: &[&str] = &["mercurio-cli", "mercurio"];
 
 pub(crate) fn check(mermaid: bool) -> Result<()> {
     for name in PACKAGES {

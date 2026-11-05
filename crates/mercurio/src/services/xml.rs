@@ -65,7 +65,7 @@ struct Xml {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut field_names = FIELDS.map(str::to_owned);
     let mut extras: Vec<(String, String)> = Vec::new();
     for (k, v) in double_unquoted(&u.query_colon) {

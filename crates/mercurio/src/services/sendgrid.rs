@@ -59,7 +59,7 @@ struct SendGrid {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let (user, password) = key_and_sender(u, &SERVICE)?;
     let apikey = unquote(user);
     let from = format!("{}@{}", unquote(password), u.host());

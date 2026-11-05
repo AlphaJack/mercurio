@@ -81,7 +81,7 @@ struct Mqtt {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let mut targets: Vec<String> = match &u.fullpath {
         Some(p) => parse_list([unquote(p.trim_start_matches('/'))]),
         None => Vec::new(),

@@ -2,7 +2,8 @@
 
 use std::time::Duration;
 
-use crate::util::{json_has_value, unquoted_pairs};
+use crate::util::json_has_value;
+use crate::url::unquoted_pairs;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 
 use crate::url::ParsedUrl;
@@ -54,7 +55,7 @@ struct Enigma2 {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let timeout = SERVICE.int_or_default(u, "timeout").max(-1);
     let fullpath = u.fullpath.as_deref().unwrap_or("/");
     let mut url = format!("{}://{}", u.http_scheme(), u.host());

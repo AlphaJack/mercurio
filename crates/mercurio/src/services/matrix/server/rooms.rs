@@ -3,7 +3,7 @@
 use super::*;
 
 impl Session {
-    pub(super) fn joined_rooms(self, k: K<Vec<Value>>) -> Plan {
+    pub(super) fn joined_rooms(self, k: Cont<Self, Vec<Value>>) -> Plan {
         if self.access_token.is_none() {
             return k(self, Vec::new());
         }
@@ -24,7 +24,7 @@ impl Session {
     }
 
     /// Room id or alias to a joined room id.
-    pub(super) fn room_join(self, room: Value, k: K<Option<String>>) -> Plan {
+    pub(super) fn room_join(self, room: Value, k: Cont<Self, Option<String>>) -> Plan {
         if self.access_token.is_none() {
             return k(self, None);
         }
@@ -88,7 +88,7 @@ impl Session {
         json!([{"type": "m.room.encryption", "state_key": "", "content": {"algorithm": "m.megolm.v1.aes-sha2"}}])
     }
 
-    pub(super) fn room_create(self, room: String, k: K<Option<String>>) -> Plan {
+    pub(super) fn room_create(self, room: String, k: Cont<Self, Option<String>>) -> Plan {
         let Some((name, explicit_hs)) = match_room_alias(&room) else { return k(self, None) };
         let mut home_server = explicit_hs.or_else(|| self.home_server.clone()).filter(|h| !h.is_empty());
         if home_server.is_none()
@@ -128,7 +128,7 @@ impl Session {
     }
 
     /// Alias to room id via the room directory.
-    pub(super) fn room_id_lookup(self, room: String, k: K<Option<String>>) -> Plan {
+    pub(super) fn room_id_lookup(self, room: String, k: Cont<Self, Option<String>>) -> Plan {
         let Some((name, explicit_hs)) = match_room_alias(&room) else { return k(self, None) };
         let mut home_server = explicit_hs.or_else(|| self.home_server.clone()).filter(|h| !h.is_empty());
         if home_server.is_none()
@@ -145,7 +145,7 @@ impl Session {
     }
 
     /// Find or create the direct-message room with `user`.
-    pub(super) fn dm_room(self, user: String, k: K<Option<Value>>) -> Plan {
+    pub(super) fn dm_room(self, user: String, k: Cont<Self, Option<Value>>) -> Plan {
         let Some((local, explicit_hs)) = match_user(&user) else {
             crate::warning!("Matrix DM: invalid user identifier {user:?}.");
             return k(self, None);
@@ -182,7 +182,7 @@ impl Session {
         })
     }
 
-    pub(super) fn dm_create(self, user_id: String, mut mdirect: Map<String, Value>, k: K<Option<Value>>) -> Plan {
+    pub(super) fn dm_create(self, user_id: String, mut mdirect: Map<String, Value>, k: Cont<Self, Option<Value>>) -> Plan {
         let mut payload = json!({"is_direct": true, "preset": "trusted_private_chat", "invite": [user_id]});
         let e2ee = self.e2ee_wanted();
         if e2ee {

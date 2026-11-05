@@ -82,7 +82,7 @@ fn safe_name(raw: String) -> String {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, &SERVICE)?;
+    crate::service_def::require_host(u, &SERVICE)?;
     let (user, password) = key_and_sender(u, &SERVICE)?;
     let apikey = validate_regex(&unquote(user), r"^[a-zA-Z0-9._-]+$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid Brevo API Key was specified"))?;

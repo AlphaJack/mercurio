@@ -236,6 +236,7 @@
 mod asset_def;
 #[path = "attachment.rs"]
 mod attachment_def;
+mod calendar;
 #[path = "config/mod.rs"]
 mod config_def;
 mod convert;
@@ -248,12 +249,15 @@ mod http1;
 mod machine;
 mod message;
 mod net;
+mod param;
 mod parse;
 mod paths;
+mod percent;
 mod plan;
 mod prepare;
 mod re;
 mod registry;
+mod secret;
 mod semaphore;
 #[path = "service.rs"]
 mod service_def;
@@ -312,9 +316,10 @@ pub use error::{Error, ErrorClass, Result};
 pub use mercurio_async::AsyncMercurio;
 pub use message::{Attachment, Message, NotifyFormat, NotifyType, OverflowMode};
 pub use notify::{Mercurio, NotifyOptions, Selection};
-pub use plan::{Delivery, Outcome, redact_url};
+pub use plan::{Delivery, Outcome};
 pub use registry::Registry;
 pub use report::{Attempt, Report, ReportEntry, Status};
+pub use service_def::redact_url;
 pub use tag::{Tag, TagFilter};
 pub use target::{Target, parse, service_for_scheme, services};
 
@@ -322,7 +327,6 @@ pub use asset::Asset;
 
 /// Attachments loaded from files, `http(s)://` and `memory://` sources: [`AttachmentSet`] and the options of each source.
 pub mod attachment {
-    pub(crate) use crate::attachment_def::*;
     pub use crate::attachment_def::{AttachSource, AttachmentSet, Cache, Location};
 }
 

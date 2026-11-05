@@ -8,14 +8,14 @@ impl Session {
         self.store.set(DISCOVERY_IDENTITY_KEY, json!(identity), Some(DISCOVERY_CACHE + Duration::from_secs(2)));
     }
 
-    pub(super) fn discovery_failed(self, why: &str, k: K<bool>) -> Plan {
+    pub(super) fn discovery_failed(self, why: &str, k: Cont<Self, bool>) -> Plan {
         crate::warning!("Matrix Well-Known {why}");
         self.store.clear(&[DISCOVERY_BASE_KEY, DISCOVERY_IDENTITY_KEY]);
         k(self, false)
     }
 
     /// Homeserver discovery (`.well-known`); `k(false)` when it failed.
-    pub(super) fn discover(self, k: K<bool>) -> Plan {
+    pub(super) fn discover(self, k: Cont<Self, bool>) -> Plan {
         let url = format!("{}/.well-known/matrix/client", self.host_base());
         let probe = |u: String| Fetch::get_url(u).bounded(MAX_RESPONSE_BYTES).no_auth();
         self.fetch(probe(url), move |s, r| {
@@ -92,7 +92,7 @@ impl Session {
         }
     }
 
-    pub(super) fn login(self, k: K<bool>) -> Plan {
+    pub(super) fn login(self, k: Cont<Self, bool>) -> Plan {
         if non_empty(self.access_token.as_deref()) {
             return k(self, true);
         }
@@ -121,7 +121,7 @@ impl Session {
         })
     }
 
-    pub(super) fn register(self, k: K<bool>) -> Plan {
+    pub(super) fn register(self, k: Cont<Self, bool>) -> Plan {
         let mut payload = json!({"kind": "user", "auth": {"type": "m.login.dummy"}});
         if let Some(u) = &self.cfg.user {
             payload["username"] = json!(u);
@@ -143,7 +143,7 @@ impl Session {
         })
     }
 
-    pub(super) fn whoami(self, k: K<()>) -> Plan {
+    pub(super) fn whoami(self, k: Cont<Self, ()>) -> Plan {
         self.fetch(Fetch::get("/account/whoami"), move |mut s, r| {
             let Some(resp) = r.object().map(|m| Value::Object(m.clone())) else { return k(s, ()) };
             if let Some(u) = get_str(&resp, "user_id").filter(|u| !u.is_empty()) {

@@ -28,7 +28,7 @@ pub(crate) struct Emby {
 }
 
 pub(crate) fn parse_with(u: &ParsedUrl, def: &'static ServiceDef) -> Result<Box<dyn Notify>> {
-    crate::parse::require_host(u, def)?;
+    crate::service_def::require_host(u, def)?;
     let user = u.user().filter(|s| !s.is_empty()).ok_or_else(|| def.err("no username was specified"))?;
     let port = u.port.filter(|p| *p != 0).unwrap_or(DEFAULT_PORT);
     let base = format!("{}://{}:{}", u.http_scheme(), u.host(), port);
