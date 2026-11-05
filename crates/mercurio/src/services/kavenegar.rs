@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
+use super::_sms::{PHONE_TARGETS, full_numbers, no_targets, per_target, to_param};
 use crate::parse::{is_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -21,10 +21,10 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{source}@{apikey}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("apikey", "API Key").secret_key("^[a-z0-9]+$"),
         Param::new("source", "Source Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::sets("from", &["source"]),
@@ -75,7 +75,7 @@ impl Notify for Kavenegar {
             let req = ctx.post(&url)
                 .header("Accept", "application/json")
                 .query(&params);
-            Plan::send_check(req, |r| expect(r, &[201, 200]))
+            Plan::send_expect(req, &[201, 200])
         })
     }
 

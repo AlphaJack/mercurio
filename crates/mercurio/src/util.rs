@@ -2,6 +2,16 @@
 
 use serde_json::{Map, Value};
 
+/// The first line of `text`, trimmed.
+pub(crate) fn first_line(text: &str) -> &str {
+    text.split('\n').next().unwrap_or_default().trim()
+}
+
+/// The first of `options` that starts with `prefix`.
+pub(crate) fn starting_with<'a>(options: &[&'a str], prefix: &str) -> Option<&'a str> {
+    options.iter().copied().find(|x| x.starts_with(prefix))
+}
+
 /// Escapes `&`, `<` and `>` only.
 pub(crate) fn html_escape_noquote(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
@@ -62,9 +72,39 @@ pub(crate) fn remap_payload<'a>(
     }
 }
 
+/// The value of the first key in `map` that `text` starts with, else the default.
+pub(crate) fn by_prefix<V: Copy + Default>(map: &[(&str, V)], text: &str) -> V {
+    map.iter().find(|(k, _)| text.starts_with(k)).map(|(_, v)| *v).unwrap_or_default()
+}
+
+/// The `host[:port]` that starts `rest`, the part of a URL after `scheme://`.
+pub(crate) fn authority(rest: &str) -> &str {
+    rest.split(['/', '?']).next().unwrap_or("")
+}
+
+/// A JSON object of `pairs`, each value a string.
+pub(crate) fn json_strings(pairs: &[(String, String)]) -> Map<String, Value> {
+    pairs.iter().map(|(k, v)| (k.clone(), Value::String(v.clone()))).collect()
+}
+
 /// A decimal integer with optional sign, surrounding whitespace ignored.
 pub(crate) fn parse_int(s: &str) -> Option<i64> {
+    parse_trimmed(s)
+}
+
+/// `s` without its surrounding whitespace, parsed as a `T`.
+pub(crate) fn parse_trimmed<T: std::str::FromStr>(s: &str) -> Option<T> {
     s.trim().parse().ok()
+}
+
+/// `s` with each run of whitespace made one space, and none at the ends.
+pub(crate) fn one_line(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// `s` in lower case, without surrounding whitespace.
+pub(crate) fn lower_trimmed(s: &str) -> String {
+    s.to_lowercase().trim().to_owned()
 }
 
 /// Whether `v` holds a value: false for `null`, `false`, zero, empty strings, empty arrays and empty objects.

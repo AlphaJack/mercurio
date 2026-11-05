@@ -75,6 +75,8 @@ impl From<Mercurio> for AsyncMercurio {
     }
 }
 
+crate::notify::facade_methods!(AsyncMercurio);
+
 impl AsyncMercurio {
     /// A notifier on [`crate::TokioTransport`] and the default [`Asset`].
     #[cfg(feature = "transport-tokio")]
@@ -87,56 +89,6 @@ impl AsyncMercurio {
         Self { core: Core::default(), transport, sequential: false, closed: false }
     }
 
-    /// Send to targets one after another instead of concurrently.
-    #[must_use]
-    pub fn sequential(mut self) -> Self {
-        self.sequential = true;
-        self
-    }
-
-    /// Replace the [`Asset`] (branding, pipeline defaults, storage). A name set with [`AsyncMercurio::app`] is kept.
-    #[must_use]
-    pub fn asset(mut self, asset: Asset) -> Self {
-        self.core.set_asset(asset);
-        self
-    }
-
-    /// Name the app sending: [`Asset::app_id`], shown as the sender or app name by desktop notifiers and many services, and sent as `User-Agent`. It survives a later [`AsyncMercurio::asset`].
-    #[must_use]
-    pub fn app(mut self, name: impl Into<String>) -> Self {
-        self.core.set_app(name.into());
-        self
-    }
-
-    /// Options for [`AsyncMercurio::add_config`] (include depth, templates, ...). `opts.registry` replaces this notifier's [`Registry`].
-    #[must_use]
-    pub fn config_options(mut self, opts: ConfigOptions) -> Self {
-        self.core.config = opts;
-        self
-    }
-
-    /// The runtime services of this notifier: register custom schemes here before adding their URLs.
-    pub fn registry_mut(&mut self) -> &mut Registry {
-        &mut self.core.config.registry
-    }
-
-    /// Parse and add one URL.
-    pub fn add(&mut self, url: &str) -> Result<&mut Self> {
-        self.core.add(url)?;
-        Ok(self)
-    }
-
-    /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse, each in an [`Error::Context`] naming the URL with its secrets removed ([`crate::redact_url`]); [`Error::root`] gives the parse error itself.
-    pub fn add_all(&mut self, urls: &str) -> Vec<Error> {
-        self.core.add_all(urls)
-    }
-
-    /// Add an already parsed target.
-    pub fn push(&mut self, target: Target) -> &mut Self {
-        self.core.targets.push(target);
-        self
-    }
-
     /// Load a configuration file or URL (path, `file://`, `http(s)://`) through the transport and add its services. Returns the number of services added.
     pub async fn add_config(&mut self, source: &str) -> Result<usize> {
         let cfg = Config::load_async(source, self.transport.as_ref(), &self.core.config).await?;
@@ -147,42 +99,6 @@ impl AsyncMercurio {
     pub async fn add_config_text(&mut self, content: &str, format: Option<ConfigFormat>) -> Result<usize> {
         let cfg = Config::from_text_async(content, format, self.transport.as_ref(), &self.core.config).await?;
         Ok(self.core.add_loaded(cfg))
-    }
-
-    /// Add the services of an already loaded [`Config`].
-    pub fn add_loaded(&mut self, cfg: Config) -> usize {
-        self.core.add_loaded(cfg)
-    }
-
-    /// Keep only targets for which `keep` returns true (e.g. tag filtering).
-    pub fn retain(&mut self, keep: impl FnMut(&Target) -> bool) -> &mut Self {
-        self.core.targets.retain(keep);
-        self
-    }
-
-    /// Targets ready to notify (pending template entries are separate).
-    pub fn targets(&self) -> &[Target] {
-        &self.core.targets
-    }
-
-    /// Configuration entries still waiting for template values.
-    pub fn pending(&self) -> &[PendingTarget] {
-        &self.core.pending
-    }
-
-    /// Number of targets plus pending template entries.
-    pub fn len(&self) -> usize {
-        self.core.len()
-    }
-
-    /// No targets and no template entries.
-    pub fn is_empty(&self) -> bool {
-        self.core.len() == 0
-    }
-
-    /// Targets matching `filter`, with matching template entries built from `vars` (see [`Mercurio::select`]).
-    pub fn select(&self, filter: &TagFilter, vars: &TemplateVars) -> Selection<'_> {
-        self.core.select(filter, vars)
     }
 
     /// Send `msg` to every target (see [`Mercurio::notify`]).

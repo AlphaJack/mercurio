@@ -55,11 +55,12 @@ pub(crate) fn run(root: &Path, urls: &[&str]) -> Result<(), String> {
     let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), Into::into);
     let bin = target.join("debug").join(if cfg!(windows) { "mercurio.exe" } else { "mercurio" });
     let png = std::env::temp_dir().join("mercurio-try.png");
-    std::fs::copy(root.join("crates/mercurio/assets/logo.png"), &png).map_err(|e| format!("{}: {e}", png.display()))?;
+    std::fs::copy(root.join("crates").join("mercurio").join("assets").join("logo.png"), &png)
+        .map_err(crate::io_error(&png))?;
 
     let mut failed = 0;
     for (label, args) in cases(&png.to_string_lossy()) {
-        let out = Command::new(&bin).args(&args).args(urls).output().map_err(|e| format!("{}: {e}", bin.display()))?;
+        let out = Command::new(&bin).args(&args).args(urls).output().map_err(crate::io_error(&bin))?;
         let err = String::from_utf8_lossy(&out.stderr);
         let first = err.lines().next().unwrap_or("");
         let code = out.status.code().unwrap_or(-1);

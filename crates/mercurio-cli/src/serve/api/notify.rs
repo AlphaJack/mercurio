@@ -8,8 +8,9 @@ use serde_json::Value;
 
 use super::super::auth::Role;
 use super::super::http::{Reply, Req, parse_bool};
+use super::super::key::{INVALID_KEY_HEADER, valid_key};
 use super::super::payload::{self, Content};
-use super::super::{DENIED, INVALID_KEY_HEADER, Server, filters, notify, store, valid_key};
+use super::super::{DENIED, Server, filters, notify, store};
 
 /// Lowest level of the lines sent to `APPRISE_WEBHOOK_URL`: INFO, so the library's DEBUG lines stay out.
 const WEBHOOK_LEVEL: u8 = 20;
@@ -32,7 +33,6 @@ impl Server {
     }
 
     async fn notify_stored(&self, req: &Req, key: &str, mut content: Content) -> Reply {
-        req.note(|ev| ev.key = Some(key.to_owned()));
         if !self.key_ok(req, key, true).await {
             return self.key_denied(req, key);
         }
@@ -115,7 +115,7 @@ impl Server {
         }
         let urls: Vec<String> = match content.fields.get("urls") {
             Some(Value::String(s)) if !s.is_empty() => vec![s.clone()],
-            Some(Value::Array(a)) if !a.is_empty() => a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect(),
+            Some(Value::Array(a)) if !a.is_empty() => payload::strings(a),
             _ => self.s.stateless_urls.iter().cloned().collect(),
         };
         let Ok(tag) = payload::notify_tag(req, &content) else {
@@ -182,7 +182,7 @@ impl Server {
             a.split(',').any(|m| m.split(';').next().unwrap_or("").trim().eq_ignore_ascii_case("text/event-stream"))
         }) || parse_bool(req.query("stream"), false);
         if wants_stream {
-            let Some(slot) = self.streams.try_admit() else {
+            let Ok(slot) = self.streams.clone().try_acquire_owned() else {
                 let msg = "The server is temporarily unable to start a new live notification stream";
                 return Reply::error(req, 503, msg).header("Retry-After", "15");
             };

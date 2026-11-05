@@ -19,7 +19,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{key}",
     ],
     tokens: &[
-        Param::new("key", "Bot Webhook Key").required().secret().pattern("^[a-z0-9_-]+$"),
+        Param::new("key", "Bot Webhook Key").secret_key("^[a-z0-9_-]+$"),
     ],
     params: &[
         Param::sets("key", &["key"]),

@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::_telephony::{http_err, phone_entries, param_unquoted};
+use super::_telephony::{http_err, phone_entries};
 use crate::crypto::b64;
 use crate::error::Error;
 use crate::http::Response;
@@ -65,7 +65,7 @@ struct SmsEagle {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
-    let token = if let Some(t) = param_unquoted(u, "token") {
+    let token = if let Some(t) = u.text("token") {
         Some(t)
     } else if u.password.is_none() && u.user.is_some() {
         u.user()
@@ -162,7 +162,7 @@ impl Notify for SmsEagle {
         let attachments: Vec<Value> = msg
             .attachments
             .iter()
-            .filter(|a| a.mime.to_ascii_lowercase().starts_with("image/"))
+            .filter(|a| a.is_image())
             .map(|a| json!({"content_type": a.mime, "content": b64(&a.data)}))
             .collect();
         let message =

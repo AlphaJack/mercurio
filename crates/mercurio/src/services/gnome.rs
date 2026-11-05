@@ -7,7 +7,7 @@
 //! - Apprise uses libnotify bindings, while mercurio speaks D-Bus itself.
 //! - libnotify also sends a `sender-pid` hint and the icon as `image-data` pixels, while mercurio passes the icon file as `app_icon`.
 
-use super::_desktop::{DesktopNotify, notify, urgency};
+use super::_desktop::{DesktopNotify, URGENCY, notify, urgency};
 use crate::service::{Context, Limits, Notify, Param, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
@@ -24,7 +24,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     ],
     params: &[
         Param::new("image", "Include Image").bool(true),
-        Param::new("urgency", "Urgency").choice(&["0", "1", "2"]).default("1").aliases(&["priority"]),
+        URGENCY,
     ],
     ..ServiceDef::DEFAULTS
 };

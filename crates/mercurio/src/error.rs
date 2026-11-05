@@ -105,6 +105,11 @@ impl Error {
         Error::Transport(reason.to_string())
     }
 
+    /// What `e` turns into: a transport error about `what`, as `what: e`.
+    pub(crate) fn transport_at<E: fmt::Display>(what: impl fmt::Display) -> impl Fn(E) -> Self {
+        move |e| Error::transport(format!("{what}: {e}"))
+    }
+
     /// A transport error the service may have acted on (see [`Error::Unconfirmed`]).
     pub fn unconfirmed(reason: impl fmt::Display) -> Self {
         Error::Unconfirmed(reason.to_string())

@@ -361,6 +361,102 @@ impl Selection<'_> {
     }
 }
 
+/// The methods [`Mercurio`] and [`crate::AsyncMercurio`] share: building the notifier and its list of targets.
+macro_rules! facade_methods {
+    ($facade:ident) => {
+        impl $facade {
+            /// Replace the [`Asset`] (branding, pipeline defaults, storage). A name set with [`Self::app`] is kept.
+            #[must_use]
+            pub fn asset(mut self, asset: Asset) -> Self {
+                self.core.set_asset(asset);
+                self
+            }
+
+            /// Name the app sending: [`Asset::app_id`], shown as the sender or app name by desktop notifiers and many services, and sent as `User-Agent`. It survives a later [`Self::asset`].
+            #[must_use]
+            pub fn app(mut self, name: impl Into<String>) -> Self {
+                self.core.set_app(name.into());
+                self
+            }
+
+            /// Send to targets one after another instead of at the same time.
+            #[must_use]
+            pub fn sequential(mut self) -> Self {
+                self.sequential = true;
+                self
+            }
+
+            /// Options for [`Self::add_config`] (include depth, templates, ...). `opts.registry` replaces this notifier's [`Registry`].
+            #[must_use]
+            pub fn config_options(mut self, opts: ConfigOptions) -> Self {
+                self.core.config = opts;
+                self
+            }
+
+            /// The runtime services of this notifier: register custom schemes here before adding their URLs.
+            pub fn registry_mut(&mut self) -> &mut Registry {
+                &mut self.core.config.registry
+            }
+
+            /// Parse and add one URL.
+            pub fn add(&mut self, url: &str) -> Result<&mut Self> {
+                self.core.add(url)?;
+                Ok(self)
+            }
+
+            /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse, each in an [`Error::Context`] naming the URL with its secrets removed ([`crate::redact_url`]): `discord://only-id/...: Discord: an invalid Discord Webhook Token was specified`. [`Error::root`] gives the parse error itself.
+            pub fn add_all(&mut self, urls: &str) -> Vec<Error> {
+                self.core.add_all(urls)
+            }
+
+            /// Add an already parsed target.
+            pub fn push(&mut self, target: Target) -> &mut Self {
+                self.core.targets.push(target);
+                self
+            }
+
+            /// Add the services of an already loaded [`Config`].
+            pub fn add_loaded(&mut self, cfg: Config) -> usize {
+                self.core.add_loaded(cfg)
+            }
+
+            /// Keep only targets for which `keep` returns true (e.g. tag filtering).
+            pub fn retain(&mut self, keep: impl FnMut(&Target) -> bool) -> &mut Self {
+                self.core.targets.retain(keep);
+                self
+            }
+
+            /// Targets ready to notify (pending template entries are separate).
+            pub fn targets(&self) -> &[Target] {
+                &self.core.targets
+            }
+
+            /// Configuration entries still waiting for template values.
+            pub fn pending(&self) -> &[PendingTarget] {
+                &self.core.pending
+            }
+
+            /// Number of targets plus pending template entries.
+            pub fn len(&self) -> usize {
+                self.core.len()
+            }
+
+            /// No targets and no template entries.
+            pub fn is_empty(&self) -> bool {
+                self.core.len() == 0
+            }
+
+            /// Targets matching `filter`, with matching template entries built from `vars`. Sends nothing (the CLI's `--dry-run`). Targets built from template entries live only for the call, so their in-memory store does not carry over between calls.
+            pub fn select(&self, filter: &TagFilter, vars: &TemplateVars) -> Selection<'_> {
+                self.core.select(filter, vars)
+            }
+        }
+    };
+}
+pub(crate) use facade_methods;
+
+facade_methods!(Mercurio);
+
 impl Mercurio {
     /// A notifier using [`BlockingTransport`] and the default [`Asset`] (feature `transport-blocking`).
     #[cfg(feature = "transport-blocking")]
@@ -373,56 +469,6 @@ impl Mercurio {
         Self { core: Core::default(), transport, sequential: false }
     }
 
-    /// Replace the [`Asset`] (branding, pipeline defaults, storage). A name set with [`Mercurio::app`] is kept.
-    #[must_use]
-    pub fn asset(mut self, asset: Asset) -> Self {
-        self.core.set_asset(asset);
-        self
-    }
-
-    /// Name the app sending: [`Asset::app_id`], shown as the sender or app name by desktop notifiers and many services, and sent as `User-Agent`. It survives a later [`Mercurio::asset`].
-    #[must_use]
-    pub fn app(mut self, name: impl Into<String>) -> Self {
-        self.core.set_app(name.into());
-        self
-    }
-
-    /// Send to targets one after another instead of in parallel threads.
-    #[must_use]
-    pub fn sequential(mut self) -> Self {
-        self.sequential = true;
-        self
-    }
-
-    /// Options for [`Mercurio::add_config`] (include depth, templates, ...). `opts.registry` replaces this notifier's [`Registry`].
-    #[must_use]
-    pub fn config_options(mut self, opts: ConfigOptions) -> Self {
-        self.core.config = opts;
-        self
-    }
-
-    /// The runtime services of this notifier: register custom schemes here before adding their URLs.
-    pub fn registry_mut(&mut self) -> &mut Registry {
-        &mut self.core.config.registry
-    }
-
-    /// Parse and add one URL.
-    pub fn add(&mut self, url: &str) -> Result<&mut Self> {
-        self.core.add(url)?;
-        Ok(self)
-    }
-
-    /// Add several URLs separated by whitespace, commas or semicolons. Returns the errors for URLs that did not parse, each in an [`Error::Context`] naming the URL with its secrets removed ([`crate::redact_url`]): `discord://only-id/...: Discord: an invalid Discord Webhook Token was specified`. [`Error::root`] gives the parse error itself.
-    pub fn add_all(&mut self, urls: &str) -> Vec<Error> {
-        self.core.add_all(urls)
-    }
-
-    /// Add an already parsed target.
-    pub fn push(&mut self, target: Target) -> &mut Self {
-        self.core.targets.push(target);
-        self
-    }
-
     /// Load a configuration file or URL (path, `file://`, `http(s)://`) and add its services. Remote configurations are fetched through this notifier's transport. Returns the number of services added.
     pub fn add_config(&mut self, source: &str) -> Result<usize> {
         let cfg = Config::load(source, self.transport.as_ref(), &self.core.config)?;
@@ -433,42 +479,6 @@ impl Mercurio {
     pub fn add_config_text(&mut self, content: &str, format: Option<ConfigFormat>) -> Result<usize> {
         let cfg = Config::from_text(content, format, self.transport.as_ref(), &self.core.config)?;
         Ok(self.add_loaded(cfg))
-    }
-
-    /// Add the services of an already loaded [`Config`].
-    pub fn add_loaded(&mut self, cfg: Config) -> usize {
-        self.core.add_loaded(cfg)
-    }
-
-    /// Keep only targets for which `keep` returns true (e.g. tag filtering).
-    pub fn retain(&mut self, keep: impl FnMut(&Target) -> bool) -> &mut Self {
-        self.core.targets.retain(keep);
-        self
-    }
-
-    /// Targets ready to notify (pending template entries are separate).
-    pub fn targets(&self) -> &[Target] {
-        &self.core.targets
-    }
-
-    /// Configuration entries still waiting for template values.
-    pub fn pending(&self) -> &[PendingTarget] {
-        &self.core.pending
-    }
-
-    /// Number of targets plus pending template entries.
-    pub fn len(&self) -> usize {
-        self.core.len()
-    }
-
-    /// Nothing matched at all (not even an unresolved entry).
-    pub fn is_empty(&self) -> bool {
-        self.core.len() == 0
-    }
-
-    /// Targets matching `filter`, with matching template entries built from `vars`. Sends nothing (the CLI's `--dry-run`). Targets built from template entries live only for the call, so their in-memory store does not carry over between calls.
-    pub fn select(&self, filter: &TagFilter, vars: &TemplateVars) -> Selection<'_> {
-        self.core.select(filter, vars)
     }
 
     /// Send `msg` to every target; template entries use their defaults and `APPRISE_TEMPLATE_*` values. Never panics; failures are in the report.

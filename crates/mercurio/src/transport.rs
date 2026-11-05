@@ -63,59 +63,39 @@ pub trait Transport: Send + Sync {
     }
 }
 
-impl<T: Transport + ?Sized> Transport for &T {
-    fn http(&self, req: &Request) -> Result<Response> {
-        (**self).http(req)
-    }
-    fn connect(&self, ep: &Endpoint) -> Result<Box<dyn Conn>> {
-        (**self).connect(ep)
-    }
-    fn datagram(&self, dg: &Datagram) -> Result<()> {
-        (**self).datagram(dg)
-    }
-    fn command(&self, cmd: &Command) -> Result<CommandOutput> {
-        (**self).command(cmd)
-    }
-    fn native(&self, call: &NativeCall) -> Result<()> {
-        (**self).native(call)
-    }
-    fn file(&self, op: &FileOp) -> Result<FileOutput> {
-        (**self).file(op)
-    }
-    fn sleep(&self, d: Duration) {
-        (**self).sleep(d)
-    }
-    fn env(&self) -> Arc<dyn Env> {
-        (**self).env()
-    }
+/// `Transport` for a pointer to one: each call goes to the transport it points to.
+macro_rules! forward_transport {
+    ($($pointer:ty),*) => {$(
+        impl<T: Transport + ?Sized> Transport for $pointer {
+            fn http(&self, req: &Request) -> Result<Response> {
+                (**self).http(req)
+            }
+            fn connect(&self, ep: &Endpoint) -> Result<Box<dyn Conn>> {
+                (**self).connect(ep)
+            }
+            fn datagram(&self, dg: &Datagram) -> Result<()> {
+                (**self).datagram(dg)
+            }
+            fn command(&self, cmd: &Command) -> Result<CommandOutput> {
+                (**self).command(cmd)
+            }
+            fn native(&self, call: &NativeCall) -> Result<()> {
+                (**self).native(call)
+            }
+            fn file(&self, op: &FileOp) -> Result<FileOutput> {
+                (**self).file(op)
+            }
+            fn sleep(&self, d: Duration) {
+                (**self).sleep(d)
+            }
+            fn env(&self) -> Arc<dyn Env> {
+                (**self).env()
+            }
+        }
+    )*};
 }
 
-impl<T: Transport + ?Sized> Transport for Arc<T> {
-    fn http(&self, req: &Request) -> Result<Response> {
-        (**self).http(req)
-    }
-    fn connect(&self, ep: &Endpoint) -> Result<Box<dyn Conn>> {
-        (**self).connect(ep)
-    }
-    fn datagram(&self, dg: &Datagram) -> Result<()> {
-        (**self).datagram(dg)
-    }
-    fn command(&self, cmd: &Command) -> Result<CommandOutput> {
-        (**self).command(cmd)
-    }
-    fn native(&self, call: &NativeCall) -> Result<()> {
-        (**self).native(call)
-    }
-    fn file(&self, op: &FileOp) -> Result<FileOutput> {
-        (**self).file(op)
-    }
-    fn sleep(&self, d: Duration) {
-        (**self).sleep(d)
-    }
-    fn env(&self) -> Arc<dyn Env> {
-        (**self).env()
-    }
-}
+forward_transport!(&T, Arc<T>);
 
 fn no_sockets() -> Error {
     Error::Unsupported("raw sockets are not available with this transport".into())
@@ -418,6 +398,9 @@ pub struct Command {
     pub files: Vec<(String, &'static [u8])>,
 }
 
+/// The `User-Agent` the built-in transports send when a request sets none.
+pub(crate) const USER_AGENT: &str = concat!("Mercurio/", env!("CARGO_PKG_VERSION"));
+
 /// [`Command::timeout`] unless a service sets its own.
 pub(crate) const DEFAULT_COMMAND_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -551,7 +534,7 @@ pub enum FileOutput {
 pub(crate) fn std_file(op: &FileOp) -> Result<FileOutput> {
     use std::fs;
     let path = op.path();
-    let err = |e: io::Error| Error::transport(format!("{}: {e}", path.display()));
+    let err = Error::transport_at::<io::Error>(path.display());
     match op {
         FileOp::Stat { .. } => match fs::metadata(path) {
             Ok(m) => Ok(FileOutput::Meta(Some(file_meta(&m)))),
@@ -559,11 +542,11 @@ pub(crate) fn std_file(op: &FileOp) -> Result<FileOutput> {
             Err(e) => Err(err(e)),
         },
         FileOp::Read { max, .. } => {
-            let m = fs::metadata(path).map_err(err)?;
+            let m = fs::metadata(path).map_err(&err)?;
             if !m.is_file() || (*max > 0 && m.len() > *max) {
                 return Err(Error::Message(format!("{}: not a file of at most {max} bytes", path.display())));
             }
-            fs::read(path).map(FileOutput::Bytes).map_err(err)
+            fs::read(path).map(FileOutput::Bytes).map_err(&err)
         }
         FileOp::Append { data, .. } => {
             fs::OpenOptions::new()
@@ -571,16 +554,16 @@ pub(crate) fn std_file(op: &FileOp) -> Result<FileOutput> {
                 .create(true)
                 .open(path)
                 .and_then(|mut f| f.write_all(data))
-                .map_err(err)?;
+                .map_err(&err)?;
             Ok(FileOutput::Done)
         }
         FileOp::WriteAtomic { data, private, .. } => {
             let (dir, tmp) = staging(path);
-            create_dir(&dir, *private).and_then(|()| write_atomic(&tmp, path, data, *private)).map_err(err)?;
+            create_dir(&dir, *private).and_then(|()| write_atomic(&tmp, path, data, *private)).map_err(&err)?;
             Ok(FileOutput::Done)
         }
         FileOp::CreateDir { private, .. } => {
-            create_dir(path, *private).map_err(err)?;
+            create_dir(path, *private).map_err(&err)?;
             Ok(FileOutput::Done)
         }
         FileOp::Remove { .. } => match fs::remove_file(path) {
@@ -592,7 +575,7 @@ pub(crate) fn std_file(op: &FileOp) -> Result<FileOutput> {
                 .write(true)
                 .open(path)
                 .and_then(|f| f.set_modified(std::time::SystemTime::now()))
-                .map_err(err)?;
+                .map_err(&err)?;
             Ok(FileOutput::Done)
         }
     }

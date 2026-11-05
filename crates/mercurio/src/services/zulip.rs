@@ -22,7 +22,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("target_stream", "Target Stream"),
         Param::new("target_user", "Target User").email(),
         Param::new("targets", "Targets").list("/").group(&["target_stream", "target_user"]),
-        Param::new("token", "Token").required().secret().pattern("^[A-Z0-9]{32}$"),
+        Param::new("token", "Token").secret_key("^[A-Z0-9]{32}$"),
     ],
     params: &[
         Param::sets("to", &["targets"]),

@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use super::_email_api::{attachments_json, html_to_text, text_to_html, unique_emails};
+use super::_email_api::{attachments_json, cc_for, email_objects, except, full_emails, key_and_sender, html_to_text, text_to_html, unique_emails};
 use crate::parse::{is_email, parse_list, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -28,7 +28,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}:{from_email}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[a-zA-Z0-9._-]+$"),
+        Param::new("apikey", "API Key").secret_key("^[a-zA-Z0-9._-]+$"),
         Param::new("from_email", "Source Email").email().required(),
         Param::new("target_email", "Target Email").email(),
         Param::new("targets", "Targets").list("/").group(&["target_email"]),
@@ -56,9 +56,7 @@ struct MailerSend {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     crate::parse::require_host(u, &SERVICE)?;
-    let user = u.user.as_deref().filter(|s| !s.is_empty()).ok_or_else(|| SERVICE.err("no API key specified"))?;
-    let password =
-        u.password.as_deref().filter(|s| !s.is_empty()).ok_or_else(|| SERVICE.err("no from email specified"))?;
+    let (user, password) = key_and_sender(u, &SERVICE)?;
     let apikey = validate_regex(&unquote(user), r"^[a-zA-Z0-9._-]+$", "i", true)
         .ok_or_else(|| SERVICE.err("an invalid MailerSend API Key was specified"))?;
     let from = format!("{}@{}", unquote(password), u.host());
@@ -78,7 +76,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let targets = if targets_in.is_empty() {
         vec![from_email.clone()]
     } else {
-        parse_list(targets_in).iter().filter_map(|r| is_email(r)).map(|e| e.full_email).collect()
+        full_emails(parse_list(targets_in))
     };
     let cc = unique_emails(u.param_nonempty("cc"));
     let bcc = unique_emails(u.param_nonempty("bcc"));
@@ -112,9 +110,8 @@ impl Notify for MailerSend {
             base["reply_to"] = json!({"email": r});
         }
         let plans = self.targets.iter().map(|target| {
-            let cc: Vec<Value> =
-                self.cc.iter().filter(|e| !self.bcc.contains(e) && *e != target).map(|e| json!({"email": e})).collect();
-            let bcc: Vec<Value> = self.bcc.iter().filter(|e| *e != target).map(|e| json!({"email": e})).collect();
+            let cc = email_objects(cc_for(&self.cc, &self.bcc, target));
+            let bcc = email_objects(except(&self.bcc, target));
             let mut payload = base.clone();
             payload["to"] = json!([{"email": target}]);
             if !cc.is_empty() {

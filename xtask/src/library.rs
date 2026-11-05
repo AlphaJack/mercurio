@@ -5,8 +5,8 @@ use std::path::Path;
 const FEATURES_INCLUDE: &str = "#![doc = include_str!(concat!(env!(\"OUT_DIR\"), \"/features.md\"))]";
 
 pub(crate) fn render(root: &Path) -> Result<(), String> {
-    let path = root.join("crates/mercurio/src/lib.rs");
-    let source = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let path = root.join("crates").join("mercurio").join("src").join("lib.rs");
+    let source = std::fs::read_to_string(&path).map_err(crate::io_error(&path))?;
     let mut lines = Vec::new();
     for line in source.lines() {
         if let Some(rest) = line.strip_prefix("//!") {
@@ -34,7 +34,7 @@ pub(crate) fn render(root: &Path) -> Result<(), String> {
     }
     let text = crate::pages::plain_code_links(&out.join("\n"), true);
     let text = crate::pages::plain_code_links(&text, false);
-    let dir = root.join("docs/book/src/generated");
-    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let dir = crate::generated_dir(root);
+    std::fs::create_dir_all(&dir).map_err(crate::io_error(&dir))?;
     std::fs::write(dir.join("library.md"), text + "\n").map_err(|e| format!("library.md: {e}"))
 }

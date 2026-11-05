@@ -5,13 +5,14 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use super::_email_api::{cc_for, except};
 use crate::env::Env;
 use crate::error::Error;
 use crate::http::Request;
 use crate::message::Attachment;
-use crate::parse::{is_email, parse_emails, validate_nonblank, validate_regex};
+use crate::parse::{is_email, parse_emails, validate_nonblank};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
-use crate::services::_aws::{AWS_FORM_CONTENT_TYPE, AwsSigner, aws_check, aws_region};
+use crate::services::_aws::{AWS_FORM_CONTENT_TYPE, AwsSigner, aws_done, aws_region, valid_region};
 use crate::services::_mail::mime::{Part, formataddr, header_value, render};
 use crate::url::{ParsedUrl, form_urlencode, unquote};
 use crate::{NotifyFormat, Plan, Prepared, Result};
@@ -115,7 +116,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid AWS Secret Access Key was specified"))?;
     let region = region
         .as_deref()
-        .and_then(|r| validate_regex(r, r"^[a-z]{2}-[a-z-]+?-[0-9]+$", "i", true))
+        .and_then(valid_region)
         .ok_or_else(|| SERVICE.err("an invalid AWS Region was specified"))?;
 
     let user = u.user().filter(|s| !s.is_empty());
@@ -221,10 +222,10 @@ impl Notify for Arc<Ses> {
 
         let mut plans = Vec::new();
         for (to_name, to_addr) in &self.targets {
-            let cc_addrs: Vec<&String> = self.cc.iter().filter(|a| !self.bcc.contains(a) && *a != to_addr).collect();
+            let cc_addrs: Vec<&String> = cc_for(&self.cc, &self.bcc, to_addr).collect();
             let cc: Vec<String> =
                 cc_addrs.iter().map(|a| formataddr(self.names.get(*a).map_or("", String::as_str), a)).collect();
-            let bcc: Vec<&String> = self.bcc.iter().filter(|a| *a != to_addr).collect();
+            let bcc: Vec<&String> = except(&self.bcc, to_addr).collect();
             let mut headers = vec![
                 ("Subject".to_owned(), header_value(msg.title)),
                 ("From".into(), formataddr(&from_name, &self.from_addr)),
@@ -252,10 +253,7 @@ impl Notify for Arc<Ses> {
             let (me, ua, env) = (self.clone(), ua.clone(), ctx.env().clone());
             plans.push(
                 Plan::defer(move || {
-                    Plan::http(me.post(body, &ua, env.as_ref()), |res| match aws_check(res) {
-                        Ok(_) => Plan::Done,
-                        Err(e) => Plan::Fail(e),
-                    })
+                    Plan::http(me.post(body, &ua, env.as_ref()), aws_done)
                 })
                 .target(to_addr.clone()),
             );

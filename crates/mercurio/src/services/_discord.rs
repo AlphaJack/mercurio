@@ -34,7 +34,14 @@ pub(crate) fn find_mentions(text: &str) -> Vec<Mention> {
         .collect()
 }
 
-fn push_unique(v: &mut Vec<String>, s: &str) {
+/// An embed field with `value` as a Markdown code block.
+pub(crate) fn md_field(name: &str, value: &str) -> Value {
+    let value = if value.is_empty() { "```\n```".to_owned() } else { format!("```md\n{}\n```", value.trim_end()) };
+    json!({"name": name, "value": value})
+}
+
+/// Adds `s` to `v` unless it is there already.
+pub(crate) fn push_unique(v: &mut Vec<String>, s: &str) {
     if !v.iter().any(|x| x == s) {
         v.push(s.to_owned());
     }
@@ -229,7 +236,7 @@ pub(crate) fn discord_parse(def: &'static ServiceDef, notify_url: &'static str, 
         flags: flags.filter(|f| *f != 0),
         ping: def.raw(u, "ping").map(|p| parse_list([unquote(p)])).unwrap_or_default(),
         template,
-        tokens: u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect(),
+        tokens: u.query_colon.owned(),
         batch: def.flag_strict(u, "batch"),
         use_embeds,
         escape_emojis: def.id == "discord" && !def.flag_strict(u, "emojis"),
@@ -319,7 +326,7 @@ fn build_request(ep: &Endpoint, step: &Step) -> Request {
 }
 
 fn update_ratelimit(rl: &mut RateLimit, r: &Response) {
-    let rem = r.header("X-RateLimit-Remaining").and_then(|v| v.trim().parse::<f64>().ok());
+    let rem = r.header("X-RateLimit-Remaining").and_then(crate::util::parse_trimmed::<f64>);
     let reset = r.header("X-RateLimit-Reset").and_then(parse_int);
     if let (Some(rem), Some(reset)) = (rem, reset) {
         rl.remaining = rem;
@@ -510,14 +517,7 @@ impl Notify for Discord {
                     );
                     fields = sections
                         .into_iter()
-                        .map(|(name, value)| {
-                            let value = if value.is_empty() {
-                                "```\n```".to_owned()
-                            } else {
-                                format!("```md\n{}\n```", value.trim_end())
-                            };
-                            json!({"name": name, "value": value})
-                        })
+                        .map(|(name, value)| md_field(&name, &value))
                         .collect();
                     embed.insert("description".into(), json!(description));
                     if !fields.is_empty() {

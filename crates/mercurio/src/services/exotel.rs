@@ -1,6 +1,6 @@
 //! Exotel (`exotel://`): SMS through the Exotel API.
 
-use super::_telephony::{phone_entries, param_unquoted, unquote_or_empty};
+use super::_telephony::phone_entries;
 use crate::parse::{is_phone_no, parse_phone_no_unquoted, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -72,8 +72,8 @@ fn parse_source(source: &str) -> Option<String> {
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
     let mut source = u.host();
-    let mut sid = unquote_or_empty(u.user.as_deref());
-    let mut token = unquote_or_empty(u.password.as_deref());
+    let mut sid = u.user().unwrap_or_default();
+    let mut token = u.password().unwrap_or_default();
     let region = SERVICE.text_or_default(u, "region");
     if let Some(t) = SERVICE.text(u, "token") {
         token = t;
@@ -81,11 +81,11 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(s) = SERVICE.text(u, "sid") {
         sid = s;
     }
-    let apikey = param_unquoted(u, "apikey").or_else(|| param_unquoted(u, "key"));
+    let apikey = u.text("apikey").or_else(|| u.text("key"));
     if let Some(s) = SERVICE.text(u, "from") {
         source = s;
     }
-    if let Some(s) = param_unquoted(u, "source") {
+    if let Some(s) = u.text("source") {
         source = s;
     }
     if let Some(to) = u.param_nonempty("to") {

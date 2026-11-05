@@ -23,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{token}",
     ],
     tokens: &[
-        Param::new("token", "Token or Key").required().secret().pattern("^(ylk_[a-z0-9]{32}|k_[a-z0-9]{14})$"),
+        Param::new("token", "Token or Key").secret_key("^(ylk_[a-z0-9]{32}|k_[a-z0-9]{14})$"),
     ],
     params: &[
         Param::new("failure", "Failure Priority").choice(&["low", "normal", "high", "critical"]).default("high"),

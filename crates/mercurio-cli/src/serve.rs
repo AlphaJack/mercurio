@@ -9,12 +9,14 @@ mod codec;
 mod details;
 mod filters;
 mod http;
+mod key;
 mod metrics;
 mod notify;
 mod payload;
 mod router;
 mod settings;
 mod store;
+mod text;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -39,7 +41,7 @@ struct Server {
     store: ConfigStore,
     metrics: Arc<metrics::Metrics>,
     verifier: auth::Verifier,
-    streams: Arc<notify::StreamSlots>,
+    streams: Arc<tokio::sync::Semaphore>,
 }
 /// `mercurio serve --healthcheck`: `GET /status` on the server listening at `bind` (a wildcard address is reached through loopback). `Ok` on `200`. The container image's `HEALTHCHECK` runs it; the image has no curl.
 pub(crate) fn healthcheck(bind: &str) -> Result<(), String> {
@@ -164,22 +166,7 @@ fn shutdown() -> impl Future<Output = ()> {
         tokio::signal::ctrl_c().await.ok();
     }
 }
-/// Config IDs: 1 to 128 letters, digits, `_` or `-`.
-pub(crate) fn valid_key(key: &str) -> bool {
-    let n = key.chars().count();
-    (1..=128).contains(&n) && key.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-')
-}
-const MISSING_KEY: &str = "A configuration ID is required (URL path or X-Apprise-Config-ID header)";
-const INVALID_KEY_HEADER: &str = "The X-Apprise-Config-ID header provided is invalid";
 const DENIED: &str = "The site has been configured to deny this request";
-/// The effective Config ID: a valid `Config-ID` header wins over the path.
-fn resolve_key(req: &Req, path_key: Option<&str>) -> Result<String, Reply> {
-    match req.x_header("Config-ID") {
-        Some(h) if valid_key(h) => Ok(h.to_owned()),
-        Some(_) => Err(Reply::error(req, 400, INVALID_KEY_HEADER)),
-        None => path_key.map(str::to_owned).ok_or_else(|| Reply::error(req, 400, MISSING_KEY)),
-    }
-}
 
 impl Server {
     async fn key_state(&self, key: &str) -> KeyState {

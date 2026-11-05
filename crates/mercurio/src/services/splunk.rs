@@ -21,7 +21,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{routing_key}@{apikey}/{entity_id}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[A-Z0-9_-]+$"),
+        Param::new("apikey", "API Key").secret_key("^[A-Z0-9_-]+$"),
         Param::new("entity_id", "Entity ID"),
         Param::new("routing_key", "Target Routing Key").required().pattern("^[A-Z0-9_-]+$"),
     ],
@@ -50,18 +50,14 @@ struct Splunk {
     mapping: [&'static str; 4],
 }
 
-fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
-    u.param_nonempty(key).map(unquote)
-}
-
 fn kind_index(k: NotifyType) -> usize {
     NotifyType::ALL.iter().position(|x| *x == k).unwrap_or(0)
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let entity = param_unquoted(u, "entity_id").unwrap_or_else(|| unquote(u.fullpath.as_deref().unwrap_or("")));
-    let apikey = param_unquoted(u, "apikey").unwrap_or_else(|| u.host());
-    let routing = param_unquoted(u, "routing_key").or_else(|| param_unquoted(u, "route")).unwrap_or_else(|| u.user().unwrap_or_default());
+    let entity = u.text("entity_id").unwrap_or_else(|| unquote(u.fullpath.as_deref().unwrap_or("")));
+    let apikey = u.text("apikey").unwrap_or_else(|| u.host());
+    let routing = u.text("routing_key").or_else(|| u.text("route")).unwrap_or_else(|| u.user().unwrap_or_default());
 
     let apikey = validate_regex(&apikey, r"^[A-Z0-9_-]+$", "i", true)
         .ok_or_else(|| SERVICE.err("the Splunk API Key specified is invalid"))?;
@@ -70,22 +66,16 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let entity = entity.trim_matches([' ', '\r', '\n', '\t', '\x0b', '/']);
     let entity_id = (!entity.is_empty()).then(|| entity.to_owned());
 
-    let action = match param_unquoted(u, "action") {
+    let action = match u.text("action") {
         None => "map",
-        Some(a) => ACTIONS
-            .iter()
-            .copied()
-            .find(|x| x.starts_with(a.as_str()))
+        Some(a) => crate::util::starting_with(ACTIONS, &a)
             .ok_or_else(|| SERVICE.err("the Splunk action specified is invalid"))?,
     };
 
     let mut mapping = ["INFO", "RECOVERY", "WARNING", "CRITICAL"];
     for (k, v) in u.query_colon.iter() {
         let (k, v) = (unquote(k), unquote(v));
-        let kind = NotifyType::ALL
-            .iter()
-            .copied()
-            .find(|t| t.as_str().starts_with(k.as_str()))
+        let kind = NotifyType::starting_with(&k)
             .ok_or_else(|| SERVICE.err("the Splunk mapping key specified is invalid"))?;
         let upper = v.to_uppercase();
         let mt = MESSAGE_TYPES

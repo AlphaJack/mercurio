@@ -686,22 +686,19 @@ fn run() -> u8 {
 }
 
 fn cmd_serve(bind: &str, settings: &serve::ServeArgs) -> Result<u8, u8> {
-    let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(|e| {
-        errln!("error: {e}");
-        exit::FAILURE
-    })?;
-    runtime.block_on(serve::run(bind, settings)).map(|()| exit::OK).map_err(|e| {
-        errln!("error: {e}");
-        exit::FAILURE
-    })
+    let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(failed)?;
+    runtime.block_on(serve::run(bind, settings)).map(|()| exit::OK).map_err(failed)
+}
+
+/// Prints `e` and gives the failure exit code.
+fn failed(e: impl std::fmt::Display) -> u8 {
+    errln!("error: {e}");
+    exit::FAILURE
 }
 
 /// Run a command on a single-threaded runtime.
 fn on_current_thread(command: impl Future<Output = Result<u8, u8>>) -> Result<u8, u8> {
-    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| {
-        errln!("error: {e}");
-        exit::FAILURE
-    })?;
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
     runtime.block_on(command)
 }
 

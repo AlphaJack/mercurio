@@ -5,17 +5,7 @@ use serde_json::Value;
 use crate::error::Error;
 use crate::http::Response;
 use crate::parse::{PhoneNo, is_phone_no, parse_phone_no};
-use crate::url::{ParsedUrl, unquote};
-
-/// Query option `key` when present and non-empty, unquoted a second time.
-pub(crate) fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
-    u.param_nonempty(key).map(unquote)
-}
-
-/// `v` unquoted; empty when absent.
-pub(crate) fn unquote_or_empty(v: Option<&str>) -> String {
-    v.map(unquote).unwrap_or_default()
-}
+use crate::url::ParsedUrl;
 
 /// `parse_phone_no(targets)` followed by `is_phone_no(target, min_len)`: each raw entry with its parse result.
 pub(crate) fn phone_entries<I, S>(targets: I, min_len: usize) -> Vec<(String, Option<PhoneNo>)>
@@ -43,7 +33,7 @@ where
 
 /// The `{apikey}@{from_phone}/{targets}` layout shared by telnyx, httpsms and eighthundredcom: `?from=` moves the host into the targets. Returns the source number (`full`) and the targets; when no targets were given at all, the source itself is notified. `None` when the source is not a phone number.
 pub(crate) fn source_and_targets(u: &ParsedUrl, min_len: usize) -> Option<(String, Vec<String>)> {
-    let (source, mut raw) = match param_unquoted(u, "from") {
+    let (source, mut raw) = match u.text("from") {
         Some(f) => {
             let mut t = crate::parse::parse_phone_no_unquoted([u.host.as_str()], false);
             t.extend(u.path_segments());

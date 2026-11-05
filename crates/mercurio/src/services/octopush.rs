@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
+use super::_sms::{batches, no_targets, per_target, plus_numbers, to_param};
 use crate::parse::{is_email, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -103,7 +103,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let api_key = api_key
         .and_then(|k| validate_nonblank(&k))
         .ok_or_else(|| SERVICE.err("an invalid Octopush API Key was specified"))?;
-    let mtype = mtype.to_lowercase().trim().to_owned();
+    let mtype = crate::util::lower_trimmed(&mtype);
     let mtype = Some(&mtype)
         .filter(|m| !m.is_empty())
         .and_then(|m| TYPE_MAP.iter().find(|(k, _)| m.starts_with(k)).map(|(_, v)| *v))
@@ -126,7 +126,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         mtype,
         purpose,
         sender,
-        targets: full_numbers(&targets).into_iter().map(|n| format!("+{n}")).collect(),
+        targets: plus_numbers(&targets),
     }))
 }
 
@@ -136,7 +136,7 @@ impl Notify for Octopush {
             return no_targets("Octopush");
         }
         let size = if self.batch { BATCH_SIZE } else { 1 };
-        let chunks: Vec<Vec<String>> = self.targets.chunks(size).map(<[String]>::to_vec).collect();
+        let chunks = batches(&self.targets, size);
         let sender = self.sender.clone().unwrap_or_else(|| ctx.app_id().to_owned());
         per_target(chunks, |c| c.join(", "), |chunk| {
             let recipients: Vec<Value> = chunk.iter().map(|p| json!({"phone_number": p})).collect();
@@ -155,7 +155,7 @@ impl Notify for Octopush {
                 .header("api-login", self.api_login.expose())
                 .header("cache-control", "no-cache")
                 .json_text(&payload, msg.body);
-            Plan::send_check(req, |r| expect(r, &[201]))
+            Plan::send_expect(req, &[201])
         })
     }
 

@@ -8,7 +8,7 @@
 
 use serde_json::{Value, json};
 
-use super::_telephony::{Form, http_err, param_unquoted, unquote_or_empty, valid_phones};
+use super::_telephony::{Form, http_err, valid_phones};
 use crate::env::Env;
 use crate::crypto::b64;
 use crate::error::Error;
@@ -34,9 +34,9 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{token}@{client_id}/{secret}/{from_phone}/{targets}",
     ],
     tokens: &[
-        Param::new("client_id", "Client ID").required().secret().pattern("^[a-z0-9_-]+$"),
+        Param::new("client_id", "Client ID").secret_key("^[a-z0-9_-]+$"),
         Param::new("from_phone", "From Phone No").required(),
-        Param::new("secret", "Client Secret").required().secret().pattern("^[a-z0-9_-]+$"),
+        Param::new("secret", "Client Secret").secret_key("^[a-z0-9_-]+$"),
         Param::new("target_phone", "Target Phone No").prefix("+"),
         Param::new("targets", "Targets").list("/").group(&["target_phone"]),
         Param::new("token", "Token / Password").required().secret(),
@@ -76,22 +76,22 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut client_secret = if targets.is_empty() { None } else { Some(targets.remove(0)) };
     let (mut source, mut token) = if u.password.as_deref().is_none_or(str::is_empty) {
         let s = if targets.is_empty() { None } else { Some(targets.remove(0)) };
-        (s, unquote_or_empty(u.user.as_deref()))
+        (s, u.user().unwrap_or_default())
     } else {
-        (Some(unquote_or_empty(u.user.as_deref())), unquote_or_empty(u.password.as_deref()))
+        (Some(u.user().unwrap_or_default()), u.password().unwrap_or_default())
     };
-    let environment = param_unquoted(u, "env");
-    if let Some(t) = param_unquoted(u, "token") {
+    let environment = u.text("env");
+    if let Some(t) = u.text("token") {
         token = t;
     }
-    let mode = param_unquoted(u, "mode").unwrap_or_else(|| if token.chars().count() > 60 { "jwt" } else { "basic" }.to_owned());
-    if let Some(s) = param_unquoted(u, "secret") {
+    let mode = u.text("mode").unwrap_or_else(|| if token.chars().count() > 60 { "jwt" } else { "basic" }.to_owned());
+    if let Some(s) = u.text("secret") {
         client_secret = Some(s);
     }
-    if let Some(s) = param_unquoted(u, "from") {
+    if let Some(s) = u.text("from") {
         source = Some(s);
     }
-    if let Some(s) = param_unquoted(u, "source") {
+    if let Some(s) = u.text("source") {
         source = Some(s);
     }
     if let Some(to) = u.param_nonempty("to") {
@@ -108,7 +108,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid RingCentral Client ID was specified"))?;
     let client_secret = client_secret
         .as_deref()
-        .and_then(|s| validate_regex(s, r"^[a-z0-9_-]+$", "i", true))
+        .and_then(crate::parse::validate_id)
         .ok_or_else(|| SERVICE.err("an invalid RingCentral Client Secret was specified"))?;
     let token = if jwt {
         validate_regex(&token, r"^[a-z0-9._-]+$", "i", true)

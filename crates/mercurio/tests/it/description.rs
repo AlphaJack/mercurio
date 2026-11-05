@@ -3,7 +3,7 @@
 const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 fn workspace_file(path: &str) -> String {
-    std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(path)).unwrap()
+    std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join(path)).unwrap()
 }
 
 #[test]

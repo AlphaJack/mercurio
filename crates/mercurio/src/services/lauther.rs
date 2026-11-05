@@ -19,7 +19,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{token}",
     ],
     tokens: &[
-        Param::new("token", "Token").required().secret().pattern("^lpt_[a-z0-9]+$"),
+        Param::new("token", "Token").secret_key("^lpt_[a-z0-9]+$"),
     ],
     params: &[
         Param::new("click", "Click URL"),

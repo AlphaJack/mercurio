@@ -1,7 +1,7 @@
 //! 46elks (`46elks://`, `elks://`): SMS through the 46elks API.
 
-use super::_sms::{expect, no_targets, per_target, to_param};
-use crate::parse::{is_phone_no, parse_phone_no};
+use super::_sms::{no_targets, numbers_keeping_plus, per_target, to_param};
+use crate::parse::is_phone_no;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::{Plan, Prepared, Result};
@@ -70,13 +70,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     {
         targets = vec![s.to_owned()];
     }
-    let targets = parse_phone_no(&targets, true, false)
-        .into_iter()
-        .filter_map(|t| {
-            let p = is_phone_no(&t, 10)?;
-            Some(if t.trim_start().starts_with('+') { format!("+{}", p.full) } else { p.full })
-        })
-        .collect();
+    let targets = numbers_keeping_plus(&targets);
     Ok(Box::new(FortySixElks { user, password: Secret::new(password), source, targets }))
 }
 
@@ -94,7 +88,7 @@ impl Notify for FortySixElks {
             let req = ctx.post("https://api.46elks.com/a1/sms")
                 .basic_auth(&self.user, Some(self.password.expose()))
                 .form(&form);
-            Plan::send_check(req, |r| expect(r, &[200]))
+            Plan::send_expect(req, &[200])
         })
     }
 

@@ -1,6 +1,6 @@
 //! Burst SMS (`burstsms://`): SMS through the Burst SMS API.
 
-use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
+use super::_sms::{PHONE_TARGETS, full_numbers, no_targets, per_target, to_param};
 use crate::parse::{validate_nonblank, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -18,11 +18,11 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}:{secret}@{sender_id}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[a-z0-9]+$"),
-        Param::new("secret", "API Secret").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("apikey", "API Key").secret_key("^[a-z0-9]+$"),
+        Param::new("secret", "API Secret").secret_key("^[a-z0-9]+$"),
         Param::new("sender_id", "Sender ID").required(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::new("batch", "Batch Mode").bool(false),
@@ -117,7 +117,7 @@ impl Notify for BurstSms {
                 .header("Accept", "application/json")
                 .basic_auth(self.apikey.expose(), Some(self.secret.expose()))
                 .form(&form);
-            Plan::send_check(req, |r| expect(r, &[200]))
+            Plan::send_expect(req, &[200])
         })
     }
 

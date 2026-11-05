@@ -266,8 +266,8 @@ impl Twitter {
     }
 
     fn record_rate(&self, r: &Response) {
-        let remaining = r.header("x-rate-limit-remaining").and_then(|v| v.trim().parse::<i64>().ok());
-        let reset = r.header("x-rate-limit-reset").and_then(|v| v.trim().parse::<i64>().ok());
+        let remaining = r.header("x-rate-limit-remaining").and_then(crate::util::parse_trimmed::<i64>);
+        let reset = r.header("x-rate-limit-reset").and_then(crate::util::parse_trimmed::<i64>);
         let mut rl = self.ratelimit.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(rem) = remaining {
             rl.0 = rem;
@@ -506,7 +506,7 @@ impl Notify for Arc<Twitter> {
             return Plan::Fail(Error::Message("no valid Twitter targets to notify".into()));
         }
         let images: Vec<Attachment> =
-            msg.attachments.iter().filter(|a| a.mime.to_ascii_lowercase().starts_with("image/")).cloned().collect();
+            msg.attachments.iter().filter(|a| a.is_image()).cloned().collect();
         let job = Job { body: msg.body.to_owned(), ua: ctx.app_id().to_owned(), env: ctx.env().clone() };
         self.upload(images, Vec::new(), job)
     }

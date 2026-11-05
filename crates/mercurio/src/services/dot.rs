@@ -60,7 +60,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     crate::parse::require_host(u, &SERVICE)?;
     let q = |k: &str| u.param_nonempty(k).map(|v| unquote(v.trim()));
     let mode = match u.param_nonempty("mode") {
-        Some(m) => m.to_lowercase().trim().to_owned(),
+        Some(m) => crate::util::lower_trimmed(m),
         None => u.path_segments().first().map(|s| s.to_lowercase()).unwrap_or_default(),
     };
     let image_mode = MODES.contains(&mode.as_str()) && mode == "image";

@@ -5,7 +5,6 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use crate::util::unquoted_pairs;
-use crate::crypto::b64;
 use crate::http::{DEFAULT_CONNECT_TIMEOUT, Request};
 use crate::parse::{parse_list, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
@@ -35,7 +34,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("host", "Hostname").required(),
         Param::new("password", "Password").secret(),
         Param::new("port", "Port").port(),
-        Param::new("token", "Token").required().secret().pattern("^[A-Z0-9_-]{1,128}$"),
+        Param::new("token", "Token").secret_key("^[A-Z0-9_-]{1,128}$"),
         Param::new("user", "Username"),
     ],
     params: &[
@@ -160,15 +159,7 @@ impl Notify for AppriseApi {
                 payload["tag"] = json!(self.tags);
             }
             if !msg.attachments.is_empty() {
-                let atts: Vec<Value> = msg
-                    .attachments
-                    .iter()
-                    .enumerate()
-                    .map(|(i, a)| {
-                        let name = if a.name.is_empty() { format!("file{:03}.dat", i + 1) } else { a.name.clone() };
-                        json!({"filename": name, "base64": b64(&a.data), "mimetype": a.mime})
-                    })
-                    .collect();
+                let atts = super::_json::attachment_list(msg.attachments);
                 payload["attachments"] = Value::Array(atts);
             }
             req = req

@@ -9,8 +9,10 @@ use serde_json::{Map, Value, json};
 
 use super::super::auth::Role;
 use super::super::http::{self, Reply, Req, parse_bool};
+use super::super::key::valid_key;
 use super::super::store::{Cleared, Mode, Moved};
-use super::super::{DENIED, Server, payload, resolve_key, valid_key};
+use super::super::{DENIED, Server, payload};
+use super::key::resolve_key;
 
 impl Server {
     pub(crate) async fn list(&self, req: &Req) -> Reply {
@@ -97,7 +99,7 @@ impl Server {
         if fields.contains_key("urls") {
             let raw: Vec<String> = match fields.get("urls") {
                 Some(Value::String(s)) => vec![s.clone()],
-                Some(Value::Array(a)) => a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect(),
+                Some(Value::Array(a)) => payload::strings(a),
                 _ => Vec::new(),
             };
             let urls: Vec<String> = mercurio::__private::parse_urls(raw.iter().map(String::as_str), true)
@@ -268,7 +270,7 @@ impl Server {
             .await
             .unwrap_or_default();
         let defaults = if show_defaults { template_defaults(&content, format) } else { Default::default() };
-        let filter = TagFilter::parse(req.query("tag").filter(|t| !t.trim().is_empty()).unwrap_or("all"));
+        let filter = TagFilter::parse(req.query("tag").filter(super::super::text::non_blank).unwrap_or("all"));
         let mut all_tags = std::collections::BTreeSet::new();
         let mut urls = Vec::new();
         for s in cfg.services.iter().filter(|s| filter.matches(s.tags())) {

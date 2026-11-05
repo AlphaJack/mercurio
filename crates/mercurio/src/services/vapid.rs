@@ -83,7 +83,7 @@ struct Vapid {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let user = u.user.as_deref().map(unquote).unwrap_or_default();
+    let user = u.user().unwrap_or_default();
     let host = u.host();
     let mut targets = Vec::new();
     let subscriber = match u.param_nonempty("from") {
@@ -136,7 +136,7 @@ fn webpush_origin(endpoint: &str) -> Option<String> {
     if !scheme.eq_ignore_ascii_case("https") {
         return None;
     }
-    let netloc = rest.split(['/', '?']).next().unwrap_or("");
+    let netloc = crate::util::authority(rest);
     if netloc.contains('@') {
         return None;
     }
@@ -706,7 +706,7 @@ mod tests {
 
     #[test]
     fn key_generated_in_store_directory() {
-        let (fake, ns) = (FakeTransport::new(), PathBuf::from("/data/ns"));
+        let (fake, ns) = (FakeTransport::new(), PathBuf::from("/data").join("ns"));
         let (key, save) = file_context(key_files(&ns), &fake, |ctx| stored_key(ctx, &ns)).expect("generated");
         crate::testing::run_files(save, &fake);
         let private = ns.join("private_key.pem");

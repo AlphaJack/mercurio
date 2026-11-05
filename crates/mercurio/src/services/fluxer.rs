@@ -2,6 +2,7 @@
 //!
 //! Cloud: `fluxer://[botname@]{webhook_id}/{webhook_token}`. Self-hosted: `fluxers://[botname@]{host}[:port][/path]/{webhook_id}/{webhook_token}` (`/api/` is the default path, `?path=/` selects the host root).
 
+use super::_discord::{md_field, push_unique};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -42,8 +43,8 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("host", "Hostname"),
         Param::new("path", "Path").default("/api/"),
         Param::new("port", "Port").port(),
-        Param::new("webhook_id", "Webhook ID").required().secret().pattern("^[0-9]{10,}$"),
-        Param::new("webhook_token", "Webhook Token").required().secret().pattern(r"^[A-Za-z0-9_\-]{16,}$"),
+        Param::new("webhook_id", "Webhook ID").secret_key("^[0-9]{10,}$"),
+        Param::new("webhook_token", "Webhook Token").secret_key(r"^[A-Za-z0-9_\-]{16,}$"),
     ],
     params: &[
         Param::new("avatar", "Avatar Image").bool(true),
@@ -220,19 +221,14 @@ fn parse_native(url: &str) -> Option<String> {
 fn ping_payload(args: &[&str]) -> Map<String, Value> {
     let re = crate::regex!(r"(?i)\s*(?:<?@(?P<role>&?)(?P<id>[0-9]+)>?|@(?P<value>[a-z0-9]+))");
     let (mut roles, mut users, mut parse) = (Vec::<String>::new(), Vec::<String>::new(), Vec::<String>::new());
-    let add = |v: &mut Vec<String>, s: &str| {
-        if !v.iter().any(|x| x == s) {
-            v.push(s.to_owned());
-        }
-    };
     for arg in args {
         for c in re.captures_iter(arg) {
             if let Some(v) = c.name("value") {
-                add(&mut parse, v.as_str());
+                push_unique(&mut parse, v.as_str());
             } else if c.name("role").is_some_and(|r| !r.as_str().is_empty()) {
-                add(&mut roles, &c["id"]);
+                push_unique(&mut roles, &c["id"]);
             } else if let Some(id) = c.name("id") {
-                add(&mut users, id.as_str());
+                push_unique(&mut users, id.as_str());
             }
         }
     }
@@ -256,11 +252,7 @@ fn extract_markdown_sections(body: &str) -> (String, Vec<Value>) {
     let (description, sections) = crate::convert::markup::sections(body, FIELD_NAME_MAXLEN, FIELD_VALUE_MAXLEN - 10);
     let fields = sections
         .into_iter()
-        .map(|(name, value)| {
-            let value =
-                if value.is_empty() { "```\n```".to_owned() } else { format!("```md\n{}\n```", value.trim_end()) };
-            json!({"name": name, "value": value})
-        })
+        .map(|(name, value)| md_field(&name, &value))
         .collect();
     (description, fields)
 }
@@ -273,7 +265,7 @@ fn send(base: Arc<Request>, body: Arc<SendBody>, retries: u32) -> Plan {
         Ok(r) if r.status == 429 => {
             let delay = r
                 .header("Retry-After")
-                .and_then(|v| v.trim().parse::<f64>().ok())
+                .and_then(crate::util::parse_trimmed::<f64>)
                 .filter(|d| d.is_finite())
                 .unwrap_or(DEFAULT_DELAY_SEC)
                 .clamp(DEFAULT_DELAY_SEC, 3600.0);

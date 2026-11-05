@@ -46,6 +46,14 @@ impl Pairs {
     pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
         self.0.iter().map(|(k, v)| (k.as_str(), v.as_str()))
     }
+    /// The entries as owned pairs, collected into `C`.
+    pub(crate) fn owned<C: FromIterator<(String, String)>>(&self) -> C {
+        self.0.iter().cloned().collect()
+    }
+    /// The entries with keys and values unquoted, collected into `C`.
+    pub(crate) fn unquoted<C: FromIterator<(String, String)>>(&self) -> C {
+        self.0.iter().map(|(k, v)| (unquote(k), unquote(v))).collect()
+    }
     /// Number of entries.
     pub fn len(&self) -> usize {
         self.0.len()
@@ -418,7 +426,7 @@ fn parse_query_into(qs: &str, sanitize: bool, out: &mut ParsedUrl) {
         let key = unquote(&key);
         let val = value.to_owned();
         let val = unquote(&val).trim().to_owned();
-        let qkey = if sanitize { key.to_lowercase().trim().to_owned() } else { key.clone() };
+        let qkey = if sanitize { crate::util::lower_trimmed(&key) } else { key.clone() };
         out.query.insert(qkey, val.clone());
 
         // ^( |\+)(?P<key>.*)\s*   (a leading space is what '+' becomes after unquote)
@@ -483,13 +491,13 @@ fn post_process(r: &mut ParsedUrl) {
         }
     }
     if let Some(v) = r.query.get("rto") {
-        r.rto = v.trim().parse().ok();
+        r.rto = crate::util::parse_trimmed(v);
     }
     if let Some(v) = r.query.get("cto") {
-        r.cto = v.trim().parse().ok();
+        r.cto = crate::util::parse_trimmed(v);
     }
     if let Some(v) = r.query.get("port") {
-        r.port = v.trim().parse::<u16>().ok();
+        r.port = crate::util::parse_trimmed::<u16>(v);
     }
     if let Some(v) = r.query.get("format") {
         r.format = NotifyFormat::parse(&v.to_lowercase());
@@ -507,10 +515,10 @@ fn post_process(r: &mut ParsedUrl) {
         r.tz = Some(v.to_owned());
     }
     if let Some(v) = r.query.get("retry").filter(|v| !v.is_empty()) {
-        r.retry = v.trim().parse().ok();
+        r.retry = crate::util::parse_trimmed(v);
     }
     if let Some(v) = r.query.get("wait").filter(|v| !v.is_empty()) {
-        r.wait = v.trim().parse().ok();
+        r.wait = crate::util::parse_trimmed(v);
     }
     if let Some(v) = r.query.get("optional") {
         r.optional = Some(parse_bool(v, false));

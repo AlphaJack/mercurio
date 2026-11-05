@@ -24,13 +24,13 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{template}:{token}@{from_phone_id}/{targets}",
     ],
     tokens: &[
-        Param::new("from_phone_id", "From Phone ID").required().secret().pattern("^[0-9]+$"),
+        Param::new("from_phone_id", "From Phone ID").secret_key("^[0-9]+$"),
         Param::new("language", "Language").default("en_US").pattern(r"^[^0-9\s]+$"),
         Param::new("target_group", "Target Group ID").pattern("^[0-9]{16,}$").prefix("#"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("targets", "Targets").list("/").required().group(&["target_group", "target_phone"]),
         Param::new("template", "Template Name").pattern(r"^[^\s]+$"),
-        Param::new("token", "Access Token").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("token", "Access Token").secret_key("^[a-z0-9]+$"),
     ],
     params: &[
         Param::sets("from", &["from_phone_id"]).aliases(&["source"]),
@@ -68,10 +68,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut from_phone_id = u.host();
     let mut template = None;
     let mut token = if u.password.is_some() {
-        template = Some(u.user.as_deref().map(unquote).unwrap_or_default());
+        template = Some(u.user().unwrap_or_default());
         u.password.as_deref().map(unquote).unwrap_or_default()
     } else {
-        u.user.as_deref().map(unquote).unwrap_or_default()
+        u.user().unwrap_or_default()
     };
     if let Some(t) = u.param_nonempty("token") {
         token = unquote(t);

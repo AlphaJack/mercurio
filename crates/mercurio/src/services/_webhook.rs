@@ -26,7 +26,7 @@ pub(crate) fn endpoint(u: &ParsedUrl) -> String {
 
 /// `+`, `-` and `:` entries, unquoted a second time.
 pub(crate) fn double_unquoted(p: &crate::url::Pairs) -> Vec<(String, String)> {
-    p.iter().map(|(k, v)| (unquote(k), unquote(v))).collect()
+    p.unquoted()
 }
 
 #[cfg(test)]

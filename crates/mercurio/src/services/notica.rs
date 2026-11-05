@@ -3,7 +3,7 @@
 use crate::http::Request;
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
-use crate::url::{ParsedUrl, unquote};
+use crate::url::ParsedUrl;
 use crate::{Limits, Plan, Prepared, Result};
 
 pub(crate) static SERVICE: ServiceDef = ServiceDef {
@@ -34,7 +34,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("password", "Password").secret(),
         Param::new("path", "Path").default("/"),
         Param::new("port", "Port").port(),
-        Param::new("token", "Token").required().secret().pattern(r"^\?*(?P<token>[^/]+)\s*$"),
+        Param::new("token", "Token").secret_key(r"^\?*(?P<token>[^/]+)\s*$"),
         Param::new("user", "Username"),
     ],
     params: &[
@@ -74,7 +74,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         base.push_str(&format!(":{port}"));
     }
     base.push_str(&fullpath);
-    let headers = u.query_plus.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
+    let headers = u.query_plus.unquoted();
     Ok(Box::new(Notica {
         token: Secret::new(token),
         mode: Mode::SelfHosted { base, user: u.user(), password: u.password().map(Secret::new), headers },

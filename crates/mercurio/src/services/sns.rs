@@ -8,9 +8,9 @@ use std::time::Duration;
 use crate::env::Env;
 use crate::error::Error;
 use crate::http::Request;
-use crate::parse::{is_phone_no, parse_list, validate_nonblank, validate_regex};
+use crate::parse::{is_phone_no, parse_list, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
-use crate::services::_aws::{AWS_FORM_CONTENT_TYPE, AwsSigner, aws_check, aws_region, flatten_xml};
+use crate::services::_aws::{AWS_FORM_CONTENT_TYPE, AwsSigner, aws_check, aws_done, aws_region, flatten_xml, valid_region};
 use crate::url::{ParsedUrl, form_urlencode, unquote};
 use crate::{Plan, Prepared, Result};
 
@@ -105,7 +105,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid AWS Secret Access Key was specified"))?;
     let region = region
         .as_deref()
-        .and_then(|r| validate_regex(r, r"^[a-z]{2}-[a-z-]+?-[0-9]+$", "i", true))
+        .and_then(valid_region)
         .ok_or_else(|| SERVICE.err("an invalid AWS Region was specified"))?;
 
     let mut phones = Vec::new();
@@ -152,6 +152,11 @@ impl Sns {
     }
 
     /// A signed `POST` of `payload`, built when execution reaches it.
+    /// Sends `payload`, done once AWS accepts it.
+    fn send(self: Arc<Self>, payload: Vec<(&'static str, String)>, user_agent: String, env: Arc<dyn Env>) -> Plan {
+        Plan::defer(move || Plan::http(self.post(payload, user_agent, env.as_ref()), aws_done))
+    }
+
     fn post(self: &Arc<Self>, payload: Vec<(&'static str, String)>, user_agent: String, env: &dyn Env) -> Request {
         let body = form_urlencode(payload.iter());
         let host = self.host();
@@ -182,7 +187,7 @@ fn printable(c: char) -> bool {
 
 fn subject(title: &str) -> String {
     let s: String = title.chars().map(|c| if printable(c) { c } else { ' ' }).collect();
-    s.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(TOPIC_TITLE_MAXLEN).collect()
+    crate::util::one_line(&s).chars().take(TOPIC_TITLE_MAXLEN).collect()
 }
 
 impl Notify for Arc<Sns> {
@@ -205,15 +210,7 @@ impl Notify for Arc<Sns> {
                 ("PhoneNumber", no.clone()),
             ];
             let (me, ua, env) = (self.clone(), ua.clone(), ctx.env().clone());
-            plans.push(
-                Plan::defer(move || {
-                    Plan::http(me.post(payload, ua, env.as_ref()), |res| match aws_check(res) {
-                        Ok(_) => Plan::Done,
-                        Err(e) => Plan::Fail(e),
-                    })
-                })
-                .target(no.clone()),
-            );
+            plans.push(me.send(payload, ua, env).target(no.clone()));
         }
         for topic in &self.topics {
             let body = msg.body.to_owned();
@@ -247,12 +244,7 @@ impl Notify for Arc<Sns> {
                         if let Some(s) = subject {
                             payload.push(("Subject", s));
                         }
-                        Plan::defer(move || {
-                            Plan::http(me.post(payload, ua, env.as_ref()), |res| match aws_check(res) {
-                                Ok(_) => Plan::Done,
-                                Err(e) => Plan::Fail(e),
-                            })
-                        })
+                        me.send(payload, ua, env)
                         .context("publish")
                     })
                     .context("topic lookup")

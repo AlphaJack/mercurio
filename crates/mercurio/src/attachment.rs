@@ -443,7 +443,7 @@ impl AttachSource {
                 self.label()
             )));
         }
-        let declared: u64 = res.header("content-length").and_then(|v| v.trim().parse().ok()).unwrap_or(0);
+        let declared: u64 = res.header("content-length").and_then(crate::util::parse_trimmed).unwrap_or(0);
         if max > 0 && (declared > max || res.body.len() as u64 > max) {
             return Err(self.too_large(max));
         }

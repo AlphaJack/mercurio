@@ -1,6 +1,6 @@
 //! Vonage, formerly Nexmo (`vonage://`, `nexmo://`): SMS through the Vonage API.
 
-use super::_sms::{expect, full_numbers, per_target, to_param};
+use super::_sms::{full_numbers, per_target, to_param};
 use crate::parse::{is_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -19,9 +19,9 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}:{secret}@{from_phone}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("apikey", "API Key").secret_key("^[a-z0-9]+$"),
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
-        Param::new("secret", "API Secret").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("secret", "API Secret").secret_key("^[a-z0-9]+$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("targets", "Targets").list("/").group(&["target_phone"]),
     ],
@@ -98,7 +98,7 @@ impl Notify for Vonage {
                 .post("https://rest.nexmo.com/sms/json")
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .form(&form);
-            Plan::send_check(req, |r| expect(r, &[200]))
+            Plan::send_expect(req, &[200])
         })
     }
 

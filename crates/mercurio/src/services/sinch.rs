@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use serde_json::json;
 
-use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
+use super::_sms::{no_targets, per_target, plus_numbers, to_param};
 use crate::parse::{is_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -23,9 +23,9 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{service_plan_id}:{api_token}@{from_phone}/{targets}",
     ],
     tokens: &[
-        Param::new("api_token", "Auth Token").required().secret().pattern("^[a-f0-9]+$"),
+        Param::new("api_token", "Auth Token").secret_key("^[a-f0-9]+$"),
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
-        Param::new("service_plan_id", "Account SID").required().secret().pattern("^[a-f0-9]+$"),
+        Param::new("service_plan_id", "Account SID").secret_key("^[a-f0-9]+$"),
         Param::new("short_code", "Target Short Code").pattern("^[0-9]{5,6}$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
         Param::new("targets", "Targets").list("/").group(&["short_code", "target_phone"]),
@@ -83,7 +83,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     } else {
         source = format!("+{source}");
     }
-    let targets = full_numbers(&targets).into_iter().map(|n| format!("+{n}")).collect();
+    let targets = plus_numbers(&targets);
     Ok(Box::new(Sinch {
         service_plan_id: Secret::new(spi),
         api_token: Secret::new(token),
@@ -109,7 +109,7 @@ impl Notify for Sinch {
             let req = ctx.post(&url)
                 .header("Authorization", format!("Bearer {}", self.api_token.expose()))
                 .json_text(&payload, msg.body);
-            Plan::send_check(req, |r| expect(r, &[201, 200]))
+            Plan::send_expect(req, &[201, 200])
         })
     }
 

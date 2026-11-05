@@ -6,8 +6,11 @@
 //!
 //! `cargo xtask new <id>` writes a service module and its fixture to start from.
 //!
+//! `cargo xtask acyclic [--mermaid]`: see [`acyclic`].
+//!
 //! `cargo xtask try URL...` sends a set of test messages (types, formats, a long body, an attachment) to real endpoints with the working-tree code.
 
+mod acyclic;
 mod library;
 mod new;
 mod pages;
@@ -22,10 +25,15 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
         ["docs"] => docs(),
+        ["acyclic"] => acyclic::check(false),
+        ["acyclic", "--mermaid"] => acyclic::check(true),
         ["new", id] => new::scaffold(&root(), id),
         ["try", urls @ ..] => try_url::run(&root(), urls),
         ["mdbook-vars", rest @ ..] => vars::run(rest),
-        _ => Err("usage: cargo xtask docs | cargo xtask new <id> | cargo xtask try URL...".to_owned()),
+        _ => Err(
+            "usage: cargo xtask docs | cargo xtask acyclic [--mermaid] | cargo xtask new <id> | cargo xtask try URL..."
+                .to_owned(),
+        ),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -38,6 +46,16 @@ fn main() -> ExitCode {
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
+}
+
+/// `docs/book/src/generated`, where `cargo xtask docs` writes the pages it generates.
+fn generated_dir(root: &Path) -> PathBuf {
+    root.join("docs").join("book").join("src").join("generated")
+}
+
+/// An I/O error, prefixed with the path it is about.
+fn io_error(path: &Path) -> impl Fn(std::io::Error) -> String + '_ {
+    move |e| format!("{}: {e}", path.display())
 }
 
 fn docs() -> Result<(), String> {
@@ -65,8 +83,8 @@ fn docs() -> Result<(), String> {
     if !out.status.success() {
         return Err(format!("mercurio --help: {}", String::from_utf8_lossy(&out.stderr)));
     }
-    let generated = root.join("docs/book/src/generated");
-    std::fs::create_dir_all(&generated).map_err(|e| format!("{}: {e}", generated.display()))?;
+    let generated = generated_dir(&root);
+    std::fs::create_dir_all(&generated).map_err(io_error(&generated))?;
     std::fs::write(generated.join("cli-help.txt"), &out.stdout).map_err(|e| format!("cli-help.txt: {e}"))?;
 
     // `serve --help` repeats the global options; the book shows the server's own.
@@ -101,11 +119,11 @@ fn docs() -> Result<(), String> {
     library::render(&root)?;
 
     // The icons are published next to the book; services link to them.
-    let icons = root.join("docs/book/src/assets/icons");
-    std::fs::create_dir_all(&icons).map_err(|e| format!("{}: {e}", icons.display()))?;
+    let icons = root.join("docs").join("book").join("src").join("assets").join("icons");
+    std::fs::create_dir_all(&icons).map_err(io_error(&icons))?;
     for name in ["logo.svg", "logo.png", "LICENSE"] {
-        let from = root.join("crates/mercurio/assets").join(name);
-        std::fs::copy(&from, icons.join(name)).map_err(|e| format!("{}: {e}", from.display()))?;
+        let from = root.join("crates").join("mercurio").join("assets").join(name);
+        std::fs::copy(&from, icons.join(name)).map_err(io_error(&from))?;
     }
 
     eprintln!("==> rustdoc (warnings are errors)");
@@ -140,9 +158,9 @@ fn docs() -> Result<(), String> {
         .args(["build", "docs/book"]))?;
 
     let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), PathBuf::from);
-    let api = root.join("docs/book/book/api");
+    let api = root.join("docs").join("book").join("book").join("api");
     if api.exists() {
-        std::fs::remove_dir_all(&api).map_err(|e| format!("{}: {e}", api.display()))?;
+        std::fs::remove_dir_all(&api).map_err(io_error(&api))?;
     }
     copy_dir(&target.join("doc"), &api)?;
     eprintln!("==> done: open docs/book/book/index.html (API docs: docs/book/book/api/mercurio/index.html)");

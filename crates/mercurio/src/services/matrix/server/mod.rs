@@ -249,7 +249,7 @@ pub(super) fn is_secure_http_url(url: &str) -> bool {
     let Some(rest) = url.get(..8).filter(|p| p.eq_ignore_ascii_case("https://")).and_then(|_| url.get(8..)) else {
         return false;
     };
-    let netloc = rest.split(['/', '?']).next().unwrap_or("");
+    let netloc = crate::util::authority(rest);
     if netloc.contains('@') {
         return false;
     }

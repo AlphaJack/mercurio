@@ -1,10 +1,11 @@
 //! VoIP.ms (`voipms://`): SMS through the VoIP.ms API.
 
+use super::_sms::PHONE_TARGETS;
 use std::sync::Arc;
 
 use serde_json::Value;
 
-use super::_telephony::{http_err, param_unquoted, unquote_or_empty};
+use super::_telephony::http_err;
 use crate::error::Error;
 use crate::http::Request;
 use crate::parse::{is_email, is_phone_no, parse_phone_no, parse_phone_no_unquoted};
@@ -27,7 +28,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
         Param::new("password", "Password").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::sets("from", &["from_phone"]),
@@ -49,14 +50,14 @@ struct Voipms {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
-    let source = match param_unquoted(u, "from") {
+    let source = match u.text("from") {
         Some(f) => Some(f),
         None if !targets.is_empty() => Some(targets.remove(0)),
         None => None,
     };
     // The URL is `{password}:{email user}@{email domain}`.
     let password = u.user();
-    let email = format!("{}@{}", unquote_or_empty(u.password.as_deref()), u.host());
+    let email = format!("{}@{}", u.password().unwrap_or_default(), u.host());
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));
     }

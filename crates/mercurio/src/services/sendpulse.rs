@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
-use super::_email_api::{attachment_b64, attachment_name, html_to_text};
+use super::_email_api::{attachment_b64, attachment_name, cc_for, except, html_to_text};
 use crate::crypto::b64;
 use crate::http::{Request, Response};
 use crate::parse::{is_email, parse_emails, validate_regex};
@@ -32,8 +32,8 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{user}@{host}/{client_id}/{client_secret}/{targets}",
     ],
     tokens: &[
-        Param::new("client_id", "Client ID").required().secret().pattern("^[A-Z0-9._-]+$"),
-        Param::new("client_secret", "Client Secret").required().secret().pattern("^[A-Z0-9._-]+$"),
+        Param::new("client_id", "Client ID").secret_key("^[A-Z0-9._-]+$"),
+        Param::new("client_secret", "Client Secret").secret_key("^[A-Z0-9._-]+$"),
         Param::new("host", "Domain").required(),
         Param::new("target_email", "Target Email").email(),
         Param::new("targets", "Targets").list("/").group(&["target_email"]),
@@ -143,10 +143,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         .ok_or_else(|| SERVICE.err("an invalid SendPulse Client Secret was specified"))?;
 
     let template = match SERVICE.text(u, "template") {
-        Some(t) => Some(t.trim().parse::<i64>().ok().ok_or_else(|| SERVICE.err("the SendPulse Template ID is invalid"))?),
+        Some(t) => Some(crate::util::parse_trimmed::<i64>(&t).ok_or_else(|| SERVICE.err("the SendPulse Template ID is invalid"))?),
         None => None,
     };
-    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+    let template_data = u.query_plus.owned();
 
     let mut targets = Vec::new();
     for r in parse_emails(&targets_in, true) {
@@ -199,7 +199,7 @@ fn token_from(r: &Response) -> Result<(String, Duration)> {
     let token = obj.get("access_token").and_then(crate::util::scalar_text);
     let expires = match obj.get("expires_in") {
         Some(Value::Number(n)) => n.as_i64().or_else(|| n.as_f64().map(|f| f.trunc() as i64)),
-        Some(Value::String(s)) => s.trim().parse::<i64>().ok(),
+        Some(Value::String(s)) => crate::util::parse_trimmed::<i64>(s),
         Some(Value::Bool(b)) => Some(*b as i64),
         _ => None,
     };
@@ -301,7 +301,7 @@ impl Notify for SendPulse {
             email.insert("attachments_binary".into(), Value::Object(atts));
         }
         if let Some(t) = self.template {
-            let vars: Map<String, Value> = self.template_data.iter().map(|(k, v)| (k.clone(), json!(v))).collect();
+            let vars: Map<String, Value> = crate::util::json_strings(&self.template_data);
             email.insert("template".into(), json!({"id": t, "variables": vars}));
         }
         let recipient = |e: &String| {
@@ -314,9 +314,8 @@ impl Notify for SendPulse {
         let mut payloads = Vec::new();
         for target in &self.targets {
             // Every cc/bcc entry is sent, built afresh for each target.
-            let cc: Vec<Value> =
-                self.cc.iter().filter(|e| !self.bcc.contains(e) && *e != target).map(recipient).collect();
-            let bcc: Vec<Value> = self.bcc.iter().filter(|e| *e != target).map(recipient).collect();
+            let cc: Vec<Value> = cc_for(&self.cc, &self.bcc, target).map(recipient).collect();
+            let bcc: Vec<Value> = except(&self.bcc, target).map(recipient).collect();
             let mut email = email.clone();
             email.insert("to".into(), json!([recipient(target)]));
             if !cc.is_empty() {

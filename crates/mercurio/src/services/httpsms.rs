@@ -1,8 +1,9 @@
 //! httpSMS (`httpsms://`): SMS sent from your Android phone through the httpSMS API.
 
+use super::_sms::PHONE_TARGETS;
 use serde_json::json;
 
-use super::_telephony::{param_unquoted, source_and_targets, unquote_or_empty};
+use super::_telephony::source_and_targets;
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -23,7 +24,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("apikey", "API Key").required().secret(),
         Param::new("from_phone", "From Phone No").required().pattern(r"^\+?[0-9\s)(+-]+$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::new("from", "From Phone No").pattern(r"^\+?[0-9\s)(+-]+$"),
@@ -43,7 +44,7 @@ struct HttpSms {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let apikey = param_unquoted(u, "key").unwrap_or_else(|| unquote_or_empty(u.user.as_deref()));
+    let apikey = u.text("key").unwrap_or_else(|| u.user().unwrap_or_default());
     let apikey = validate_nonblank(&apikey).ok_or_else(|| SERVICE.err("an invalid API Key was specified"))?;
     let (source, targets) =
         source_and_targets(u, 10).ok_or_else(|| SERVICE.err("the Account (From) Phone # specified is invalid"))?;

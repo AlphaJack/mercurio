@@ -16,7 +16,7 @@ use crate::http::{Request, Response};
 use crate::parse::parse_list;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef, UrlIdentifier};
 use crate::store::StoreRef;
-use crate::url::{ParsedUrl, quote, unquote};
+use crate::url::{ParsedUrl, quote};
 use crate::util::{json_text, parse_int};
 use crate::{Error, Plan, Prepared, Result};
 
@@ -77,7 +77,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let version = SERVICE.text(u, "version");
     let url_prefix = SERVICE.text(u, "url_prefix");
-    let headers: Vec<(String, String)> = u.query_plus.iter().map(|(k, v)| (unquote(k), unquote(v))).collect();
+    let headers: Vec<(String, String)> = u.query_plus.unquoted();
 
     let is_group = crate::regex!(r"(?i)^\s*(?:(?:#|%23)([a-z0-9_-]+)|(?:#|%23)?(all|everyone|\*))\s*$");
     let is_user = crate::regex!(r"(?i)^\s*(?:@|%40)?([a-z0-9_-]+)\s*$");

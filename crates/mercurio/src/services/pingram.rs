@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
+use super::_email_api::set_add;
 use crate::asset::ImageSize;
 use crate::error::Error;
 use crate::parse::{is_email, is_phone_no, parse_emails, parse_list, parse_list_unsorted, validate_regex};
@@ -24,7 +25,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{type}@{apikey}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern(r"^pingram_(sk|pk)_[\w.-]+$"),
+        Param::new("apikey", "API Key").secret_key(r"^pingram_(sk|pk)_[\w.-]+$"),
         Param::new("target_email", "Target Email").email(),
         Param::new("target_id", "Target ID").prefix("@"),
         Param::new("target_sms", "Target SMS"),
@@ -101,11 +102,6 @@ struct Pingram {
     tokens: Vec<(String, String)>,
 }
 
-fn add_unique(v: &mut Vec<String>, s: String) {
-    if !v.contains(&s) {
-        v.push(s);
-    }
-}
 
 /// `^\s*(@|%40)?(?P<id>[\w_-]+)\s*$`
 fn match_id(entry: &str) -> Option<String> {
@@ -133,14 +129,14 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let message_type = if let Some(t) = u.param_nonempty("type") {
         Some(unquote(t))
     } else {
-        u.user.as_deref().filter(|s| !s.is_empty()).map(unquote)
+        u.user().filter(|s| !s.is_empty())
     };
     if let Some(to) = u.param_nonempty("to") {
         targets.push(unquote(to));
     }
     let cc = SERVICE.text(u, "cc");
     let bcc = SERVICE.text(u, "bcc");
-    let tokens: Vec<(String, String)> = u.query_colon.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+    let tokens: Vec<(String, String)> = u.query_colon.owned();
 
     let apikey = apikey
         .as_deref()
@@ -195,7 +191,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         if !CHANNELS.contains(&c.as_str()) {
             return Err(SERVICE.err("the Pingram forced channel specified is invalid"));
         }
-        add_unique(&mut chans, c);
+        set_add(&mut chans, c);
     }
 
     let mut recipients = Vec::new();
@@ -243,7 +239,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         let mut out = Vec::new();
         for r in parse_emails(s.iter(), true) {
             if let Some(e) = is_email(&r) {
-                add_unique(&mut out, e.full_email);
+                set_add(&mut out, e.full_email);
             }
         }
         out

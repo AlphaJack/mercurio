@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use super::_email_api::{attachments_json, copy_list, email_pairs, unquoted_pairs};
+use super::_email_api::{attachments_json, copy_list, email_pairs, unquoted_pairs, batch_label, cc_only, chunk_size, with_names};
 use super::_mail::mime::formataddr;
 use crate::parse::{is_email, validate_nonblank};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
@@ -98,7 +98,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
 
 impl Smtp2Go {
     fn batch_size(&self) -> usize {
-        if self.batch { BATCH_SIZE } else { 1 }
+        chunk_size(self.batch, BATCH_SIZE)
     }
 }
 
@@ -122,7 +122,7 @@ impl Notify for Smtp2Go {
 
         let mut plans = Vec::new();
         for batch in self.targets.chunks(self.batch_size()) {
-            let mut cc: Vec<&String> = self.cc.iter().filter(|e| !self.bcc.contains(e)).collect();
+            let mut cc: Vec<&String> = cc_only(&self.cc, &self.bcc).collect();
             let mut bcc: Vec<&String> = self.bcc.iter().collect();
             let mut to = Vec::new();
             for (name, addr) in batch {
@@ -133,14 +133,7 @@ impl Notify for Smtp2Go {
             let mut payload = base.clone();
             payload["to"] = json!(to);
             if !cc.is_empty() {
-                let v: Vec<String> = cc
-                    .iter()
-                    .map(|a| {
-                        let n = self.names.iter().find(|(k, _)| k == *a).map(|(_, v)| v.as_str()).unwrap_or("");
-                        formataddr(n, a)
-                    })
-                    .collect();
-                payload["cc"] = json!(v);
+                payload["cc"] = json!(with_names(&self.names, &cc));
             }
             if !bcc.is_empty() {
                 payload["bcc"] = json!(bcc);
@@ -150,11 +143,7 @@ impl Notify for Smtp2Go {
                 payload["custom_headers"] = Value::Array(h);
             }
             let req = ctx.post(NOTIFY_URL).header("Accept", "application/json").json_text(&payload, msg.body);
-            let label = if batch.len() <= 3 {
-                batch.iter().map(|(_, e)| e.as_str()).collect::<Vec<_>>().join(", ")
-            } else {
-                format!("{} recipients", batch.len())
-            };
+            let label = batch_label(batch);
             plans.push(Plan::send_expect(req, &[200]).target(label));
         }
         Plan::all(plans)

@@ -6,7 +6,7 @@
 
 use serde_json::json;
 
-use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
+use super::_sms::{no_targets, per_target, plus_numbers, to_param};
 use crate::parse::{is_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -81,7 +81,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let targets = if targets.is_empty() {
         vec![source.clone()]
     } else {
-        full_numbers(&targets).into_iter().map(|n| format!("+{n}")).collect()
+        plus_numbers(&targets)
     };
     Ok(Box::new(Plivo { auth_id: Secret::new(auth_id), token: Secret::new(token), source, targets, batch }))
 }
@@ -99,7 +99,7 @@ impl Notify for Plivo {
             let req = ctx.post(&url)
                 .basic_auth(self.auth_id.expose(), Some(self.token.expose()))
                 .json_text(&payload, msg.body);
-            Plan::send_check(req, |r| expect(r, &[200, 201, 202]))
+            Plan::send_expect(req, &[200, 201, 202])
         })
     }
 

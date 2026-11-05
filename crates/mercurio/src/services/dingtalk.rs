@@ -25,7 +25,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("secret", "Secret").secret().pattern("^[a-z0-9]+$"),
         Param::new("target_phone_no", "Target Phone No"),
         Param::new("targets", "Targets").list("/").group(&["target_phone_no"]),
-        Param::new("token", "Token").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("token", "Token").secret_key("^[a-z0-9]+$"),
     ],
     params: &[
         Param::sets("secret", &["secret"]),
@@ -91,7 +91,7 @@ fn signature(secret: &str, timestamp: &str) -> String {
 
 /// Whitespace runs collapsed to single spaces, ends trimmed.
 fn collapse_ws(s: &str) -> String {
-    s.split_whitespace().collect::<Vec<_>>().join(" ")
+    crate::util::one_line(s)
 }
 
 impl Notify for DingTalk {

@@ -307,7 +307,7 @@ impl ConfigStore {
         let mut keys = std::collections::BTreeSet::new();
         let Ok(mut entries) = fs::read_dir(&self.root).await else { return Vec::new() };
         while let Ok(Some(e)) = entries.next_entry().await {
-            let name = e.file_name().to_string_lossy().to_string();
+            let name = file_name(&e);
             if let Some(hidden) = name.strip_prefix('.') {
                 if let Some(k) = hidden.strip_suffix(".lock").filter(|k| !k.is_empty()) {
                     keys.insert(k.to_owned());
@@ -483,20 +483,19 @@ impl ConfigStore {
     pub(super) async fn prune_unused_locks(&self, older_than: Duration) -> usize {
         let (dirs, name_ok): (Vec<PathBuf>, fn(&str) -> bool) = match self.mode {
             Mode::Disabled => return 0,
-            Mode::Simple => (vec![self.root.clone()], |n| super::valid_key(n)),
+            Mode::Simple => (vec![self.root.clone()], |n| super::key::valid_key(n)),
             Mode::Hash => {
                 let mut dirs = Vec::new();
                 if let Ok(mut entries) = fs::read_dir(&self.root).await {
                     while let Ok(Some(e)) = entries.next_entry().await {
-                        let name = e.file_name().to_string_lossy().to_string();
-                        let hex =
-                            name.len() == 2 && name.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase());
+                        let name = file_name(&e);
+                        let hex = name.len() == 2 && lower_hex(&name);
                         if hex && e.file_type().await.is_ok_and(|t| t.is_dir()) {
                             dirs.push(e.path());
                         }
                     }
                 }
-                (dirs, |n| n.len() == 54 && n.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
+                (dirs, |n| n.len() == 54 && lower_hex(n))
             }
         };
         let now = SystemTime::now();
@@ -504,7 +503,7 @@ impl ConfigStore {
         for dir in dirs {
             let Ok(mut entries) = fs::read_dir(&dir).await else { continue };
             while let Ok(Some(e)) = entries.next_entry().await {
-                let file = e.file_name().to_string_lossy().to_string();
+                let file = file_name(&e);
                 let Some(name) = file.strip_prefix('.').and_then(|f| f.strip_suffix(".lock")) else { continue };
                 if !name_ok(name) {
                     continue;
@@ -572,6 +571,16 @@ async fn write_atomic(path: &Path, data: &[u8]) -> std::io::Result<()> {
         log::debug!("could not remove {}", tmp.display());
     }
     result
+}
+
+/// A folder entry's name, as text.
+fn file_name(entry: &fs::DirEntry) -> String {
+    entry.file_name().to_string_lossy().to_string()
+}
+
+/// Whether `name` is lower-case hexadecimal, as the hashed layout names its folders and files.
+fn lower_hex(name: &str) -> bool {
+    name.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
 }
 
 #[cfg(test)]

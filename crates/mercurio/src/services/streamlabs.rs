@@ -25,7 +25,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{access_token}/",
     ],
     tokens: &[
-        Param::new("access_token", "Access Token").required().secret().pattern(TOKEN_RE),
+        Param::new("access_token", "Access Token").secret_key(TOKEN_RE),
     ],
     params: &[
         Param::new("alert_type", "Alert Type").choice(&["follow", "subscription", "donation", "host"]).default("donation"),

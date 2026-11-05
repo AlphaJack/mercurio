@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
-use super::_email_api::{attachments_json, unique_emails};
+use super::_email_api::{attachment_objects, cc_for, email_objects, except, full_emails, key_and_sender, unique_emails};
 use crate::error::Error;
 use crate::parse::{is_email, parse_list, validate_regex};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
@@ -29,7 +29,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{apikey}:{from_email}/{targets}",
     ],
     tokens: &[
-        Param::new("apikey", "API Key").required().secret().pattern("^[A-Z0-9._-]+$"),
+        Param::new("apikey", "API Key").secret_key("^[A-Z0-9._-]+$"),
         Param::new("from_email", "Source Email").email().required(),
         Param::new("target_email", "Target Email").email(),
         Param::new("targets", "Targets").list("/").group(&["target_email"]),
@@ -59,9 +59,7 @@ struct SendGrid {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     crate::parse::require_host(u, &SERVICE)?;
-    let user = u.user.as_deref().filter(|s| !s.is_empty()).ok_or_else(|| SERVICE.err("no API key specified"))?;
-    let password =
-        u.password.as_deref().filter(|s| !s.is_empty()).ok_or_else(|| SERVICE.err("no from email specified"))?;
+    let (user, password) = key_and_sender(u, &SERVICE)?;
     let apikey = unquote(user);
     let from = format!("{}@{}", unquote(password), u.host());
 
@@ -75,14 +73,14 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     }
     let has_targets = !targets.is_empty();
     let mut targets: Vec<String> =
-        parse_list(targets).iter().filter_map(|r| is_email(r)).map(|e| e.full_email).collect();
+        full_emails(parse_list(targets));
     if !has_targets {
         targets.push(from_email.clone());
     }
     let cc = unique_emails(u.param_nonempty("cc"));
     let bcc = unique_emails(u.param_nonempty("bcc"));
     let template = SERVICE.text(u, "template");
-    let template_data = u.query_plus.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+    let template_data = u.query_plus.owned();
     Ok(Box::new(SendGrid { apikey: Secret::new(apikey), from_email, targets, cc, bcc, template, template_data }))
 }
 
@@ -97,12 +95,7 @@ impl Notify for SendGrid {
         let ctype = if msg.format == NotifyFormat::Text { "text/plain" } else { "text/html" };
         base.insert("content".into(), json!([{"type": ctype, "value": crate::http::TEXT}]));
         if !msg.attachments.is_empty() {
-            base.insert("attachments".into(), attachments_json(msg.attachments, "dat", |name, data, _| json!({
-                        "content": data,
-                        "filename": name,
-                        "type": "application/octet-stream",
-                        "disposition": "attachment",
-                    })));
+            base.insert("attachments".into(), attachment_objects(msg.attachments));
         }
         if let Some(t) = &self.template {
             base.insert("template_id".into(), json!(t));
@@ -112,9 +105,8 @@ impl Notify for SendGrid {
             // Each target gets a fresh payload: cc/bcc never leak between targets.
             let mut p13n = Map::new();
             p13n.insert("to".into(), json!([{"email": target}]));
-            let cc: Vec<Value> =
-                self.cc.iter().filter(|e| !self.bcc.contains(e) && *e != target).map(|e| json!({"email": e})).collect();
-            let bcc: Vec<Value> = self.bcc.iter().filter(|e| *e != target).map(|e| json!({"email": e})).collect();
+            let cc = email_objects(cc_for(&self.cc, &self.bcc, target));
+            let bcc = email_objects(except(&self.bcc, target));
             if !cc.is_empty() {
                 p13n.insert("cc".into(), Value::Array(cc));
             }

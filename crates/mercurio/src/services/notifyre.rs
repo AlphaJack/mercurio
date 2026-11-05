@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::_telephony::{http_err, json_object, param_unquoted, has_value, unquote_or_empty, valid_phones};
+use super::_telephony::{http_err, json_object, has_value, valid_phones};
 use crate::crypto::b64;
 use crate::error::Error;
 use crate::http::Response;
@@ -59,7 +59,7 @@ struct Notifyre {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let apikey = unquote_or_empty(Some(&u.host));
+    let apikey = u.host();
     let mut targets = u.path_segments();
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));
@@ -67,7 +67,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if apikey.is_empty() {
         return Err(SERVICE.err("a Notifyre API key must be specified"));
     }
-    let fax = match param_unquoted(u, "mode") {
+    let fax = match u.text("mode") {
         None => false,
         Some(m) => {
             let m = m.trim().to_lowercase();
@@ -78,15 +78,15 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
             }
         }
     };
-    let source = match param_unquoted(u, "from") {
+    let source = match u.text("from") {
         None => None,
         Some(s) => Some(format!(
             "+{}",
             is_phone_no(&s, 10).ok_or_else(|| SERVICE.err("the Notifyre source (From) phone # is invalid"))?.full
         )),
     };
-    let campaign = param_unquoted(u, "campaign").map(|c| c.trim().to_owned()).filter(|c| !c.is_empty());
-    let trimmed = |k: &str| param_unquoted(u, k).map(|v| v.trim().to_owned()).unwrap_or_default();
+    let campaign = u.text("campaign").map(|c| c.trim().to_owned()).filter(|c| !c.is_empty());
+    let trimmed = |k: &str| u.text(k).map(|v| v.trim().to_owned()).unwrap_or_default();
     let hq = u.param_nonempty("hq").map(|v| parse_bool(v, false)).unwrap_or(true);
     Ok(Box::new(Notifyre {
         apikey: Secret::new(apikey),

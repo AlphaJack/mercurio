@@ -2,6 +2,7 @@
 
 use serde_json::{Value, json};
 
+use super::_chat_markup::slack_escape;
 use crate::asset::ImageSize;
 use crate::parse::validate_regex;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -23,7 +24,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("botname", "Bot Name"),
         Param::new("organization", "Organization").required().pattern("^[A-Z0-9_-]{3,32}$"),
-        Param::new("token", "Token").required().secret().pattern("^[A-Z0-9]{15}$"),
+        Param::new("token", "Token").secret_key("^[A-Z0-9]{15}$"),
     ],
     params: &[
         Param::new("image", "Include Image").bool(true),
@@ -76,13 +77,6 @@ fn parse_native(url: &str) -> Option<String> {
 }
 
 /// Slack-mode escaping. Input containing the literal `"\r*\n"` fails.
-fn slack_escape(s: &str) -> Option<String> {
-    if s.contains("\r*\n") {
-        return None;
-    }
-    Some(s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;"))
-}
-
 impl Notify for Ryver {
     fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
         let (title, body) = if self.mode == Mode::Slack {

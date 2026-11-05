@@ -1,8 +1,9 @@
 //! Seven (`seven://`): SMS through the seven API.
 
+use super::_sms::PHONE_TARGETS;
 use serde_json::json;
 
-use super::_telephony::{param_unquoted, unquote_or_empty, valid_phones};
+use super::_telephony::valid_phones;
 use crate::http::Request;
 use crate::parse::parse_phone_no_unquoted;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -22,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("apikey", "API Key").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::new("flash", "Flash").bool(false),
@@ -46,11 +47,11 @@ struct Seven {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
-    let apikey = unquote_or_empty(Some(&u.host));
+    let apikey = u.host();
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));
     }
-    let source = param_unquoted(u, "from").or_else(|| param_unquoted(u, "source"));
+    let source = u.text("from").or_else(|| u.text("source"));
     let flash = SERVICE.flag(u, "flash");
     let label = u.param("label").map(str::to_owned);
     if apikey.is_empty() {

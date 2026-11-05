@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use super::_sms::{expect, no_targets, per_target};
+use super::_sms::{no_targets, per_target};
 use crate::parse::{is_phone_no, parse_phone_no, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -22,8 +22,8 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         "{schema}://{account_sid}:{auth_token}@{from_phone}/{targets}",
     ],
     tokens: &[
-        Param::new("account_sid", "Account SID").required().secret().pattern("^AC[a-f0-9]+$"),
-        Param::new("auth_token", "Auth Token").required().secret().pattern("^[a-z0-9]+$"),
+        Param::new("account_sid", "Account SID").secret_key("^AC[a-f0-9]+$"),
+        Param::new("auth_token", "Auth Token").secret_key("^[a-z0-9]+$"),
         Param::new("from_phone", "From Phone No").required().pattern(r"^([a-z]+:)?\+?[0-9\s)(+-]+$"),
         Param::new("short_code", "Target Short Code").pattern("^[0-9]{5,6}$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^([a-z]+:)?[0-9\s)(+-]+$").prefix("+"),
@@ -193,7 +193,7 @@ impl Notify for Twilio {
                     .header("Accept", "application/json")
                     .basic_auth(&user, Some(self.auth_token.expose()))
                     .form(&form);
-                Plan::send_check(req, |r| expect(r, &[201, 200]))
+                Plan::send_expect(req, &[201, 200])
             },
         )
     }

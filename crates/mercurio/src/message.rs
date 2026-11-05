@@ -21,6 +21,11 @@ impl NotifyType {
     /// Every type: info, success, warning, failure.
     pub const ALL: [NotifyType; 4] = [Self::Info, Self::Success, Self::Warning, Self::Failure];
 
+    /// The first type whose name starts with `prefix`: `w` is [`NotifyType::Warning`].
+    pub(crate) fn starting_with(prefix: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|t| t.as_str().starts_with(prefix))
+    }
+
     /// Lower-case name: `info`, `success`, `warning` or `failure`.
     pub fn as_str(self) -> &'static str {
         match self {
@@ -33,7 +38,7 @@ impl NotifyType {
 
     /// Parse a type name (case-insensitive).
     pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
+        match crate::util::lower_trimmed(s).as_str() {
             "info" => Some(Self::Info),
             "success" => Some(Self::Success),
             "warning" => Some(Self::Warning),
@@ -74,7 +79,7 @@ impl NotifyFormat {
 
     /// Parse a format name (case-insensitive).
     pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
+        match crate::util::lower_trimmed(s).as_str() {
             "text" => Some(Self::Text),
             "html" => Some(Self::Html),
             "markdown" => Some(Self::Markdown),
@@ -114,7 +119,7 @@ impl OverflowMode {
 
     /// Parse an overflow mode name (case-insensitive).
     pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
+        match crate::util::lower_trimmed(s).as_str() {
             "upstream" => Some(Self::Upstream),
             "truncate" => Some(Self::Truncate),
             "split" => Some(Self::Split),
@@ -150,9 +155,9 @@ impl Attachment {
         Ok(Self { name, mime, data: data.into() })
     }
 
-    /// `true` when the MIME type is `image/*`.
+    /// `true` when the MIME type is `image/*`, in any case.
     pub fn is_image(&self) -> bool {
-        self.mime.starts_with("image/")
+        self.mime.get(..6).is_some_and(|p| p.eq_ignore_ascii_case("image/"))
     }
 }
 

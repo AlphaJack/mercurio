@@ -1,8 +1,9 @@
 //! Mobile Message (`mobilemessage://`, `mobilemsg://`): SMS through the Mobile Message API.
 
+use super::_sms::PHONE_TARGETS;
 use serde_json::{Value, json};
 
-use super::_telephony::{http_err, json_object, phone_entries, param_unquoted};
+use super::_telephony::{http_err, json_object, phone_entries};
 use crate::error::Error;
 use crate::parse::{parse_bool, parse_phone_no_unquoted, validate_nonblank, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -24,7 +25,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("password", "API Password").required().secret(),
         Param::new("sender", "Sender ID").required().pattern(r"^\+?[a-z0-9][a-z0-9 ()_.-]{1,19}$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
         Param::new("user", "API Username").required(),
     ],
     params: &[
@@ -56,7 +57,7 @@ struct MobileMessage {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let (source, mut targets) = match param_unquoted(u, "from") {
+    let (source, mut targets) = match u.text("from") {
         Some(f) => {
             let mut t = parse_phone_no_unquoted([u.host.as_str()], false);
             t.extend(u.path_segments());
