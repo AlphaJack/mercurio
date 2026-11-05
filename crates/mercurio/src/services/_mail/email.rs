@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crate::re::Regex;
 
-use super::super::_email_api::{cc_for, except, set_add};
+use super::super::_recipients::{cc_for, except, set_add};
 use super::mime::{Part, formataddr, header_value, render_owned};
 use super::super::_keys::{local_file_ops, read_local_file, remote_fetches};
 use super::smtp::{Envelope, Job, Security, session};

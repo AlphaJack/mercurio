@@ -1,5 +1,6 @@
 //! Helpers shared by e-mail API services (sendgrid, mailgun, postmark, sparkpost, resend, brevo, mailersend, smtp2go, sendpulse, office365) and the notification-platform services (novu, knock, courier).
 
+use super::_recipients::set_add;
 use crate::crypto::b64;
 use crate::message::Attachment;
 use super::_mail::mime::formataddr;
@@ -31,13 +32,6 @@ where
     S: AsRef<str>,
 {
     entries.into_iter().filter_map(|e| is_email(e.as_ref())).collect()
-}
-
-/// Insert into an insertion-ordered "set" (Vec) if not already present.
-pub(crate) fn set_add(set: &mut Vec<String>, value: String) {
-    if !set.contains(&value) {
-        set.push(value);
-    }
 }
 
 /// A notification-platform recipient (novu, knock, courier).
@@ -163,21 +157,6 @@ pub(crate) fn display_name<'a>(names: &'a [(String, String)], email: &str) -> &'
 /// Each address of `addrs` as `Name <email>`, with the names recorded in `names`.
 pub(crate) fn with_names(names: &[(String, String)], addrs: &[&String]) -> Vec<String> {
     addrs.iter().map(|a| formataddr(display_name(names, a), a)).collect()
-}
-
-/// The addresses of `list` other than `target`.
-pub(crate) fn except<'a>(list: &'a [String], target: &'a str) -> impl Iterator<Item = &'a String> + 'a {
-    list.iter().filter(move |e| e.as_str() != target)
-}
-
-/// The cc addresses not also in bcc.
-pub(crate) fn cc_only<'a>(cc: &'a [String], bcc: &'a [String]) -> impl Iterator<Item = &'a String> + 'a {
-    cc.iter().filter(move |e| !bcc.contains(e))
-}
-
-/// The cc addresses for one `target`: neither in bcc nor the target itself.
-pub(crate) fn cc_for<'a>(cc: &'a [String], bcc: &'a [String], target: &'a str) -> impl Iterator<Item = &'a String> + 'a {
-    cc_only(cc, bcc).filter(move |e| e.as_str() != target)
 }
 
 /// `[{"email": e}, ...]`.

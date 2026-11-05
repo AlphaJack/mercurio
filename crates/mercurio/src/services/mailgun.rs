@@ -6,7 +6,8 @@
 
 use std::time::Duration;
 
-use super::_email_api::{attachment_name, copy_list, email_pairs, unquoted_pairs, batch_label, cc_only, chunk_size, with_names};
+use super::_email_api::{attachment_name, copy_list, email_pairs, unquoted_pairs, batch_label, chunk_size, with_names};
+use super::_recipients::cc_only;
 use super::_mail::mime::formataddr;
 use crate::parse::{is_email, validate_nonblank};
 use crate::service::{Context, Notify, Param, Secret, ServiceDef};
