@@ -10,6 +10,7 @@
 //! - `smpps://` uses TLS (Apprise opens a plain socket).
 //! - `submit_sm_resp` statuses are checked (Apprise never reads them).
 
+use super::_sms::PHONE_TARGETS;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
@@ -38,7 +39,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("password", "Password").required().secret(),
         Param::new("port", "Port").port(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
         Param::new("user", "Username").required(),
     ],
     params: &[

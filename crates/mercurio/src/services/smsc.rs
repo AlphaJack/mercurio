@@ -1,5 +1,6 @@
 //! SMSC (`smsc://`): SMS through the SMSC API.
 
+use super::_sms::PHONE_TARGETS;
 use super::_telephony::{Form, http_err, json_object, param_unquoted, valid_phones};
 use crate::error::Error;
 use crate::http::{Request, Response};
@@ -22,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("password", "Password").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
         Param::new("user", "Login").required(),
     ],
     params: &[

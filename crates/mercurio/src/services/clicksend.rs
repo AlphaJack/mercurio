@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::_sms::{expect, full_numbers, no_targets, per_target, to_param};
+use super::_sms::{PHONE_TARGETS, batches, full_numbers, no_targets, per_target, to_param};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
 use crate::{Plan, Prepared, Result};
@@ -20,7 +20,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("apikey", "API Key").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
         Param::new("user", "User Name").required(),
     ],
     params: &[
@@ -65,7 +65,7 @@ impl Notify for ClickSend {
             return no_targets("ClickSend");
         }
         let size = if self.batch { BATCH_SIZE } else { 1 };
-        let chunks: Vec<Vec<String>> = self.targets.chunks(size).map(<[String]>::to_vec).collect();
+        let chunks = batches(&self.targets, size);
         per_target(chunks, |c| c.join(","), |chunk| {
             let messages: Vec<_> =
                 chunk.iter().map(|to| json!({"source": "php", "body": crate::http::TEXT, "to": format!("+{to}")})).collect();
@@ -73,7 +73,7 @@ impl Notify for ClickSend {
                 .header("Content-Type", "application/json; charset=utf-8")
                 .basic_auth(&self.user, Some(self.password.expose()))
                 .json_text(&json!({"messages": messages}), msg.body);
-            Plan::send_check(req, |r| expect(r, &[200]))
+            Plan::send_expect(req, &[200])
         })
     }
 

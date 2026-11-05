@@ -1,6 +1,6 @@
 //! Clickatell (`clickatell://`): SMS through the Clickatell API.
 
-use super::_sms::{expect, no_targets, per_target, to_param, valid_phones};
+use super::_sms::{PHONE_TARGETS, no_targets, per_target, to_param, valid_phones};
 use crate::parse::{is_phone_no, validate_nonblank};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -21,7 +21,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
         Param::new("apikey", "API Token").required().secret(),
         Param::new("source", "From Phone No").pattern(r"^[0-9\s)(+-]+$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::sets("from", &["source"]),
@@ -73,7 +73,7 @@ impl Notify for Clickatell {
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
                 .query(&params);
-            Plan::send_check(req, |r| expect(r, &[200, 202]))
+            Plan::send_expect(req, &[200, 202])
         })
     }
 

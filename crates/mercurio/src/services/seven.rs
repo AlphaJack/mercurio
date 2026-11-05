@@ -1,5 +1,6 @@
 //! Seven (`seven://`): SMS through the seven API.
 
+use super::_sms::PHONE_TARGETS;
 use serde_json::json;
 
 use super::_telephony::{param_unquoted, unquote_or_empty, valid_phones};
@@ -22,7 +23,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("apikey", "API Key").required().secret(),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
     ],
     params: &[
         Param::new("flash", "Flash").bool(false),

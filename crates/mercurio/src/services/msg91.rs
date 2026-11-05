@@ -2,7 +2,7 @@
 
 use serde_json::{Map, Value, json};
 
-use super::_sms::{expect, full_numbers, no_targets, to_param};
+use super::_sms::{PHONE_TARGETS, full_numbers, no_targets, to_param};
 use crate::parse::validate_regex;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -21,7 +21,7 @@ pub(crate) static SERVICE: ServiceDef = ServiceDef {
     tokens: &[
         Param::new("authkey", "Authentication Key").required().secret().pattern("^[a-z0-9]+$"),
         Param::new("target_phone", "Target Phone No").pattern(r"^[0-9\s)(+-]+$").prefix("+"),
-        Param::new("targets", "Targets").list("/").required().group(&["target_phone"]),
+        PHONE_TARGETS,
         Param::new("template", "Template ID").required().secret().pattern("^[a-z0-9 _-]+$"),
     ],
     params: &[
@@ -109,7 +109,7 @@ impl Notify for Msg91 {
         let req = ctx.post("https://control.msg91.com/api/v5/flow/")
             .header("authkey", self.authkey.expose())
             .json_text(&payload, msg.body);
-        Plan::send_check(req, |r| expect(r, &[200]))
+        Plan::send_expect(req, &[200])
     }
 
 }

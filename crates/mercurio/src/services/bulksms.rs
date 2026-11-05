@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::_sms::{expect, per_target, to_param};
+use super::_sms::{per_target, to_param};
 use crate::parse::{is_phone_no, parse_phone_no};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -133,7 +133,7 @@ impl Notify for BulkSms {
                     .post("https://api.bulksms.com/v1/messages")
                     .basic_auth(user, Some(password.expose()))
                     .json_text(&payload, msg.body);
-                Plan::send_check(req, |r| expect(r, &[201, 200]))
+                Plan::send_expect(req, &[201, 200])
             },
         )
     }
