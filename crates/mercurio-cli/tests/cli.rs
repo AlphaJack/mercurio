@@ -297,7 +297,7 @@ fn template_vars() {
 fn default_config_paths() {
     // `~/.config/apprise/apprise.yml`; `%APPDATA%\Apprise\apprise.yml` on Windows.
     let home = tempdir("defhome");
-    let dir = if cfg!(windows) { home.join("Apprise") } else { home.join(".config/apprise") };
+    let dir = if cfg!(windows) { home.join("Apprise") } else { home.join(".config").join("apprise") };
     std::fs::create_dir_all(&dir).unwrap();
     write(&dir, "apprise.yml", "urls:\n  - json://localhost/fromhome\n");
     let (code, text) = run(bin().env("HOME", &home).env("APPDATA", &home).args(["-d"]));
@@ -305,8 +305,8 @@ fn default_config_paths() {
 
     // mercurio's own names are not searched.
     let home = tempdir("mercuriohome");
-    std::fs::create_dir_all(home.join(".config/mercurio")).unwrap();
-    write(&home.join(".config/mercurio"), "mercurio.yml", "urls:\n  - json://localhost/fromhome\n");
+    std::fs::create_dir_all(home.join(".config").join("mercurio")).unwrap();
+    write(&home.join(".config").join("mercurio"), "mercurio.yml", "urls:\n  - json://localhost/fromhome\n");
     let (code, _) = run(bin().env("HOME", &home).env("APPDATA", &home).args(["-d"]));
     assert_eq!(code, Some(2));
 

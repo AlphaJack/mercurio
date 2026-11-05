@@ -706,7 +706,7 @@ mod tests {
 
     #[test]
     fn key_generated_in_store_directory() {
-        let (fake, ns) = (FakeTransport::new(), PathBuf::from("/data/ns"));
+        let (fake, ns) = (FakeTransport::new(), PathBuf::from("/data").join("ns"));
         let (key, save) = file_context(key_files(&ns), &fake, |ctx| stored_key(ctx, &ns)).expect("generated");
         crate::testing::run_files(save, &fake);
         let private = ns.join("private_key.pem");

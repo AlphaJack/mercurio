@@ -25,8 +25,16 @@ pub(crate) fn scaffold(root: &Path, id: &str) -> Result<(), String> {
         .collect();
     let fill = |t: &str| t.replace("AcmeService", &ty).replace("Acme", &name).replace("acme", id);
     let files = [
-        (root.join(format!("crates/mercurio/src/services/{id}.rs")), fill(SERVICE)),
-        (root.join(format!("crates/mercurio/tests/fixtures/services/{id}.json")), fill(FIXTURE)),
+        (root.join("crates").join("mercurio").join("src").join("services").join(format!("{id}.rs")), fill(SERVICE)),
+        (
+            root.join("crates")
+                .join("mercurio")
+                .join("tests")
+                .join("fixtures")
+                .join("services")
+                .join(format!("{id}.json")),
+            fill(FIXTURE),
+        ),
     ];
     for (path, _) in &files {
         if path.exists() || path.with_extension("").join("mod.rs").exists() {
@@ -37,7 +45,7 @@ pub(crate) fn scaffold(root: &Path, id: &str) -> Result<(), String> {
         std::fs::write(path, content).map_err(|e| format!("{}: {e}", path.display()))?;
         eprintln!("wrote {}", path.strip_prefix(root).unwrap_or(path).display());
     }
-    add_feature(&root.join("crates/mercurio/Cargo.toml"), id)?;
+    add_feature(&root.join("crates").join("mercurio").join("Cargo.toml"), id)?;
     eprintln!("next: edit both files, then `cargo test -p mercurio --test it services::{id}` and `cargo insta review`");
     Ok(())
 }

@@ -6,7 +6,7 @@ use mercurio::__private::spec::{ASSET_KEYS, ASSET_SKIPPED, SETTINGS, TOP_LEVEL, 
 
 /// Writes `docs/book/src/generated/yaml-top-level.md`, `yaml-settings.md`, `asset-keys.md` (keys with their `Asset::default()` value) and `asset-ignored.md` (keys accepted without effect).
 pub(crate) fn render(root: &Path) -> Result<(), String> {
-    let dir = root.join("docs/book/src/generated");
+    let dir = root.join("docs").join("book").join("src").join("generated");
     std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     let mut top = String::from("| Key | Required | Meaning |\n|---|---|---|\n");
