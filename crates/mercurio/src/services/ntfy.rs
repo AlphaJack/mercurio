@@ -188,7 +188,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         return Err(SERVICE.err("an invalid ntfy hostname was specified"));
     }
 
-    let mode = match mode_s.trim().to_lowercase().as_str() {
+    let mode = match crate::util::lower_trimmed(&mode_s).as_str() {
         "cloud" => Mode::Cloud,
         "private" => Mode::Private,
         _ => return Err(SERVICE.err("an invalid ntfy mode was specified")),

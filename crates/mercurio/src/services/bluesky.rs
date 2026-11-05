@@ -139,11 +139,11 @@ impl RateLimit {
 
     /// Returns `false` when the reset value cannot be represented as a date (the request then fails).
     fn update(&self, r: &crate::http::Response) -> bool {
-        let Some(remaining) = r.header("ratelimit-remaining").and_then(|v| v.trim().parse::<i64>().ok()) else {
+        let Some(remaining) = r.header("ratelimit-remaining").and_then(crate::util::parse_trimmed::<i64>) else {
             return true;
         };
         self.lock().remaining = remaining;
-        let Some(reset) = r.header("ratelimit-reset").and_then(|v| v.trim().parse::<i64>().ok()) else {
+        let Some(reset) = r.header("ratelimit-reset").and_then(crate::util::parse_trimmed::<i64>) else {
             return true;
         };
         if !(-62_135_596_800..=253_402_300_799).contains(&reset) {

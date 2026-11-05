@@ -41,7 +41,7 @@ impl RateLimit {
     /// Keep the budget a successful response advertises; a header that does not parse leaves its value.
     fn record(&self, r: &Response, env: &dyn Env) {
         let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        let Some(remaining) = r.header("x-ratelimit-remaining").and_then(|v| v.trim().parse::<f64>().ok()) else {
+        let Some(remaining) = r.header("x-ratelimit-remaining").and_then(crate::util::parse_trimmed::<f64>) else {
             return;
         };
         state.0 = remaining;

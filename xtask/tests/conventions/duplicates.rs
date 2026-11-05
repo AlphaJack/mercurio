@@ -206,22 +206,28 @@ impl<'ast> Visit<'ast> for Visitor<'_> {
     }
 }
 
-fn found() -> Found {
-    let mut found = Found::default();
-    for (file, source) in super::all_sources() {
-        let in_src = PACKAGES.iter().any(|p| file.starts_with(&format!("{p}/src/")));
-        if in_src && !file.ends_with("/tests.rs") {
-            Visitor { file: &file, source: &source, found: &mut found }.visit_file(&syn::parse_file(&source).unwrap());
-        }
-    }
-    found
+/// What each package's `src` holds. A package cannot call another's private helpers, so each is checked alone.
+fn found() -> Vec<Found> {
+    let sources = super::all_sources();
+    PACKAGES
+        .iter()
+        .map(|p| {
+            let mut found = Found::default();
+            for (file, source) in &sources {
+                if file.starts_with(&format!("{p}/src/")) && !file.ends_with("/tests.rs") {
+                    Visitor { file, source, found: &mut found }.visit_file(&syn::parse_file(source).unwrap());
+                }
+            }
+            found
+        })
+        .collect()
 }
 
 #[test]
 fn no_two_bodies_are_the_same() {
     let same: Vec<String> = found()
-        .bodies
         .into_iter()
+        .flat_map(|f| f.bodies)
         .filter(|(_, at)| at.len() > 1)
         .map(|(body, at)| format!("{}\n    {body}", at.join(", ")))
         .collect();
@@ -231,8 +237,8 @@ fn no_two_bodies_are_the_same() {
 #[test]
 fn no_chain_is_written_out_again_and_again() {
     let repeated: Vec<String> = found()
-        .chains
         .into_iter()
+        .flat_map(|f| f.chains)
         .filter(|(_, at)| at.len() >= CHAIN_REPEATS)
         .map(|(chain, at)| format!("{chain}\n    {}", at.join(", ")))
         .collect();

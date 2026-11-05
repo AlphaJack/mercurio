@@ -3,7 +3,7 @@
 use super::_sms::PHONE_TARGETS;
 use serde_json::json;
 
-use super::_telephony::{source_and_targets};
+use super::_telephony::source_and_targets;
 use crate::parse::validate_nonblank;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::ParsedUrl;
@@ -46,7 +46,7 @@ struct Telnyx {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let apikey = u.text("key").unwrap_or_else(|| super::_telephony::unquote_or_empty(u.user.as_deref()));
+    let apikey = u.text("key").unwrap_or_else(|| u.user().unwrap_or_default());
     let profile = u.text("profile");
     let apikey = validate_nonblank(&apikey).ok_or_else(|| SERVICE.err("an invalid Telnyx API Key was specified"))?;
     let (source, targets) =

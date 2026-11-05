@@ -83,7 +83,7 @@ struct Vapid {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let user = u.user.as_deref().map(unquote).unwrap_or_default();
+    let user = u.user().unwrap_or_default();
     let host = u.host();
     let mut targets = Vec::new();
     let subscriber = match u.param_nonempty("from") {

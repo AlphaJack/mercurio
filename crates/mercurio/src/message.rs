@@ -38,7 +38,7 @@ impl NotifyType {
 
     /// Parse a type name (case-insensitive).
     pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
+        match crate::util::lower_trimmed(s).as_str() {
             "info" => Some(Self::Info),
             "success" => Some(Self::Success),
             "warning" => Some(Self::Warning),
@@ -79,7 +79,7 @@ impl NotifyFormat {
 
     /// Parse a format name (case-insensitive).
     pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
+        match crate::util::lower_trimmed(s).as_str() {
             "text" => Some(Self::Text),
             "html" => Some(Self::Html),
             "markdown" => Some(Self::Markdown),
@@ -119,7 +119,7 @@ impl OverflowMode {
 
     /// Parse an overflow mode name (case-insensitive).
     pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
+        match crate::util::lower_trimmed(s).as_str() {
             "upstream" => Some(Self::Upstream),
             "truncate" => Some(Self::Truncate),
             "split" => Some(Self::Split),

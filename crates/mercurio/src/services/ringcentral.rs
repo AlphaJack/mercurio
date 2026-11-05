@@ -8,7 +8,7 @@
 
 use serde_json::{Value, json};
 
-use super::_telephony::{Form, http_err, unquote_or_empty, valid_phones};
+use super::_telephony::{Form, http_err, valid_phones};
 use crate::env::Env;
 use crate::crypto::b64;
 use crate::error::Error;
@@ -76,9 +76,9 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut client_secret = if targets.is_empty() { None } else { Some(targets.remove(0)) };
     let (mut source, mut token) = if u.password.as_deref().is_none_or(str::is_empty) {
         let s = if targets.is_empty() { None } else { Some(targets.remove(0)) };
-        (s, unquote_or_empty(u.user.as_deref()))
+        (s, u.user().unwrap_or_default())
     } else {
-        (Some(unquote_or_empty(u.user.as_deref())), unquote_or_empty(u.password.as_deref()))
+        (Some(u.user().unwrap_or_default()), u.password().unwrap_or_default())
     };
     let environment = u.text("env");
     if let Some(t) = u.text("token") {

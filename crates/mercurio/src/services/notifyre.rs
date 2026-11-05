@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::_telephony::{http_err, json_object, has_value, unquote_or_empty, valid_phones};
+use super::_telephony::{http_err, json_object, has_value, valid_phones};
 use crate::crypto::b64;
 use crate::error::Error;
 use crate::http::Response;
@@ -59,7 +59,7 @@ struct Notifyre {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let apikey = unquote_or_empty(Some(&u.host));
+    let apikey = u.host();
     let mut targets = u.path_segments();
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));

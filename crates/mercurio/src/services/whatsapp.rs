@@ -68,10 +68,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut from_phone_id = u.host();
     let mut template = None;
     let mut token = if u.password.is_some() {
-        template = Some(u.user.as_deref().map(unquote).unwrap_or_default());
+        template = Some(u.user().unwrap_or_default());
         u.password.as_deref().map(unquote).unwrap_or_default()
     } else {
-        u.user.as_deref().map(unquote).unwrap_or_default()
+        u.user().unwrap_or_default()
     };
     if let Some(t) = u.param_nonempty("token") {
         token = unquote(t);

@@ -3,7 +3,7 @@
 use super::_sms::PHONE_TARGETS;
 use serde_json::json;
 
-use super::_telephony::{unquote_or_empty, valid_phones};
+use super::_telephony::valid_phones;
 use crate::http::Request;
 use crate::parse::parse_phone_no_unquoted;
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -47,7 +47,7 @@ struct Seven {
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let mut targets = u.path_segments();
-    let apikey = unquote_or_empty(Some(&u.host));
+    let apikey = u.host();
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));
     }

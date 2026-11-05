@@ -266,8 +266,8 @@ impl Twitter {
     }
 
     fn record_rate(&self, r: &Response) {
-        let remaining = r.header("x-rate-limit-remaining").and_then(|v| v.trim().parse::<i64>().ok());
-        let reset = r.header("x-rate-limit-reset").and_then(|v| v.trim().parse::<i64>().ok());
+        let remaining = r.header("x-rate-limit-remaining").and_then(crate::util::parse_trimmed::<i64>);
+        let reset = r.header("x-rate-limit-reset").and_then(crate::util::parse_trimmed::<i64>);
         let mut rl = self.ratelimit.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(rem) = remaining {
             rl.0 = rem;

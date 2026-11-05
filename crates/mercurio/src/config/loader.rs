@@ -169,7 +169,7 @@ impl Loader<'_> {
                     warnings.push(format!("HTTP configuration request failed: HTTP {}", res.status));
                     return None;
                 }
-                let declared: usize = res.header("content-length").and_then(|v| v.trim().parse().ok()).unwrap_or(0);
+                let declared: usize = res.header("content-length").and_then(crate::util::parse_trimmed).unwrap_or(0);
                 if declared > MAX_BUFFER_SIZE || res.body.len() > MAX_BUFFER_SIZE {
                     warnings.push(format!(
                         "HTTP config response exceeds maximum buffer length ({}KB);",

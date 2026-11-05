@@ -326,7 +326,7 @@ fn build_request(ep: &Endpoint, step: &Step) -> Request {
 }
 
 fn update_ratelimit(rl: &mut RateLimit, r: &Response) {
-    let rem = r.header("X-RateLimit-Remaining").and_then(|v| v.trim().parse::<f64>().ok());
+    let rem = r.header("X-RateLimit-Remaining").and_then(crate::util::parse_trimmed::<f64>);
     let reset = r.header("X-RateLimit-Reset").and_then(parse_int);
     if let (Some(rem), Some(reset)) = (rem, reset) {
         rl.remaining = rem;

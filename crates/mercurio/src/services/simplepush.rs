@@ -203,7 +203,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     let critical_volume = match volume_raw.as_deref().filter(|v| !v.trim().is_empty()) {
         None => None,
         Some(v) => {
-            let f = v.trim().parse::<f64>().ok().filter(|f| *f > 0.0 && *f <= 1.0).ok_or_else(|| {
+            let f = crate::util::parse_trimmed::<f64>(v).filter(|f| *f > 0.0 && *f <= 1.0).ok_or_else(|| {
                 SERVICE
                     .err("an invalid Simplepush critical volume was specified; it must be greater than 0 and at most 1")
             })?;
