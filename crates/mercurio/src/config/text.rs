@@ -88,9 +88,3 @@ pub(super) fn parse_text(content: &str) -> Parsed {
     apply_groups(&mut out.entries, &groups);
     out
 }
-
-/// `GET_SCHEMA_RE.match`.
-pub(super) fn get_schema(url: &str) -> Option<String> {
-    let re = crate::regex!(r"(?i)^\s*(?P<schema>[a-z0-9]{1,32})://.*\n?\z");
-    re.captures(url).map(|c| c["schema"].to_lowercase())
-}

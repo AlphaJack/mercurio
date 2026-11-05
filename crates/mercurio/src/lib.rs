@@ -249,6 +249,7 @@ mod machine;
 mod message;
 mod net;
 mod parse;
+mod paths;
 mod plan;
 mod prepare;
 mod re;

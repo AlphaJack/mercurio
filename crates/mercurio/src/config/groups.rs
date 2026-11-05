@@ -1,8 +1,8 @@
 //! Tag groups: `groups:` / `name=tags` assignments and their expansion.
 
+use super::fold::{yaml_list, yaml_set};
 use super::model::RawEntry;
 use super::yaml::Yaml;
-use super::yaml_doc::{yaml_list, yaml_set};
 
 /// `__normalize_tag_groups`: expand groups of groups.
 pub(super) fn normalize_groups(groups: &mut Vec<(String, Vec<String>)>) {

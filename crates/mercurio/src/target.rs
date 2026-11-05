@@ -7,7 +7,7 @@ use std::sync::{Arc, LazyLock, OnceLock};
 use std::time::{Duration, Instant};
 
 use crate::asset::{Asset, StorageMode};
-use crate::config::{AssetValue, Config};
+use crate::asset_def::AssetValue;
 use crate::error::{Error, ErrorClass, Result};
 use crate::message::{Message, NotifyFormat, OverflowMode, Prepared};
 use crate::plan::{Delivery, DeliveryTracker, ExecOptions, Executor, Outcome, Plan, read_files, run_files};
@@ -223,8 +223,7 @@ impl Target {
     /// The asset this target sends with, given the notifier's base asset.
     pub(crate) fn effective_asset(&self, base: &Asset) -> Option<Asset> {
         let ov = self.asset_overrides.as_ref()?;
-        let cfg = Config { asset: ov.as_ref().clone(), ..Config::default() };
-        Some(cfg.asset_for(base))
+        Some(base.with_overrides(ov))
     }
 
     /// The URL's settings, with the asset's redirect default unless the URL sets `?redirect=`.
@@ -499,6 +498,18 @@ fn default_url_identifier(p: &ParsedUrl) -> Vec<u8> {
     out.extend_from_slice(path.trim_end_matches('/').as_bytes());
     out.push(if p.secure { b's' } else { b'i' });
     out
+}
+
+impl Registry {
+    /// The service handling `scheme`: compiled-in services first ([`crate::service_for_scheme`]), then this registry's.
+    pub fn service_for_scheme(&self, scheme: &str) -> Option<&'static ServiceDef> {
+        service_for_scheme(scheme).or_else(|| self.lookup(scheme))
+    }
+
+    /// [`crate::parse`](crate::parse()) with this registry's services too.
+    pub fn parse(&self, url: &str) -> Result<Target> {
+        parse_with(url, self)
+    }
 }
 
 #[cfg(test)]

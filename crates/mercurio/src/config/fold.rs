@@ -182,3 +182,35 @@ pub(super) fn alias_tokens(t: &mut Vec<(String, Yaml)>) {
         t.push(("password".into(), v));
     }
 }
+
+/// `parse_list(value, cast=str)` over YAML values.
+pub(super) fn yaml_list(v: &Yaml, out: &mut Vec<String>) {
+    match v {
+        Yaml::Str(s) => out.extend(crate::parse::parse_list_unsorted([s.as_str()])),
+        Yaml::Seq(items) => {
+            for i in items {
+                yaml_list(i, out);
+            }
+        }
+        Yaml::Bool(_) | Yaml::Null => {}
+        other @ (Yaml::Int(_) | Yaml::Float(_) | Yaml::Map(_)) => {
+            if other.has_value() {
+                out.extend(crate::parse::parse_list_unsorted([other.to_text()]));
+            }
+        }
+    }
+}
+
+pub(super) fn yaml_set(v: &Yaml) -> Vec<String> {
+    let mut out = Vec::new();
+    yaml_list(v, &mut out);
+    out.sort();
+    out.dedup();
+    out
+}
+
+/// `GET_SCHEMA_RE.match`.
+pub(super) fn get_schema(url: &str) -> Option<String> {
+    let re = crate::regex!(r"(?i)^\s*(?P<schema>[a-z0-9]{1,32})://.*\n?\z");
+    re.captures(url).map(|c| c["schema"].to_lowercase())
+}
