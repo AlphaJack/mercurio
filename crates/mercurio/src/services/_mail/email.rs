@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use crate::re::Regex;
 
+use super::super::_email_api::{cc_for, except, set_add};
 use super::mime::{Part, formataddr, header_value, render_owned};
 use super::super::_keys::{local_file_ops, read_local_file, remote_fetches};
 use super::smtp::{Envelope, Job, Security, session};
@@ -313,11 +314,6 @@ fn user_prefix(user: &str) -> &str {
     user.split(|c: char| c.is_whitespace() || c == '@').next().unwrap_or("")
 }
 
-fn insert_unique(v: &mut Vec<String>, s: String) {
-    if !v.contains(&s) {
-        v.push(s);
-    }
-}
 
 fn set_name(names: &mut Vec<(String, Name)>, addr: &str, name: Name) {
     match names.iter_mut().find(|(a, _)| a == addr) {
@@ -420,7 +416,7 @@ impl Email {
         let mut collect = |raw: Option<&str>, out: &mut Vec<String>| {
             for r in parse_emails(raw, true) {
                 if let Some(e) = is_email(&r) {
-                    insert_unique(out, e.full_email.clone());
+                    set_add(out, e.full_email.clone());
                     set_name(&mut names, &e.full_email, Name::of(&e.name));
                 }
             }
@@ -676,9 +672,9 @@ impl Email {
 
         let mut out = Vec::new();
         for (to_name, to_addr) in &self.targets {
-            let cc: Vec<&String> = self.cc.iter().filter(|a| !self.bcc.contains(a) && *a != to_addr).collect();
-            let bcc: Vec<&String> = self.bcc.iter().filter(|a| *a != to_addr).collect();
-            let reply: Vec<&String> = self.reply_to.iter().filter(|a| *a != to_addr).collect();
+            let cc: Vec<&String> = cc_for(&self.cc, &self.bcc, to_addr).collect();
+            let bcc: Vec<&String> = except(&self.bcc, to_addr).collect();
+            let reply: Vec<&String> = except(&self.reply_to, to_addr).collect();
 
             // Borrowed until the inline-image handling below has to add to it: the body can be megabytes.
             let mut body: std::borrow::Cow<'_, str> = std::borrow::Cow::Borrowed(msg.body);

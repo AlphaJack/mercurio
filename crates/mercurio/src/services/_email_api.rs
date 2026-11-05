@@ -2,6 +2,7 @@
 
 use crate::crypto::b64;
 use crate::message::Attachment;
+use super::_mail::mime::formataddr;
 use crate::parse::{EmailAddr, is_email, parse_emails};
 
 /// Attachment name fallback: `file{no:03}.{ext}` (`no` starts at 1).
@@ -113,14 +114,112 @@ pub(crate) fn unique_emails(value: Option<&str>) -> Vec<String> {
 }
 
 /// A `?cc=` / `?bcc=` style list: de-duplicated valid addresses. Each address's display name is recorded in `names` (last one wins).
-pub(crate) fn copy_list(names: &mut Vec<(String, String)>, value: Option<&str>) -> Vec<String> {
+pub(crate) fn copy_list<I, S>(names: &mut Vec<(String, String)>, entries: I) -> Vec<String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
     let mut set = Vec::new();
-    for e in valid_emails(parse_emails(value, true)) {
-        set_add(&mut set, e.full_email.clone());
-        names.retain(|(k, _)| *k != e.full_email);
-        names.push((e.full_email, e.name));
+    for e in valid_emails(parse_emails(entries, true)) {
+        set_name(names, &e.full_email, &e.name);
+        set_add(&mut set, e.full_email);
     }
     set
+}
+
+/// The valid addresses among `entries` (display names allowed), de-duplicated, in order.
+pub(crate) fn email_set<I, S>(entries: I) -> Vec<String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let mut set = Vec::new();
+    for e in valid_emails(parse_emails(entries, true)) {
+        set_add(&mut set, e.full_email);
+    }
+    set
+}
+
+/// The valid addresses among `entries` as `full_email`, in order, repeats kept.
+pub(crate) fn full_emails<I, S>(entries: I) -> Vec<String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    valid_emails(entries).into_iter().map(|e| e.full_email).collect()
+}
+
+/// Records `name` as the display name of `email`, replacing an earlier one.
+pub(crate) fn set_name(names: &mut Vec<(String, String)>, email: &str, name: &str) {
+    names.retain(|(k, _)| k != email);
+    names.push((email.to_owned(), name.to_owned()));
+}
+
+/// The display name recorded for `email`, or `""`.
+pub(crate) fn display_name<'a>(names: &'a [(String, String)], email: &str) -> &'a str {
+    names.iter().find(|(k, _)| k == email).map_or("", |(_, v)| v.as_str())
+}
+
+/// Each address of `addrs` as `Name <email>`, with the names recorded in `names`.
+pub(crate) fn with_names(names: &[(String, String)], addrs: &[&String]) -> Vec<String> {
+    addrs.iter().map(|a| formataddr(display_name(names, a), a)).collect()
+}
+
+/// The addresses of `list` other than `target`.
+pub(crate) fn except<'a>(list: &'a [String], target: &'a str) -> impl Iterator<Item = &'a String> + 'a {
+    list.iter().filter(move |e| e.as_str() != target)
+}
+
+/// The cc addresses not also in bcc.
+pub(crate) fn cc_only<'a>(cc: &'a [String], bcc: &'a [String]) -> impl Iterator<Item = &'a String> + 'a {
+    cc.iter().filter(move |e| !bcc.contains(e))
+}
+
+/// The cc addresses for one `target`: neither in bcc nor the target itself.
+pub(crate) fn cc_for<'a>(cc: &'a [String], bcc: &'a [String], target: &'a str) -> impl Iterator<Item = &'a String> + 'a {
+    cc_only(cc, bcc).filter(move |e| e.as_str() != target)
+}
+
+/// `[{"email": e}, ...]`.
+pub(crate) fn email_objects<'a>(emails: impl Iterator<Item = &'a String>) -> Vec<serde_json::Value> {
+    emails.map(|e| serde_json::json!({"email": e})).collect()
+}
+
+/// The API key and the sender's local part from `user:password@`; both are required.
+pub(crate) fn key_and_sender<'a>(
+    u: &'a crate::url::ParsedUrl,
+    service: &'static crate::service::ServiceDef,
+) -> crate::Result<(&'a str, &'a str)> {
+    let nonempty = |s: &'a Option<String>| s.as_deref().filter(|s| !s.is_empty());
+    let key = nonempty(&u.user).ok_or_else(|| service.err("no API key specified"))?;
+    let sender = nonempty(&u.password).ok_or_else(|| service.err("no from email specified"))?;
+    Ok((key, sender))
+}
+
+/// Attachments as `[{"content", "filename", "type", "disposition"}]`, the shape SendGrid and Resend take.
+pub(crate) fn attachment_objects(atts: &[Attachment]) -> serde_json::Value {
+    attachments_json(atts, "dat", |name, data, _| {
+        serde_json::json!({
+            "content": data,
+            "filename": name,
+            "type": "application/octet-stream",
+            "disposition": "attachment",
+        })
+    })
+}
+
+/// How many recipients one request takes: `size` with `?batch=yes`, else one.
+pub(crate) fn chunk_size(batch: bool, size: usize) -> usize {
+    if batch { size } else { 1 }
+}
+
+/// A batch's label in the report: up to three addresses, else their count.
+pub(crate) fn batch_label(batch: &[(String, String)]) -> String {
+    if batch.len() <= 3 {
+        batch.iter().map(|(_, e)| e.as_str()).collect::<Vec<_>>().join(", ")
+    } else {
+        format!("{} recipients", batch.len())
+    }
 }
 
 pub(crate) fn text_to_html(body: &str) -> String {

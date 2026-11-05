@@ -5,6 +5,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use super::_email_api::{cc_for, except};
 use crate::env::Env;
 use crate::error::Error;
 use crate::http::Request;
@@ -221,10 +222,10 @@ impl Notify for Arc<Ses> {
 
         let mut plans = Vec::new();
         for (to_name, to_addr) in &self.targets {
-            let cc_addrs: Vec<&String> = self.cc.iter().filter(|a| !self.bcc.contains(a) && *a != to_addr).collect();
+            let cc_addrs: Vec<&String> = cc_for(&self.cc, &self.bcc, to_addr).collect();
             let cc: Vec<String> =
                 cc_addrs.iter().map(|a| formataddr(self.names.get(*a).map_or("", String::as_str), a)).collect();
-            let bcc: Vec<&String> = self.bcc.iter().filter(|a| *a != to_addr).collect();
+            let bcc: Vec<&String> = except(&self.bcc, to_addr).collect();
             let mut headers = vec![
                 ("Subject".to_owned(), header_value(msg.title)),
                 ("From".into(), formataddr(&from_name, &self.from_addr)),

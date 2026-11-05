@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
+use super::_email_api::set_add;
 use crate::asset::ImageSize;
 use crate::error::Error;
 use crate::parse::{is_email, is_phone_no, parse_emails, parse_list, parse_list_unsorted, validate_regex};
@@ -101,11 +102,6 @@ struct Pingram {
     tokens: Vec<(String, String)>,
 }
 
-fn add_unique(v: &mut Vec<String>, s: String) {
-    if !v.contains(&s) {
-        v.push(s);
-    }
-}
 
 /// `^\s*(@|%40)?(?P<id>[\w_-]+)\s*$`
 fn match_id(entry: &str) -> Option<String> {
@@ -195,7 +191,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         if !CHANNELS.contains(&c.as_str()) {
             return Err(SERVICE.err("the Pingram forced channel specified is invalid"));
         }
-        add_unique(&mut chans, c);
+        set_add(&mut chans, c);
     }
 
     let mut recipients = Vec::new();
@@ -243,7 +239,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
         let mut out = Vec::new();
         for r in parse_emails(s.iter(), true) {
             if let Some(e) = is_email(&r) {
-                add_unique(&mut out, e.full_email);
+                set_add(&mut out, e.full_email);
             }
         }
         out
