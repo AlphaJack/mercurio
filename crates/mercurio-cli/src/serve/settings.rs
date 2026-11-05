@@ -281,7 +281,7 @@ impl Settings {
         let storage = (storage_mode != mercurio::asset::StorageMode::Memory).then(|| {
             a.storage_dir
                 .as_deref()
-                .filter(|d| !d.trim().is_empty())
+                .filter(super::text::non_blank)
                 .map(PathBuf::from)
                 .unwrap_or_else(|| config_dir.join("store"))
         });
@@ -307,13 +307,13 @@ impl Settings {
             prune: flag(&a.prune_enabled, true).then(|| Prune::from_args(a)).transpose()?,
             services,
             attach_urls,
-            webhook: a.webhook_url.clone().filter(|u| !u.trim().is_empty()),
+            webhook: a.webhook_url.clone().filter(super::text::non_blank),
             auth,
             config_dir,
             stateful,
             secret,
             stateless_enabled: flag(&a.stateless_mode, true),
-            stateless_urls: a.stateless_urls.clone().filter(|v| !v.trim().is_empty()),
+            stateless_urls: a.stateless_urls.clone().filter(super::text::non_blank),
             recursion_max: int("APPRISE_RECURSION_MAX", &a.recursion_max, 0, i64::from(u32::MAX))? as u32,
             config_lock: flag(&a.config_lock, false),
             admin_list: flag(&a.admin, true),

@@ -77,7 +77,7 @@ pub(crate) fn generate(root: &Path, services: Value) -> Result<(), String> {
 }
 
 fn read(path: &Path) -> Result<String, String> {
-    std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))
+    std::fs::read_to_string(path).map_err(crate::io_error(path))
 }
 
 fn str_of<'a>(v: &'a Value, key: &str) -> &'a str {

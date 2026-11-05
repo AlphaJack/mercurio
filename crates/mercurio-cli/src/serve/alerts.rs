@@ -26,7 +26,7 @@ pub(super) fn convert(data: &mut Map<String, Value>) {
 }
 
 fn text(data: &Map<String, Value>, key: &str) -> Option<String> {
-    data.get(key).and_then(Value::as_str).filter(|s| !s.trim().is_empty()).map(str::to_owned)
+    data.get(key).and_then(Value::as_str).filter(super::text::non_blank).map(str::to_owned)
 }
 
 /// The values of a label set, sorted by label name.

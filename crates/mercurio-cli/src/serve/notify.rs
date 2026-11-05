@@ -25,6 +25,11 @@ impl LogEntry {
         LogEntry { level, time: SystemTime::now(), message, service }
     }
 
+    /// `[level, time, message]`, as a JSON reply's `details` and the webhook's `output` list it.
+    pub(super) fn row(&self) -> Value {
+        json!([self.level, self.asctime(), self.message])
+    }
+
     /// `YYYY-MM-DD HH:MM:SS,mmm` (UTC).
     pub(super) fn asctime(&self) -> String {
         let d = self.time.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
@@ -60,7 +65,7 @@ pub(super) fn report_logs(report: &Report) -> Vec<LogEntry> {
 
 pub(super) fn render(req: &Req, status: u16, logs: &[LogEntry], error: Option<&str>) -> Reply {
     if req.wants_json() {
-        let details: Vec<Value> = logs.iter().map(|l| json!([l.level, l.asctime(), l.message])).collect();
+        let details: Vec<Value> = logs.iter().map(LogEntry::row).collect();
         return Reply::json(status, &json!({"error": error, "details": details}));
     }
     if req.wants_html_logs() {
