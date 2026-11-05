@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::_telephony::{Form, http_err, json_object, param_unquoted, has_value};
+use super::_telephony::{Form, http_err, json_object, has_value};
 use crate::error::Error;
 use crate::http::Response;
 use crate::parse::{is_phone_no, parse_list, validate_regex};
@@ -55,10 +55,10 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list([to]).into_iter().map(|t| unquote(&t)).filter(|t| !t.is_empty()));
     }
-    if let Some(s) = param_unquoted(u, "from") {
+    if let Some(s) = u.text("from") {
         sender = s;
     }
-    if let Some(s) = param_unquoted(u, "sender") {
+    if let Some(s) = u.text("sender") {
         sender = s;
     }
     let user = u.user().unwrap_or_default();

@@ -6,9 +6,10 @@ use super::_dbus::{Call, Hint, Notification, session_bus};
 use crate::env::Env;
 use crate::error::Error;
 use crate::transport::{Command, CommandOutput, FileOp, FileOutput};
+use crate::service::{Context, Notify, Param, ServiceDef};
 use crate::url::ParsedUrl;
 use crate::util::parse_int;
-use crate::{Plan, Result};
+use crate::{Plan, Prepared, Result};
 
 /// Urgency levels shared by the D-Bus style notifiers.
 pub(crate) const URGENCY_LOW: u8 = 0;
@@ -27,6 +28,44 @@ const URGENCY_MAP: &[(&str, u8)] = &[
     ("2", URGENCY_HIGH),
 ];
 
+/// The `?urgency=` option of the D-Bus style notifiers.
+pub(crate) const URGENCY: Param = Param::new("urgency", "Urgency").choice(&["0", "1", "2"]).default("1").aliases(&["priority"]);
+
+/// How long a D-Bus notification stays up.
+const BUS_TIMEOUT_MS: i32 = 13000;
+
+/// A notification sent through `org.freedesktop.Notifications` on the session bus (dbus, glib).
+#[derive(Debug)]
+struct BusNotifier {
+    urgency: u8,
+    xy: Option<(i64, i64)>,
+    include_image: bool,
+}
+
+/// A [`BusNotifier`] from `u`.
+pub(crate) fn parse_bus(u: &ParsedUrl, service: &'static ServiceDef) -> Result<Box<dyn Notify>> {
+    Ok(Box::new(BusNotifier { urgency: urgency(u), xy: xy(u, service)?, include_image: service.flag_strict(u, "image") }))
+}
+
+impl Notify for BusNotifier {
+    fn plan(&self, msg: &Prepared<'_>, ctx: &Context<'_>) -> Plan {
+        let (title, body) = if msg.title.is_empty() { (msg.body, "") } else { (msg.title, msg.body) };
+        let icon = if self.include_image { ctx.asset.icon_file(msg.kind, "svg") } else { None };
+        notify(
+            &DesktopNotify {
+                app: ctx.app_id(),
+                icon: icon.as_ref(),
+                title,
+                body,
+                urgency: self.urgency,
+                xy: self.xy,
+                timeout_ms: BUS_TIMEOUT_MS,
+            },
+            ctx.env().as_ref(),
+        )
+    }
+}
+
 /// `?urgency=` (falling back to `?priority=`).
 pub(crate) fn urgency(u: &ParsedUrl) -> u8 {
     let raw = u.text("urgency").or_else(|| u.text("priority"));
@@ -40,7 +79,7 @@ pub(crate) fn urgency(u: &ParsedUrl) -> u8 {
 }
 
 /// `?x=` / `?y=` screen coordinates (D-Bus hints). Both must be integers when either one is given.
-pub(crate) fn xy(u: &ParsedUrl, service: &'static crate::ServiceDef) -> Result<Option<(i64, i64)>> {
+pub(crate) fn xy(u: &ParsedUrl, service: &'static ServiceDef) -> Result<Option<(i64, i64)>> {
     let x = service.text(u, "x");
     let y = service.text(u, "y");
     if x.as_deref().is_none_or(str::is_empty) && y.as_deref().is_none_or(str::is_empty) {

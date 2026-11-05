@@ -90,6 +90,19 @@ pub(crate) fn aws_check(res: Result<Response>) -> Result<Response> {
     }
 }
 
+/// Done when the answer passes [`aws_check`], else failed.
+pub(crate) fn aws_done(res: Result<Response>) -> crate::Plan {
+    match aws_check(res) {
+        Ok(_) => crate::Plan::Done,
+        Err(e) => crate::Plan::Fail(e),
+    }
+}
+
+/// `region` when it is an AWS region such as `us-east-1`, stripped.
+pub(crate) fn valid_region(region: &str) -> Option<String> {
+    crate::parse::validate_regex(region, r"^[a-z]{2}-[a-z-]+?-[0-9]+$", "i", true)
+}
+
 /// Text of the leaf elements named in `keep` (tag -> key). `None` when the document is not well-formed XML (callers then keep only their defaults).
 #[cfg(feature = "service-sns")]
 pub(crate) fn flatten_xml(xml: &str, keep: &[(&str, &str)]) -> Option<BTreeMap<String, String>> {

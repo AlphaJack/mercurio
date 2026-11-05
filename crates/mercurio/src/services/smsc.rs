@@ -1,7 +1,7 @@
 //! SMSC (`smsc://`): SMS through the SMSC API.
 
 use super::_sms::PHONE_TARGETS;
-use super::_telephony::{Form, http_err, json_object, param_unquoted, valid_phones};
+use super::_telephony::{Form, http_err, json_object, valid_phones};
 use crate::error::Error;
 use crate::http::{Request, Response};
 use crate::parse::{parse_phone_no_unquoted, validate_nonblank};
@@ -51,7 +51,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_phone_no_unquoted([to], false));
     }
-    let sender = param_unquoted(u, "sender");
+    let sender = u.text("sender");
     let translit = SERVICE.flag(u, "translit");
 
     let user = u.user().unwrap_or_default();

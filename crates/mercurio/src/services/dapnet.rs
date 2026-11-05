@@ -2,7 +2,6 @@
 
 use serde_json::json;
 
-use super::_telephony::param_unquoted;
 use crate::parse::{is_call_sign, parse_call_sign, parse_list};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
 use crate::url::{ParsedUrl, unquote};
@@ -59,7 +58,7 @@ fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
     if let Some(to) = u.param_nonempty("to") {
         targets.extend(parse_list_unquoted(to));
     }
-    let priority = param_unquoted(u, "priority");
+    let priority = u.text("priority");
     let txgroups: Option<Vec<String>> =
         SERVICE.raw(u, "txgroups").map(|t| parse_list_unquoted(t).into_iter().map(|x| x.to_lowercase()).collect());
     let batch = SERVICE.flag(u, "batch");

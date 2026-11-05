@@ -120,31 +120,27 @@ fn basename(p: &str) -> &str {
     p.rsplit('/').next().unwrap_or("")
 }
 
-fn param_unquoted(u: &ParsedUrl, key: &str) -> Option<String> {
-    u.param_nonempty(key).map(unquote)
-}
-
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let priority_raw = param_unquoted(u, "priority");
+    let priority_raw = u.text("priority");
 
     let mut attach = None;
     let mut filename = None;
-    if let Some(a) = param_unquoted(u, "attach") {
+    if let Some(a) = u.text("attach") {
         if let Some(r) = crate::url::parse_url(&a) {
             let b = basename(r.fullpath.as_deref().unwrap_or(""));
             filename = if b.is_empty() { None } else { Some(b.to_owned()) };
         }
-        if let Some(f) = param_unquoted(u, "filename") {
+        if let Some(f) = u.text("filename") {
             filename = Some(basename(&f).to_owned());
         }
         attach = Some(a);
     }
-    let click_raw = param_unquoted(u, "click");
-    let delay = param_unquoted(u, "delay");
-    let email = param_unquoted(u, "email");
+    let click_raw = u.text("click");
+    let delay = u.text("delay");
+    let email = u.text("email");
     let raw_xtags = u.param_nonempty("xtags").or_else(|| u.param_nonempty("tags")).unwrap_or("");
     let xtags = if raw_xtags.is_empty() { Vec::new() } else { parse_list([unquote(raw_xtags)]) };
-    let actions = param_unquoted(u, "actions");
+    let actions = u.text("actions");
     let include_image = SERVICE.flag(u, "image");
     let avatar_url = u.param("avatar_url").map(unquote);
 

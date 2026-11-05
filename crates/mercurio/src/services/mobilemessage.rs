@@ -3,7 +3,7 @@
 use super::_sms::PHONE_TARGETS;
 use serde_json::{Value, json};
 
-use super::_telephony::{http_err, json_object, phone_entries, param_unquoted};
+use super::_telephony::{http_err, json_object, phone_entries};
 use crate::error::Error;
 use crate::parse::{parse_bool, parse_phone_no_unquoted, validate_nonblank, validate_regex};
 use crate::service::{Context, Limits, Notify, Param, Secret, ServiceDef};
@@ -57,7 +57,7 @@ struct MobileMessage {
 }
 
 fn parse(u: &ParsedUrl) -> Result<Box<dyn Notify>> {
-    let (source, mut targets) = match param_unquoted(u, "from") {
+    let (source, mut targets) = match u.text("from") {
         Some(f) => {
             let mut t = parse_phone_no_unquoted([u.host.as_str()], false);
             t.extend(u.path_segments());
