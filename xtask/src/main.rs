@@ -48,6 +48,16 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
 }
 
+/// `docs/book/src/generated`, where `cargo xtask docs` writes the pages it generates.
+fn generated_dir(root: &Path) -> PathBuf {
+    root.join("docs").join("book").join("src").join("generated")
+}
+
+/// An I/O error, prefixed with the path it is about.
+fn io_error(path: &Path) -> impl Fn(std::io::Error) -> String + '_ {
+    move |e| format!("{}: {e}", path.display())
+}
+
 fn docs() -> Result<(), String> {
     let root = root();
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
@@ -73,8 +83,8 @@ fn docs() -> Result<(), String> {
     if !out.status.success() {
         return Err(format!("mercurio --help: {}", String::from_utf8_lossy(&out.stderr)));
     }
-    let generated = root.join("docs").join("book").join("src").join("generated");
-    std::fs::create_dir_all(&generated).map_err(|e| format!("{}: {e}", generated.display()))?;
+    let generated = generated_dir(&root);
+    std::fs::create_dir_all(&generated).map_err(io_error(&generated))?;
     std::fs::write(generated.join("cli-help.txt"), &out.stdout).map_err(|e| format!("cli-help.txt: {e}"))?;
 
     // `serve --help` repeats the global options; the book shows the server's own.
@@ -110,10 +120,10 @@ fn docs() -> Result<(), String> {
 
     // The icons are published next to the book; services link to them.
     let icons = root.join("docs").join("book").join("src").join("assets").join("icons");
-    std::fs::create_dir_all(&icons).map_err(|e| format!("{}: {e}", icons.display()))?;
+    std::fs::create_dir_all(&icons).map_err(io_error(&icons))?;
     for name in ["logo.svg", "logo.png", "LICENSE"] {
         let from = root.join("crates").join("mercurio").join("assets").join(name);
-        std::fs::copy(&from, icons.join(name)).map_err(|e| format!("{}: {e}", from.display()))?;
+        std::fs::copy(&from, icons.join(name)).map_err(io_error(&from))?;
     }
 
     eprintln!("==> rustdoc (warnings are errors)");
@@ -150,7 +160,7 @@ fn docs() -> Result<(), String> {
     let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), PathBuf::from);
     let api = root.join("docs").join("book").join("book").join("api");
     if api.exists() {
-        std::fs::remove_dir_all(&api).map_err(|e| format!("{}: {e}", api.display()))?;
+        std::fs::remove_dir_all(&api).map_err(io_error(&api))?;
     }
     copy_dir(&target.join("doc"), &api)?;
     eprintln!("==> done: open docs/book/book/index.html (API docs: docs/book/book/api/mercurio/index.html)");

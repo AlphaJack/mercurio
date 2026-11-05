@@ -12,17 +12,8 @@ pub(crate) fn scaffold(root: &Path, id: &str) -> Result<(), String> {
     {
         return Err(format!("{id:?}: use the brand name in lowercase letters and digits, without separators"));
     }
-    let name = {
-        let mut c = id.chars();
-        c.next().map(|f| f.to_ascii_uppercase().to_string() + c.as_str()).unwrap_or_default()
-    };
-    let ty: String = id
-        .split('_')
-        .map(|w| {
-            let mut c = w.chars();
-            c.next().map(|f| f.to_ascii_uppercase().to_string() + c.as_str()).unwrap_or_default()
-        })
-        .collect();
+    let name = capitalized(id);
+    let ty: String = id.split('_').map(capitalized).collect();
     let fill = |t: &str| t.replace("AcmeService", &ty).replace("Acme", &name).replace("acme", id);
     let files = [
         (root.join("crates").join("mercurio").join("src").join("services").join(format!("{id}.rs")), fill(SERVICE)),
@@ -42,7 +33,7 @@ pub(crate) fn scaffold(root: &Path, id: &str) -> Result<(), String> {
         }
     }
     for (path, content) in &files {
-        std::fs::write(path, content).map_err(|e| format!("{}: {e}", path.display()))?;
+        std::fs::write(path, content).map_err(crate::io_error(path))?;
         eprintln!("wrote {}", path.strip_prefix(root).unwrap_or(path).display());
     }
     add_feature(&root.join("crates").join("mercurio").join("Cargo.toml"), id)?;
@@ -50,17 +41,23 @@ pub(crate) fn scaffold(root: &Path, id: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// `word` with its first letter in upper case.
+fn capitalized(word: &str) -> String {
+    let mut c = word.chars();
+    c.next().map(|f| f.to_ascii_uppercase().to_string() + c.as_str()).unwrap_or_default()
+}
+
 /// Adds `service-<id>` to `all-services` and to the per-service features, each in sorted order (the names `build.rs` checks).
 fn add_feature(manifest: &Path, id: &str) -> Result<(), String> {
     let feature = format!("service-{id}");
-    let text = std::fs::read_to_string(manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
+    let text = std::fs::read_to_string(manifest).map_err(crate::io_error(manifest))?;
     let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();
     let start = lines.iter().position(|l| l.starts_with("all-services = [")).ok_or("Cargo.toml: no `all-services`")?;
     let end = start + lines[start..].iter().position(|l| l == "]").ok_or("Cargo.toml: unterminated `all-services`")?;
     insert_sorted(&mut lines, start + 1..end, format!("  \"{feature}\","));
     let len = lines.len();
     insert_sorted(&mut lines, end + 1..len, format!("{feature} = []"));
-    std::fs::write(manifest, lines.join("\n") + "\n").map_err(|e| format!("{}: {e}", manifest.display()))?;
+    std::fs::write(manifest, lines.join("\n") + "\n").map_err(crate::io_error(manifest))?;
     eprintln!("added `{feature}` to crates/mercurio/Cargo.toml");
     Ok(())
 }

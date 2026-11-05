@@ -612,6 +612,11 @@ pub(super) async fn attachments(
     Ok(out)
 }
 
+/// The strings of a JSON list; other values are left out.
+pub(super) fn strings(values: &[Value]) -> Vec<String> {
+    values.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -16,6 +16,7 @@ mod payload;
 mod router;
 mod settings;
 mod store;
+mod text;
 
 use std::sync::Arc;
 use std::time::Duration;

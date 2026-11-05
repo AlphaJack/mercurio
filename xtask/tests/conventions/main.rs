@@ -7,6 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod duplicates;
 mod paths;
 
 /// The workspace's folder.
@@ -43,4 +44,13 @@ fn all_sources() -> Vec<(String, String)> {
         sources(&dir, &mut found);
     }
     found
+}
+
+/// `#[test]`, or `#[cfg(test)]`.
+fn is_test(attrs: &[syn::Attribute]) -> bool {
+    attrs.iter().any(|a| match &a.meta {
+        syn::Meta::Path(path) => path.is_ident("test"),
+        syn::Meta::List(list) => list.path.is_ident("cfg") && list.tokens.to_string() == "test",
+        syn::Meta::NameValue(_) => false,
+    })
 }

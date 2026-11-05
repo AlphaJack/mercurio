@@ -30,7 +30,7 @@ impl ServiceFilter {
         let ids = |list: &str| -> BTreeSet<&'static str> {
             names(list).iter().filter_map(|n| mercurio::service_for_scheme(n)).map(|d| d.id).collect()
         };
-        let disabled = match (allow.filter(|a| !a.trim().is_empty()), deny) {
+        let disabled = match (allow.filter(super::text::non_blank), deny) {
             (Some(allow), _) => {
                 let keep = ids(allow);
                 mercurio::services().iter().map(|d| d.id).filter(|id| !keep.contains(id)).collect()
@@ -188,7 +188,7 @@ pub(super) async fn send_webhook(
         log::warn!("The webhook result URL is not using the HTTP protocol");
         return;
     }
-    let output: Vec<Value> = logs.iter().map(|l| json!([l.level, l.asctime(), l.message])).collect();
+    let output: Vec<Value> = logs.iter().map(LogEntry::row).collect();
     let body = json!({"source": source, "status": if ok { 0 } else { 1 }, "output": output});
     let (scheme, rest) = url.split_once("://").unwrap_or(("http", url));
     let end = rest.find(['/', '?']).unwrap_or(rest.len());
