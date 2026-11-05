@@ -31,6 +31,7 @@
 //! | `text` / `bytes` | the whole text / binary body |
 //! | `events:/0/send` | an event value at a pointer |
 
+mod comparators;
 pub mod desktop;
 pub mod events;
 mod runner;

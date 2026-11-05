@@ -1,5 +1,6 @@
 //! The fixture runner and its request comparators (see [`super`]).
 
+use crate::re::Regex;
 use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
@@ -146,8 +147,8 @@ fn record_case_with(doc: &Value, case: &Value, front: Front) -> Value {
         Err(e) => return json!({"valid": false, "error": e.to_string()}),
     };
     let ignore = ignores(case);
-    if let Some(c) = super::events::comparator(doc["service"].as_str().unwrap_or("")) {
-        return super::events::record(c, doc, case, target, &ignore, front);
+    if let Some(c) = super::comparators::comparator(doc["service"].as_str().unwrap_or("")) {
+        return record_events(c, doc, case, target, &ignore, front);
     }
     let fake = case_transport(case);
     let asset = fixture_asset(doc);
@@ -164,11 +165,6 @@ fn record_case_with(doc: &Value, case: &Value, front: Front) -> Value {
 /// The errors of `delivery`, as text.
 pub(crate) fn error_texts(delivery: &crate::Delivery) -> Vec<String> {
     delivery.errors().map(ToString::to_string).collect()
-}
-
-/// Whether a scripted response says `"error": true`.
-pub(crate) fn scripted_error(r: &Value) -> bool {
-    r.get("error").and_then(Value::as_bool).unwrap_or(false)
 }
 
 /// `{valid, ok, errors}` of a delivery.
@@ -426,7 +422,7 @@ pub fn case_transport(case: &Value) -> Arc<FakeTransport> {
             if !has_ct {
                 resp = resp.with_header("Content-Type", "application/json");
             }
-            if scripted_error(r) {
+            if super::events::scripted_error(r) {
                 fake.fail(crate::Error::transport("scripted connection error"));
             } else {
                 fake.respond_with(resp);
@@ -446,7 +442,7 @@ fn mask_path(path: &str, ignore: &[String]) -> String {
     let mut path = path.to_owned();
     for rule in ignore {
         if let Some(re) = rule.strip_prefix("path~") {
-            match crate::re::Regex::new(re) {
+            match Regex::new(re) {
                 Ok(re) => path = re.replace_all(&path, IGNORED).into_owned(),
                 Err(e) => panic!("ignore {rule:?}: {e}"),
             }
@@ -500,6 +496,71 @@ fn blank_parts(v: &mut Value, parts: &[&str]) {
     }
 }
 
+fn rules_of(v: Option<&Value>) -> Vec<(Regex, String)> {
+    v.and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .filter_map(|r| Some((Regex::new(r[0].as_str()?).ok()?, r[1].as_str().unwrap_or("").to_owned())))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn normalise_strings(v: &mut Value, rules: &[(Regex, String)]) {
+    match v {
+        Value::String(s) => {
+            for (re, rep) in rules {
+                *s = re.replace_all(s, rep.as_str()).into_owned();
+            }
+        }
+        Value::Array(a) => {
+            for x in a {
+                normalise_strings(x, rules);
+            }
+        }
+        Value::Object(m) => {
+            for x in m.values_mut() {
+                normalise_strings(x, rules);
+            }
+        }
+        Value::Null | Value::Bool(_) | Value::Number(_) => {}
+    }
+}
+
+/// Run one valid case through `c` and record what mercurio did.
+pub(super) fn record_events(
+    c: &super::events::Comparator,
+    doc: &Value,
+    case: &Value,
+    target: crate::Target,
+    ignore: &[String],
+    front: Front,
+) -> Value {
+    let mut s = super::events::Session::default();
+    (c.setup)(&mut s, case);
+    let msgs = [case_message(case)];
+    let (attempts, _) = run_sends(front, target, &msgs, &s.fake, &fixture_asset(doc), false).remove(0);
+    let delivery = crate::target::last_delivery(attempts);
+    let ok = delivery.is_success();
+    let mut out = outcome(ok, error_texts(&delivery));
+    let http = s.fake.requests();
+    if !http.is_empty() {
+        out["requests"] = requests(&http, ignore);
+    }
+    if !ok && !c.events_on_failure {
+        return out;
+    }
+    let mut rules = rules_of(doc.get("normalise"));
+    rules.extend(rules_of(case.get("normalise")));
+    let mut events = Value::Array((c.normalise)((c.events)(&s, case)));
+    normalise_strings(&mut events, &rules);
+    for ptr in ignore.iter().filter_map(|i| i.strip_prefix("events:")) {
+        blank(&mut events, ptr);
+    }
+    out["events"] = events;
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -528,8 +589,8 @@ mod tests {
     #[test]
     fn every_event_service_has_a_comparator() {
         for s in ["email", "deltachat", "smpp", "irc", "aprs", "mqtt", "syslog", "rsyslog", "xmpp", "gnome"] {
-            assert!(super::super::events::comparator(s).is_some(), "{s}");
+            assert!(super::super::comparators::comparator(s).is_some(), "{s}");
         }
-        assert!(super::super::events::comparator("gotify").is_none());
+        assert!(super::super::comparators::comparator("gotify").is_none());
     }
 }
