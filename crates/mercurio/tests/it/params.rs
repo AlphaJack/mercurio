@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn services_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("src/services")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("services")
 }
 
 /// `name.rs` or every `.rs` file under `name/`.
@@ -122,7 +122,7 @@ fn declared_params_are_read_by_the_parser() {
 #[test]
 fn declared_defaults_are_the_parser_defaults() {
     use mercurio::testing::fixtures::{record_case, with_defaults};
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/services");
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("services");
     let mut errors = BTreeSet::new();
     let mut checked = BTreeSet::new();
     let mut files: Vec<PathBuf> = fs::read_dir(&dir).unwrap().map(|e| e.unwrap().path()).collect();

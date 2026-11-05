@@ -5,7 +5,7 @@ use std::path::Path;
 const FEATURES_INCLUDE: &str = "#![doc = include_str!(concat!(env!(\"OUT_DIR\"), \"/features.md\"))]";
 
 pub(crate) fn render(root: &Path) -> Result<(), String> {
-    let path = root.join("crates/mercurio/src/lib.rs");
+    let path = root.join("crates").join("mercurio").join("src").join("lib.rs");
     let source = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut lines = Vec::new();
     for line in source.lines() {
@@ -34,7 +34,7 @@ pub(crate) fn render(root: &Path) -> Result<(), String> {
     }
     let text = crate::pages::plain_code_links(&out.join("\n"), true);
     let text = crate::pages::plain_code_links(&text, false);
-    let dir = root.join("docs/book/src/generated");
+    let dir = root.join("docs").join("book").join("src").join("generated");
     std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     std::fs::write(dir.join("library.md"), text + "\n").map_err(|e| format!("library.md: {e}"))
 }

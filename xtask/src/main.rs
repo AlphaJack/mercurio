@@ -65,7 +65,7 @@ fn docs() -> Result<(), String> {
     if !out.status.success() {
         return Err(format!("mercurio --help: {}", String::from_utf8_lossy(&out.stderr)));
     }
-    let generated = root.join("docs/book/src/generated");
+    let generated = root.join("docs").join("book").join("src").join("generated");
     std::fs::create_dir_all(&generated).map_err(|e| format!("{}: {e}", generated.display()))?;
     std::fs::write(generated.join("cli-help.txt"), &out.stdout).map_err(|e| format!("cli-help.txt: {e}"))?;
 
@@ -101,10 +101,10 @@ fn docs() -> Result<(), String> {
     library::render(&root)?;
 
     // The icons are published next to the book; services link to them.
-    let icons = root.join("docs/book/src/assets/icons");
+    let icons = root.join("docs").join("book").join("src").join("assets").join("icons");
     std::fs::create_dir_all(&icons).map_err(|e| format!("{}: {e}", icons.display()))?;
     for name in ["logo.svg", "logo.png", "LICENSE"] {
-        let from = root.join("crates/mercurio/assets").join(name);
+        let from = root.join("crates").join("mercurio").join("assets").join(name);
         std::fs::copy(&from, icons.join(name)).map_err(|e| format!("{}: {e}", from.display()))?;
     }
 
@@ -140,7 +140,7 @@ fn docs() -> Result<(), String> {
         .args(["build", "docs/book"]))?;
 
     let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), PathBuf::from);
-    let api = root.join("docs/book/book/api");
+    let api = root.join("docs").join("book").join("book").join("api");
     if api.exists() {
         std::fs::remove_dir_all(&api).map_err(|e| format!("{}: {e}", api.display()))?;
     }

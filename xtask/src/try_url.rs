@@ -55,7 +55,8 @@ pub(crate) fn run(root: &Path, urls: &[&str]) -> Result<(), String> {
     let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), Into::into);
     let bin = target.join("debug").join(if cfg!(windows) { "mercurio.exe" } else { "mercurio" });
     let png = std::env::temp_dir().join("mercurio-try.png");
-    std::fs::copy(root.join("crates/mercurio/assets/logo.png"), &png).map_err(|e| format!("{}: {e}", png.display()))?;
+    std::fs::copy(root.join("crates").join("mercurio").join("assets").join("logo.png"), &png)
+        .map_err(|e| format!("{}: {e}", png.display()))?;
 
     let mut failed = 0;
     for (label, args) in cases(&png.to_string_lossy()) {

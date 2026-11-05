@@ -409,7 +409,7 @@ mod tests {
         s.set("a", json!({"x": 1}), None);
         s.remember("token", json!("secret"), None);
         run_files(s.clone().flush(), &fake);
-        let file = PathBuf::from("/data/ns/cache.json");
+        let file = PathBuf::from("/data").join("ns").join("cache.json");
         let text = String::from_utf8(fake.files()[&file].clone()).unwrap();
         assert!(text.contains("\"a\"") && !text.contains("secret"), "{text}");
         assert!(fake.file_ops().contains(&FileOp::CreateDir { path: "/data/ns/var".into(), private: true }));
@@ -455,7 +455,8 @@ mod tests {
         let s = disk(&fake, "ns");
         assert_eq!(s.keys(), vec!["good"]);
         run_files(s.flush(), &fake);
-        let text = String::from_utf8(fake.files()[&PathBuf::from("/data/ns/cache.json")].clone()).unwrap();
+        let text =
+            String::from_utf8(fake.files()[&PathBuf::from("/data").join("ns").join("cache.json")].clone()).unwrap();
         assert!(text.contains("good") && !text.contains("forged") && !text.contains("unsigned"), "{text}");
     }
 
