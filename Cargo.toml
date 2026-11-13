@@ -30,6 +30,7 @@ bare_urls = "deny"
 redundant_explicit_links = "deny"
 
 [workspace.lints.clippy]
+mod_module_files = "deny"
 pedantic = { level = "allow", priority = -1 }
 redundant_clone = "warn"
 needless_collect = "warn"

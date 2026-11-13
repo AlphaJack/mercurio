@@ -237,7 +237,6 @@ mod asset_def;
 #[path = "attachment.rs"]
 mod attachment_def;
 mod calendar;
-#[path = "config/mod.rs"]
 mod config_def;
 mod convert;
 mod crypto;

@@ -28,7 +28,7 @@ pub(crate) fn scaffold(root: &Path, id: &str) -> Result<(), String> {
         ),
     ];
     for (path, _) in &files {
-        if path.exists() || path.with_extension("").join("mod.rs").exists() {
+        if path.exists() || path.with_extension("").exists() {
             return Err(format!("{} already exists", path.display()));
         }
     }

@@ -8,13 +8,10 @@ fn services_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("services")
 }
 
-/// `name.rs` or every `.rs` file under `name/`.
+/// `name.rs` and every `.rs` file under `name/`.
 fn module(name: &str) -> Vec<PathBuf> {
-    let single = services_dir().join(format!("{name}.rs"));
-    if single.exists() {
-        return vec![single];
-    }
-    let mut out = Vec::new();
+    let file = services_dir().join(format!("{name}.rs"));
+    let mut out: Vec<PathBuf> = file.exists().then_some(file).into_iter().collect();
     let mut dirs = vec![services_dir().join(name)];
     while let Some(dir) = dirs.pop() {
         let Ok(entries) = fs::read_dir(&dir) else { continue };
