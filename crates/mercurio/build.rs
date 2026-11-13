@@ -1,6 +1,6 @@
 //! Generates the service registry and the per-fixture tests.
 //!
-//! Every `src/services/<id>.rs` or `src/services/<id>/mod.rs` becomes a module gated by the Cargo feature `service-<id>`, which `Cargo.toml` must declare and list in `all-services`. It must export `pub(crate) static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
+//! Every `src/services/<id>.rs` (its submodules in `src/services/<id>/`) becomes a module gated by the Cargo feature `service-<id>`, which `Cargo.toml` must declare and list in `all-services`. It must export `pub(crate) static SERVICE`. Every `tests/fixtures/services/<id>.json` becomes one `#[test]` gated the same way. `src/services/_<name>.rs` helper modules are always compiled and unregistered. Adding a service therefore never touches a shared source file.
 
 #![expect(clippy::unwrap_used, clippy::expect_used, clippy::panic, reason = "a build script should fail loudly")]
 #![expect(clippy::disallowed_methods, reason = "a build script reads and writes files")]
@@ -29,34 +29,31 @@ fn main() {
     println!("cargo::rerun-if-changed=tests/fixtures/services");
     println!("cargo::rerun-if-changed=Cargo.toml");
 
-    let mut modules: Vec<(String, PathBuf)> = Vec::new();
+    let mut modules: Vec<String> = Vec::new();
     for entry in fs::read_dir(&services_dir).expect("src/services exists") {
         let path = entry.unwrap().path();
         let name = path.file_name().unwrap().to_string_lossy().to_string();
-        if name.starts_with('.') || name == "mod.rs" {
+        if name.starts_with('.') || path.is_dir() {
             continue;
         }
-        if path.is_dir() {
-            let module = path.join("mod.rs");
-            if module.exists() {
-                modules.push((name, module));
-            }
-        } else if let Some(stem) = name.strip_suffix(".rs") {
-            modules.push((stem.to_owned(), path));
+        if let Some(stem) = name.strip_suffix(".rs") {
+            modules.push(stem.to_owned());
         }
     }
     modules.sort();
 
     // `_name.rs` files are shared helpers for a group of services: always compiled, never registered, no feature of their own.
-    let (helpers, modules): (Vec<_>, Vec<_>) = modules.into_iter().partition(|(n, _)| n.starts_with('_'));
-    let mut code = String::new();
+    let (helpers, modules): (Vec<_>, Vec<_>) = modules.into_iter().partition(|n| n.starts_with('_'));
+    // `mod` in an `include!`d file resolves from `OUT_DIR`. An inline module with the folder as its `#[path]` loads
+    // each `<id>.rs` from it, and `<id>/` stays the folder of its submodules.
+    let mut code = format!("#[path = {services_dir:?}]\nmod discovered {{\n");
     let helper_attr = "#[cfg_attr(not(feature = \"all-services\"), \
         expect(clippy::allow_attributes, reason = \"generated: which helpers go unused depends on the features\"), \
         allow(dead_code, reason = \"helpers serve optional services\"))]";
-    for (name, path) in &helpers {
-        writeln!(code, "{helper_attr}\n#[path = {path:?}]\npub(crate) mod {name};").unwrap();
+    for name in &helpers {
+        writeln!(code, "{helper_attr}\npub(crate) mod {name};").unwrap();
     }
-    for (name, _) in &modules {
+    for name in &modules {
         assert!(
             name.starts_with(|c: char| c.is_ascii_lowercase())
                 && name.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit()),
@@ -70,20 +67,21 @@ fn main() {
         assert!(all_services.contains(&feature), "`{feature}` is missing from `all-services` in Cargo.toml");
     }
     let gate = |name: &str| format!("#[cfg(feature = \"{}\")]\n", service_feature(name));
-    for (name, path) in &modules {
-        writeln!(code, "{}#[path = {path:?}]\npub(crate) mod {name};", gate(name)).unwrap();
+    for name in &modules {
+        writeln!(code, "{}pub(crate) mod {name};", gate(name)).unwrap();
     }
+    code.push_str("}\npub(crate) use discovered::*;\n");
     code.push_str(
         "\n/// Every service compiled into this build.\npub(crate) static ALL: &[&crate::service::ServiceDef] = &[\n",
     );
-    for (name, _) in &modules {
+    for name in &modules {
         writeln!(code, "    {}&{name}::SERVICE,", gate(name).replace('\n', "\n    ")).unwrap();
     }
     code.push_str("];\n");
     fs::write(out.join("services_generated.rs"), code).unwrap();
 
     for feature in features.iter().filter(|f| f.starts_with("service-")) {
-        let gates = modules.iter().any(|(m, _)| service_feature(m) == **feature);
+        let gates = modules.iter().any(|m| service_feature(m) == **feature);
         let extends =
             table[*feature].iter().any(|f| f.starts_with("service-") && feature.starts_with(&format!("{f}-")));
         assert!(

@@ -30,6 +30,8 @@ bare_urls = "deny"
 redundant_explicit_links = "deny"
 
 [workspace.lints.clippy]
+# A module with children is `foo.rs` next to `foo/`. It is never `foo/mod.rs`.
+mod_module_files = "deny"
 pedantic = { level = "allow", priority = -1 }
 redundant_clone = "warn"
 needless_collect = "warn"
