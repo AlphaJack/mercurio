@@ -42,7 +42,7 @@ fn main() {
                 modules.push((name, module));
             }
         } else if let Some(stem) = name.strip_suffix(".rs") {
-            modules.push((stem.to_owned(), path.clone()));
+            modules.push((stem.to_owned(), path));
         }
     }
     modules.sort();

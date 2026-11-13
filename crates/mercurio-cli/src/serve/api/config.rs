@@ -308,7 +308,7 @@ impl Server {
                 "id": id,
                 "service_name": name,
                 "enabled": self.s.services.enabled(service_id),
-                "url": if privacy { redact_url(&url) } else { url.clone() },
+                "url": if privacy { redact_url(&url) } else { url },
                 "retry": retry,
                 "optional": optional,
                 "tags": names,

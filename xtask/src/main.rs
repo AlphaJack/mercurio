@@ -6,11 +6,8 @@
 //!
 //! `cargo xtask new <id>` writes a service module and its fixture to start from.
 //!
-//! `cargo xtask acyclic [--mermaid]`: see [`acyclic`].
-//!
 //! `cargo xtask try URL...` sends a set of test messages (types, formats, a long body, an attachment) to real endpoints with the working-tree code.
 
-mod acyclic;
 mod library;
 mod new;
 mod pages;
@@ -25,15 +22,10 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
         ["docs"] => docs(),
-        ["acyclic"] => acyclic::check(false),
-        ["acyclic", "--mermaid"] => acyclic::check(true),
         ["new", id] => new::scaffold(&root(), id),
         ["try", urls @ ..] => try_url::run(&root(), urls),
         ["mdbook-vars", rest @ ..] => vars::run(rest),
-        _ => Err(
-            "usage: cargo xtask docs | cargo xtask acyclic [--mermaid] | cargo xtask new <id> | cargo xtask try URL..."
-                .to_owned(),
-        ),
+        _ => Err("usage: cargo xtask docs | cargo xtask new <id> | cargo xtask try URL...".to_owned()),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
