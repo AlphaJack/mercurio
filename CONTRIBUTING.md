@@ -3,8 +3,8 @@
 ## Setup
 
 ```sh
-cargo install mdbook cargo-insta
-rustup component add rust-analyzer # needed by cargo xtask acyclic
+cargo install mdbook cargo-insta cargo-acyclic
+rustup component add rust-analyzer # needed by cargo acyclic
 ```
 
 Or open the repository in its dev container (`.devcontainer`), which sets all of this up on Linux.
@@ -25,9 +25,9 @@ cargo xtask try 'gotify://real.host/TOKEN'         # send real test messages wit
 
 ## Conventions
 
-`xtask/tests/conventions` checks these with `syn`, and `cargo xtask acyclic` with rust-analyzer:
+`xtask/tests/conventions` checks these with `syn`, and [`cargo acyclic`](https://github.com/AlphaJack/cargo-acyclic) with rust-analyzer:
 
-- Modules and items do not depend on each other in a cycle. A module may use its ancestors' types, but not call their free functions: a helper that a parent and its children share goes in a module of its own. `cargo xtask acyclic` checks it, and `cargo xtask acyclic --mermaid` draws the module graph.
+- Modules and items do not depend on each other in a cycle. A module may use its ancestors' types, but not call their free functions: a helper that a parent and its children share goes in a module of its own. `cargo acyclic` checks it, and `cargo acyclic --mermaid` draws the module graph.
 - Each thing is done in one place: no two functions or closures in a package have the same body, and no chain of three calls or more is written out three times. Name it instead. Bodies that only build a value, read or pass on fields, names and constants, compare with a constant or set fields of `self` are exempt.
 - Paths are joined a component at a time, `dir.join("a").join("b")`, as Windows shows `dir.join("a/b")` with both separators. An absolute Unix path starts from its first component, `Path::new("/usr").join("bin")`.
 
@@ -40,7 +40,7 @@ cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all
 cargo xtask docs
-cargo xtask acyclic
+cargo acyclic
 ```
 
 ## Pull requests
