@@ -439,7 +439,7 @@ fn parse_query_into(qs: &str, sanitize: bool, out: &mut ParsedUrl) {
             out.query_minus.insert(rest.to_owned(), val.clone());
         }
         if let Some(rest) = key.strip_prefix(':') {
-            out.query_colon.insert(rest.to_owned(), val.clone());
+            out.query_colon.insert(rest.to_owned(), val);
         }
     }
 }
