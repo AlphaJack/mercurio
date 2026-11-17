@@ -29,6 +29,10 @@ invalid_html_tags = "deny"
 bare_urls = "deny"
 redundant_explicit_links = "deny"
 
+[workspace.lints.cargo]
+# `regex-lite` is used without the regex-unicode feature
+unused_dependencies = "allow"
+
 [workspace.lints.clippy]
 mod_module_files = "deny"
 pedantic = { level = "allow", priority = -1 }
