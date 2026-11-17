@@ -29,6 +29,12 @@ invalid_html_tags = "deny"
 bare_urls = "deny"
 redundant_explicit_links = "deny"
 
+[workspace.lints.cargo]
+# `regex-lite` is the regex engine without the `regex-unicode` feature (`crates/mercurio/src/re.rs`). The default build
+# uses `regex`, so the lint calls `regex-lite` unused, and cargo has no per-dependency allow or a dependency on a feature
+# being off.
+unused_dependencies = "allow"
+
 [workspace.lints.clippy]
 mod_module_files = "deny"
 pedantic = { level = "allow", priority = -1 }
