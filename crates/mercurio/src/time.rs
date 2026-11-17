@@ -135,7 +135,7 @@ pub(crate) fn rfc2822_in(secs: u64, _tz: &Zone) -> String {
 #[cfg(feature = "timezones")]
 pub(crate) fn rfc2822_in(secs: u64, tz: &Zone) -> String {
     match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
-        Ok(ts) => ts.to_zoned(tz.clone()).strftime("%a, %d %b %Y %H:%M:%S %z").to_string(),
+        Ok(ts) => ts.to_zoned_datetime(tz.clone()).strftime("%a, %d %b %Y %H:%M:%S %z").to_string(),
         Err(_) => rfc2822_utc(secs),
     }
 }
@@ -152,7 +152,7 @@ pub(crate) fn local_parts(secs: u64, _tz: &Zone) -> (u32, u32, u32, u32, u32) {
 pub(crate) fn local_parts(secs: u64, tz: &Zone) -> (u32, u32, u32, u32, u32) {
     match jiff::Timestamp::from_second(i64::try_from(secs).unwrap_or(i64::MAX)) {
         Ok(ts) => {
-            let dt = ts.to_zoned(tz.clone()).datetime();
+            let dt = ts.to_zoned_datetime(tz.clone()).datetime();
             let n = |v: i8| u32::try_from(v).unwrap_or(0);
             (n(dt.month()), n(dt.day()), n(dt.hour()), n(dt.minute()), n(dt.second()))
         }
