@@ -76,3 +76,6 @@ opt-level = "s"
 # Used by dist
 [profile.dist]
 inherits = "release"
+
+[patch.crates-io]
+honig = { path = "../honig-svc/runtime" }

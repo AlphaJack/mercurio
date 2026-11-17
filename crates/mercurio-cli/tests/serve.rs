@@ -114,6 +114,21 @@ fn http_full(addr: &str, method: &str, path: &str, headers: &[(&str, &str)], bod
     (status, head, body)
 }
 
+#[test]
+fn an_unreadable_body_gets_400_and_the_connection_closes() {
+    let s = start(&tmpdir("unreadable"));
+    let mut c = TcpStream::connect(&s.addr).unwrap();
+    // Promises 100 bytes, sends 5, then stops writing: the body can never be read whole.
+    let head = "POST /notify HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n";
+    write!(c, "{head}{{\"bod").unwrap();
+    c.shutdown(std::net::Shutdown::Write).unwrap();
+    let mut out = String::new();
+    c.read_to_string(&mut out).unwrap();
+    assert!(out.starts_with("HTTP/1.1 400"), "{out}");
+    assert!(out.to_ascii_lowercase().contains("connection: close"), "{out}");
+    assert!(out.ends_with("Failed to buffer the request body: failed to read the body"), "{out}");
+}
+
 fn tmpdir(name: &str) -> std::path::PathBuf {
     let d = std::env::temp_dir().join(format!("mercurio-serve-{name}-{}", std::process::id()));
     std::fs::remove_dir_all(&d).ok();
@@ -470,7 +485,8 @@ fn authentication_and_access_modes() {
     assert_eq!(call("POST", "/get/k", Some(ALICE), "text/plain", "").0, 200);
     assert_eq!(call("GET", "/status/k", Some(ALICE), "text/plain", "").0, 200);
     let (_, _, body) = call("GET", "/auth/k", Some(ALICE), "application/json", "");
-    assert_eq!(body, r#"{"access":"user","mode":"assigned","username":"alice"}"#);
+    // apprise-api's key order: mode, access, username.
+    assert_eq!(body, r#"{"mode":"assigned","access":"user","username":"alice"}"#);
     // A disabled login is refused even with the right password.
     assert_eq!(call("POST", "/get/d", Some(ALICE), "text/plain", "").0, 403);
 
@@ -493,7 +509,8 @@ fn authentication_and_access_modes() {
     // Listing and removing logins are for the administrator.
     let (code, _, body) = call("GET", "/cfg", Some(ADMIN), "application/json", "");
     assert_eq!(code, 200);
-    assert!(body.contains(r#"{"access":"user","key":"k","user":"alice"}"#), "{body}");
+    // apprise-api's key order: key, user, access.
+    assert!(body.contains(r#"{"key":"k","user":"alice","access":"user"}"#), "{body}");
     assert_eq!(call("DELETE", "/auth/k", Some(ALICE), "text/plain", "").0, 403);
     assert_eq!(call("DELETE", "/auth/k", Some(ADMIN), "text/plain", "").0, 200);
     assert!(!dir.join(".k.lock").exists());

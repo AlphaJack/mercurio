@@ -3,13 +3,12 @@
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use axum::response::IntoResponse;
-use axum::response::sse::{Event, KeepAlive, Sse};
 use mercurio::{AsyncMercurio, Message, Report, TagFilter, TemplateVars, transport::BoxFuture};
 use serde_json::{Value, json};
 use tokio::sync::{OwnedSemaphorePermit, mpsc};
 
-use super::http::{Body, Reply, Req};
+use super::api::{self, types};
+use super::call::Call;
 
 /// One log line of a notification call.
 #[derive(Debug, Clone)]
@@ -26,8 +25,8 @@ impl LogEntry {
     }
 
     /// `[level, time, message]`, as a JSON reply's `details` and the webhook's `output` list it.
-    pub(super) fn row(&self) -> Value {
-        json!([self.level, self.asctime(), self.message])
+    pub(super) fn row(&self) -> Vec<Value> {
+        vec![self.level.into(), self.asctime().into(), self.message.clone().into()]
     }
 
     /// `YYYY-MM-DD HH:MM:SS,mmm` (UTC).
@@ -63,12 +62,19 @@ pub(super) fn report_logs(report: &Report) -> Vec<LogEntry> {
     logs
 }
 
-pub(super) fn render(req: &Req, status: u16, logs: &[LogEntry], error: Option<&str>) -> Reply {
-    if req.wants_json() {
-        let details: Vec<Value> = logs.iter().map(LogEntry::row).collect();
-        return Reply::json(status, &json!({"error": error, "details": details}));
+/// The logs of a call, in the format the client reads.
+pub(super) enum Logs {
+    Text(String),
+    Html(String),
+    Json(types::NotifyResult),
+}
+
+pub(super) fn render(call: &Call<'_>, logs: &[LogEntry], error: Option<&str>) -> Logs {
+    if call.json {
+        let details: Vec<Vec<Value>> = logs.iter().map(LogEntry::row).collect();
+        return Logs::Json(types::NotifyResult { error: error.map(str::to_owned), details });
     }
-    if req.wants_html_logs() {
+    if call.html {
         let mut html = String::from("<ul class=\"logs\">");
         for l in logs {
             html.push_str(&format!(
@@ -79,13 +85,13 @@ pub(super) fn render(req: &Req, status: u16, logs: &[LogEntry], error: Option<&s
             ));
         }
         html.push_str("</ul>");
-        return Reply::new(status, "text/html; charset=utf-8", html.into_bytes());
+        return Logs::Html(html);
     }
     let mut text = logs.iter().map(LogEntry::line).collect::<Vec<_>>().join("\n");
     if text.is_empty() {
         text = error.unwrap_or_default().to_owned();
     }
-    Reply::new(status, "text/plain; charset=utf-8", text.into_bytes())
+    Logs::Text(text)
 }
 
 fn html_escape(s: &str) -> String {
@@ -131,7 +137,13 @@ impl Job {
     }
 }
 
-pub(super) async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, Vec<LogEntry>) {
+/// The outcome of a call: whether every service was notified, and its logs.
+pub(super) struct Delivered {
+    pub ok: bool,
+    pub logs: Logs,
+}
+
+pub(super) async fn deliver(call: &Call<'_>, job: &Job, level: u8) -> (Delivered, Report, Vec<LogEntry>) {
     let collected = Arc::new(std::sync::Mutex::new(Vec::new()));
     let report = {
         let collected = collected.clone();
@@ -139,17 +151,15 @@ pub(super) async fn deliver(req: &Req, job: &Job, level: u8) -> (Reply, Report, 
     };
     let all = std::mem::take(&mut *collected.lock().unwrap_or_else(std::sync::PoisonError::into_inner));
     let logs = filter_level(all.clone(), level);
-    req.note(|ev| {
-        ev.services = Some(report.entries.len());
-        ev.failed = Some(report.entries.iter().filter(|e| !e.delivery.is_success()).count());
-    });
-    let reply = if report.is_success() {
-        render(req, 200, &logs, None)
+    call.note("services", report.entries.len());
+    call.note("failed", report.entries.iter().filter(|e| !e.delivery.is_success()).count());
+    let delivered = if report.is_success() {
+        Delivered { ok: true, logs: render(call, &logs, None) }
     } else {
-        req.note(|ev| ev.error = Some(job.failure_message().to_owned()));
-        render(req, 424, &logs, Some(job.failure_message()))
+        call.note("fault", job.failure_message());
+        Delivered { ok: false, logs: render(call, &logs, Some(job.failure_message())) }
     };
-    (reply, report, all)
+    (delivered, report, all)
 }
 
 /// The name of a `tracing` level, as the logs show it.
@@ -188,26 +198,34 @@ fn entry_logs(e: &mercurio::ReportEntry) -> Vec<LogEntry> {
 }
 
 /// One Server-Sent Event.
-pub(super) fn sse(event: &str, data: &Value) -> Event {
-    Event::default().event(event).data(data.to_string())
+pub(super) fn sse(event: types::StreamEventEvent, data: &Value) -> api::Sse<types::StreamEvent> {
+    api::Sse::Item(types::StreamEvent { event, data: data.to_string() })
 }
 
-fn log_event(l: &LogEntry) -> Event {
-    sse("log", &json!({"level": l.level, "asctime": l.asctime(), "message": l.message, "service": l.service}))
+fn log_event(l: &LogEntry) -> api::Sse<types::StreamEvent> {
+    let data = json!({"level": l.level, "asctime": l.asctime(), "message": l.message, "service": l.service});
+    sse(types::StreamEventEvent::Log, &data)
 }
 
 /// Called once a streamed job has finished, with its report and logs.
 pub(super) type OnDone = Box<dyn FnOnce(Report, Vec<LogEntry>) -> BoxFuture<'static, ()> + Send>;
 
 /// Runs the job in a task, sending a `log` event as each service finishes and a final `result` event; `done` gets the report and logs. While idle the stream sends a heartbeat comment.
-pub(super) fn stream(job: Job, level: u8, slot: OwnedSemaphorePermit, heartbeat: Duration, done: OnDone) -> Reply {
-    let (tx, rx) = mpsc::unbounded_channel::<Event>();
-    let send = move |tx: &mpsc::UnboundedSender<Event>, event: Event| {
+pub(super) fn stream(
+    job: Job,
+    level: u8,
+    slot: OwnedSemaphorePermit,
+    heartbeat: Duration,
+    done: OnDone,
+) -> api::Items<types::StreamEvent> {
+    type Record = api::Sse<types::StreamEvent>;
+    let (tx, rx) = mpsc::unbounded_channel::<Record>();
+    let send = move |tx: &mpsc::UnboundedSender<Record>, event: Record| {
         if tx.send(event).is_err() {
             log::debug!("stream client went away");
         }
     };
-    send(&tx, Event::default().comment("connected"));
+    send(&tx, api::Sse::Comment("connected".into()));
     tokio::spawn(async move {
         let collected = Arc::new(std::sync::Mutex::new(Vec::new()));
         let report = {
@@ -221,16 +239,17 @@ pub(super) fn stream(job: Job, level: u8, slot: OwnedSemaphorePermit, heartbeat:
             .await
         };
         let status = report.status().as_str().to_ascii_uppercase();
-        send(&tx, sse("result", &json!({"status": status})));
+        send(&tx, sse(types::StreamEventEvent::Result, &json!({"status": status})));
         drop(tx);
         let logs = std::mem::take(&mut *collected.lock().unwrap_or_else(std::sync::PoisonError::into_inner));
         done(report, logs).await;
     });
-    // The stream holds `slot` until the client has the last event.
-    let events = futures_util::stream::unfold((rx, slot), |(mut rx, slot)| async move {
-        rx.recv().await.map(|event| (Ok::<_, std::convert::Infallible>(event), (rx, slot)))
-    });
-    let sse = Sse::new(events).keep_alive(KeepAlive::new().interval(heartbeat).text("heartbeat"));
-    let response = ([("X-Accel-Buffering", "no")], sse).into_response();
-    Reply { status: 200, ctype: String::new(), body: Body::Response(Box::new(response)), headers: Vec::new() }
+    // The stream holds `slot` until the client has the last event; a heartbeat comment after `heartbeat` without one.
+    api::Items::events(futures_util::stream::unfold((rx, slot), move |(mut rx, slot)| async move {
+        let event = tokio::select! {
+            e = rx.recv() => e?,
+            () = tokio::time::sleep(heartbeat) => api::Sse::Comment("heartbeat".into()),
+        };
+        Some((event, (rx, slot)))
+    }))
 }

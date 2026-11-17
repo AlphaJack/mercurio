@@ -3,15 +3,24 @@
 //! Endpoints, payloads, settings and status codes are documented in the user guide: `docs/book/src/server.md`.
 
 mod alerts;
+#[expect(
+    clippy::mod_module_files,
+    clippy::allow_attributes,
+    clippy::enum_variant_names,
+    reason = "honig's generated code: its root is `api/mod.rs`, it allows lints that a binary may or may not trigger, \
+              and it names a union's variants after their types"
+)]
 mod api;
 mod auth;
+mod call;
 mod codec;
 mod details;
 mod filters;
-mod http;
+mod handlers;
 mod key;
 mod metrics;
 mod notify;
+mod notify_json;
 mod payload;
 mod router;
 mod settings;
@@ -21,13 +30,11 @@ mod text;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::extract::ConnectInfo;
-use mercurio::transport::AsyncTransport;
+use mercurio::transport::{AsyncTransport, TokioTransport};
 use mercurio::{Config, ConfigFormat, ConfigOptions, config::ConfigService};
-use tower::ServiceExt;
 
 use auth::{KeyState, Role};
-use http::{Reply, Req};
+use call::{Call, Fault};
 use store::ConfigStore;
 
 use router::app;
@@ -42,28 +49,31 @@ struct Server {
     metrics: Arc<metrics::Metrics>,
     verifier: auth::Verifier,
     streams: Arc<tokio::sync::Semaphore>,
+    /// `/details` without and with `?all=yes`, built on first use.
+    details_cache: [std::sync::OnceLock<api::types::Details>; 2],
 }
-/// `mercurio serve --healthcheck`: `GET /status` on the server listening at `bind` (a wildcard address is reached through loopback). `Ok` on `200`. The container image's `HEALTHCHECK` runs it; the image has no curl.
+/// `mercurio serve --healthcheck`: `GET /status` of the server listening at `bind` (a wildcard address is reached
+/// through loopback), with 5 s to connect and 5 s to answer. `Ok` on `200`. The container image's `HEALTHCHECK` runs
+/// it; the image has no curl.
 pub(crate) fn healthcheck(bind: &str) -> Result<(), String> {
-    use std::io::{Read as _, Write as _};
-    use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
+    use mercurio::transport::{Method, Request};
+    use std::net::{SocketAddr, ToSocketAddrs};
     let mut addr: SocketAddr =
         bind.to_socket_addrs().map_err(|e| format!("{bind}: {e}"))?.next().ok_or(format!("{bind}: no address"))?;
     if addr.ip().is_unspecified() {
         addr.set_ip(if addr.is_ipv4() { [127, 0, 0, 1].into() } else { std::net::Ipv6Addr::LOCALHOST.into() });
     }
-    let mut conn = TcpStream::connect_timeout(&addr, Duration::from_secs(5)).map_err(|e| format!("{addr}: {e}"))?;
-    conn.set_read_timeout(Some(Duration::from_secs(5))).map_err(|e| e.to_string())?;
-    write!(conn, "GET /status HTTP/1.1\r\nHost: {addr}\r\nConnection: close\r\n\r\n").map_err(|e| e.to_string())?;
-    let mut head = [0u8; 64];
-    let n = conn.read(&mut head).map_err(|e| format!("{addr}: {e}"))?;
-    let line = String::from_utf8_lossy(&head[..n]);
-    match line.split_whitespace().nth(1) {
-        Some("200") => Ok(()),
-        Some(code) => Err(format!("{addr}: /status answered {code}")),
-        None => Err(format!("{addr}: no HTTP answer")),
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| e.to_string())?;
+    let mut request = Request::new(Method::Get, format!("http://{addr}/status"));
+    request.connect_timeout = Duration::from_secs(5);
+    request.read_timeout = Duration::from_secs(5);
+    let answer = runtime.block_on(TokioTransport::new().http(&request)).map_err(|e| format!("{addr}: {e}"))?;
+    match answer.status {
+        200 => Ok(()),
+        code => Err(format!("{addr}: /status answered {code}")),
     }
 }
+
 pub(crate) async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
     let s = Settings::from_args(args)?;
     let listener = tokio::net::TcpListener::bind(bind).await.map_err(|e| format!("bind {bind}: {e}"))?;
@@ -89,9 +99,9 @@ pub(crate) async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
             () = &mut stop => break,
         };
         let app = app.clone();
-        let service = hyper::service::service_fn(move |mut request: hyper::Request<hyper::body::Incoming>| {
-            request.extensions_mut().insert(ConnectInfo(remote));
-            app.clone().oneshot(request.map(axum::body::Body::new))
+        let service = hyper::service::service_fn(move |request: hyper::Request<hyper::body::Incoming>| {
+            let app = app.clone();
+            async move { app.call(request, remote).await }
         });
         // `half_close`: a client that shut its writing side still gets its answer.
         let conn = hyper::server::conn::http1::Builder::new()
@@ -174,9 +184,9 @@ impl Server {
     }
 
     /// May this request use `key`? Sets the caller's role on success.
-    async fn key_ok(&self, req: &Req, key: &str, allow_public: bool) -> bool {
-        req.note(|ev| ev.key = Some(key.to_owned()));
-        match req.role.get() {
+    async fn key_ok(&self, call: &Call<'_>, key: &str, allow_public: bool) -> bool {
+        call.note("key", key);
+        match call.caller.role.get() {
             Role::Admin | Role::Open => return true,
             Role::User | Role::Anonymous => {}
         }
@@ -185,25 +195,29 @@ impl Server {
             return true;
         }
         let Some(digest) = state.digest.as_deref() else { return false };
-        let Some((user, pass)) = req.basic_auth() else { return false };
-        if !self.verifier.verify(key, &user, &pass, state.username.as_deref(), digest) {
+        let Some((user, pass)) = call.caller.credentials.as_ref() else { return false };
+        if !self.verifier.verify(key, user, pass, state.username.as_deref(), digest) {
             return false;
         }
         if state.disabled() {
-            req.disabled_key.set(Some(key.to_owned()));
+            call.caller.disabled_key.set(Some(key.to_owned()));
             return false;
         }
-        req.role.set(Role::User);
+        call.caller.role.set(Role::User);
         true
     }
 
     /// The answer when [`Server::key_ok`] said no.
-    fn key_denied(&self, req: &Req, key: &str) -> Reply {
-        if req.disabled_key.get().as_deref() == Some(key) {
-            return Reply::error(req, 403, "This configuration has been disabled by an administrator");
+    fn key_denied(&self, call: &Call<'_>, key: &str) -> Fault {
+        if call.caller.disabled_key.get().as_deref() == Some(key) {
+            return call.fail(Fault::new(403, "This configuration has been disabled by an administrator"));
         }
-        let realm = format!("Basic realm=\"{}: {key}\"", self.s.auth.realm);
-        Reply::error(req, 401, "Access Denied").header("WWW-Authenticate", &realm)
+        call.fail(Fault::unauthorized(&format!("{}: {key}", self.s.auth.realm)))
+    }
+
+    /// May this request use `key`? The answer to give when it may not.
+    async fn require_key(&self, call: &Call<'_>, key: &str, allow_public: bool) -> Result<(), Fault> {
+        if self.key_ok(call, key, allow_public).await { Ok(()) } else { Err(self.key_denied(call, key)) }
     }
 
     /// Either the global lock or the key's own access mode hides configuration content.
@@ -220,13 +234,18 @@ impl Server {
         }
     }
 
-    fn stateful_disabled(&self, req: &Req) -> Option<Reply> {
-        (!self.store.enabled()).then(|| Reply::error(req, 403, "Persistent configuration storage is disabled"))
+    /// `403` when persistent storage is off.
+    fn require_stateful(&self, call: &Call<'_>) -> Result<(), Fault> {
+        if self.store.enabled() {
+            Ok(())
+        } else {
+            Err(call.fail(Fault::new(403, "Persistent configuration storage is disabled")))
+        }
     }
 
     /// Whether this caller may see or change configuration content.
-    async fn config_lock_allows(&self, req: &Req, key: Option<&str>) -> bool {
-        req.role.get() == Role::Admin || !self.configuration_is_locked(key).await
+    async fn config_lock_allows(&self, call: &Call<'_>, key: Option<&str>) -> bool {
+        call.caller.role.get() == Role::Admin || !self.configuration_is_locked(key).await
     }
 
     fn config_options(&self) -> ConfigOptions {
@@ -270,10 +289,10 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
-    use axum::body::Body;
-    use axum::http::{Request, StatusCode};
     use clap::Parser;
-    use tower::ServiceExt;
+    use http_body_util::Full;
+    use hyper::body::Bytes;
+    use hyper::{Request, StatusCode};
 
     use super::*;
 
@@ -283,8 +302,10 @@ mod tests {
         serve: ServeArgs,
     }
 
+    type Body = Full<Bytes>;
+
     /// The app with `settings` (as `mercurio serve` flags) and a fresh configuration directory.
-    fn test_app(name: &str, settings: &[&str]) -> tower_http::normalize_path::NormalizePath<axum::Router> {
+    fn test_app(name: &str, settings: &[&str]) -> router::App {
         let dir = std::env::temp_dir().join(format!("mercurio-app-{name}-{}", std::process::id()));
         std::fs::remove_dir_all(&dir).ok();
         let dir = dir.to_string_lossy().to_string();
@@ -292,37 +313,35 @@ mod tests {
         app(Settings::from_args(&args.serve).unwrap())
     }
 
+    fn empty() -> Body {
+        Full::new(Bytes::new())
+    }
+
     /// Send one request; status, headers and body.
-    async fn send(
-        app: &tower_http::normalize_path::NormalizePath<axum::Router>,
-        request: Request<Body>,
-    ) -> (StatusCode, axum::http::HeaderMap, String) {
-        let mut request = request;
-        request.extensions_mut().insert(ConnectInfo(std::net::SocketAddr::from(([127, 0, 0, 1], 9))));
-        let res = app.clone().oneshot(request).await.unwrap();
+    async fn send(app: &router::App, request: Request<Body>) -> (StatusCode, hyper::HeaderMap, String) {
+        let res = app.call(request, std::net::SocketAddr::from(([127, 0, 0, 1], 9))).await.unwrap();
         let (parts, body) = res.into_parts();
-        let body = axum::body::to_bytes(body, usize::MAX).await.unwrap();
+        let body = body.collect().await.unwrap();
         (parts.status, parts.headers, String::from_utf8_lossy(&body).into_owned())
     }
 
     fn form(path: &str, body: &str) -> Request<Body> {
         Request::post(path)
             .header("content-type", "application/x-www-form-urlencoded")
-            .body(Body::from(body.to_owned()))
+            .body(Full::new(Bytes::from(body.to_owned())))
             .unwrap()
     }
-
     #[tokio::test]
     async fn unknown_paths_and_methods() {
         let app = test_app("routes", &[]);
-        let (status, _, body) = send(&app, Request::get("/invalid").body(Body::empty()).unwrap()).await;
+        let (status, _, body) = send(&app, Request::get("/invalid").body(empty()).unwrap()).await;
         assert_eq!((status, body.as_str()), (StatusCode::NOT_FOUND, ""));
-        let (status, headers, _) = send(&app, Request::get("/notify").body(Body::empty()).unwrap()).await;
+        let (status, headers, _) = send(&app, Request::get("/notify").body(empty()).unwrap()).await;
         assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED);
         assert_eq!(headers["allow"], "POST");
         let (status, _, _) = send(&app, form("/add/bad!", "urls=json://localhost")).await;
         assert_eq!(status, StatusCode::NOT_FOUND);
-        let (status, _, body) = send(&app, Request::get("/status/").body(Body::empty()).unwrap()).await;
+        let (status, _, body) = send(&app, Request::get("/status/").body(empty()).unwrap()).await;
         assert_eq!((status, body.as_str()), (StatusCode::OK, "OK"));
     }
 
@@ -341,22 +360,41 @@ mod tests {
         let app = test_app("errors", &[]);
         let json = Request::post("/notify")
             .header("content-type", "application/json")
-            .body(Body::from(r#"{"urls": "json://localhost"}"#))
+            .body(Full::new(Bytes::from(r#"{"urls": "json://localhost"}"#)))
             .unwrap();
         let (status, _, body) = send(&app, json).await;
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert_eq!(body, r#"{"error":"Payload lacks minimum requirements"}"#);
         let (status, _, body) = send(&app, form("/notify", "urls=json://localhost")).await;
         assert_eq!((status, body.as_str()), (StatusCode::BAD_REQUEST, "Payload lacks minimum requirements"));
+        // A field of the wrong type is named, though the body is one of two schemas (a notification or an alert).
+        let wrong_type = Request::post("/notify")
+            .header("content-type", "application/json")
+            .body(Full::new(Bytes::from(r#"{"urls": 5, "body": "x"}"#)))
+            .unwrap();
+        let (status, _, body) = send(&app, wrong_type).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(body, r#"{"error":"The urls field must be a string or list of strings","field":"urls"}"#);
+        // Not JSON, and JSON that is not an object.
+        for (sent, error) in
+            [("not json", "Invalid JSON Payload provided"), ("[1]", "The JSON payload must be an object")]
+        {
+            let request = Request::post("/notify")
+                .header("content-type", "application/json")
+                .body(Full::new(Bytes::from(sent)))
+                .unwrap();
+            let (status, _, body) = send(&app, request).await;
+            assert_eq!((status, body), (StatusCode::BAD_REQUEST, format!(r#"{{"error":"{error}"}}"#)));
+        }
     }
 
     #[tokio::test]
     async fn the_gate_admits_keys_and_the_administrator() {
         let app = test_app("gate", &["--auth-required", "yes", "--password", "pw"]);
-        let (status, headers, _) = send(&app, Request::get("/metrics").body(Body::empty()).unwrap()).await;
+        let (status, headers, _) = send(&app, Request::get("/metrics").body(empty()).unwrap()).await;
         assert_eq!(status, StatusCode::UNAUTHORIZED);
         assert_eq!(headers["www-authenticate"], "Basic realm=\"Mercurio API\"");
-        let admin = Request::get("/metrics").header("authorization", "Basic OnB3").body(Body::empty()).unwrap();
+        let admin = Request::get("/metrics").header("authorization", "Basic OnB3").body(empty()).unwrap();
         assert_eq!(send(&app, admin).await.0, StatusCode::OK);
         // A key in the path passes the gate; the key's own check answers.
         let (status, headers, _) = send(&app, form("/notify/abc", "body=x")).await;
@@ -370,7 +408,7 @@ mod tests {
         // `:pä` in UTF-8, then in Latin-1.
         for creds in ["OnDDpA==", "OnDk"] {
             let request =
-                Request::get("/metrics").header("authorization", format!("Basic {creds}")).body(Body::empty()).unwrap();
+                Request::get("/metrics").header("authorization", format!("Basic {creds}")).body(empty()).unwrap();
             assert_eq!(send(&app, request).await.0, StatusCode::OK, "{creds}");
         }
     }

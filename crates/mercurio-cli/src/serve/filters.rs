@@ -188,7 +188,7 @@ pub(super) async fn send_webhook(
         log::warn!("The webhook result URL is not using the HTTP protocol");
         return;
     }
-    let output: Vec<Value> = logs.iter().map(LogEntry::row).collect();
+    let output: Vec<Value> = logs.iter().map(|l| Value::from(l.row())).collect();
     let body = json!({"source": source, "status": if ok { 0 } else { 1 }, "output": output});
     let (scheme, rest) = url.split_once("://").unwrap_or(("http", url));
     let end = rest.find(['/', '?']).unwrap_or(rest.len());

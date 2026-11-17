@@ -24,15 +24,20 @@ fn source_dirs() -> Vec<PathBuf> {
     packages.iter().flat_map(|p| [p.join("src"), p.join("tests")]).filter(|d| d.is_dir()).collect()
 }
 
-/// Each `.rs` file under `dir`, with its path from the workspace's folder.
+/// Each `.rs` file under `dir`, with its path from the workspace's folder. A file that a generator wrote (its first
+/// line says `@generated`, as honig's API module does) follows its generator's conventions, not these.
 fn sources(dir: &Path, found: &mut Vec<(String, String)>) {
     for entry in fs::read_dir(dir).unwrap() {
         let path = entry.unwrap().path();
         if path.is_dir() {
             sources(&path, found);
         } else if path.extension().is_some_and(|e| e == "rs") {
+            let text = fs::read_to_string(&path).unwrap();
+            if text.lines().next().is_some_and(|first| first.starts_with("// @generated")) {
+                continue;
+            }
             let file = path.strip_prefix(root()).unwrap_or(&path).display().to_string();
-            found.push((file, fs::read_to_string(&path).unwrap()));
+            found.push((file, text));
         }
     }
 }

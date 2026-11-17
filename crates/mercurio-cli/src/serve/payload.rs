@@ -1,17 +1,86 @@
-//! Reading notification payloads: form, JSON, multipart or a plain text body; `X-Apprise-*` headers; `?:src=dest` field mapping; tag expressions; templates and attachments.
+//! Reading notification payloads: JSON (a notification or an Alertmanager / Grafana webhook), a form, multipart or
+//! a plain text body; `X-Apprise-*` headers; `?:src=dest` field mapping; tag expressions; templates and attachments.
+
+use std::collections::BTreeMap;
 
 use mercurio::__private::yaml::Yaml;
 use mercurio::{Attachment, TagFilter, TemplateVars};
 use serde_json::{Map, Value};
 
-use super::http::{Reply, Req, form_pairs};
+use super::api;
+use super::call::Fault;
 
 /// A file part from a multipart body.
 pub(super) struct Upload {
     pub name: String,
     pub mime: Option<String>,
-    /// A slice of the request body, not a copy of it.
-    pub data: axum::body::Bytes,
+    pub data: hyper::body::Bytes,
+}
+
+/// What a notification request carries besides its path: the body, the `X-Apprise-*` values and the query string.
+#[derive(Default)]
+pub(super) struct NotifyInput {
+    pub body: Option<NotifyBody>,
+    pub title: Option<String>,
+    pub kind: Option<String>,
+    pub tag: Option<String>,
+    pub template: Option<String>,
+    pub query: BTreeMap<String, String>,
+}
+
+impl NotifyInput {
+    /// A non-empty query string value.
+    pub(super) fn query(&self, name: &str) -> Option<&str> {
+        self.query.get(name).map(String::as_str).filter(|v| !v.is_empty())
+    }
+}
+
+/// A notification body, by media type.
+pub(super) enum NotifyBody {
+    /// A JSON object: a notification or an alert webhook, with any other fields it has.
+    Json(Map<String, Value>),
+    /// A form: its fields, `template[NAME]` values and the attachment fields (every repeat).
+    Form { fields: Map<String, Value>, template: BTreeMap<String, String>, attach: Option<Vec<String>> },
+    /// Multipart: its text fields, the attachment fields given as text, and the files.
+    Multipart { fields: Map<String, Value>, attach: Option<Vec<String>>, uploads: Vec<Upload> },
+    /// `text/plain`, `text/html` or `text/markdown`: the message itself, in that format.
+    Text { body: String, format: &'static str },
+}
+
+impl NotifyBody {
+    /// A multipart body from its typed fields: a part with a file name is an upload, whatever its field name.
+    pub(super) fn multipart(
+        mut fields: Map<String, Value>,
+        attach: [Option<Vec<api::Binary>>; 3],
+        others: BTreeMap<String, api::Binary>,
+    ) -> NotifyBody {
+        let mut uploads = Vec::new();
+        let mut text_attach: Option<Vec<String>> = None;
+        let as_text = |b: &api::Binary| String::from_utf8_lossy(&b.bytes).into_owned();
+        for part in attach.into_iter().flatten().flatten() {
+            if part.filename.is_some() {
+                uploads.push(upload(part));
+            } else {
+                text_attach.get_or_insert_default().push(as_text(&part));
+            }
+        }
+        for (name, part) in others {
+            if part.filename.is_some() {
+                uploads.push(upload(part));
+            } else {
+                fields.insert(name, Value::String(as_text(&part)));
+            }
+        }
+        NotifyBody::Multipart { fields, attach: text_attach, uploads }
+    }
+}
+
+fn upload(part: api::Binary) -> Upload {
+    Upload {
+        name: super::text::trimmed(part.filename),
+        mime: part.content_type.map(|m| m.to_ascii_lowercase()),
+        data: part.bytes,
+    }
 }
 
 #[derive(Default)]
@@ -47,140 +116,86 @@ const NOTIFY_FIELDS: &[&str] = &["format", "type", "title", "body", "attachment"
 const NOTIFY_TYPES: &[&str] = &["info", "success", "warning", "failure"];
 const NOTIFY_FORMATS: &[&str] = &["text", "markdown", "html"];
 
-/// Fields that name attachments in a form.
-const ATTACH_FIELDS: [&str; 3] = ["attach", "attachment", "attachments"];
-
-/// Form fields (`application/x-www-form-urlencoded` or multipart): the last value per name, the `(name, value)` pairs of `template[...]` and attachment fields (every repeat) and the uploaded files.
-pub(super) type FormFields = (Map<String, Value>, Vec<(String, String)>, Vec<Upload>);
-
-pub(super) fn form_fields(req: &Req) -> FormFields {
-    let mut pairs = Vec::new();
-    let mut uploads = Vec::new();
-    if req.content_type() == "multipart/form-data" {
-        let ct = req.header("content-type").unwrap_or("");
-        // The body is moved into shared bytes, and an upload is a slice of them: no copy of the file.
-        let body = axum::body::Bytes::from(req.take_body());
-        for part in mercurio::__private::multipart_parts(ct, &body) {
-            let name = part.name.unwrap_or_default();
-            if let Some(filename) = part.filename {
-                let mime = part.content_type.map(|m| m.to_ascii_lowercase());
-                uploads.push(Upload { name: filename.trim().to_owned(), mime, data: body.slice_ref(part.data) });
-            } else if let Ok(v) = std::str::from_utf8(part.data) {
-                pairs.push((name, v.to_owned()));
-            }
-        }
-    } else {
-        pairs =
-            req.with_body(|body| if body.is_empty() { Vec::new() } else { form_pairs(&String::from_utf8_lossy(body)) });
-    }
-    // Values move into the map; only the pairs `load_notify` still reads by name are copied (the body field can be huge).
-    let mut map = Map::new();
-    let mut kept = Vec::new();
-    for (k, v) in pairs {
-        if k.starts_with("template[") || ATTACH_FIELDS.contains(&k.as_str()) {
-            kept.push((k.clone(), v.clone()));
-        }
-        map.insert(k, Value::String(v));
-    }
-    (map, kept, uploads)
-}
-
-pub(super) fn json_object(req: &Req) -> Result<Map<String, Value>, Reply> {
-    let v: Value = req
-        .with_body(|body| serde_json::from_slice::<Value>(body))
-        .ok()
-        .ok_or_else(|| Reply::error(req, 400, "Invalid JSON Payload provided"))?;
-    match v {
-        Value::Object(m) => Ok(m),
-        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Array(_) => {
-            Err(Reply::error(req, 400, "The JSON payload must be an object"))
-        }
-    }
-}
-
 /// Read a notification payload. `stateless` adds the `urls` field.
-pub(super) fn load_notify(req: &Req, stateless: bool, key: Option<&str>, max_depth: usize) -> Result<Content, Reply> {
+pub(super) fn load_notify(
+    input: NotifyInput,
+    stateless: bool,
+    key: Option<&str>,
+    max_depth: usize,
+) -> Result<(Content, NotifyInput), Fault> {
+    let mut input = input;
     let rules: Vec<(String, String)> =
-        req.query.iter().filter_map(|(k, v)| k.strip_prefix(':').map(|k| (k.to_owned(), v.clone()))).collect();
-    let raw_format = match req.content_type().as_str() {
-        "text/plain" => Some("text"),
-        "text/html" => Some("html"),
-        "text/markdown" => Some("markdown"),
-        _ => None,
-    };
-    if let Some(fmt) = raw_format {
-        let body = String::from_utf8(req.take_body())
-            .ok()
-            .ok_or_else(|| Reply::error(req, 400, "The message body could not be decoded"))?;
+        input.query.iter().filter_map(|(k, v)| k.strip_prefix(':').map(|k| (k.to_owned(), v.clone()))).collect();
+    let body = input.body.take();
+    if let Some(NotifyBody::Text { body, format }) = body {
         let mut c = Content::default();
         c.fields.insert("body".into(), Value::String(body));
-        c.fields.insert(
-            "format".into(),
-            Value::String(req.query("format").filter(|f| !f.is_empty()).unwrap_or(fmt).into()),
-        );
-        apply_headers(req, &mut c)?;
-        return Ok(c);
+        c.fields.insert("format".into(), Value::String(input.query("format").unwrap_or(format).into()));
+        apply_headers(&input, &mut c)?;
+        return Ok((c, input));
     }
     let mut expected: Vec<&str> = NOTIFY_FIELDS.to_vec();
     if stateless {
         expected.push("urls");
     }
-    let json = req.json_payload();
-    let (mut data, pairs, uploads) = if json { (json_object(req)?, Vec::new(), Vec::new()) } else { form_fields(req) };
-    req.release_body();
+    let (json, mut data, template, form_attach, uploads) = match body {
+        Some(NotifyBody::Json(m)) => (true, m, BTreeMap::new(), None, Vec::new()),
+        Some(NotifyBody::Form { fields, template, attach }) => (false, fields, template, attach, Vec::new()),
+        Some(NotifyBody::Multipart { fields, attach, uploads }) => (false, fields, BTreeMap::new(), attach, uploads),
+        Some(NotifyBody::Text { .. }) | None => (false, Map::new(), BTreeMap::new(), None, Vec::new()),
+    };
     if !rules.is_empty() && !remap_fields(&rules, &mut data, &expected, max_depth) {
         let msg = match key {
             Some(k) => format!("Payload field mapping failed using KEY: {k}"),
             None => "Payload field mapping failed".to_owned(),
         };
-        return Err(Reply::error(req, 400, &msg));
+        return Err(Fault::new(400, msg));
     }
     let mut c = Content { uploads, ..Content::default() };
     if json && super::alerts::is_alert_payload(&data) {
         super::alerts::convert(&mut data);
     }
     if json {
+        // Mapped fields are checked again: `?:src=dest` may move any value into them.
         for field in ["body", "title", "type"] {
             if data.get(field).is_some_and(|v| !v.is_string()) {
-                return Err(Reply::field_error(req, 400, &format!("The {field} field must be a string"), field));
+                return Err(Fault::new(400, format!("The {field} field must be a string")).field(field));
             }
         }
         if data.get("format").is_some_and(|v| !v.is_string() && !v.is_null()) {
-            return Err(Reply::field_error(req, 400, "The format field must be a string or null", "format"));
+            return Err(Fault::new(400, "The format field must be a string or null").field("format"));
         }
         if stateless && data.get("urls").is_some_and(|v| !is_str_or_str_list(v)) {
-            return Err(Reply::field_error(req, 400, "The urls field must be a string or list of strings", "urls"));
+            return Err(Fault::new(400, "The urls field must be a string or list of strings").field("urls"));
         }
         if let Some(t) = data.get("template") {
-            let vars = template_from_json(t).ok().ok_or_else(|| {
-                Reply::field_error(req, 400, "The template field must be an object of name/value pairs", "template")
-            })?;
-            c.template = vars;
+            let bad = || Fault::new(400, "The template field must be an object of name/value pairs").field("template");
+            c.template = template_from_json(t).ok().ok_or_else(bad)?;
         }
     } else {
-        // NotifyForm validation: an unknown type or format, an over-long field or bad template[...] values make the whole form invalid.
+        // NotifyForm validation: an unknown type or format, an over-long field or bad template[...] values make the
+        // whole form invalid.
         let bad_choice = |k: &str, choices: &[&str]| {
             data.get(k).and_then(Value::as_str).is_some_and(|v| !v.is_empty() && !choices.contains(&v))
         };
-        let template = template_from_form(&pairs, &data);
+        let template = if template.is_empty() {
+            data.get("template").map_or(Ok(None), template_from_json)
+        } else {
+            template_vars(template.into_iter().map(|(k, v)| (k, Value::String(v))))
+        };
         if bad_choice("type", NOTIFY_TYPES) || bad_choice("format", NOTIFY_FORMATS) || template.is_err() {
-            log::warn!("NOTIFY - {} - Invalid FORM Payload provided", req.remote);
-            return Err(Reply::error(req, 400, "Bad FORM Payload provided"));
+            return Err(Fault::new(400, "Bad FORM Payload provided"));
         }
         c.template = template.unwrap_or_default();
-        let attach_key = ATTACH_FIELDS.into_iter().find(|k| pairs.iter().any(|(n, _)| n == k));
-        if let Some(k) = attach_key {
-            c.form_attach =
-                Some(pairs.iter().filter(|(n, v)| n == k && !v.trim().is_empty()).map(|(_, v)| v.clone()).collect());
-        }
+        c.form_attach = form_attach.map(|a| a.into_iter().filter(super::text::non_blank).collect());
         // `type` left empty may still come from a header or the query.
         if data.get("type").and_then(Value::as_str).is_some_and(str::is_empty) {
             data.remove("type");
         }
     }
     c.fields = data;
-    apply_headers(req, &mut c)?;
-    Ok(c)
+    apply_headers(&input, &mut c)?;
+    Ok((c, input))
 }
 
 fn is_str_or_str_list(v: &Value) -> bool {
@@ -192,19 +207,20 @@ fn is_str_or_str_list(v: &Value) -> bool {
 }
 
 /// `X-Apprise-Title`, `-Type`, `-Tag` and `-Template` fill fields the payload left out.
-fn apply_headers(req: &Req, c: &mut Content) -> Result<(), Reply> {
-    for (name, header) in [("title", "Title"), ("type", "Type"), ("tag", "Tag")] {
-        if let Some(v) = req.x_header(header)
+fn apply_headers(input: &NotifyInput, c: &mut Content) -> Result<(), Fault> {
+    let headers = [("title", &input.title), ("type", &input.kind), ("tag", &input.tag)];
+    for (name, header) in headers {
+        if let Some(v) = header.as_deref().map(str::trim).filter(|v| !v.is_empty())
             && !(c.has(name) || (name == "tag" && c.has("tags")))
         {
             c.fields.insert(name.into(), Value::String(v.to_owned()));
         }
     }
-    let Some(raw) = req.x_header("Template") else { return Ok(()) };
+    let Some(raw) = input.template.as_deref().map(str::trim).filter(|t| !t.is_empty()) else { return Ok(()) };
     if c.template.as_ref().is_some_and(|t| !t.is_empty()) {
         return Ok(());
     }
-    let bad = || Reply::field_error(req, 400, "The X-Apprise-Template header is invalid", "template");
+    let bad = || Fault::new(400, "The X-Apprise-Template header is invalid").field("template");
     let mut entries = Vec::new();
     for pair in raw.split('&') {
         let (k, v) = pair.split_once('=').ok_or_else(bad)?;
@@ -270,27 +286,6 @@ fn template_from_json(v: &Value) -> Result<Option<TemplateVars>, ()> {
         }
         Value::Bool(_) | Value::Number(_) => Err(()),
     }
-}
-
-/// `template[name]=value` form fields (each at most once) or the `template=NAME=VALUE` shorthand.
-fn template_from_form(pairs: &[(String, String)], data: &Map<String, Value>) -> Result<Option<TemplateVars>, ()> {
-    let mut entries = Vec::new();
-    for (k, v) in pairs {
-        if let Some(rest) = k.strip_prefix("template[") {
-            let name = rest.strip_suffix(']').ok_or(())?;
-            if pairs.iter().filter(|(n, _)| n == k).count() > 1 {
-                return Err(());
-            }
-            entries.push((name.to_owned(), Value::String(v.clone())));
-        }
-    }
-    if entries.is_empty() {
-        if let Some(t) = data.get("template") {
-            return template_from_json(t);
-        }
-        return Ok(None);
-    }
-    template_vars(entries)
 }
 
 /// Field mapping (`?:src=dest`). Returns `false` on a bad or missing nested path and on one deeper than `max_depth` (`APPRISE_WEBHOOK_MAPPING_MAX_DEPTH`).
@@ -457,16 +452,14 @@ fn tag_list(items: &[Value]) -> Option<TagGroups> {
 }
 
 /// The request's tag (`tag`, `tags`, then the query string): `Ok(None)` when none was given.
-pub(super) fn notify_tag(req: &Req, c: &Content) -> Result<Option<TagGroups>, ()> {
+pub(super) fn notify_tag(input: &NotifyInput, c: &Content) -> Result<Option<TagGroups>, ()> {
     let value = ["tag", "tags"]
         .iter()
         .find_map(|k| {
             Some(c.fields.get(*k)?.clone())
                 .filter(|v| !matches!(v, Value::Null) && v != "" && v != &Value::Array(vec![]))
         })
-        .or_else(|| {
-            ["tag", "tags"].iter().find_map(|k| req.query(k).filter(|v| !v.is_empty()).map(|v| Value::String(v.into())))
-        });
+        .or_else(|| ["tag", "tags"].iter().find_map(|k| input.query(k).map(|v| Value::String(v.into()))));
     match value {
         None => Ok(None),
         Some(Value::String(s)) => {

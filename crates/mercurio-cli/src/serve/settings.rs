@@ -6,7 +6,7 @@ use std::time::Duration;
 use mercurio::NotifyFormat;
 
 use super::auth::AuthSettings;
-use super::http::parse_bool;
+use super::call::parse_bool;
 use super::store::Mode;
 use super::{filters, notify};
 
@@ -209,6 +209,8 @@ pub(crate) struct Settings {
     /// `GET /cfg` key listing (`APPRISE_ADMIN`).
     pub(super) admin_list: bool,
     pub(super) config_max_len: usize,
+    /// `APPRISE_UPLOAD_MAX_MEMORY_SIZE` in bytes: the largest JSON, form or text body (files do not count).
+    pub(super) upload_max: usize,
     pub(super) default_format: Option<NotifyFormat>,
     pub(super) allow_templates: bool,
     pub(super) attach_size: u64,
@@ -318,6 +320,7 @@ impl Settings {
             config_lock: flag(&a.config_lock, false),
             admin_list: flag(&a.admin, true),
             config_max_len: config_max,
+            upload_max,
             default_format,
             allow_templates: flag(&a.allow_templates, true),
             attach_size: int("APPRISE_ATTACH_SIZE", &a.attach_size, i64::MIN, i64::MAX)?.max(0) as u64 * 1_048_576,
