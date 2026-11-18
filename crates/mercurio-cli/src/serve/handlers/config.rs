@@ -82,9 +82,9 @@ impl Server {
         let mut entries = Vec::new();
         for k in keys {
             let st = self.key_state(&k).await;
-            entries.push(types::ConfigListVariant2Item { key: k, user: st.username, access: st.access });
+            entries.push(types::ConfigEntry { key: k, user: st.username, access: st.access });
         }
-        Ok(Listing::Json(types::ConfigList::ConfigListVariant2ItemArray(entries)))
+        Ok(Listing::Json(types::ConfigList::ConfigEntryArray(entries)))
     }
 
     /// The key a configuration request names, once its caller may use it and see its content.

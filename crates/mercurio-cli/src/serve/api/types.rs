@@ -22,8 +22,7 @@ macro_rules! deserialize_impl {
 macro_rules! serialize_impl {
     ($t:ty) => {
         impl serde::Serialize for $t { fn serialize < S : serde::Serializer > (& self, s
-        : S) -> Result < S::Ok, S::Error > { Self::serialize(self,
-        runtime::UniqueKeys(s)) } }
+        : S) -> Result < S::Ok, S::Error > { Self::serialize(self, s) } }
     };
 }
 macro_rules! validate_impl {
@@ -34,7 +33,8 @@ macro_rules! validate_impl {
 macro_rules! serialize_impl_2 {
     ($t:ty) => {
         impl serde::Serialize for $t { fn serialize < S : serde::Serializer > (& self, s
-        : S) -> Result < S::Ok, S::Error > { Self::serialize(self, s) } }
+        : S) -> Result < S::Ok, S::Error > { Self::serialize(self,
+        runtime::UniqueKeys(s)) } }
     };
 }
 use super::runtime;
@@ -195,14 +195,14 @@ impl runtime::Validate for NotificationFormat {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Attachment {
     String(String),
-    Variant2(AttachmentVariant2),
+    InlineFile(InlineFile),
     Other(serde_json::Value),
 }
 impl serde::Serialize for Attachment {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {
             Self::String(v) => serde::Serialize::serialize(v, s),
-            Self::Variant2(v) => serde::Serialize::serialize(v, s),
+            Self::InlineFile(v) => serde::Serialize::serialize(v, s),
             Self::Other(v) => serde::Serialize::serialize(v, s),
         }
     }
@@ -212,7 +212,7 @@ impl<'de> serde::Deserialize<'de> for Attachment {
         let v = <runtime::Content<'de> as serde::Deserialize>::deserialize(d)?;
         match v.kind() {
             runtime::Kind::String => v.decode_into(Self::String),
-            runtime::Kind::Object => v.decode_into(Self::Variant2),
+            runtime::Kind::Object => v.decode_into(Self::InlineFile),
             runtime::Kind::Null
             | runtime::Kind::Bool
             | runtime::Kind::Integer
@@ -228,11 +228,53 @@ impl runtime::Validate for Attachment {
         out: &mut Vec<runtime::Violation>,
     ) {
         match self {
-            Self::String(_) | Self::Variant2(_) => {}
+            Self::String(_) | Self::InlineFile(_) => {}
             Self::Other(_) => runtime::violation(out, path, "matches no variant"),
         }
     }
 }
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(remote = "Self")]
+pub(crate) struct InlineFile {
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "runtime::not_null"
+    )]
+    pub(crate) url: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "runtime::not_null"
+    )]
+    pub(crate) base64: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "runtime::not_null"
+    )]
+    pub(crate) filename: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "runtime::not_null"
+    )]
+    pub(crate) mimetype: Option<String>,
+}
+deserialize_impl!(InlineFile);
+serialize_impl!(InlineFile);
+impl InlineFile {
+    #[must_use]
+    pub(crate) const fn new() -> Self {
+        Self {
+            url: None,
+            base64: None,
+            filename: None,
+            mimetype: None,
+        }
+    }
+}
+validate_impl!(InlineFile);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Attachments {
     Attachment(Attachment),
@@ -298,7 +340,7 @@ impl runtime::Validate for Attachments {
 /// `${NAME}` values: an object, or `NAME=VALUE` strings
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum TemplateValues {
-    Object(std::collections::BTreeMap<String, Option<TemplateValuesVariant1Value>>),
+    Object(std::collections::BTreeMap<String, Option<TemplateValue>>),
     Strings(Strings),
     Other(serde_json::Value),
 }
@@ -319,10 +361,7 @@ impl<'de> serde::Deserialize<'de> for TemplateValues {
         if fit_0
             && let Ok(x) = v
                 .decode_ref::<
-                    std::collections::BTreeMap<
-                        String,
-                        Option<TemplateValuesVariant1Value>,
-                    >,
+                    std::collections::BTreeMap<String, Option<TemplateValue>>,
                 >()
         {
             let picked = Self::Object(x);
@@ -354,6 +393,48 @@ impl runtime::Validate for TemplateValues {
             Self::Strings(x) => {
                 runtime::Validate::validate(x, path, out);
             }
+            Self::Other(_) => runtime::violation(out, path, "matches no variant"),
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum TemplateValue {
+    String(String),
+    Number(f64),
+    Boolean(bool),
+    Other(serde_json::Value),
+}
+impl serde::Serialize for TemplateValue {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::String(v) => serde::Serialize::serialize(v, s),
+            Self::Number(v) => serde::Serialize::serialize(v, s),
+            Self::Boolean(v) => serde::Serialize::serialize(v, s),
+            Self::Other(v) => serde::Serialize::serialize(v, s),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for TemplateValue {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let v = <runtime::Content<'de> as serde::Deserialize>::deserialize(d)?;
+        match v.kind() {
+            runtime::Kind::Bool => v.decode_into(Self::Boolean),
+            runtime::Kind::Integer | runtime::Kind::Number => v.decode_into(Self::Number),
+            runtime::Kind::String => v.decode_into(Self::String),
+            runtime::Kind::Null | runtime::Kind::Array | runtime::Kind::Object => {
+                Ok(Self::Other(v.into_value()))
+            }
+        }
+    }
+}
+impl runtime::Validate for TemplateValue {
+    fn validate(
+        &self,
+        path: &runtime::InstancePath<'_>,
+        out: &mut Vec<runtime::Violation>,
+    ) {
+        match self {
+            Self::String(_) | Self::Number(_) | Self::Boolean(_) => {}
             Self::Other(_) => runtime::violation(out, path, "matches no variant"),
         }
     }
@@ -426,7 +507,7 @@ pub(crate) struct Notification {
     >,
 }
 deserialize_impl!(Notification);
-serialize_impl!(Notification);
+serialize_impl_2!(Notification);
 impl Notification {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -676,7 +757,7 @@ pub(crate) struct AlertWebhook {
     >,
 }
 deserialize_impl!(AlertWebhook);
-serialize_impl!(AlertWebhook);
+serialize_impl_2!(AlertWebhook);
 impl AlertWebhook {
     #[must_use]
     pub(crate) const fn new(status: String, alerts: Vec<Alert>) -> Self {
@@ -886,7 +967,7 @@ pub(crate) struct StatelessAlertWebhook {
     >,
 }
 deserialize_impl!(StatelessAlertWebhook);
-serialize_impl!(StatelessAlertWebhook);
+serialize_impl_2!(StatelessAlertWebhook);
 impl StatelessAlertWebhook {
     #[must_use]
     pub(crate) const fn new(status: String, alerts: Vec<Alert>) -> Self {
@@ -1071,7 +1152,7 @@ pub(crate) struct Alert {
     >,
 }
 deserialize_impl!(Alert);
-serialize_impl!(Alert);
+serialize_impl_2!(Alert);
 impl Alert {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -1167,7 +1248,7 @@ pub(crate) struct StatelessNotification {
     >,
 }
 deserialize_impl!(StatelessNotification);
-serialize_impl!(StatelessNotification);
+serialize_impl_2!(StatelessNotification);
 impl StatelessNotification {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -1371,7 +1452,7 @@ pub(crate) struct NotificationForm {
     pub(crate) additional_properties: std::collections::BTreeMap<String, String>,
 }
 deserialize_impl!(NotificationForm);
-serialize_impl!(NotificationForm);
+serialize_impl_2!(NotificationForm);
 impl NotificationForm {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -1466,7 +1547,7 @@ pub(crate) struct StatelessNotificationForm {
     pub(crate) additional_properties: std::collections::BTreeMap<String, String>,
 }
 deserialize_impl!(StatelessNotificationForm);
-serialize_impl!(StatelessNotificationForm);
+serialize_impl_2!(StatelessNotificationForm);
 impl StatelessNotificationForm {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -1553,7 +1634,7 @@ pub(crate) struct NotificationMultipart {
     >,
 }
 deserialize_impl!(NotificationMultipart);
-serialize_impl!(NotificationMultipart);
+serialize_impl_2!(NotificationMultipart);
 impl NotificationMultipart {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -1643,7 +1724,7 @@ pub(crate) struct StatelessNotificationMultipart {
     >,
 }
 deserialize_impl!(StatelessNotificationMultipart);
-serialize_impl!(StatelessNotificationMultipart);
+serialize_impl_2!(StatelessNotificationMultipart);
 impl StatelessNotificationMultipart {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -1672,7 +1753,7 @@ pub(crate) struct NotifyResult {
     pub(crate) details: Vec<Vec<serde_json::Value>>,
 }
 deserialize_impl!(NotifyResult);
-serialize_impl_2!(NotifyResult);
+serialize_impl!(NotifyResult);
 impl NotifyResult {
     #[must_use]
     pub(crate) const fn new(
@@ -1719,7 +1800,7 @@ pub(crate) struct StreamEvent {
     pub(crate) data: String,
 }
 deserialize_impl!(StreamEvent);
-serialize_impl_2!(StreamEvent);
+serialize_impl!(StreamEvent);
 impl StreamEvent {
     #[must_use]
     pub(crate) const fn new(event: StreamEventEvent, data: String) -> Self {
@@ -1752,7 +1833,7 @@ pub(crate) struct Error {
     pub(crate) field: Option<String>,
 }
 deserialize_impl!(Error);
-serialize_impl_2!(Error);
+serialize_impl!(Error);
 impl Error {
     #[must_use]
     pub(crate) const fn new(error: String) -> Self {
@@ -1774,7 +1855,7 @@ pub(crate) struct Health {
     pub(crate) status: HealthStatus,
 }
 deserialize_impl!(Health);
-serialize_impl_2!(Health);
+serialize_impl!(Health);
 impl Health {
     #[must_use]
     #[allow(clippy::too_many_arguments, reason = "one argument per required property")]
@@ -1828,7 +1909,7 @@ pub(crate) struct Details {
     pub(crate) asset: std::collections::BTreeMap<String, serde_json::Value>,
 }
 deserialize_impl!(Details);
-serialize_impl_2!(Details);
+serialize_impl!(Details);
 impl Details {
     #[must_use]
     pub(crate) const fn new(
@@ -1843,14 +1924,14 @@ validate_impl!(Details);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ConfigList {
     StringArray(Vec<String>),
-    ConfigListVariant2ItemArray(Vec<ConfigListVariant2Item>),
+    ConfigEntryArray(Vec<ConfigEntry>),
     Other(serde_json::Value),
 }
 impl serde::Serialize for ConfigList {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {
             Self::StringArray(v) => serde::Serialize::serialize(v, s),
-            Self::ConfigListVariant2ItemArray(v) => serde::Serialize::serialize(v, s),
+            Self::ConfigEntryArray(v) => serde::Serialize::serialize(v, s),
             Self::Other(v) => serde::Serialize::serialize(v, s),
         }
     }
@@ -1868,8 +1949,8 @@ impl<'de> serde::Deserialize<'de> for ConfigList {
             }
             first.get_or_insert(picked);
         }
-        if fit_1 && let Ok(x) = v.decode_ref::<Vec<ConfigListVariant2Item>>() {
-            let picked = Self::ConfigListVariant2ItemArray(x);
+        if fit_1 && let Ok(x) = v.decode_ref::<Vec<ConfigEntry>>() {
+            let picked = Self::ConfigEntryArray(x);
             if first.is_none() || runtime::is_valid(&picked) {
                 return Ok(picked);
             }
@@ -1885,11 +1966,28 @@ impl runtime::Validate for ConfigList {
         out: &mut Vec<runtime::Violation>,
     ) {
         match self {
-            Self::StringArray(_) | Self::ConfigListVariant2ItemArray(_) => {}
+            Self::StringArray(_) | Self::ConfigEntryArray(_) => {}
             Self::Other(_) => runtime::violation(out, path, "matches no variant"),
         }
     }
 }
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(remote = "Self")]
+pub(crate) struct ConfigEntry {
+    pub(crate) key: String,
+    #[serde(deserialize_with = "runtime::required_nullable")]
+    pub(crate) user: Option<String>,
+    pub(crate) access: String,
+}
+deserialize_impl!(ConfigEntry);
+serialize_impl!(ConfigEntry);
+impl ConfigEntry {
+    #[must_use]
+    pub(crate) const fn new(key: String, user: Option<String>, access: String) -> Self {
+        Self { key, user, access }
+    }
+}
+validate_impl!(ConfigEntry);
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(remote = "Self")]
 pub(crate) struct StoredConfig {
@@ -1897,7 +1995,7 @@ pub(crate) struct StoredConfig {
     pub(crate) config: String,
 }
 deserialize_impl!(StoredConfig);
-serialize_impl_2!(StoredConfig);
+serialize_impl!(StoredConfig);
 impl StoredConfig {
     #[must_use]
     pub(crate) const fn new(format: StoredConfigFormat, config: String) -> Self {
@@ -1941,7 +2039,7 @@ pub(crate) struct AddConfiguration {
     pub(crate) format: Option<String>,
 }
 deserialize_impl!(AddConfiguration);
-serialize_impl_2!(AddConfiguration);
+serialize_impl!(AddConfiguration);
 impl AddConfiguration {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -1990,7 +2088,7 @@ pub(crate) struct AddConfigurationForm {
     pub(crate) format: Option<String>,
 }
 deserialize_impl!(AddConfigurationForm);
-serialize_impl_2!(AddConfigurationForm);
+serialize_impl!(AddConfigurationForm);
 impl AddConfigurationForm {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -2013,7 +2111,7 @@ pub(crate) struct MoveConfiguration {
     pub(crate) to: Option<String>,
 }
 deserialize_impl!(MoveConfiguration);
-serialize_impl_2!(MoveConfiguration);
+serialize_impl!(MoveConfiguration);
 impl MoveConfiguration {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -2038,7 +2136,7 @@ pub(crate) struct MoveConfigurationForm {
     pub(crate) to: Option<String>,
 }
 deserialize_impl!(MoveConfigurationForm);
-serialize_impl_2!(MoveConfigurationForm);
+serialize_impl!(MoveConfigurationForm);
 impl MoveConfigurationForm {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -2073,7 +2171,7 @@ pub(crate) struct SetAuth {
     pub(crate) access: Option<SetAuthAccess>,
 }
 deserialize_impl!(SetAuth);
-serialize_impl_2!(SetAuth);
+serialize_impl!(SetAuth);
 impl SetAuth {
     #[must_use]
     pub(crate) const fn new() -> Self {
@@ -2108,7 +2206,7 @@ pub(crate) struct AuthState {
     pub(crate) username: String,
 }
 deserialize_impl!(AuthState);
-serialize_impl_2!(AuthState);
+serialize_impl!(AuthState);
 impl AuthState {
     #[must_use]
     pub(crate) const fn new(mode: String, access: String, username: String) -> Self {
@@ -2123,7 +2221,7 @@ pub(crate) struct AuthChange {
     pub(crate) auth_state: String,
 }
 deserialize_impl!(AuthChange);
-serialize_impl_2!(AuthChange);
+serialize_impl!(AuthChange);
 impl AuthChange {
     #[must_use]
     pub(crate) const fn new(error: (), auth_state: String) -> Self {
@@ -2137,7 +2235,7 @@ pub(crate) struct Changed {
     pub(crate) error: (),
 }
 deserialize_impl!(Changed);
-serialize_impl_2!(Changed);
+serialize_impl!(Changed);
 impl Changed {
     #[must_use]
     pub(crate) const fn new(error: ()) -> Self {
@@ -2158,7 +2256,7 @@ pub(crate) struct JsonUrls {
     pub(crate) urls: Vec<JsonUrlsUrlsItem>,
 }
 deserialize_impl!(JsonUrls);
-serialize_impl_2!(JsonUrls);
+serialize_impl!(JsonUrls);
 impl JsonUrls {
     #[must_use]
     pub(crate) const fn new(tags: Vec<String>, urls: Vec<JsonUrlsUrlsItem>) -> Self {
@@ -2166,90 +2264,6 @@ impl JsonUrls {
     }
 }
 validate_impl!(JsonUrls);
-#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
-#[serde(remote = "Self")]
-pub(crate) struct AttachmentVariant2 {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "runtime::not_null"
-    )]
-    pub(crate) url: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "runtime::not_null"
-    )]
-    pub(crate) base64: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "runtime::not_null"
-    )]
-    pub(crate) filename: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "runtime::not_null"
-    )]
-    pub(crate) mimetype: Option<String>,
-}
-deserialize_impl!(AttachmentVariant2);
-serialize_impl_2!(AttachmentVariant2);
-impl AttachmentVariant2 {
-    #[must_use]
-    pub(crate) const fn new() -> Self {
-        Self {
-            url: None,
-            base64: None,
-            filename: None,
-            mimetype: None,
-        }
-    }
-}
-validate_impl!(AttachmentVariant2);
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum TemplateValuesVariant1Value {
-    String(String),
-    Number(f64),
-    Boolean(bool),
-    Other(serde_json::Value),
-}
-impl serde::Serialize for TemplateValuesVariant1Value {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::String(v) => serde::Serialize::serialize(v, s),
-            Self::Number(v) => serde::Serialize::serialize(v, s),
-            Self::Boolean(v) => serde::Serialize::serialize(v, s),
-            Self::Other(v) => serde::Serialize::serialize(v, s),
-        }
-    }
-}
-impl<'de> serde::Deserialize<'de> for TemplateValuesVariant1Value {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let v = <runtime::Content<'de> as serde::Deserialize>::deserialize(d)?;
-        match v.kind() {
-            runtime::Kind::Bool => v.decode_into(Self::Boolean),
-            runtime::Kind::Integer | runtime::Kind::Number => v.decode_into(Self::Number),
-            runtime::Kind::String => v.decode_into(Self::String),
-            runtime::Kind::Null | runtime::Kind::Array | runtime::Kind::Object => {
-                Ok(Self::Other(v.into_value()))
-            }
-        }
-    }
-}
-impl runtime::Validate for TemplateValuesVariant1Value {
-    fn validate(
-        &self,
-        path: &runtime::InstancePath<'_>,
-        out: &mut Vec<runtime::Violation>,
-    ) {
-        match self {
-            Self::String(_) | Self::Number(_) | Self::Boolean(_) => {}
-            Self::Other(_) => runtime::violation(out, path, "matches no variant"),
-        }
-    }
-}
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) enum StreamEventEvent {
     Log,
@@ -2347,7 +2361,7 @@ pub(crate) struct HealthStatus {
     pub(crate) details: Vec<HealthStatusDetailsItem>,
 }
 deserialize_impl!(HealthStatus);
-serialize_impl_2!(HealthStatus);
+serialize_impl!(HealthStatus);
 impl HealthStatus {
     #[must_use]
     pub(crate) const fn new(
@@ -2428,23 +2442,6 @@ impl runtime::Validate for HealthStatusDetailsItem {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
-#[serde(remote = "Self")]
-pub(crate) struct ConfigListVariant2Item {
-    pub(crate) key: String,
-    #[serde(deserialize_with = "runtime::required_nullable")]
-    pub(crate) user: Option<String>,
-    pub(crate) access: String,
-}
-deserialize_impl!(ConfigListVariant2Item);
-serialize_impl_2!(ConfigListVariant2Item);
-impl ConfigListVariant2Item {
-    #[must_use]
-    pub(crate) const fn new(key: String, user: Option<String>, access: String) -> Self {
-        Self { key, user, access }
-    }
-}
-validate_impl!(ConfigListVariant2Item);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) enum StoredConfigFormat {
     Text,
@@ -2548,7 +2545,7 @@ pub(crate) struct JsonUrlsUrlsItem {
     pub(crate) template: std::collections::BTreeMap<String, Option<String>>,
 }
 deserialize_impl!(JsonUrlsUrlsItem);
-serialize_impl_2!(JsonUrlsUrlsItem);
+serialize_impl!(JsonUrlsUrlsItem);
 impl JsonUrlsUrlsItem {
     #[must_use]
     #[allow(clippy::too_many_arguments, reason = "one argument per required property")]
@@ -2586,7 +2583,7 @@ pub(crate) struct JsonUrlsUrlsItemTagDetailsItem {
     pub(crate) exact: String,
 }
 deserialize_impl!(JsonUrlsUrlsItemTagDetailsItem);
-serialize_impl_2!(JsonUrlsUrlsItemTagDetailsItem);
+serialize_impl!(JsonUrlsUrlsItemTagDetailsItem);
 impl JsonUrlsUrlsItemTagDetailsItem {
     #[must_use]
     pub(crate) const fn new(
