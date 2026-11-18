@@ -1,0 +1,861 @@
+# The Apprise API as Mercurio serves it: what apprise-api implements (its `views.py`, not only its `swagger.yaml`)
+# and what clients in production send, even where that is broader than apprise-api documents:
+#
+# - Sonarr, Radarr, Lidarr, Prowlarr and Whisparr (`AppriseProxy.cs`): `urls` and `attachment` as one string
+# - Apprise's own `apprise://` plugin (`apprise_api.py`): `tag` as a list, `attachments` as {filename, base64, mimetype}
+# - unraid/apprise-go: `tag` as a list (JSON) or repeated (form), `X-Apprise-Config-ID` with `/notify`
+# - Cleanuparr: `tags` instead of `tag`
+# - Alertmanager and Grafana: their own webhook payloads, posted as they are
+#
+# Header values and Basic credentials are UTF-8, or ISO-8859-1 when they are not valid UTF-8: Python's `requests`
+# and OkHttp encode Basic credentials in ISO-8859-1.
+#
+#
+# This overlay turns caronc/apprise-api's swagger.yaml (vendored next to it) into that description.
+# It replaces every section: the two share only 35 of 915 values once upgraded to OpenAPI 3.2.
+
+overlay: 1.0.0
+info:
+  title: Mercurio's Apprise API
+  version: '1'
+actions:
+  - {target: $.info, remove: true}
+  - {target: $.servers, remove: true}
+  - {target: $.tags, remove: true}
+  - {target: $.security, remove: true}
+  - {target: $.paths, remove: true}
+  - {target: $.components, remove: true}
+  - target: $
+    update:
+      openapi: 3.1.0
+      info:
+        title: Apprise API
+        version: 2.1.0
+        description: >
+          Send notifications to 150+ services through one URL each. Basic Auth is optional: `APPRISE_AUTH_REQUIRED`
+          turns it on, so every operation accepts a request with or without credentials and decides at runtime.
+          Errors are `{"error": ...}` for clients that accept JSON (or send it without an `Accept`), plain text otherwise.
+        license:
+          name: MIT (the description) and Apache-2.0 (Mercurio)
+          identifier: MIT AND Apache-2.0
+
+      # Credentials first: the first alternative a request satisfies is the one its handler sees.
+      security:
+        - basicAuth: []
+        - {}
+
+      # Parameter and response sets several operations share (YAML anchors).
+      x-shared:
+        notify-parameters: &notify-parameters
+          - {$ref: '#/components/parameters/ConfigIdHeader'}
+          - {$ref: '#/components/parameters/Title'}
+          - {$ref: '#/components/parameters/Type'}
+          - {$ref: '#/components/parameters/Tag'}
+          - {$ref: '#/components/parameters/Template'}
+          - {$ref: '#/components/parameters/LogLevel'}
+          - {$ref: '#/components/parameters/RecursionCount'}
+          - {$ref: '#/components/parameters/AppriseId'}
+          - {$ref: '#/components/parameters/Query'}
+        notify-responses: &notify-responses
+          '200':
+            description: Sent; the logs of the call
+            headers:
+              Cache-Control: {description: '`no-cache` on a live stream', schema: {type: string}}
+              X-Accel-Buffering: {description: '`no` on a live stream, so that nginx passes each event on', schema: {type: string}}
+            content:
+              text/plain: {schema: {type: string}}
+              text/html: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/NotifyResult'}}
+              text/event-stream: {itemSchema: {$ref: '#/components/schemas/StreamEvent'}}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+          '406': {$ref: '#/components/responses/Error'}
+          '413': {$ref: '#/components/responses/Error'}
+          '431':
+            $ref: '#/components/responses/Error'
+            description: The JSON or text body is larger than `APPRISE_UPLOAD_MAX_MEMORY_SIZE` (files do not count)
+          '424':
+            description: Every service failed, or some did; the logs of the call
+            content:
+              text/plain: {schema: {type: string}}
+              text/html: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/NotifyResult'}}
+          '500': {$ref: '#/components/responses/Error'}
+          '503': {$ref: '#/components/responses/Busy'}
+        config-responses: &config-responses
+          '200':
+            description: The configuration
+            content:
+              text/plain: {schema: {type: string}}
+              text/yaml: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/StoredConfig'}}
+          '204': {description: Nothing is stored under this Config ID}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+          '500': {$ref: '#/components/responses/Error'}
+        change-responses: &change-responses
+          '200': {$ref: '#/components/responses/Saved'}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+          '500': {$ref: '#/components/responses/Error'}
+        delete-responses: &delete-responses
+          '200': {$ref: '#/components/responses/Changed'}
+          '204': {description: Nothing was stored under this Config ID}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+          '500': {$ref: '#/components/responses/Error'}
+        move-responses: &move-responses
+          '200': {$ref: '#/components/responses/Changed'}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+          '409': {$ref: '#/components/responses/Error'}
+          '424': {$ref: '#/components/responses/Error'}
+          '500': {$ref: '#/components/responses/Error'}
+        auth-get-responses: &auth-get-responses
+          '200':
+            description: The login and access mode
+            content:
+              application/json: {schema: {$ref: '#/components/schemas/AuthState'}}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+        auth-change-responses: &auth-change-responses
+          '200':
+            description: Done
+            content:
+              text/plain: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/AuthChange'}}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+          '500': {$ref: '#/components/responses/Error'}
+        json-urls-parameters: &json-urls-parameters
+          - {$ref: '#/components/parameters/ConfigIdHeader'}
+          - {name: privacy, in: query, description: 'A loose boolean: redact secrets', schema: {type: string}}
+          - {name: tag, in: query, description: Tag expression the URLs must match, schema: {type: string}}
+        json-urls-responses: &json-urls-responses
+          '200':
+            description: The URLs
+            content:
+              application/json: {schema: {$ref: '#/components/schemas/JsonUrls'}}
+          '204': {description: Nothing is stored under this Config ID}
+          '400': {$ref: '#/components/responses/Error'}
+          '401': {$ref: '#/components/responses/Unauthorized'}
+          '403': {$ref: '#/components/responses/Error'}
+          '404': {$ref: '#/components/responses/Error'}
+          '500':
+            description: The configuration could not be read
+            content:
+              application/json: {schema: {$ref: '#/components/schemas/JsonUrls'}}
+
+      paths:
+        /status:
+          get:
+            operationId: status
+            summary: Health check
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            responses:
+              '200': {$ref: '#/components/responses/Health'}
+              '400': {$ref: '#/components/responses/Error'}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+              '403': {$ref: '#/components/responses/Error'}
+              '417': {$ref: '#/components/responses/Health'}
+        /status/@:
+          get:
+            operationId: statusCurrent
+            summary: The current Config ID, which an API call never has
+            responses:
+              '400': {$ref: '#/components/responses/Error'}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+        /status/{key}:
+          get:
+            operationId: statusKey
+            summary: Health check after the Config ID's own login
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            responses:
+              '200': {$ref: '#/components/responses/Health'}
+              '400': {$ref: '#/components/responses/Error'}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+              '403': {$ref: '#/components/responses/Error'}
+              '404': {$ref: '#/components/responses/Error'}
+              '417': {$ref: '#/components/responses/Health'}
+
+        /details:
+          get:
+            operationId: details
+            summary: Supported services
+            parameters:
+              - {$ref: '#/components/parameters/ConfigIdHeader'}
+              - {name: all, in: query, description: 'A loose boolean: also list disabled services', schema: {type: string}}
+            responses:
+              '200':
+                description: The services and their URL templates
+                content:
+                  application/json: {schema: {$ref: '#/components/schemas/Details'}}
+              '400': {$ref: '#/components/responses/Error'}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+              '403': {$ref: '#/components/responses/Error'}
+
+        /metrics:
+          get:
+            operationId: metrics
+            summary: Request counters, Prometheus text format
+            responses:
+              '200':
+                description: The counters
+                content:
+                  'text/plain; version=0.0.4; charset=utf-8': {schema: {type: string}}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+
+        /notify:
+          post:
+            operationId: notifyStateless
+            summary: Send to the URLs in the request
+            description: >
+              Without `urls`, an `X-Apprise-Config-ID` header sends through that stored configuration instead, as
+              apprise-api v2 clients expect; without either, `APPRISE_STATELESS_URLS` when it is set.
+            parameters: *notify-parameters
+            requestBody: {$ref: '#/components/requestBodies/StatelessNotification'}
+            responses: *notify-responses
+        /notify/{key}:
+          post:
+            operationId: notify
+            summary: Send through the stored configuration
+            parameters:
+              - {$ref: '#/components/parameters/Key'}
+              - {$ref: '#/components/parameters/ConfigIdHeader'}
+              - {$ref: '#/components/parameters/Title'}
+              - {$ref: '#/components/parameters/Type'}
+              - {$ref: '#/components/parameters/Tag'}
+              - {$ref: '#/components/parameters/Template'}
+              - {$ref: '#/components/parameters/LogLevel'}
+              - {$ref: '#/components/parameters/RecursionCount'}
+              - {$ref: '#/components/parameters/AppriseId'}
+              - {$ref: '#/components/parameters/Query'}
+            requestBody: {$ref: '#/components/requestBodies/Notification'}
+            responses: *notify-responses
+
+        /cfg:
+          get:
+            operationId: listConfigs
+            summary: The stored Config IDs (simple storage mode, administrator)
+            responses:
+              '200':
+                description: One Config ID per line, or their logins as JSON
+                content:
+                  text/plain: {schema: {type: string}}
+                  application/json: {schema: {$ref: '#/components/schemas/ConfigList'}}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+              '403': {$ref: '#/components/responses/Error'}
+        /cfg/@:
+          get:
+            operationId: configCurrent
+            summary: The current Config ID, which an API call never has
+            responses:
+              '400': {$ref: '#/components/responses/Error'}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+          post:
+            operationId: configCurrentPost
+            summary: The current Config ID, which an API call never has
+            responses:
+              '400': {$ref: '#/components/responses/Error'}
+              '401': {$ref: '#/components/responses/Unauthorized'}
+        /cfg/{key}:
+          post:
+            operationId: configAlias
+            summary: The stored configuration (as `/get/{key}`)
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/Ignored'}
+            responses: *config-responses
+        /get:
+          post:
+            operationId: getConfigByHeader
+            summary: The configuration stored under `X-Apprise-Config-ID`
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/Ignored'}
+            responses: *config-responses
+        /get/{key}:
+          post:
+            operationId: getConfig
+            summary: The stored configuration
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/Ignored'}
+            responses: *config-responses
+
+        /add:
+          post:
+            operationId: addConfigByHeader
+            summary: Store a configuration under `X-Apprise-Config-ID`
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/AddConfiguration'}
+            responses: *change-responses
+        /add/{key}:
+          post:
+            operationId: addConfig
+            summary: Store a configuration
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/AddConfiguration'}
+            responses: *change-responses
+        /del:
+          post:
+            operationId: deleteConfigByHeader
+            summary: Delete the configuration stored under `X-Apprise-Config-ID`, and its login
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/Ignored'}
+            responses: *delete-responses
+        /del/{key}:
+          post:
+            operationId: deleteConfig
+            summary: Delete the stored configuration and its login
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/Ignored'}
+            responses: *delete-responses
+        /move:
+          post:
+            operationId: moveConfigByHeader
+            summary: Move the configuration under `X-Apprise-Config-ID` (or the form's `from`) to `to`
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/MoveConfiguration'}
+            responses: *move-responses
+        /move/{key}:
+          post:
+            operationId: moveConfig
+            summary: Move a configuration and its login to the free Config ID `to`
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/MoveConfiguration'}
+            responses: *move-responses
+
+        /auth:
+          get:
+            operationId: getAuthByHeader
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            responses: *auth-get-responses
+          post:
+            operationId: setAuthByHeader
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/SetAuth'}
+            responses: *auth-change-responses
+          delete:
+            operationId: deleteAuthByHeader
+            parameters: [{$ref: '#/components/parameters/ConfigIdHeader'}]
+            responses: *auth-change-responses
+        /auth/@:
+          get:
+            operationId: authCurrent
+            responses: {'400': {$ref: '#/components/responses/Error'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+          post:
+            operationId: authCurrentPost
+            responses: {'400': {$ref: '#/components/responses/Error'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+          delete:
+            operationId: authCurrentDelete
+            responses: {'400': {$ref: '#/components/responses/Error'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+        /auth/{key}:
+          get:
+            operationId: getAuth
+            summary: The Config ID's login and access mode
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            responses: *auth-get-responses
+          post:
+            operationId: setAuth
+            summary: Set the Config ID's login and access mode
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            requestBody: {$ref: '#/components/requestBodies/SetAuth'}
+            responses: *auth-change-responses
+          delete:
+            operationId: deleteAuth
+            summary: Remove the Config ID's login
+            parameters: [{$ref: '#/components/parameters/Key'}, {$ref: '#/components/parameters/ConfigIdHeader'}]
+            responses: *auth-change-responses
+
+        /json/urls:
+          get:
+            operationId: jsonUrlsByHeader
+            parameters: *json-urls-parameters
+            responses: *json-urls-responses
+        /json/urls/{key}:
+          get:
+            operationId: jsonUrls
+            summary: The stored URLs, their tags and template names
+            parameters:
+              - {$ref: '#/components/parameters/Key'}
+              - {$ref: '#/components/parameters/ConfigIdHeader'}
+              - {name: privacy, in: query, description: 'A loose boolean: redact secrets', schema: {type: string}}
+              - {name: tag, in: query, description: Tag expression the URLs must match, schema: {type: string}}
+            responses: *json-urls-responses
+
+        # apprise-api's browser interface: not served yet.
+        /login:
+          get: {operationId: loginForm, responses: {'200': {description: The login form, content: {text/html: {schema: {type: string}}}}}}
+          post: {operationId: login, responses: {'302': {description: Logged in}}}
+        /logout:
+          get: {operationId: logoutForm, responses: {'302': {description: Back to the welcome page}}}
+          post: {operationId: logout, responses: {'302': {description: Logged out}}}
+        /qr/@:
+          get: {operationId: qrCurrent, responses: {'400': {$ref: '#/components/responses/Error'}}}
+        /qr/{key}:
+          get:
+            operationId: qr
+            summary: QR code for Apprise Mobile
+            parameters: [{$ref: '#/components/parameters/Key'}]
+            responses: {'200': {description: The QR code, content: {image/png: {schema: {type: string, contentMediaType: image/png}}}}}
+
+
+      components:
+        securitySchemes:
+          basicAuth:
+            type: http
+            scheme: basic
+            description: >
+              The administrator (`APPRISE_USER`, `APPRISE_PASSWORD`) or a Config ID's own login. Credentials are UTF-8, or
+              ISO-8859-1 when they are not valid UTF-8.
+
+        parameters:
+          Key:
+            name: key
+            in: path
+            required: true
+            description: Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
+            schema: {type: string}
+          ConfigIdHeader:
+            name: X-Apprise-Config-ID
+            in: header
+            description: The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
+            schema: {type: string}
+          Title: {name: X-Apprise-Title, in: header, description: The title when the payload has none, schema: {type: string}}
+          Type: {name: X-Apprise-Type, in: header, description: The type when the payload has none, schema: {type: string}}
+          Tag: {name: X-Apprise-Tag, in: header, description: The tag expression when the payload has none, schema: {type: string}}
+          Template:
+            name: X-Apprise-Template
+            in: header
+            description: '`${NAME}` values as URL-encoded pairs (`api_key=abc&room=ops`) when the payload has none'
+            schema: {type: string}
+          LogLevel:
+            name: X-Apprise-Log-Level
+            in: header
+            description: Detail of the returned logs
+            schema: {type: string, enum: [trace, debug, info, warning, error, critical]}
+          RecursionCount:
+            name: X-Apprise-Recursion-Count
+            in: header
+            description: Servers this call went through; above `APPRISE_RECURSION_MAX` is 406
+            schema: {type: string}
+          AppriseId: {name: X-Apprise-ID, in: header, description: Id of the call chain, schema: {type: string}}
+          Query:
+            name: query
+            in: query
+            style: form
+            explode: true
+            description: >
+              `format`, `type`, `title`, `tag` and `stream` (a loose boolean) fill what the payload left out.
+              `:src=dest` maps payload field `src` (or a `a.b[0]` path) to `dest`, `:src=` drops it, `:dest=value` sets it.
+            schema: {type: object, additionalProperties: {type: string}}
+
+        requestBodies:
+          Notification:
+            required: false
+            content:
+              application/json:
+                schema: {$ref: '#/components/schemas/NotifyJson'}
+              application/x-www-form-urlencoded:
+                schema: {$ref: '#/components/schemas/NotificationForm'}
+                encoding: {template: {style: deepObject, explode: true}, attach: {explode: true}, attachment: {explode: true}, attachments: {explode: true}}
+              multipart/form-data: {schema: {$ref: '#/components/schemas/NotificationMultipart'}}
+              text/plain: {schema: {type: string}}
+              text/html: {schema: {type: string}}
+              text/markdown: {schema: {type: string}}
+          StatelessNotification:
+            required: false
+            content:
+              application/json:
+                schema: {$ref: '#/components/schemas/StatelessNotifyJson'}
+              application/x-www-form-urlencoded:
+                schema: {$ref: '#/components/schemas/StatelessNotificationForm'}
+                encoding: {template: {style: deepObject, explode: true}, attach: {explode: true}, attachment: {explode: true}, attachments: {explode: true}}
+              multipart/form-data: {schema: {$ref: '#/components/schemas/StatelessNotificationMultipart'}}
+              text/plain: {schema: {type: string}}
+              text/html: {schema: {type: string}}
+              text/markdown: {schema: {type: string}}
+          AddConfiguration:
+            required: false
+            content:
+              application/json: {schema: {$ref: '#/components/schemas/AddConfiguration'}}
+              application/x-www-form-urlencoded: {schema: {$ref: '#/components/schemas/AddConfigurationForm'}}
+              multipart/form-data: {schema: {$ref: '#/components/schemas/AddConfigurationForm'}}
+          MoveConfiguration:
+            required: false
+            content:
+              application/json: {schema: {$ref: '#/components/schemas/MoveConfiguration'}}
+              application/x-www-form-urlencoded: {schema: {$ref: '#/components/schemas/MoveConfigurationForm'}}
+              multipart/form-data: {schema: {$ref: '#/components/schemas/MoveConfigurationForm'}}
+          SetAuth:
+            required: false
+            content:
+              application/json: {schema: {$ref: '#/components/schemas/SetAuth'}}
+          Ignored:
+            description: Read by nobody; clients send forms or JSON out of habit
+            required: false
+            content:
+              '*/*': {schema: {}}
+
+        schemas:
+          NotifyJson:
+            description: A notification or an alert webhook. The server reads it as a JSON object and checks the type of each field itself, after field mapping (`?:src=dest`) renamed, removed or set any of them.
+            x-rust-type: crate::serve::notify_json::NotifyJson
+            oneOf:
+              - {$ref: '#/components/schemas/AlertWebhook'}
+              - {$ref: '#/components/schemas/Notification'}
+          StatelessNotifyJson:
+            description: A notification or an alert webhook. The server reads it as a JSON object and checks the type of each field itself, after field mapping (`?:src=dest`) renamed, removed or set any of them.
+            x-rust-type: crate::serve::notify_json::NotifyJson
+            oneOf:
+              - {$ref: '#/components/schemas/StatelessAlertWebhook'}
+              - {$ref: '#/components/schemas/StatelessNotification'}
+          Strings:
+            description: One string, or a list of them
+            oneOf:
+              - {type: string}
+              - {type: array, items: {type: string}}
+          NotificationType:
+            type: string
+            enum: [info, success, warning, failure]
+          NotificationFormat:
+            type: [string, 'null']
+            enum: [text, html, markdown, '', null]
+          Attachment:
+            description: An http(s):// URL to download, or a file given inline
+            oneOf:
+              - {type: string}
+              - type: object
+                properties:
+                  url: {type: string}
+                  base64: {type: string}
+                  filename: {type: string}
+                  mimetype: {type: string}
+          Attachments:
+            oneOf:
+              - {$ref: '#/components/schemas/Attachment'}
+              - {type: array, items: {$ref: '#/components/schemas/Attachment'}}
+          TemplateValues:
+            description: '`${NAME}` values: an object, or `NAME=VALUE` strings'
+            oneOf:
+              - type: object
+                additionalProperties: {type: [string, number, boolean, 'null']}
+              - {$ref: '#/components/schemas/Strings'}
+          Notification:
+            type: object
+            description: Any other field stays for `?:src=dest` mapping.
+            # Not an alert webhook: `status` and `alerts` without a `body` of its own.
+            not: {required: [status, alerts], not: {required: [body]}}
+            properties:
+              body: {type: string}
+              title: {type: string}
+              type: {$ref: '#/components/schemas/NotificationType'}
+              format: {$ref: '#/components/schemas/NotificationFormat'}
+              tag: {$ref: '#/components/schemas/Strings'}
+              tags: {$ref: '#/components/schemas/Strings'}
+              template: {$ref: '#/components/schemas/TemplateValues'}
+              attach: {$ref: '#/components/schemas/Attachments'}
+              attachment: {$ref: '#/components/schemas/Attachments'}
+              attachments: {$ref: '#/components/schemas/Attachments'}
+            additionalProperties: true
+          AlertWebhook:
+            description: >
+              An Alertmanager (webhook version 4) or Grafana alerting webhook, read as one notification: Grafana's `title`
+              and `message` as they are; for Alertmanager, its default subject (`[FIRING:2] HighCPU web (prod)`) and one
+              line per alert. The type follows the status and the highest `severity` label. `type`, `format`, `tag`,
+              `tags` and `template` work as in a notification.
+            type: object
+            required: [status, alerts]
+            not: {required: [body]}
+            properties:
+              version: {type: string}
+              groupKey: {type: string}
+              truncatedAlerts: {type: integer}
+              status: {type: string, description: '`firing` or `resolved`'}
+              receiver: {type: string}
+              groupLabels: {$ref: '#/components/schemas/Labels'}
+              commonLabels: {$ref: '#/components/schemas/Labels'}
+              commonAnnotations: {$ref: '#/components/schemas/Labels'}
+              externalURL: {type: string}
+              alerts: {type: array, items: {$ref: '#/components/schemas/Alert'}}
+              title: {type: string, description: Grafana's notification title}
+              message: {type: string, description: Grafana's notification message}
+              state: {type: string, description: Grafana's state}
+              orgId: {type: integer}
+              type: {$ref: '#/components/schemas/NotificationType'}
+              format: {$ref: '#/components/schemas/NotificationFormat'}
+              tag: {$ref: '#/components/schemas/Strings'}
+              tags: {$ref: '#/components/schemas/Strings'}
+              template: {$ref: '#/components/schemas/TemplateValues'}
+            additionalProperties: true
+          StatelessAlertWebhook:
+            allOf:
+              - {$ref: '#/components/schemas/AlertWebhook'}
+              - type: object
+                properties:
+                  urls: {$ref: '#/components/schemas/Strings'}
+          Alert:
+            type: object
+            properties:
+              status: {type: string, description: '`firing` or `resolved`'}
+              labels: {$ref: '#/components/schemas/Labels'}
+              annotations: {$ref: '#/components/schemas/Labels'}
+              startsAt: {type: string}
+              endsAt: {type: string}
+              generatorURL: {type: string}
+              fingerprint: {type: string}
+              silenceURL: {type: string, description: Grafana}
+              dashboardURL: {type: string, description: Grafana}
+              panelURL: {type: string, description: Grafana}
+              valueString: {type: string, description: Grafana}
+              values: {type: object, additionalProperties: true, description: Grafana}
+            additionalProperties: true
+          Labels:
+            type: object
+            additionalProperties: {type: string}
+          StatelessNotification:
+            allOf:
+              - {$ref: '#/components/schemas/Notification'}
+              - type: object
+                properties:
+                  urls: {$ref: '#/components/schemas/Strings'}
+          NotificationForm:
+            type: object
+            properties:
+              body: {type: string}
+              title: {type: string}
+              type: {type: string}
+              format: {type: string}
+              tag: {type: string}
+              tags: {type: string}
+              template:
+                description: '`template[NAME]=value` fields, or one `template=NAME=VALUE`'
+                type: object
+                additionalProperties: {type: string}
+              attach: {type: array, items: {type: string}}
+              attachment: {type: array, items: {type: string}}
+              attachments: {type: array, items: {type: string}}
+            additionalProperties: {type: string}
+          StatelessNotificationForm:
+            allOf:
+              - {$ref: '#/components/schemas/NotificationForm'}
+              - type: object
+                properties:
+                  urls: {type: string}
+          NotificationMultipart:
+            type: object
+            description: Every part with a file name is an attachment, whatever its field name.
+            properties:
+              body: {type: string}
+              title: {type: string}
+              type: {type: string}
+              format: {type: string}
+              tag: {type: string}
+              tags: {type: string}
+              attach: {type: array, items: {type: string, contentMediaType: application/octet-stream}}
+              attachment: {type: array, items: {type: string, contentMediaType: application/octet-stream}}
+              attachments: {type: array, items: {type: string, contentMediaType: application/octet-stream}}
+            additionalProperties: {type: string, contentMediaType: application/octet-stream}
+          StatelessNotificationMultipart:
+            allOf:
+              - {$ref: '#/components/schemas/NotificationMultipart'}
+              - type: object
+                properties:
+                  urls: {type: string}
+          NotifyResult:
+            type: object
+            required: [error, details]
+            properties:
+              error: {type: [string, 'null']}
+              details:
+                description: '[level, time, message] per log line'
+                type: array
+                items: {type: array, prefixItems: [{type: string}, {type: string}, {type: string}], items: false}
+          StreamEvent:
+            description: >
+              One Server-Sent Event: `log` as each service finishes (data: level, asctime, message, service), then one
+              `result` (data: status). A `: heartbeat` comment keeps an idle stream open.
+            type: object
+            required: [event, data]
+            properties:
+              event: {type: string, enum: [log, result]}
+              data: {type: string, contentMediaType: application/json}
+          Error:
+            type: object
+            required: [error]
+            properties:
+              error: {type: string}
+              field: {description: The request field at fault, type: string}
+          Health:
+            type: object
+            required: [config_lock, attach_lock, stateful_enabled, stateless_enabled, degraded, max_attachments, attach_size, privilege, status]
+            properties:
+              config_lock: {type: boolean}
+              attach_lock: {type: boolean}
+              stateful_enabled: {type: boolean}
+              stateless_enabled: {type: boolean}
+              degraded: {type: boolean}
+              max_attachments: {type: integer}
+              attach_size: {type: integer}
+              privilege: {type: string, enum: [admin, user, public, anonymous]}
+              status:
+                type: object
+                required: [persistent_storage, can_write_config, can_write_attach, details]
+                properties:
+                  persistent_storage: {type: boolean}
+                  can_write_config: {type: boolean}
+                  can_write_attach: {type: boolean}
+                  details: {type: array, items: {type: string, enum: [OK, CONFIG_PERMISSION_ISSUE, STORE_PERMISSION_ISSUE]}}
+          Details:
+            type: object
+            required: [version, schemas, asset]
+            properties:
+              version: {type: string}
+              schemas: {type: array, items: {type: object, additionalProperties: true}}
+              asset: {type: object, additionalProperties: true}
+          ConfigList:
+            oneOf:
+              - {type: array, items: {type: string}}
+              - type: array
+                items:
+                  type: object
+                  required: [key, user, access]
+                  properties:
+                    key: {type: string}
+                    user: {type: [string, 'null']}
+                    access: {type: string}
+          StoredConfig:
+            type: object
+            required: [format, config]
+            properties:
+              format: {type: string, enum: [text, yaml]}
+              config: {type: string}
+          AddConfiguration:
+            type: object
+            properties:
+              urls: {$ref: '#/components/schemas/Strings'}
+              config: {type: string}
+              format: {type: string, description: '`text`, `yaml`, or empty / `auto` to detect'}
+          AddConfigurationForm:
+            type: object
+            properties:
+              urls: {type: string}
+              config: {type: string}
+              format: {type: string}
+          MoveConfiguration:
+            type: object
+            properties:
+              to: {type: string}
+          MoveConfigurationForm:
+            type: object
+            properties:
+              from: {type: string}
+              to: {type: string}
+          SetAuth:
+            type: object
+            properties:
+              username: {type: [string, 'null'], description: '`null` removes the username'}
+              password: {type: string}
+              password_confirm: {type: string}
+              access: {type: string, enum: [user, locked, public, disabled, ''], description: Empty keeps the current mode}
+          AuthState:
+            type: object
+            required: [mode, access, username]
+            properties:
+              mode: {type: string}
+              access: {type: string}
+              username: {type: string}
+          AuthChange:
+            type: object
+            required: [error, auth_state]
+            properties:
+              error: {type: 'null'}
+              auth_state: {type: string}
+          Changed:
+            type: object
+            required: [error]
+            properties:
+              error: {type: 'null'}
+          JsonUrls:
+            type: object
+            required: [tags, urls]
+            properties:
+              error: {type: string}
+              tags: {type: array, items: {type: string}}
+              urls:
+                type: array
+                items:
+                  type: object
+                  required: [id, service_name, enabled, url, retry, optional, tags, tag_details, template]
+                  properties:
+                    id: {type: [string, 'null']}
+                    service_name: {type: string}
+                    enabled: {type: boolean}
+                    url: {type: string}
+                    retry: {type: integer}
+                    optional: {type: boolean}
+                    tags: {type: array, items: {type: string}}
+                    tag_details:
+                      type: array
+                      items:
+                        type: object
+                        required: [name, priority, token, exact]
+                        properties:
+                          name: {type: string}
+                          priority: {type: integer}
+                          token: {type: string}
+                          exact: {type: string}
+                    template: {type: object, additionalProperties: {type: [string, 'null']}}
+
+        responses:
+          Error:
+            description: Why the request failed
+            content:
+              text/plain: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/Error'}}
+          Unauthorized:
+            description: Credentials are missing or wrong
+            headers:
+              WWW-Authenticate: {required: true, schema: {type: string}}
+            content:
+              text/plain: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/Error'}}
+          Busy:
+            description: Too many requests in progress, or too many live streams
+            headers:
+              Retry-After: {required: true, schema: {type: integer}}
+            content:
+              text/plain: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/Error'}}
+          Health:
+            description: '`OK`, or the problems found'
+            content:
+              text/plain: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/Health'}}
+          Saved:
+            description: Saved
+            headers:
+              X-Apprise-Config-Created: {description: When the configuration was first saved (UTC), schema: {type: string}}
+              X-Apprise-Config-MTime: {description: When it was last saved (UTC), schema: {type: string}}
+              X-Apprise-Timezone: {description: The time zone of the two above, schema: {type: string}}
+            content:
+              text/plain: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/Changed'}}
+          Changed:
+            description: Done
+            content:
+              text/plain: {schema: {type: string}}
+              application/json: {schema: {$ref: '#/components/schemas/Changed'}}
+
