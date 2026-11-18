@@ -136,11 +136,8 @@ impl Server {
             Some(types::Strings::String(s)) if s.is_empty() => None,
             Some(types::Strings::String(s)) => Some(vec![s]),
             Some(types::Strings::Array(a)) => Some(a),
-            Some(types::Strings::Other(_)) => {
-                let f = Fault::new(400, "The urls field must be a string or list of strings").field("urls");
-                return Err(call.fail(f));
-            }
-            None => None,
+            // The spec's check answers any other value before the handler (`violation_fault`).
+            Some(types::Strings::Other(_)) | None => None,
         };
         if let Some(raw) = urls {
             let urls: Vec<String> = mercurio::__private::parse_urls(raw.iter().map(String::as_str), true)

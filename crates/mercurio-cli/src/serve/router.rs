@@ -426,11 +426,13 @@ fn error_response(server: &Server, rejection: api::server::Rejection) -> api::Re
 /// apprise-api's message for the first thing wrong in a request: a body field of the wrong type, a value outside its
 /// allowed set, or a parameter that does not decode.
 fn violation_fault(operation: Option<&str>, pointer: &str, message: &str) -> Fault {
-    // A value of the wrong type: serde's decode error, or the schema check of a field that is a union.
+    // A value of the wrong type: serde's decode error, or the schema check of a field that is a union (a union
+    // nested in an object reports `matches no variant`).
     let wrong_type = message.starts_with("invalid type")
         || message.starts_with("must be of type")
         || message.contains("of `oneOf`")
-        || message.contains("of `anyOf`");
+        || message.contains("of `anyOf`")
+        || message == "matches no variant";
     // A body that is not JSON at all: serde's syntax error, at the body itself.
     if pointer == "/body" && !wrong_type {
         return Fault::new(400, "Invalid JSON Payload provided");

@@ -418,6 +418,25 @@ mod tests {
         }
     }
 
+    /// A JSON `urls` on `/add` that is neither a string nor a list of strings is named, as in apprise-api's
+    /// `AddView`.
+    #[tokio::test]
+    async fn add_names_a_urls_field_of_the_wrong_type() {
+        let app = test_app("add-urls", &[]);
+        for sent in [r#"{"urls": 5}"#, r#"{"urls": {"a": 1}}"#, r#"{"urls": [1]}"#] {
+            let request = Request::post("/add/k1")
+                .header("content-type", "application/json")
+                .body(Full::new(Bytes::from(sent)))
+                .unwrap();
+            let (status, _, body) = send(&app, request).await;
+            assert_eq!(status, StatusCode::BAD_REQUEST, "{sent}");
+            assert_eq!(
+                body, r#"{"error":"The urls field must be a string or list of strings","field":"urls"}"#,
+                "{sent}"
+            );
+        }
+    }
+
     #[tokio::test]
     async fn add_get_and_delete_a_configuration() {
         let app = test_app("store", &[]);
