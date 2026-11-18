@@ -16,6 +16,7 @@ use tower::Service as _;
 use super::api;
 use super::auth::Role;
 use super::call::{Caller, Fault, media_type, wants_json};
+use super::key::INVALID_KEY_HEADER;
 use super::settings::Settings;
 use super::store::ConfigStore;
 use super::{Server, auth, metrics};
@@ -390,6 +391,10 @@ fn error_response(server: &Server, rejection: api::server::Rejection) -> api::Re
             set_header(&mut r, "Connection", "close");
             return r;
         }
+        // A Config ID in the path that breaks its pattern is no route, as in apprise-api's URL patterns.
+        api::Reason::Invalid(violations) if violations.first().is_some_and(|v| v.path.starts_with("/path/")) => {
+            return new_response(404);
+        }
         api::Reason::Invalid(violations) => violations.first().map_or_else(
             || Fault::new(400, "Invalid payload structure provided"),
             |v| violation_fault(operation, &v.path, &v.message),
@@ -435,6 +440,9 @@ fn violation_fault(operation: Option<&str>, pointer: &str, message: &str) -> Fau
     }
     if pointer.starts_with("/body") || pointer.contains("X-Apprise-Log-Level") {
         return invalid_fault(operation, pointer);
+    }
+    if pointer.ends_with("/X-Apprise-Config-ID") {
+        return Fault::new(400, INVALID_KEY_HEADER);
     }
     let name = pointer.rsplit('/').next().unwrap_or(pointer);
     Fault::new(400, format!("The {name} value is invalid"))

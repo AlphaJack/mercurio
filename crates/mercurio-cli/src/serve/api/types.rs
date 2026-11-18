@@ -37,6 +37,43 @@ macro_rules! serialize_impl_2 {
         runtime::UniqueKeys(s)) } }
     };
 }
+macro_rules! try_from_impl {
+    ($t:ty) => {
+        impl TryFrom < String > for $t { type Error = String; fn try_from(value : String)
+        -> Result < Self, String > { static RE : runtime::Pattern =
+        runtime::Pattern::new(); let mut out = Vec::new(); runtime::check_len(& mut out,
+        & runtime::InstancePath::Root, value.chars().count(), None, None, "characters");
+        if let Some(v) = out.first() { return Err(v.message.clone()); } if !
+        runtime::pattern_matches(& RE, Self::PATTERN, & value) { return
+        Err(format!("`{value}` does not match `{}`", Self::PATTERN)); } Ok(Self(value)) }
+        }
+    };
+}
+macro_rules! try_from_impl_2 {
+    ($t:ty) => {
+        impl TryFrom < & str > for $t { type Error = String; fn try_from(value : & str)
+        -> Result < Self, String > { Self::try_from(value.to_owned()) } }
+    };
+}
+macro_rules! as_ref_impl {
+    ($t:ty) => {
+        impl AsRef < str > for $t { fn as_ref(& self) -> & str { & self.0 } }
+    };
+}
+macro_rules! display_impl {
+    ($t:ty) => {
+        impl std::fmt::Display for $t { fn fmt(& self, f : & mut std::fmt::Formatter < '_
+        >) -> std::fmt::Result { f.write_str(& self.0) } }
+    };
+}
+macro_rules! deserialize_impl_2 {
+    ($t:ty) => {
+        impl < 'de > serde::Deserialize < 'de > for $t { fn deserialize < D :
+        serde::Deserializer < 'de > > (d : D) -> Result < Self, D::Error > { let s = <
+        String as serde::Deserialize > ::deserialize(d) ?; Self::try_from(s)
+        .map_err(serde::de::Error::custom) } }
+    };
+}
 use super::runtime;
 macro_rules! str_enum_impls {
     ($n:ident) => {
@@ -2601,6 +2638,46 @@ impl JsonUrlsUrlsItemTagDetailsItem {
     }
 }
 validate_impl!(JsonUrlsUrlsItemTagDetailsItem);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
+#[serde(transparent)]
+pub(crate) struct ConfigIdHeader(String);
+impl ConfigIdHeader {
+    pub(crate) const PATTERN: &'static str = "^([\\p{Alphabetic}\\p{N}_-]{1,128})?$";
+    #[must_use]
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+    #[must_use]
+    pub(crate) fn into_inner(self) -> String {
+        self.0
+    }
+}
+try_from_impl!(ConfigIdHeader);
+try_from_impl_2!(ConfigIdHeader);
+as_ref_impl!(ConfigIdHeader);
+display_impl!(ConfigIdHeader);
+deserialize_impl_2!(ConfigIdHeader);
+validate_impl!(ConfigIdHeader);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
+#[serde(transparent)]
+pub(crate) struct Key(String);
+impl Key {
+    pub(crate) const PATTERN: &'static str = "^[\\p{Alphabetic}\\p{N}_-]{1,128}$";
+    #[must_use]
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+    #[must_use]
+    pub(crate) fn into_inner(self) -> String {
+        self.0
+    }
+}
+try_from_impl!(Key);
+try_from_impl_2!(Key);
+as_ref_impl!(Key);
+display_impl!(Key);
+deserialize_impl_2!(Key);
+validate_impl!(Key);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) enum LogLevel {
     Trace,

@@ -420,12 +420,14 @@ components:
       in: path
       required: true
       description: Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-      schema: {type: string}
+      schema: {type: string, pattern: '^[\p{Alphabetic}\p{N}_-]{1,128}$'}
     ConfigIdHeader:
       name: X-Apprise-Config-ID
       in: header
-      description: The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-      schema: {type: string}
+      description: >
+        The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is
+        ignored.
+      schema: {type: string, pattern: '^([\p{Alphabetic}\p{N}_-]{1,128})?$'}
     Title: {name: X-Apprise-Title, in: header, description: The title when the payload has none, schema: {type: string}}
     Type: {name: X-Apprise-Type, in: header, description: The type when the payload has none, schema: {type: string}}
     Tag: {name: X-Apprise-Tag, in: header, description: The tag expression when the payload has none, schema: {type: string}}

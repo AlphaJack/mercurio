@@ -137,6 +137,11 @@ fn server(api: &Api) -> &Server {
     &api.0
 }
 
+/// The `X-Apprise-Config-ID` header, when not empty: the spec has checked it.
+fn config_id(header: Option<&types::ConfigIdHeader>) -> Option<&str> {
+    header.map(types::ConfigIdHeader::as_str).filter(|h| !h.is_empty())
+}
+
 /// The text fields of a form or multipart body, and the ones it does not declare.
 fn text_fields(
     known: [(&str, Option<String>); 7],
@@ -227,7 +232,7 @@ macro_rules! saved {
                 NewConfig { urls: f.urls.map(types::Strings::String), config: f.config, format: f.format }
             }
         });
-        let saved = server($api).add(&call, $p.x_apprise_config_id.as_deref(), $path, new).await;
+        let saved = server($api).add(&call, config_id($p.x_apprise_config_id.as_ref()), $path, new).await;
         answer(saved.map(|Saved { body, created, modified }| Response::Ok {
             body,
             x_apprise_config_created: created,
@@ -257,7 +262,12 @@ macro_rules! moved {
             None if call.json => MoveTo::Json(None),
             None => MoveTo::Form { from: None, to: None },
         };
-        answer(server($api).move_config(&call, $p.x_apprise_config_id.as_deref(), $path, to).await.map(Response::Ok))
+        answer(
+            server($api)
+                .move_config(&call, config_id($p.x_apprise_config_id.as_ref()), $path, to)
+                .await
+                .map(Response::Ok),
+        )
     }};
 }
 
@@ -281,7 +291,13 @@ macro_rules! urls {
         use ops::$op::Response;
         let call = Call::new($ctx);
         let found = server($api)
-            .json_urls(&call, $p.x_apprise_config_id.as_deref(), $path, $p.privacy.as_deref(), $p.tag.as_deref())
+            .json_urls(
+                &call,
+                config_id($p.x_apprise_config_id.as_ref()),
+                $path,
+                $p.privacy.as_deref(),
+                $p.tag.as_deref(),
+            )
             .await;
         answer(found.map(|u| match u {
             Urls::Found(j) => Response::Ok(j),
@@ -315,7 +331,10 @@ impl api::server::Api for Api {
     async fn status(&self, p: ops::status::Params, ctx: Ctx<'_, '_>) -> Result<ops::status::Response, api::ApiError> {
         let call = Call::new(ctx);
         answer(
-            server(self).status(&call, p.x_apprise_config_id.as_deref(), None).await.map(ops::status::Response::health),
+            server(self)
+                .status(&call, config_id(p.x_apprise_config_id.as_ref()), None)
+                .await
+                .map(ops::status::Response::health),
         )
     }
 
@@ -325,7 +344,7 @@ impl api::server::Api for Api {
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::status_key::Response, api::ApiError> {
         let call = Call::new(ctx);
-        let health = server(self).status(&call, p.x_apprise_config_id.as_deref(), Some(&p.key)).await;
+        let health = server(self).status(&call, config_id(p.x_apprise_config_id.as_ref()), Some(p.key.as_str())).await;
         answer(health.map(ops::status_key::Response::health))
     }
 
@@ -335,7 +354,7 @@ impl api::server::Api for Api {
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::details::Response, api::ApiError> {
         let call = Call::new(ctx);
-        let details = server(self).details(&call, p.x_apprise_config_id.as_deref(), p.all.as_deref()).await;
+        let details = server(self).details(&call, config_id(p.x_apprise_config_id.as_ref()), p.all.as_deref()).await;
         answer(details.map(ops::details::Response::Ok))
     }
 
@@ -359,7 +378,7 @@ impl api::server::Api for Api {
             Body::Markdown(t) => NotifyBody::Text { body: t, format: "markdown" },
         });
         let h = SendHeaders {
-            config_id: p.x_apprise_config_id,
+            config_id: config_id(p.x_apprise_config_id.as_ref()).map(str::to_owned),
             log_level: p.x_apprise_log_level.map(|l| l.to_string()),
             recursion: p.x_apprise_recursion_count,
             apprise_id: p.x_apprise_id,
@@ -387,7 +406,7 @@ impl api::server::Api for Api {
             Body::Markdown(t) => NotifyBody::Text { body: t, format: "markdown" },
         });
         let h = SendHeaders {
-            config_id: p.x_apprise_config_id,
+            config_id: config_id(p.x_apprise_config_id.as_ref()).map(str::to_owned),
             log_level: p.x_apprise_log_level.map(|l| l.to_string()),
             recursion: p.x_apprise_recursion_count,
             apprise_id: p.x_apprise_id,
@@ -400,7 +419,7 @@ impl api::server::Api for Api {
             template: p.x_apprise_template,
             query: p.query.unwrap_or_default(),
         };
-        answer(server(self).notify(&call, &p.key, h, input).await.map(Into::into))
+        answer(server(self).notify(&call, p.key.as_str(), h, input).await.map(Into::into))
     }
 
     async fn list_configs(
@@ -423,7 +442,7 @@ impl api::server::Api for Api {
         p: ops::config_alias::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::config_alias::Response, api::ApiError> {
-        stored!(self, ctx, config_alias, p.x_apprise_config_id.as_deref(), Some(p.key.as_str()))
+        stored!(self, ctx, config_alias, config_id(p.x_apprise_config_id.as_ref()), Some(p.key.as_str()))
     }
 
     async fn get_config(
@@ -431,7 +450,7 @@ impl api::server::Api for Api {
         p: ops::get_config::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::get_config::Response, api::ApiError> {
-        stored!(self, ctx, get_config, p.x_apprise_config_id.as_deref(), Some(p.key.as_str()))
+        stored!(self, ctx, get_config, config_id(p.x_apprise_config_id.as_ref()), Some(p.key.as_str()))
     }
 
     async fn get_config_by_header(
@@ -439,7 +458,7 @@ impl api::server::Api for Api {
         p: ops::get_config_by_header::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::get_config_by_header::Response, api::ApiError> {
-        stored!(self, ctx, get_config_by_header, p.x_apprise_config_id.as_deref(), None)
+        stored!(self, ctx, get_config_by_header, config_id(p.x_apprise_config_id.as_ref()), None)
     }
 
     async fn add_config(
@@ -463,7 +482,7 @@ impl api::server::Api for Api {
         p: ops::delete_config::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::delete_config::Response, api::ApiError> {
-        deleted!(self, ctx, delete_config, p.x_apprise_config_id.as_deref(), Some(p.key.as_str()))
+        deleted!(self, ctx, delete_config, config_id(p.x_apprise_config_id.as_ref()), Some(p.key.as_str()))
     }
 
     async fn delete_config_by_header(
@@ -471,7 +490,7 @@ impl api::server::Api for Api {
         p: ops::delete_config_by_header::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::delete_config_by_header::Response, api::ApiError> {
-        deleted!(self, ctx, delete_config_by_header, p.x_apprise_config_id.as_deref(), None)
+        deleted!(self, ctx, delete_config_by_header, config_id(p.x_apprise_config_id.as_ref()), None)
     }
 
     async fn move_config(
@@ -498,7 +517,7 @@ impl api::server::Api for Api {
         let call = Call::new(ctx);
         answer(
             server(self)
-                .get_auth(&call, p.x_apprise_config_id.as_deref(), Some(&p.key))
+                .get_auth(&call, config_id(p.x_apprise_config_id.as_ref()), Some(p.key.as_str()))
                 .await
                 .map(ops::get_auth::Response::Ok),
         )
@@ -512,7 +531,7 @@ impl api::server::Api for Api {
         let call = Call::new(ctx);
         answer(
             server(self)
-                .get_auth(&call, p.x_apprise_config_id.as_deref(), None)
+                .get_auth(&call, config_id(p.x_apprise_config_id.as_ref()), None)
                 .await
                 .map(ops::get_auth_by_header::Response::Ok),
         )
@@ -523,7 +542,15 @@ impl api::server::Api for Api {
         p: ops::set_auth::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::set_auth::Response, api::ApiError> {
-        auth_changed!(self, ctx, set_auth, set_auth, p.x_apprise_config_id.as_deref(), Some(p.key.as_str()), p.body)
+        auth_changed!(
+            self,
+            ctx,
+            set_auth,
+            set_auth,
+            config_id(p.x_apprise_config_id.as_ref()),
+            Some(p.key.as_str()),
+            p.body
+        )
     }
 
     async fn set_auth_by_header(
@@ -531,7 +558,7 @@ impl api::server::Api for Api {
         p: ops::set_auth_by_header::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::set_auth_by_header::Response, api::ApiError> {
-        auth_changed!(self, ctx, set_auth_by_header, set_auth, p.x_apprise_config_id.as_deref(), None, p.body)
+        auth_changed!(self, ctx, set_auth_by_header, set_auth, config_id(p.x_apprise_config_id.as_ref()), None, p.body)
     }
 
     async fn delete_auth(
@@ -539,7 +566,14 @@ impl api::server::Api for Api {
         p: ops::delete_auth::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::delete_auth::Response, api::ApiError> {
-        auth_changed!(self, ctx, delete_auth, delete_auth, p.x_apprise_config_id.as_deref(), Some(p.key.as_str()))
+        auth_changed!(
+            self,
+            ctx,
+            delete_auth,
+            delete_auth,
+            config_id(p.x_apprise_config_id.as_ref()),
+            Some(p.key.as_str())
+        )
     }
 
     async fn delete_auth_by_header(
@@ -547,7 +581,7 @@ impl api::server::Api for Api {
         p: ops::delete_auth_by_header::Params,
         ctx: Ctx<'_, '_>,
     ) -> Result<ops::delete_auth_by_header::Response, api::ApiError> {
-        auth_changed!(self, ctx, delete_auth_by_header, delete_auth, p.x_apprise_config_id.as_deref(), None)
+        auth_changed!(self, ctx, delete_auth_by_header, delete_auth, config_id(p.x_apprise_config_id.as_ref()), None)
     }
 
     async fn json_urls(

@@ -12,7 +12,6 @@ use super::super::call::{Call, Fault, parse_bool};
 use super::super::notify::{self, Delivered};
 use super::super::payload::{self, Content, NotifyBody, NotifyInput};
 use super::super::{DENIED, Server, filters, store};
-use super::key::{header_key, path_key};
 
 /// Lowest level of the lines sent to `APPRISE_WEBHOOK_URL`: INFO, so the library's DEBUG lines stay out.
 const WEBHOOK_LEVEL: u8 = 20;
@@ -42,10 +41,7 @@ impl Server {
         input: NotifyInput,
     ) -> Result<Sent, Fault> {
         self.require_stateful(call)?;
-        let key = match header_key(call, h.config_id.as_deref())? {
-            Some(k) => k,
-            None => path_key(call, key)?.to_owned(),
-        };
+        let key = h.config_id.as_deref().unwrap_or(key).to_owned();
         self.check_size(call, &input)?;
         let (content, input) =
             payload::load_notify(input, false, Some(&key), self.s.mapping_depth).map_err(|f| call.fail(f))?;
@@ -60,7 +56,7 @@ impl Server {
         h: SendHeaders,
         input: NotifyInput,
     ) -> Result<Sent, Fault> {
-        let key = header_key(call, h.config_id.as_deref())?;
+        let key = h.config_id.clone();
         self.check_size(call, &input)?;
         let (mut content, input) =
             payload::load_notify(input, true, None, self.s.mapping_depth).map_err(|f| call.fail(f))?;

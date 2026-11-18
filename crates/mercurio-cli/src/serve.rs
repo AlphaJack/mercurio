@@ -348,6 +348,55 @@ mod tests {
         }
     }
 
+    fn with_header(mut request: Request<Body>, name: &'static str, value: &str) -> Request<Body> {
+        request.headers_mut().insert(name, value.parse().unwrap());
+        request
+    }
+
+    /// A Config ID in the path that is not 1 to 128 letters, digits, `_` or `-` is no route: `404` with no body, as
+    /// an unknown path. Letters and digits of any script are valid.
+    #[tokio::test]
+    async fn an_invalid_key_in_the_path_is_no_route() {
+        let app = test_app("path-key", &[]);
+        let long = "k".repeat(129);
+        for path in ["/get/bad!", "/add/bad!", "/notify/bad!", "/move/bad!", "/cfg/bad!"]
+            .into_iter()
+            .map(str::to_owned)
+            .chain([format!("/get/{long}")])
+        {
+            let (status, _, body) = send(&app, form(&path, "body=x")).await;
+            assert_eq!((status, body.as_str()), (StatusCode::NOT_FOUND, ""), "{path}");
+        }
+        for path in ["/status/bad!", "/json/urls/bad!", "/auth/bad!"] {
+            let (status, _, body) = send(&app, Request::get(path).body(empty()).unwrap()).await;
+            assert_eq!((status, body.as_str()), (StatusCode::NOT_FOUND, ""), "{path}");
+        }
+        for key in ["k".repeat(128), "ключ_1-ä".to_owned()] {
+            let path = format!("/get/{}", key.replace('ч', "%D1%87").replace('к', "%D0%BA"));
+            let path = path.replace('л', "%D0%BB").replace('ю', "%D1%8E").replace('ä', "%C3%A4");
+            assert_eq!(send(&app, form(&path, "")).await.0, StatusCode::NO_CONTENT, "{key}");
+        }
+    }
+
+    /// An invalid `X-Apprise-Config-ID` is `400`; an empty one falls back to the path.
+    #[tokio::test]
+    async fn an_invalid_key_header_is_a_bad_request() {
+        let app = test_app("header-key", &[]);
+        let expected = (StatusCode::BAD_REQUEST, "The X-Apprise-Config-ID header provided is invalid".to_owned());
+        for path in ["/get", "/get/k1", "/notify", "/notify/k1"] {
+            let (status, _, body) = send(&app, with_header(form(path, "body=x"), "x-apprise-config-id", "bad!")).await;
+            assert_eq!((status, body), expected, "{path}");
+        }
+        for path in ["/status", "/details", "/json/urls", "/json/urls/k1"] {
+            let request = with_header(Request::get(path).body(empty()).unwrap(), "x-apprise-config-id", "bad!");
+            let (status, _, body) = send(&app, request).await;
+            assert_eq!((status, body), expected, "{path}");
+        }
+        assert_eq!(send(&app, form("/add/k1", "urls=json://localhost")).await.0, StatusCode::OK);
+        let (status, _, body) = send(&app, with_header(form("/get/k1", ""), "x-apprise-config-id", " ")).await;
+        assert_eq!((status, body.as_str()), (StatusCode::OK, "json://localhost"));
+    }
+
     #[tokio::test]
     async fn add_get_and_delete_a_configuration() {
         let app = test_app("store", &[]);

@@ -7,7 +7,6 @@ use super::super::api::types;
 use super::super::call::{Call, Fault, parse_bool};
 use super::super::key::MISSING_KEY;
 use super::super::{Server, details, store};
-use super::key::{header_key, path_key};
 
 /// The health of the server: whether it can write configurations and persistent storage.
 pub(crate) struct Health {
@@ -23,11 +22,7 @@ impl Server {
         header: Option<&str>,
         key: Option<&str>,
     ) -> Result<Health, Fault> {
-        let key = match header_key(call, header)? {
-            Some(h) => Some(h),
-            None => key.map(|k| path_key(call, k)).transpose()?.map(str::to_owned),
-        };
-        if let Some(k) = key.as_deref() {
+        if let Some(k) = header.or(key) {
             self.require_key(call, k, false).await?;
         }
         let stateful = self.store.enabled();
@@ -57,7 +52,7 @@ impl Server {
             _ => types::HealthPrivilege::Admin,
         };
         let health = types::Health {
-            config_lock: !self.config_lock_allows(call, key.as_deref()).await,
+            config_lock: !self.config_lock_allows(call, key).await,
             attach_lock: self.s.attach_size == 0,
             stateful_enabled: stateful,
             stateless_enabled: self.s.stateless_enabled,
@@ -82,8 +77,8 @@ impl Server {
         header: Option<&str>,
         all: Option<&str>,
     ) -> Result<types::Details, Fault> {
-        if let Some(k) = header_key(call, header)? {
-            self.require_key(call, &k, false).await?;
+        if let Some(k) = header {
+            self.require_key(call, k, false).await?;
         }
         let show_all = parse_bool(all, false);
         // The answer depends on the settings only: built once per `all`, it is about 0.5 MB of JSON.

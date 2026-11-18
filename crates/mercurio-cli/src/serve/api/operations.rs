@@ -55,11 +55,12 @@ pub(crate) const SECURITY_0: &[&[runtime::Requirement]] = &[
 ];
 /// Health check
 pub(crate) mod status {
+    use super::super::types;
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) media: Media,
     }
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -122,13 +123,14 @@ pub(crate) mod status_current {
 }
 /// Health check after the Config ID's own login
 pub(crate) mod status_key {
+    use super::super::types;
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) media: Media,
     }
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -182,8 +184,8 @@ pub(crate) mod details {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// A loose boolean: also list disabled services
         pub(crate) all: Option<String>,
     }
@@ -224,8 +226,8 @@ pub(crate) mod notify_stateless {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// The title when the payload has none
         pub(crate) x_apprise_title: Option<String>,
         /// The type when the payload has none
@@ -349,9 +351,9 @@ pub(crate) mod notify {
     #[derive(Debug, Clone, PartialEq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// The title when the payload has none
         pub(crate) x_apprise_title: Option<String>,
         /// The type when the payload has none
@@ -555,9 +557,9 @@ pub(crate) mod config_alias {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// Read by nobody; clients send forms or JSON out of habit
         pub(crate) body: Option<runtime::Blob>,
         pub(crate) media: Media,
@@ -623,8 +625,8 @@ pub(crate) mod get_config_by_header {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// Read by nobody; clients send forms or JSON out of habit
         pub(crate) body: Option<runtime::Blob>,
         pub(crate) media: Media,
@@ -691,9 +693,9 @@ pub(crate) mod get_config {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// Read by nobody; clients send forms or JSON out of habit
         pub(crate) body: Option<runtime::Blob>,
         pub(crate) media: Media,
@@ -759,8 +761,8 @@ pub(crate) mod add_config_by_header {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) body: Option<Body>,
         pub(crate) media: Media,
     }
@@ -830,9 +832,9 @@ pub(crate) mod add_config {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) body: Option<Body>,
         pub(crate) media: Media,
     }
@@ -897,11 +899,12 @@ pub(crate) mod add_config {
 }
 /// Delete the configuration stored under `X-Apprise-Config-ID`, and its login
 pub(crate) mod delete_config_by_header {
+    use super::super::types;
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// Read by nobody; clients send forms or JSON out of habit
         pub(crate) body: Option<runtime::Blob>,
         pub(crate) media: Media,
@@ -955,13 +958,14 @@ pub(crate) mod delete_config_by_header {
 }
 /// Delete the stored configuration and its login
 pub(crate) mod delete_config {
+    use super::super::types;
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// Read by nobody; clients send forms or JSON out of habit
         pub(crate) body: Option<runtime::Blob>,
         pub(crate) media: Media,
@@ -1019,8 +1023,8 @@ pub(crate) mod move_config_by_header {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) body: Option<Body>,
         pub(crate) media: Media,
     }
@@ -1088,9 +1092,9 @@ pub(crate) mod move_config {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) body: Option<Body>,
         pub(crate) media: Media,
     }
@@ -1156,8 +1160,8 @@ pub(crate) mod get_auth_by_header {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
     }
     validate_impl!(Params);
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1183,8 +1187,8 @@ pub(crate) mod set_auth_by_header {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) body: Option<types::SetAuth>,
         pub(crate) media: Media,
     }
@@ -1242,8 +1246,8 @@ pub(crate) mod delete_auth_by_header {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) media: Media,
     }
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -1347,9 +1351,9 @@ pub(crate) mod get_auth {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
     }
     validate_impl!(Params);
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1377,9 +1381,9 @@ pub(crate) mod set_auth {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) body: Option<types::SetAuth>,
         pub(crate) media: Media,
     }
@@ -1439,9 +1443,9 @@ pub(crate) mod delete_auth {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         pub(crate) media: Media,
     }
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -1498,8 +1502,8 @@ pub(crate) mod json_urls_by_header {
     use super::super::runtime;
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// A loose boolean: redact secrets
         pub(crate) privacy: Option<String>,
         /// Tag expression the URLs must match
@@ -1535,9 +1539,9 @@ pub(crate) mod json_urls {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct Params {
         /// Config ID. 1 to 128 letters, digits, `_` or `-`; any other value is no route (404).
-        pub(crate) key: String,
-        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path.
-        pub(crate) x_apprise_config_id: Option<String>,
+        pub(crate) key: types::Key,
+        /// The Config ID outside the URL (kept out of access logs). It wins over the one in the path; an empty one is ignored.
+        pub(crate) x_apprise_config_id: Option<types::ConfigIdHeader>,
         /// A loose boolean: redact secrets
         pub(crate) privacy: Option<String>,
         /// Tag expression the URLs must match
