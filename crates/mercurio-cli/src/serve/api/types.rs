@@ -14,15 +14,20 @@
 #![allow(dead_code, reason = "a binary may build none of the types by hand")]
 macro_rules! deserialize_impl {
     ($t:ty) => {
-        impl < 'de > serde::Deserialize < 'de > for $t { fn deserialize < D :
-        serde::Deserializer < 'de > > (d : D) -> Result < Self, D::Error > {
-        Self::deserialize(runtime::NoSeq(d)) } }
+        impl<'de> serde::Deserialize<'de> for $t {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                Self::deserialize(runtime::NoSeq(d))
+            }
+        }
     };
 }
 macro_rules! serialize_impl {
     ($t:ty) => {
-        impl serde::Serialize for $t { fn serialize < S : serde::Serializer > (& self, s
-        : S) -> Result < S::Ok, S::Error > { Self::serialize(self, s) } }
+        impl serde::Serialize for $t {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                Self::serialize(self, s)
+            }
+        }
     };
 }
 macro_rules! validate_impl {
@@ -32,60 +37,102 @@ macro_rules! validate_impl {
 }
 macro_rules! serialize_impl_2 {
     ($t:ty) => {
-        impl serde::Serialize for $t { fn serialize < S : serde::Serializer > (& self, s
-        : S) -> Result < S::Ok, S::Error > { Self::serialize(self,
-        runtime::UniqueKeys(s)) } }
+        impl serde::Serialize for $t {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                Self::serialize(self, runtime::UniqueKeys(s))
+            }
+        }
     };
 }
 macro_rules! try_from_impl {
     ($t:ty) => {
-        impl TryFrom < String > for $t { type Error = String; fn try_from(value : String)
-        -> Result < Self, String > { static RE : runtime::Pattern =
-        runtime::Pattern::new(); let mut out = Vec::new(); runtime::check_len(& mut out,
-        & runtime::InstancePath::Root, value.chars().count(), None, None, "characters");
-        if let Some(v) = out.first() { return Err(v.message.clone()); } if !
-        runtime::pattern_matches(& RE, Self::PATTERN, & value) { return
-        Err(format!("`{value}` does not match `{}`", Self::PATTERN)); } Ok(Self(value)) }
+        impl TryFrom<String> for $t {
+            type Error = String;
+            fn try_from(value: String) -> Result<Self, String> {
+                static RE: runtime::Pattern = runtime::Pattern::new();
+                let mut out = Vec::new();
+                runtime::check_len(
+                    &mut out,
+                    &runtime::InstancePath::Root,
+                    value.chars().count(),
+                    None,
+                    None,
+                    "characters",
+                );
+                if let Some(v) = out.first() {
+                    return Err(v.message.clone());
+                }
+                if !runtime::pattern_matches(&RE, Self::PATTERN, &value) {
+                    return Err(format!("`{value}` does not match `{}`", Self::PATTERN));
+                }
+                Ok(Self(value))
+            }
         }
     };
 }
 macro_rules! try_from_impl_2 {
     ($t:ty) => {
-        impl TryFrom < & str > for $t { type Error = String; fn try_from(value : & str)
-        -> Result < Self, String > { Self::try_from(value.to_owned()) } }
+        impl TryFrom<&str> for $t {
+            type Error = String;
+            fn try_from(value: &str) -> Result<Self, String> {
+                Self::try_from(value.to_owned())
+            }
+        }
     };
 }
 macro_rules! as_ref_impl {
     ($t:ty) => {
-        impl AsRef < str > for $t { fn as_ref(& self) -> & str { & self.0 } }
+        impl AsRef<str> for $t {
+            fn as_ref(&self) -> &str {
+                &self.0
+            }
+        }
     };
 }
 macro_rules! display_impl {
     ($t:ty) => {
-        impl std::fmt::Display for $t { fn fmt(& self, f : & mut std::fmt::Formatter < '_
-        >) -> std::fmt::Result { f.write_str(& self.0) } }
+        impl std::fmt::Display for $t {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(&self.0)
+            }
+        }
     };
 }
 macro_rules! deserialize_impl_2 {
     ($t:ty) => {
-        impl < 'de > serde::Deserialize < 'de > for $t { fn deserialize < D :
-        serde::Deserializer < 'de > > (d : D) -> Result < Self, D::Error > { let s = <
-        String as serde::Deserialize > ::deserialize(d) ?; Self::try_from(s)
-        .map_err(serde::de::Error::custom) } }
+        impl<'de> serde::Deserialize<'de> for $t {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                let s = <String as serde::Deserialize>::deserialize(d)?;
+                Self::try_from(s).map_err(serde::de::Error::custom)
+            }
+        }
     };
 }
 use super::runtime;
 macro_rules! str_enum_impls {
     ($n:ident) => {
-        impl std::fmt::Display for $n { fn fmt(& self, f : & mut std::fmt::Formatter < '_
-        >) -> std::fmt::Result { f.write_str(self.as_str()) } } impl std::str::FromStr
-        for $n { type Err = std::convert::Infallible; fn from_str(s : & str) -> Result <
-        Self, Self::Err > { Ok(Self::from(s)) } } impl serde::Serialize for $n { fn
-        serialize < S : serde::Serializer > (& self, s : S) -> Result < S::Ok, S::Error >
-        { s.serialize_str(self.as_str()) } } impl < 'de > serde::Deserialize < 'de > for
-        $n { fn deserialize < D : serde::Deserializer < 'de >> (d : D) -> Result < Self,
-        D::Error > { let s = < String as serde::Deserialize > ::deserialize(d) ?;
-        Ok(Self::from(s.as_str())) } }
+        impl std::fmt::Display for $n {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+        impl std::str::FromStr for $n {
+            type Err = std::convert::Infallible;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Ok(Self::from(s))
+            }
+        }
+        impl serde::Serialize for $n {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                s.serialize_str(self.as_str())
+            }
+        }
+        impl<'de> serde::Deserialize<'de> for $n {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                let s = <String as serde::Deserialize>::deserialize(d)?;
+                Ok(Self::from(s.as_str()))
+            }
+        }
     };
 }
 /// A notification or an alert webhook. The server reads it as a JSON object and checks the type of each field itself, after field mapping (`?:src=dest`) renamed, removed or set any of them.
@@ -608,7 +655,7 @@ impl runtime::Validate for Notification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]}},{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}]}",
+                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"$ref\":\"#/$defs/~1components~1schemas~1TemplateValue\"}},{\"$ref\":\"#/$defs/~1components~1schemas~1Strings\"}],\"$defs\":{\"/components/schemas/TemplateValue\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]},\"/components/schemas/Strings\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -626,7 +673,7 @@ impl runtime::Validate for Notification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]},{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]}}]}",
+                                    "{\"oneOf\":[{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"},{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"}}],\"$defs\":{\"/components/schemas/Attachment\":{\"oneOf\":[{\"type\":\"string\"},{\"$ref\":\"#/$defs/~1components~1schemas~1InlineFile\"}]},\"/components/schemas/InlineFile\":{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -644,7 +691,7 @@ impl runtime::Validate for Notification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]},{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]}}]}",
+                                    "{\"oneOf\":[{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"},{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"}}],\"$defs\":{\"/components/schemas/Attachment\":{\"oneOf\":[{\"type\":\"string\"},{\"$ref\":\"#/$defs/~1components~1schemas~1InlineFile\"}]},\"/components/schemas/InlineFile\":{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -662,7 +709,7 @@ impl runtime::Validate for Notification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]},{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]}}]}",
+                                    "{\"oneOf\":[{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"},{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"}}],\"$defs\":{\"/components/schemas/Attachment\":{\"oneOf\":[{\"type\":\"string\"},{\"$ref\":\"#/$defs/~1components~1schemas~1InlineFile\"}]},\"/components/schemas/InlineFile\":{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -867,7 +914,7 @@ impl runtime::Validate for AlertWebhook {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]}},{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}]}",
+                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"$ref\":\"#/$defs/~1components~1schemas~1TemplateValue\"}},{\"$ref\":\"#/$defs/~1components~1schemas~1Strings\"}],\"$defs\":{\"/components/schemas/TemplateValue\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]},\"/components/schemas/Strings\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -1078,7 +1125,7 @@ impl runtime::Validate for StatelessAlertWebhook {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]}},{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}]}",
+                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"$ref\":\"#/$defs/~1components~1schemas~1TemplateValue\"}},{\"$ref\":\"#/$defs/~1components~1schemas~1Strings\"}],\"$defs\":{\"/components/schemas/TemplateValue\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]},\"/components/schemas/Strings\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -1350,7 +1397,7 @@ impl runtime::Validate for StatelessNotification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]}},{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}]}",
+                                    "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":{\"$ref\":\"#/$defs/~1components~1schemas~1TemplateValue\"}},{\"$ref\":\"#/$defs/~1components~1schemas~1Strings\"}],\"$defs\":{\"/components/schemas/TemplateValue\":{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]},\"/components/schemas/Strings\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -1368,7 +1415,7 @@ impl runtime::Validate for StatelessNotification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]},{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]}}]}",
+                                    "{\"oneOf\":[{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"},{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"}}],\"$defs\":{\"/components/schemas/Attachment\":{\"oneOf\":[{\"type\":\"string\"},{\"$ref\":\"#/$defs/~1components~1schemas~1InlineFile\"}]},\"/components/schemas/InlineFile\":{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -1386,7 +1433,7 @@ impl runtime::Validate for StatelessNotification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]},{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]}}]}",
+                                    "{\"oneOf\":[{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"},{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"}}],\"$defs\":{\"/components/schemas/Attachment\":{\"oneOf\":[{\"type\":\"string\"},{\"$ref\":\"#/$defs/~1components~1schemas~1InlineFile\"}]},\"/components/schemas/InlineFile\":{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -1404,7 +1451,7 @@ impl runtime::Validate for StatelessNotification {
                     SCHEMA
                         .get_or_init(|| {
                             serde_json::from_str(
-                                    "{\"oneOf\":[{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]},{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}]}}]}",
+                                    "{\"oneOf\":[{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"},{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/~1components~1schemas~1Attachment\"}}],\"$defs\":{\"/components/schemas/Attachment\":{\"oneOf\":[{\"type\":\"string\"},{\"$ref\":\"#/$defs/~1components~1schemas~1InlineFile\"}]},\"/components/schemas/InlineFile\":{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"base64\":{\"type\":\"string\"},\"filename\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"}}}}}",
                                 )
                                 .unwrap_or_default()
                         }),
@@ -1895,7 +1942,6 @@ deserialize_impl!(Health);
 serialize_impl!(Health);
 impl Health {
     #[must_use]
-    #[allow(clippy::too_many_arguments, reason = "one argument per required property")]
     pub(crate) const fn new(
         config_lock: bool,
         attach_lock: bool,
@@ -1907,6 +1953,10 @@ impl Health {
         privilege: HealthPrivilege,
         status: HealthStatus,
     ) -> Self {
+        #![allow(
+            clippy::too_many_arguments,
+            reason = "one argument per required property"
+        )]
         Self {
             config_lock,
             attach_lock,
@@ -2585,7 +2635,6 @@ deserialize_impl!(JsonUrlsUrlsItem);
 serialize_impl!(JsonUrlsUrlsItem);
 impl JsonUrlsUrlsItem {
     #[must_use]
-    #[allow(clippy::too_many_arguments, reason = "one argument per required property")]
     pub(crate) const fn new(
         id: Option<String>,
         service_name: String,
@@ -2597,6 +2646,10 @@ impl JsonUrlsUrlsItem {
         tag_details: Vec<JsonUrlsUrlsItemTagDetailsItem>,
         template: std::collections::BTreeMap<String, Option<String>>,
     ) -> Self {
+        #![allow(
+            clippy::too_many_arguments,
+            reason = "one argument per required property"
+        )]
         Self {
             id,
             service_name,

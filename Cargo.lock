@@ -438,9 +438,9 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "honig"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03c5a7cf29edea6a450c23f949d58a916529ba58cd068dffee4c690cbc93f8fc"
+checksum = "f3b8baddbd77a0024de211bddd0e4e9b5fe3917fd0673b48b0fc37712a4f53be"
 dependencies = [
  "base64",
  "bytes",

@@ -13,7 +13,7 @@
 )]
 #![allow(
     dead_code,
-    reason = "with `allow_unimplemented = true`, an operation left to its default answers 501 and builds none of its responses"
+    reason = "a handler may build only some of the responses of its operation"
 )]
 macro_rules! validate_impl {
     ($t:ty) => {
@@ -22,36 +22,82 @@ macro_rules! validate_impl {
 }
 macro_rules! validate_impl_2 {
     ($t:ty) => {
-        impl runtime::Validate for $t { fn validate(& self, path : &
-        runtime::InstancePath < '_ >, out : & mut Vec < runtime::Violation >) { if let
-        Some(v) = & self.x_apprise_log_level { runtime::Validate::validate(v, &
-        runtime::InstancePath::Key(& runtime::InstancePath::Key(path, "header"),
-        "X-Apprise-Log-Level"), out); } if let Some(v) = & self.x_apprise_recursion_count
-        { runtime::check_range(out, & runtime::InstancePath::Key(&
-        runtime::InstancePath::Key(path, "header"), "X-Apprise-Recursion-Count"), * v,
-        [Some(0), None, None, None]); } } }
+        impl runtime::Validate for $t {
+            fn validate(
+                &self,
+                path: &runtime::InstancePath<'_>,
+                out: &mut Vec<runtime::Violation>,
+            ) {
+                if let Some(v) = &self.x_apprise_log_level {
+                    runtime::Validate::validate(
+                        v,
+                        &runtime::InstancePath::Key(
+                            &runtime::InstancePath::Key(path, "header"),
+                            "X-Apprise-Log-Level",
+                        ),
+                        out,
+                    );
+                }
+                if let Some(v) = &self.x_apprise_recursion_count {
+                    runtime::check_range(
+                        out,
+                        &runtime::InstancePath::Key(
+                            &runtime::InstancePath::Key(path, "header"),
+                            "X-Apprise-Recursion-Count",
+                        ),
+                        *v,
+                        [Some(0), None, None, None],
+                    );
+                }
+            }
+        }
     };
 }
 macro_rules! validate_impl_3 {
     ($t:ty) => {
-        impl runtime::Validate for $t { fn validate(& self, path : &
-        runtime::InstancePath < '_ >, out : & mut Vec < runtime::Violation >) { if let
-        Some(body) = & self.body { match body { Body::Json(x) => {
-        runtime::Validate::validate(x, & runtime::InstancePath::Key(path, "body"), out);
-        } Body::XWwwFormUrlencoded(_) | Body::FormData(_) => {} } } } }
+        impl runtime::Validate for $t {
+            fn validate(
+                &self,
+                path: &runtime::InstancePath<'_>,
+                out: &mut Vec<runtime::Violation>,
+            ) {
+                if let Some(body) = &self.body {
+                    match body {
+                        Body::Json(x) => {
+                            runtime::Validate::validate(
+                                x,
+                                &runtime::InstancePath::Key(path, "body"),
+                                out,
+                            );
+                        }
+                        Body::XWwwFormUrlencoded(_) | Body::FormData(_) => {}
+                    }
+                }
+            }
+        }
     };
 }
 macro_rules! validate_impl_4 {
     ($t:ty) => {
-        impl runtime::Validate for $t { fn validate(& self, path : &
-        runtime::InstancePath < '_ >, out : & mut Vec < runtime::Violation >) { if let
-        Some(v) = & self.body { runtime::Validate::validate(v, &
-        runtime::InstancePath::Key(path, "body"), out); } } }
+        impl runtime::Validate for $t {
+            fn validate(
+                &self,
+                path: &runtime::InstancePath<'_>,
+                out: &mut Vec<runtime::Violation>,
+            ) {
+                if let Some(v) = &self.body {
+                    runtime::Validate::validate(
+                        v,
+                        &runtime::InstancePath::Key(path, "body"),
+                        out,
+                    );
+                }
+            }
+        }
     };
 }
 use super::runtime;
 #[doc(hidden)]
-#[allow(dead_code, reason = "a binary may call none of its operations")]
 pub(crate) const SECURITY_0: &[&[runtime::Requirement]] = &[
     &[(runtime::Scheme::Basic("basicAuth"), &[])],
     &[],

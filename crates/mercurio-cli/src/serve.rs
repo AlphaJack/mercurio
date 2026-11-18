@@ -3,7 +3,6 @@
 //! Endpoints, payloads, settings and status codes are documented in the user guide: `docs/book/src/server.md`.
 
 mod alerts;
-#[expect(clippy::allow_attributes, reason = "honig's generated code allows lints that a binary may or may not trigger")]
 mod api;
 mod auth;
 mod call;
