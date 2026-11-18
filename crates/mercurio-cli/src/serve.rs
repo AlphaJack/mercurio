@@ -4,10 +4,9 @@
 
 mod alerts;
 #[expect(
-    clippy::mod_module_files,
     clippy::allow_attributes,
     clippy::enum_variant_names,
-    reason = "honig's generated code: its root is `api/mod.rs`, it allows lints that a binary may or may not trigger, \
+    reason = "honig's generated code: it allows lints that a binary may or may not trigger, \
               and it names a union's variants after their types"
 )]
 mod api;
