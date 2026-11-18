@@ -444,6 +444,9 @@ fn violation_fault(operation: Option<&str>, pointer: &str, message: &str) -> Fau
     if pointer.ends_with("/X-Apprise-Config-ID") {
         return Fault::new(400, INVALID_KEY_HEADER);
     }
+    if pointer.ends_with("/X-Apprise-Recursion-Count") {
+        return Fault::new(400, "An invalid recursion value was specified");
+    }
     let name = pointer.rsplit('/').next().unwrap_or(pointer);
     Fault::new(400, format!("The {name} value is invalid"))
 }

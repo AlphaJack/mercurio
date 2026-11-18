@@ -27,7 +27,8 @@ pub(crate) enum Sent {
 pub(crate) struct SendHeaders {
     pub config_id: Option<String>,
     pub log_level: Option<String>,
-    pub recursion: Option<String>,
+    /// `X-Apprise-Recursion-Count`: the spec has checked that it is a whole number from 0.
+    pub recursion: Option<i64>,
     pub apprise_id: Option<String>,
 }
 
@@ -276,12 +277,11 @@ impl Server {
 
     /// The `Recursion-Count` header against `APPRISE_RECURSION_MAX`.
     fn recursion(&self, call: &Call<'_>, h: &SendHeaders) -> Result<u32, Fault> {
-        let Some(raw) = h.recursion.as_deref().map(str::trim).filter(|r| !r.is_empty()) else { return Ok(0) };
-        call.note("recursion", raw);
-        match raw.parse::<i64>() {
-            Ok(n) if n >= 0 && n <= i64::from(self.s.recursion_max) => Ok(u32::try_from(n).unwrap_or(u32::MAX)),
-            Ok(n) if n >= 0 => Err(call.fail(Fault::new(406, "The recursion limit has been reached"))),
-            _ => Err(call.fail(Fault::new(400, "An invalid recursion value was specified"))),
+        let Some(n) = h.recursion else { return Ok(0) };
+        call.note("recursion", n);
+        match u32::try_from(n) {
+            Ok(n) if n <= self.s.recursion_max => Ok(n),
+            _ => Err(call.fail(Fault::new(406, "The recursion limit has been reached"))),
         }
     }
 }

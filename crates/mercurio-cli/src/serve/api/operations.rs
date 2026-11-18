@@ -26,7 +26,10 @@ macro_rules! validate_impl_2 {
         runtime::InstancePath < '_ >, out : & mut Vec < runtime::Violation >) { if let
         Some(v) = & self.x_apprise_log_level { runtime::Validate::validate(v, &
         runtime::InstancePath::Key(& runtime::InstancePath::Key(path, "header"),
-        "X-Apprise-Log-Level"), out); } } }
+        "X-Apprise-Log-Level"), out); } if let Some(v) = & self.x_apprise_recursion_count
+        { runtime::check_range(out, & runtime::InstancePath::Key(&
+        runtime::InstancePath::Key(path, "header"), "X-Apprise-Recursion-Count"), * v,
+        [Some(0), None, None, None]); } } }
     };
 }
 macro_rules! validate_impl_3 {
@@ -239,7 +242,7 @@ pub(crate) mod notify_stateless {
         /// Detail of the returned logs
         pub(crate) x_apprise_log_level: Option<types::LogLevel>,
         /// Servers this call went through; above `APPRISE_RECURSION_MAX` is 406
-        pub(crate) x_apprise_recursion_count: Option<String>,
+        pub(crate) x_apprise_recursion_count: Option<i64>,
         /// Id of the call chain
         pub(crate) x_apprise_id: Option<String>,
         /// `format`, `type`, `title`, `tag` and `stream` (a loose boolean) fill what the payload left out. `:src=dest` maps payload field `src` (or a `a.b[0]` path) to `dest`, `:src=` drops it, `:dest=value` sets it.
@@ -365,7 +368,7 @@ pub(crate) mod notify {
         /// Detail of the returned logs
         pub(crate) x_apprise_log_level: Option<types::LogLevel>,
         /// Servers this call went through; above `APPRISE_RECURSION_MAX` is 406
-        pub(crate) x_apprise_recursion_count: Option<String>,
+        pub(crate) x_apprise_recursion_count: Option<i64>,
         /// Id of the call chain
         pub(crate) x_apprise_id: Option<String>,
         /// `format`, `type`, `title`, `tag` and `stream` (a loose boolean) fill what the payload left out. `:src=dest` maps payload field `src` (or a `a.b[0]` path) to `dest`, `:src=` drops it, `:dest=value` sets it.

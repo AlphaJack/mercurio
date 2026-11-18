@@ -445,7 +445,7 @@ components:
       name: X-Apprise-Recursion-Count
       in: header
       description: Servers this call went through; above `APPRISE_RECURSION_MAX` is 406
-      schema: {type: string}
+      schema: {type: integer, format: int64, minimum: 0}
     AppriseId: {name: X-Apprise-ID, in: header, description: Id of the call chain, schema: {type: string}}
     Query:
       name: query

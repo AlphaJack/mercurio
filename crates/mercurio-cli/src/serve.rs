@@ -397,6 +397,27 @@ mod tests {
         assert_eq!((status, body.as_str()), (StatusCode::OK, "json://localhost"));
     }
 
+    /// `X-Apprise-Recursion-Count`: an empty, negative or non-integer value is `400` (apprise-api's `int()` fails), one
+    /// above `--recursion-max` `406`.
+    #[tokio::test]
+    async fn the_recursion_count_is_checked() {
+        let app = test_app("recursion", &["--recursion-max", "3"]);
+        let send_with = |count: &str| {
+            let request = form("/notify", "urls=json://127.0.0.1:9&body=x");
+            send(&app, with_header(request, "x-apprise-recursion-count", count))
+        };
+        for count in ["-1", "abc", "1.5", ""] {
+            let (status, _, body) = send_with(count).await;
+            assert_eq!((status, body.as_str()), (StatusCode::BAD_REQUEST, "An invalid recursion value was specified"));
+        }
+        let (status, _, body) = send_with("4").await;
+        assert_eq!((status, body.as_str()), (StatusCode::NOT_ACCEPTABLE, "The recursion limit has been reached"));
+        for count in ["0", "3", " 2 ", "+2"] {
+            let status = send_with(count).await.0;
+            assert!(![StatusCode::BAD_REQUEST, StatusCode::NOT_ACCEPTABLE].contains(&status), "{count:?}: {status}");
+        }
+    }
+
     #[tokio::test]
     async fn add_get_and_delete_a_configuration() {
         let app = test_app("store", &[]);
