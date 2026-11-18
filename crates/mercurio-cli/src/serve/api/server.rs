@@ -540,103 +540,6 @@ pub(crate) trait Api: Send + Sync + 'static {
             ),
         )
     }
-    fn login_form(
-        &self,
-        params: ops::login_form::Params,
-        ctx: &Context<'_, Option<Self::Principal>>,
-    ) -> impl Future<
-        Output = Result<ops::login_form::Response, runtime::ApiError>,
-    > + Send {
-        let _ = (params, ctx);
-        std::future::ready(
-            Err(
-                runtime::ApiError::new(
-                    runtime::http::StatusCode::NOT_IMPLEMENTED,
-                    "not implemented",
-                ),
-            ),
-        )
-    }
-    fn login(
-        &self,
-        params: ops::login::Params,
-        ctx: &Context<'_, Option<Self::Principal>>,
-    ) -> impl Future<Output = Result<ops::login::Response, runtime::ApiError>> + Send {
-        let _ = (params, ctx);
-        std::future::ready(
-            Err(
-                runtime::ApiError::new(
-                    runtime::http::StatusCode::NOT_IMPLEMENTED,
-                    "not implemented",
-                ),
-            ),
-        )
-    }
-    fn logout_form(
-        &self,
-        params: ops::logout_form::Params,
-        ctx: &Context<'_, Option<Self::Principal>>,
-    ) -> impl Future<
-        Output = Result<ops::logout_form::Response, runtime::ApiError>,
-    > + Send {
-        let _ = (params, ctx);
-        std::future::ready(
-            Err(
-                runtime::ApiError::new(
-                    runtime::http::StatusCode::NOT_IMPLEMENTED,
-                    "not implemented",
-                ),
-            ),
-        )
-    }
-    fn logout(
-        &self,
-        params: ops::logout::Params,
-        ctx: &Context<'_, Option<Self::Principal>>,
-    ) -> impl Future<Output = Result<ops::logout::Response, runtime::ApiError>> + Send {
-        let _ = (params, ctx);
-        std::future::ready(
-            Err(
-                runtime::ApiError::new(
-                    runtime::http::StatusCode::NOT_IMPLEMENTED,
-                    "not implemented",
-                ),
-            ),
-        )
-    }
-    fn qr_current(
-        &self,
-        params: ops::qr_current::Params,
-        ctx: &Context<'_, Option<Self::Principal>>,
-    ) -> impl Future<
-        Output = Result<ops::qr_current::Response, runtime::ApiError>,
-    > + Send {
-        let _ = (params, ctx);
-        std::future::ready(
-            Err(
-                runtime::ApiError::new(
-                    runtime::http::StatusCode::NOT_IMPLEMENTED,
-                    "not implemented",
-                ),
-            ),
-        )
-    }
-    /// QR code for Apprise Mobile
-    fn qr(
-        &self,
-        params: ops::qr::Params,
-        ctx: &Context<'_, Option<Self::Principal>>,
-    ) -> impl Future<Output = Result<ops::qr::Response, runtime::ApiError>> + Send {
-        let _ = (params, ctx);
-        std::future::ready(
-            Err(
-                runtime::ApiError::new(
-                    runtime::http::StatusCode::NOT_IMPLEMENTED,
-                    "not implemented",
-                ),
-            ),
-        )
-    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum Operation {
@@ -670,12 +573,6 @@ pub(crate) enum Operation {
     DeleteAuth,
     JsonUrlsByHeader,
     JsonUrls,
-    LoginForm,
-    Login,
-    LogoutForm,
-    Logout,
-    QrCurrent,
-    Qr,
 }
 impl runtime::Operation for Operation {
     fn op(self) -> &'static runtime::Op {
@@ -710,12 +607,6 @@ impl runtime::Operation for Operation {
             Self::DeleteAuth => &DELETE_AUTH_OP,
             Self::JsonUrlsByHeader => &JSON_URLS_BY_HEADER_OP,
             Self::JsonUrls => &JSON_URLS_OP,
-            Self::LoginForm => &LOGIN_FORM_OP,
-            Self::Login => &LOGIN_OP,
-            Self::LogoutForm => &LOGOUT_FORM_OP,
-            Self::Logout => &LOGOUT_OP,
-            Self::QrCurrent => &QR_CURRENT_OP,
-            Self::Qr => &QR_OP,
         }
     }
 }
@@ -814,14 +705,6 @@ static METHODS: &[&[(&str, (Op, Operation))]] = &[
         ("POST", (Op::C0(Op0::O20), Operation::SetAuthByHeader)),
         ("DELETE", (Op::C0(Op0::O21), Operation::DeleteAuthByHeader)),
     ],
-    &[
-        ("GET", (Op::C1(Op1::O30), Operation::LoginForm)),
-        ("POST", (Op::C1(Op1::O31), Operation::Login)),
-    ],
-    &[
-        ("GET", (Op::C1(Op1::O32), Operation::LogoutForm)),
-        ("POST", (Op::C1(Op1::O33), Operation::Logout)),
-    ],
     &[("GET", (Op::C0(Op0::O1), Operation::StatusCurrent))],
     &[
         ("GET", (Op::C0(Op0::O8), Operation::ConfigCurrent)),
@@ -833,7 +716,6 @@ static METHODS: &[&[(&str, (Op, Operation))]] = &[
         ("DELETE", (Op::C0(Op0::O24), Operation::AuthCurrentDelete)),
     ],
     &[("GET", (Op::C1(Op1::O28), Operation::JsonUrlsByHeader))],
-    &[("GET", (Op::C1(Op1::O34), Operation::QrCurrent))],
     &[("GET", (Op::C1(Op1::O29), Operation::JsonUrls))],
     &[("GET", (Op::C0(Op0::O2), Operation::StatusKey))],
     &[("POST", (Op::C0(Op0::O6), Operation::Notify))],
@@ -847,21 +729,17 @@ static METHODS: &[&[(&str, (Op, Operation))]] = &[
         ("POST", (Op::C1(Op1::O26), Operation::SetAuth)),
         ("DELETE", (Op::C1(Op1::O27), Operation::DeleteAuth)),
     ],
-    &[("GET", (Op::C1(Op1::O35), Operation::Qr))],
 ];
 static ROUTES: &[runtime::Node] = &[
     runtime::node(
         &[
-            ("qr", 18),
             ("add", 7),
             ("cfg", 5),
             ("del", 8),
             ("get", 6),
             ("auth", 10),
-            ("json", 16),
+            ("json", 14),
             ("move", 9),
-            ("login", 11),
-            ("logout", 12),
             ("notify", 4),
             ("status", 1),
             ("details", 2),
@@ -871,24 +749,23 @@ static ROUTES: &[runtime::Node] = &[
         runtime::Node::NONE,
         runtime::Node::NONE,
     ),
-    runtime::node(&[("@", 13)], &[], 21, 0),
+    runtime::node(&[("@", 11)], &[], 17, 0),
     runtime::node(&[], &[], runtime::Node::NONE, 1),
     runtime::node(&[], &[], runtime::Node::NONE, 2),
-    runtime::node(&[], &[], 22, 3),
-    runtime::node(&[("@", 14)], &[], 23, 4),
-    runtime::node(&[], &[], 24, 5),
-    runtime::node(&[], &[], 25, 6),
-    runtime::node(&[], &[], 26, 7),
-    runtime::node(&[], &[], 27, 8),
-    runtime::node(&[("@", 15)], &[], 28, 9),
+    runtime::node(&[], &[], 18, 3),
+    runtime::node(&[("@", 12)], &[], 19, 4),
+    runtime::node(&[], &[], 20, 5),
+    runtime::node(&[], &[], 21, 6),
+    runtime::node(&[], &[], 22, 7),
+    runtime::node(&[], &[], 23, 8),
+    runtime::node(&[("@", 13)], &[], 24, 9),
     runtime::node(&[], &[], runtime::Node::NONE, 10),
     runtime::node(&[], &[], runtime::Node::NONE, 11),
     runtime::node(&[], &[], runtime::Node::NONE, 12),
-    runtime::node(&[], &[], runtime::Node::NONE, 13),
+    runtime::node(&[("urls", 15)], &[], runtime::Node::NONE, runtime::Node::NONE),
+    runtime::node(&[], &[], 16, 13),
     runtime::node(&[], &[], runtime::Node::NONE, 14),
-    runtime::node(&[("urls", 17)], &[], runtime::Node::NONE, runtime::Node::NONE),
-    runtime::node(&[], &[], 20, 15),
-    runtime::node(&[("@", 19)], &[], 29, runtime::Node::NONE),
+    runtime::node(&[], &[], runtime::Node::NONE, 15),
     runtime::node(&[], &[], runtime::Node::NONE, 16),
     runtime::node(&[], &[], runtime::Node::NONE, 17),
     runtime::node(&[], &[], runtime::Node::NONE, 18),
@@ -896,10 +773,6 @@ static ROUTES: &[runtime::Node] = &[
     runtime::node(&[], &[], runtime::Node::NONE, 20),
     runtime::node(&[], &[], runtime::Node::NONE, 21),
     runtime::node(&[], &[], runtime::Node::NONE, 22),
-    runtime::node(&[], &[], runtime::Node::NONE, 23),
-    runtime::node(&[], &[], runtime::Node::NONE, 24),
-    runtime::node(&[], &[], runtime::Node::NONE, 25),
-    runtime::node(&[], &[], runtime::Node::NONE, 26),
 ];
 static PATHS: &[&str] = &[
     "/add",
@@ -917,15 +790,11 @@ static PATHS: &[&str] = &[
     "/get/{s1}",
     "/json/urls",
     "/json/urls/{s2}",
-    "/login",
-    "/logout",
     "/metrics",
     "/move",
     "/move/{s1}",
     "/notify",
     "/notify/{s1}",
-    "/qr/@",
-    "/qr/{s1}",
     "/status",
     "/status/@",
     "/status/{s1}",
@@ -1081,12 +950,6 @@ enum Op1 {
     O27,
     O28,
     O29,
-    O30,
-    O31,
-    O32,
-    O33,
-    O34,
-    O35,
 }
 async fn dispatch_1<A: Api>(
     api: &A,
@@ -1100,12 +963,6 @@ async fn dispatch_1<A: Api>(
         Op1::O27 => Box::pin(delete_auth(api, routed, call)).await,
         Op1::O28 => Box::pin(json_urls_by_header(api, routed, call)).await,
         Op1::O29 => Box::pin(json_urls(api, routed, call)).await,
-        Op1::O30 => Box::pin(login_form(api, routed, call)).await,
-        Op1::O31 => Box::pin(login(api, routed, call)).await,
-        Op1::O32 => Box::pin(logout_form(api, routed, call)).await,
-        Op1::O33 => Box::pin(logout(api, routed, call)).await,
-        Op1::O34 => Box::pin(qr_current(api, routed, call)).await,
-        Op1::O35 => Box::pin(qr(api, routed, call)).await,
     }
 }
 static STATUS_OP: runtime::Op = runtime::Op {
@@ -6218,201 +6075,4 @@ fn json_urls_encode(
             }
         },
     )
-}
-static LOGIN_FORM_OP: runtime::Op = runtime::Op {
-    name: "login_form",
-    method: "GET",
-    route: "/login",
-    span: "GET /login",
-    security: ops::SECURITY_0,
-    takes_body: false,
-    produces: &["text/html"],
-    ranges: false,
-    errors: error_schema,
-};
-async fn login_form<A: Api>(
-    api: &A,
-    routed: runtime::Routed<'_>,
-    call: runtime::Call<'_, Option<A::Principal>, Operation>,
-) -> runtime::Response {
-    let steps = runtime::Steps {
-        api,
-        decode: |_| Ok(ops::login_form::Params {}),
-        call: |a, p, c| Box::pin(a.login_form(p, c)),
-        encode: |r, _| Ok(login_form_encode(r)),
-    };
-    runtime::serve(routed, call, &steps).await
-}
-fn login_form_encode(resp: ops::login_form::Response) -> runtime::Response {
-    let ops::login_form::Response::Ok(body) = resp;
-    runtime::body_response(200, "text/html", String::into_bytes(body))
-}
-static LOGIN_OP: runtime::Op = runtime::Op {
-    name: "login",
-    method: "POST",
-    route: "/login",
-    span: "POST /login",
-    security: ops::SECURITY_0,
-    takes_body: false,
-    produces: &[],
-    ranges: false,
-    errors: error_schema,
-};
-async fn login<A: Api>(
-    api: &A,
-    routed: runtime::Routed<'_>,
-    call: runtime::Call<'_, Option<A::Principal>, Operation>,
-) -> runtime::Response {
-    let steps = runtime::Steps {
-        api,
-        decode: |_| Ok(ops::login::Params {}),
-        call: |a, p, c| Box::pin(a.login(p, c)),
-        encode: |r, _| Ok(login_encode(&r)),
-    };
-    runtime::serve(routed, call, &steps).await
-}
-fn login_encode(resp: &ops::login::Response) -> runtime::Response {
-    let ops::login::Response::Found = resp;
-    runtime::new_response(302)
-}
-static LOGOUT_FORM_OP: runtime::Op = runtime::Op {
-    name: "logout_form",
-    method: "GET",
-    route: "/logout",
-    span: "GET /logout",
-    security: ops::SECURITY_0,
-    takes_body: false,
-    produces: &[],
-    ranges: false,
-    errors: error_schema,
-};
-async fn logout_form<A: Api>(
-    api: &A,
-    routed: runtime::Routed<'_>,
-    call: runtime::Call<'_, Option<A::Principal>, Operation>,
-) -> runtime::Response {
-    let steps = runtime::Steps {
-        api,
-        decode: |_| Ok(ops::logout_form::Params {}),
-        call: |a, p, c| Box::pin(a.logout_form(p, c)),
-        encode: |r, _| Ok(logout_form_encode(&r)),
-    };
-    runtime::serve(routed, call, &steps).await
-}
-fn logout_form_encode(resp: &ops::logout_form::Response) -> runtime::Response {
-    let ops::logout_form::Response::Found = resp;
-    runtime::new_response(302)
-}
-static LOGOUT_OP: runtime::Op = runtime::Op {
-    name: "logout",
-    method: "POST",
-    route: "/logout",
-    span: "POST /logout",
-    security: ops::SECURITY_0,
-    takes_body: false,
-    produces: &[],
-    ranges: false,
-    errors: error_schema,
-};
-async fn logout<A: Api>(
-    api: &A,
-    routed: runtime::Routed<'_>,
-    call: runtime::Call<'_, Option<A::Principal>, Operation>,
-) -> runtime::Response {
-    let steps = runtime::Steps {
-        api,
-        decode: |_| Ok(ops::logout::Params {}),
-        call: |a, p, c| Box::pin(a.logout(p, c)),
-        encode: |r, _| Ok(logout_encode(&r)),
-    };
-    runtime::serve(routed, call, &steps).await
-}
-fn logout_encode(resp: &ops::logout::Response) -> runtime::Response {
-    let ops::logout::Response::Found = resp;
-    runtime::new_response(302)
-}
-static QR_CURRENT_OP: runtime::Op = runtime::Op {
-    name: "qr_current",
-    method: "GET",
-    route: "/qr/@",
-    span: "GET /qr/@",
-    security: ops::SECURITY_0,
-    takes_body: false,
-    produces: &[],
-    ranges: false,
-    errors: error_schema,
-};
-async fn qr_current<A: Api>(
-    api: &A,
-    routed: runtime::Routed<'_>,
-    call: runtime::Call<'_, Option<A::Principal>, Operation>,
-) -> runtime::Response {
-    let steps = runtime::Steps {
-        api,
-        decode: |_| Ok(ops::qr_current::Params {}),
-        call: |a, p, c| Box::pin(a.qr_current(p, c)),
-        encode: |r, _| qr_current_encode(r),
-    };
-    runtime::serve(routed, call, &steps).await
-}
-fn qr_current_encode(
-    resp: ops::qr_current::Response,
-) -> Result<runtime::Response, runtime::Error> {
-    let ops::qr_current::Response::BadRequest(body) = resp;
-    Ok({
-        let mut r = runtime::new_response(400);
-        match body {
-            ops::qr_current::BadRequestBody::Plain(b) => {
-                runtime::Message::set_body(&mut r, "text/plain", String::into_bytes(b));
-            }
-            ops::qr_current::BadRequestBody::Json(b) => {
-                runtime::Message::set_body(
-                    &mut r,
-                    "application/json",
-                    runtime::json_encode(&b)?,
-                );
-            }
-        }
-        r
-    })
-}
-static QR_OP: runtime::Op = runtime::Op {
-    name: "qr",
-    method: "GET",
-    route: "/qr/{key}",
-    span: "GET /qr/{key}",
-    security: ops::SECURITY_0,
-    takes_body: false,
-    produces: &["image/png"],
-    ranges: true,
-    errors: error_schema,
-};
-async fn qr<A: Api>(
-    api: &A,
-    routed: runtime::Routed<'_>,
-    call: runtime::Call<'_, Option<A::Principal>, Operation>,
-) -> runtime::Response {
-    let steps = runtime::Steps {
-        api,
-        decode: |i| qr_params(&i),
-        call: |a, p, c| Box::pin(a.qr(p, c)),
-        encode: |r, _| Ok(qr_encode(r)),
-    };
-    runtime::serve(routed, call, &steps).await
-}
-fn qr_params(
-    incoming: &runtime::Incoming<'_>,
-) -> Result<ops::qr::Params, runtime::Reason> {
-    let runtime::Incoming { caps, .. } = *incoming;
-    Ok(ops::qr::Params {
-        key: runtime::path_param(caps, 0, runtime::Style::Simple, "/path/key")?,
-    })
-}
-fn qr_encode(resp: ops::qr::Response) -> runtime::Response {
-    let ops::qr::Response::Ok(body) = resp;
-    {
-        let mut r = runtime::new_response(200);
-        runtime::set_blob(&mut r, "image/png", body);
-        r
-    }
 }

@@ -335,6 +335,19 @@ mod tests {
         assert_eq!((status, body.as_str()), (StatusCode::OK, "OK"));
     }
 
+    /// apprise-api's web UI is not served (differences.md).
+    #[tokio::test]
+    async fn web_ui_paths_are_not_found() {
+        let app = test_app("web-ui", &[]);
+        for (method, path) in [("GET", "/login"), ("POST", "/login"), ("GET", "/logout"), ("POST", "/logout")]
+            .into_iter()
+            .chain([("GET", "/qr/@"), ("GET", "/qr/k1")])
+        {
+            let (status, _, _) = send(&app, Request::builder().method(method).uri(path).body(empty()).unwrap()).await;
+            assert_eq!(status, StatusCode::NOT_FOUND, "{method} {path}");
+        }
+    }
+
     #[tokio::test]
     async fn add_get_and_delete_a_configuration() {
         let app = test_app("store", &[]);

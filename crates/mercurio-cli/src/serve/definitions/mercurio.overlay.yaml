@@ -391,22 +391,6 @@ actions:
               - {name: tag, in: query, description: Tag expression the URLs must match, schema: {type: string}}
             responses: *json-urls-responses
 
-        # apprise-api's browser interface: not served yet.
-        /login:
-          get: {operationId: loginForm, responses: {'200': {description: The login form, content: {text/html: {schema: {type: string}}}}}}
-          post: {operationId: login, responses: {'302': {description: Logged in}}}
-        /logout:
-          get: {operationId: logoutForm, responses: {'302': {description: Back to the welcome page}}}
-          post: {operationId: logout, responses: {'302': {description: Logged out}}}
-        /qr/@:
-          get: {operationId: qrCurrent, responses: {'400': {$ref: '#/components/responses/Error'}}}
-        /qr/{key}:
-          get:
-            operationId: qr
-            summary: QR code for Apprise Mobile
-            parameters: [{$ref: '#/components/parameters/Key'}]
-            responses: {'200': {description: The QR code, content: {image/png: {schema: {type: string, contentMediaType: image/png}}}}}
-
 
       components:
         securitySchemes:

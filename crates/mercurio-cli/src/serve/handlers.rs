@@ -1,7 +1,7 @@
 //! The business logic behind each operation, one module per area.
 //!
 //! The generated `Api` is implemented here: each operation reads its typed parameters, calls its handler on
-//! [`Server`] and answers with its typed response. `/login`, `/logout` and `/qr` keep the generated default, `501`.
+//! [`Server`] and answers with its typed response.
 
 pub(crate) mod auth;
 pub(crate) mod config;
