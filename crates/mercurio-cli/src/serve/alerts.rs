@@ -34,7 +34,7 @@ fn values(labels: Option<&Value>, skip: &Map<String, Value>) -> Vec<String> {
     let Some(Value::Object(m)) = labels else { return Vec::new() };
     let mut pairs: Vec<(&String, &Value)> = m.iter().filter(|(k, _)| !skip.contains_key(*k)).collect();
     pairs.sort_by(|a, b| a.0.cmp(b.0));
-    pairs.into_iter().map(|(_, v)| v.as_str().map_or_else(|| v.to_string(), str::to_owned)).collect()
+    pairs.into_iter().map(|(_, v)| super::text::value_text(v)).collect()
 }
 
 /// Alertmanager's default `__subject`: `[STATUS:firing count] group label values (other common label values)`.

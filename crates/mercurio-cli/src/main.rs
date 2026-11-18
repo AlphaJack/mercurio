@@ -686,7 +686,8 @@ fn run() -> u8 {
 }
 
 fn cmd_serve(bind: &str, settings: &serve::ServeArgs) -> Result<u8, u8> {
-    let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().map_err(failed)?;
+    let runtime =
+        tokio::runtime::Builder::new_multi_thread().thread_name("mercurio").enable_all().build().map_err(failed)?;
     runtime.block_on(serve::run(bind, settings)).map(|()| exit::OK).map_err(failed)
 }
 
