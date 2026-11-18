@@ -1,4 +1,4 @@
-# caronc/apprise-api swagger.yaml at 9744a2f841916dda5857b4105254dabe1759ad3b, unmodified. MIT License, Copyright (c) 2026 Chris Caron.
+# https://github.com/caronc/apprise-api/blob/9744a2f841916dda5857b4105254dabe1759ad3b/swagger.yaml, unmodified. MIT License, Copyright (c) 2026 Chris Caron.
 openapi: '3.0.3'
 
 info:

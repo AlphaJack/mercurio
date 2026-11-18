@@ -20,7 +20,7 @@ use super::store::ConfigStore;
 use super::{Server, auth, metrics};
 use api::Message as _;
 
-/// The HTTP API: paths, methods, purpose. `vendor/apprise-api/mercurio.overlay.yaml` describes it; the `routes_match_the_router` test checks every row against it.
+/// The HTTP API: paths, methods, purpose. `definitions/mercurio.overlay.yaml` describes it; the `routes_match_the_router` test checks every row against it.
 pub(crate) const ROUTES: &[(&str, &str, &str)] = &[
     ("/status, /status/{key}", "GET", "health check: OK or the problems found (JSON with Accept: application/json)"),
     ("/details", "GET", "supported services as JSON; ?all=yes includes disabled ones"),
