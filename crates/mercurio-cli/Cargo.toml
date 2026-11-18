@@ -54,8 +54,7 @@ pkg-fmt = "zip"
 bin-dir = "{ bin }{ binary-ext }"
 
 [package.metadata.honig.api]
-spec = "src/serve/definitions/swagger.yaml"
-overlays = ["src/serve/definitions/mercurio.overlay.yaml"]
+spec = "src/serve/openapi.yaml"
 output = "src/serve/api"
 client = false
 server = { allow_unimplemented = true }
