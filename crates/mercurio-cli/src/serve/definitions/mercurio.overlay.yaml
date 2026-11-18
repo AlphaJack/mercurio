@@ -9,10 +9,6 @@
 #
 # Header values and Basic credentials are UTF-8, or ISO-8859-1 when they are not valid UTF-8: Python's `requests`
 # and OkHttp encode Basic credentials in ISO-8859-1.
-#
-#
-# This overlay turns caronc/apprise-api's swagger.yaml (next to it) into that description.
-# It replaces every section: the two share only 35 of 915 values once upgraded to OpenAPI 3.2.
 
 overlay: 1.0.0
 info:
