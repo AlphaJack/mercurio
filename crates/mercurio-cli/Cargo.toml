@@ -27,7 +27,8 @@ bundle-certificates = ["mercurio/bundle-certificates"]
 mercurio = { workspace = true, features = ["transport-tokio", "timezones", "config-yaml", "markdown", "emojis", "html", "regex-unicode"] }
 tokio = { version = "1.54", default-features = false, features = ["rt-multi-thread", "fs", "net", "signal", "macros", "time", "sync"] }
 hyper = { version = "1", features = ["server", "http1"] }
-hyper-util = { version = "0.1", features = ["tokio", "http1", "server", "server-graceful"] }
+hyper-util = { version = "0.1", features = ["tokio", "http1", "server", "server-graceful", "service"] }
+tower = { version = "0.5", default-features = false, features = ["limit", "load-shed", "util"] }
 http-body-util = "0.1"
 futures-util = { version = "0.3", default-features = false, features = ["alloc", "std"] }
 log = "0.4"

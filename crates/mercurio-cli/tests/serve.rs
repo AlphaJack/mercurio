@@ -792,6 +792,32 @@ fn bodies_over_the_read_budget_get_503() {
     assert!(ok, "the budget was not released");
 }
 
+/// One worker takes 128 requests in progress: the next one gets `503` in the error schema, with `Retry-After: 1`.
+#[test]
+#[expect(clippy::disallowed_methods, reason = "the held requests run in another process")]
+fn requests_past_the_workers_get_503() {
+    let s = start_with(&tmpdir("workers"), &[("APPRISE_WORKER_COUNT", "1")]);
+    // Each holds its slot while the server waits for the 10 bytes of its body.
+    let head = "POST /notify HTTP/1.1\r\nHost: x\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n";
+    let held: Vec<TcpStream> = (0..128)
+        .map(|_| {
+            let mut c = TcpStream::connect(&s.addr).unwrap();
+            c.write_all(head.as_bytes()).unwrap();
+            c
+        })
+        .collect();
+    let probe = b"GET /status HTTP/1.1\r\nHost: x\r\nAccept: application/json\r\nConnection: close\r\n\r\n";
+    let refused = (0..50).find_map(|_| {
+        thread::sleep(std::time::Duration::from_millis(100));
+        let out = raw(&s.addr, probe);
+        (raw_status(&out) == Some(503)).then_some(out)
+    });
+    let out = refused.expect("request 129 was never refused").to_ascii_lowercase();
+    assert!(out.contains("retry-after: 1\r\n"), "{out}");
+    assert!(out.contains("content-type: application/json") && out.contains("{\"error\":"), "{out}");
+    drop(held);
+}
+
 /// Status of a `text/plain` POST of `n` bytes (the server may answer, and close, before all of them are written).
 fn post_bytes(addr: &str, n: usize) -> Option<u16> {
     let mut s = TcpStream::connect(addr).unwrap();

@@ -11,6 +11,7 @@ use std::time::Duration;
 use futures_util::FutureExt as _;
 use hyper::body::{Bytes, Frame};
 use mercurio::transport::TokioTransport;
+use tower::Service as _;
 
 use super::api;
 use super::auth::Role;
@@ -20,7 +21,7 @@ use super::store::ConfigStore;
 use super::{Server, auth, metrics};
 use api::Message as _;
 
-/// The HTTP API: paths, methods, purpose. `definitions/mercurio.overlay.yaml` describes it; the `routes_match_the_router` test checks every row against it.
+/// The HTTP API: paths, methods, purpose. The `routes_match_the_router` test checks every row against the server.
 pub(crate) const ROUTES: &[(&str, &str, &str)] = &[
     ("/status, /status/{key}", "GET", "health check: OK or the problems found (JSON with Accept: application/json)"),
     ("/details", "GET", "supported services as JSON; ?all=yes includes disabled ones"),
@@ -83,16 +84,14 @@ pub(crate) fn help_tables() -> String {
 
 /// A request body of any kind, as the generated server reads it.
 type AnyBody = http_body_util::combinators::BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync>>;
-/// The generated server, with the hooks below, as one function.
-type Handle = dyn Fn(hyper::Request<AnyBody>) -> futures_util::future::BoxFuture<'static, api::Response> + Send + Sync;
+/// The generated server with its layers and the hooks below.
+type ApiService = tower::util::BoxCloneSyncService<hyper::Request<AnyBody>, api::Response, Infallible>;
 
 /// The HTTP API with its shared limits: [`App::call`] answers one request.
 #[derive(Clone)]
 pub(crate) struct App {
     api: Arc<Api>,
-    handle: Arc<Handle>,
-    /// Requests in progress (`max_requests`); one more gets `503`.
-    requests: Arc<tokio::sync::Semaphore>,
+    service: ApiService,
     /// [`BODY_BUDGET`] in [`BUDGET_UNIT`]s.
     bodies: Arc<tokio::sync::Semaphore>,
 }
@@ -104,7 +103,8 @@ pub(super) fn app(s: Settings) -> App {
     let store = ConfigStore::new(s.config_dir.clone(), s.stateful, s.secret.clone());
     // Live streams admitted at once (`APPRISE_STREAM_WORKER_COUNT` + `APPRISE_STREAM_QUEUE_SIZE`).
     let streams = Arc::new(tokio::sync::Semaphore::new(s.stream_slots.min(tokio::sync::Semaphore::MAX_PERMITS)));
-    let requests = Arc::new(tokio::sync::Semaphore::new(s.max_requests.min(tokio::sync::Semaphore::MAX_PERMITS)));
+    // Requests in progress past `max_requests` get `503` (`error_response`).
+    let requests = s.max_requests;
     let limit = body_limit(s.attach_size);
     let server = Arc::new(Server {
         transport: Arc::new(TokioTransport::new()),
@@ -120,16 +120,13 @@ pub(super) fn app(s: Settings) -> App {
     let (find, errors, events) = (Arc::clone(&server), Arc::clone(&server), server);
     let service = api::server::Server::new(Arc::clone(&api))
         .max_body_bytes(limit)
+        .operation_layer(tower::load_shed::LoadShedLayer::new())
+        .operation_layer(tower::limit::ConcurrencyLimitLayer::new(requests))
         .authenticate(move |req: &api::Request| std::future::ready(authorize(&find, req)))
         .error_response(move |rejection| error_response(&errors, rejection))
         .on_event(move |event| on_event(&events, event))
         .into_service();
-    // `ApiService` is always ready: no `poll_ready` before `call`.
-    let handle: Arc<Handle> = Arc::new(move |request| {
-        let answer = api::Service::call(&mut service.clone(), request);
-        Box::pin(async move { answer.await.unwrap_or_else(|never| match never {}) })
-    });
-    App { api, handle, requests, bodies }
+    App { api, service: ApiService::new(service), bodies }
 }
 
 /// Largest request body read: one attachment of `attach_size` bytes plus the other fields, and never less than
@@ -160,7 +157,6 @@ impl App {
         B: hyper::body::Body<Data = Bytes> + Send + Sync + Unpin + 'static,
         B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
-        let Ok(_slot) = self.requests.clone().try_acquire_owned() else { return Ok(busy()) };
         let length = request.headers().get("content-length").and_then(|v| v.to_str().ok()).and_then(|v| v.parse().ok());
         let units = u32::try_from(
             length.unwrap_or(UNSIZED_BODY).min(body_limit(self.api.0.s.attach_size)).div_ceil(BUDGET_UNIT),
@@ -172,8 +168,38 @@ impl App {
         parts.extensions.insert(remote);
         let body = ReadTimeout { body, timeout: Box::pin(tokio::time::sleep(self.api.0.s.io_timeout)) };
         let request = hyper::Request::from_parts(parts, AnyBody::new(body));
-        let answer = std::panic::AssertUnwindSafe((self.handle)(request)).catch_unwind().await;
-        Ok(answer.unwrap_or_else(|_| status(500)))
+        // `ApiService` is always ready: no `poll_ready` before `call`.
+        let answer = std::panic::AssertUnwindSafe(self.service.clone().call(request)).catch_unwind().await;
+        Ok(answer.map_or_else(|_| status(500), |r| r.unwrap_or_else(|never| match never {})))
+    }
+}
+
+/// [`App`] on one connection: a tower `Service`, as honig's hyper recipe serves.
+#[derive(Clone)]
+pub(crate) struct Connection {
+    app: App,
+    remote: SocketAddr,
+}
+
+impl Connection {
+    /// The service that hyper serves on a connection from `remote`.
+    pub(crate) fn serve(app: &App, remote: SocketAddr) -> hyper_util::service::TowerToHyperService<Self> {
+        hyper_util::service::TowerToHyperService::new(Self { app: app.clone(), remote })
+    }
+}
+
+impl tower::Service<hyper::Request<hyper::body::Incoming>> for Connection {
+    type Response = api::Response;
+    type Error = Infallible;
+    type Future = futures_util::future::BoxFuture<'static, Result<api::Response, Infallible>>;
+
+    fn poll_ready(&mut self, _: &mut TaskContext<'_>) -> Poll<Result<(), Infallible>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, request: hyper::Request<hyper::body::Incoming>) -> Self::Future {
+        let (app, remote) = (self.app.clone(), self.remote);
+        Box::pin(async move { app.call(request, remote).await })
     }
 }
 
@@ -198,7 +224,7 @@ fn status(code: u16) -> api::Response {
     r
 }
 
-/// A request beyond `max_requests` or the body budget.
+/// A request beyond the body budget.
 fn busy() -> api::Response {
     let mut r = new_response(503);
     r.set_body("text/plain; charset=utf-8", b"busy".to_vec());
@@ -339,6 +365,7 @@ fn error_response(server: &Server, rejection: api::server::Rejection) -> api::Re
     let header = |name: &str| rejection.headers.get(name).and_then(|v| v.to_str().ok());
     let json = wants_json(header("accept"), &media_type(header("content-type").unwrap_or("")));
     let operation = rejection.operation.map(honig::Operation::name);
+    let is_denied = matches!(rejection.reason, api::Reason::Denied(_));
     let fault = match rejection.reason {
         api::Reason::NotFound => return new_response(404),
         api::Reason::MethodNotAllowed(methods) => {
@@ -371,6 +398,11 @@ fn error_response(server: &Server, rejection: api::server::Rejection) -> api::Re
         api::Reason::Denied(e) | api::Reason::Handler(e) => {
             let mut r = error_body(json, e.status.as_u16(), &e.message, None);
             r.headers_mut().extend(*e.headers);
+            // A request past `max_requests`: `LoadShedLayer` refused it.
+            if is_denied && e.status == api::http::StatusCode::SERVICE_UNAVAILABLE {
+                set_header(&mut r, "Retry-After", "1");
+                set_header(&mut r, "Connection", "close");
+            }
             return r;
         }
         api::Reason::Encode(e) => Fault::new(500, e),

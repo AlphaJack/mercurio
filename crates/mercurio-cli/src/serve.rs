@@ -97,11 +97,7 @@ pub(crate) async fn run(bind: &str, args: &ServeArgs) -> Result<(), String> {
             },
             () = &mut stop => break,
         };
-        let app = app.clone();
-        let service = hyper::service::service_fn(move |request: hyper::Request<hyper::body::Incoming>| {
-            let app = app.clone();
-            async move { app.call(request, remote).await }
-        });
+        let service = router::Connection::serve(&app, remote);
         // `half_close`: a client that shut its writing side still gets its answer.
         let conn = hyper::server::conn::http1::Builder::new()
             .timer(hyper_util::rt::TokioTimer::new())
