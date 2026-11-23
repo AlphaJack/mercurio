@@ -50,10 +50,14 @@ impl Url {
         (self.tls, &self.host, self.port) == (other.tls, &other.host, other.port)
     }
 
+    /// The URL without its credentials.
+    pub(crate) fn href(&self) -> String {
+        format!("{}://{}{}", if self.tls { "https" } else { "http" }, self.authority(), self.target)
+    }
+
     /// The `Referer` a redirect from `self` to `next` carries: `self` without credentials, none from `https` to `http`.
     pub(crate) fn referer_for(&self, next: &Self) -> Option<String> {
-        (!self.tls || next.tls)
-            .then(|| format!("{}://{}{}", if self.tls { "https" } else { "http" }, self.authority(), self.target))
+        (!self.tls || next.tls).then(|| self.href())
     }
 
     /// The URL a `Location` header points to, `None` when it is not an `http(s)` URL.

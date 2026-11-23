@@ -11,13 +11,13 @@ use super::store::{ACCESS_DISABLED, ACCESS_LOCKED, ACCESS_PUBLIC, ACCESS_USER, A
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(super) enum Role {
     /// Authentication is switched off.
-    #[default]
     Open,
     /// The administrator login.
     Admin,
     /// A per-key login (for the key checked last).
     User,
-    /// Nothing proven yet.
+    /// Nothing proven yet: what a [`Caller`](super::call::Caller) starts as.
+    #[default]
     Anonymous,
 }
 
@@ -153,5 +153,16 @@ impl AuthSettings {
             }
             _ => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::call::Caller;
+    use super::Role;
+
+    #[test]
+    fn a_caller_that_no_step_found_is_anonymous() {
+        assert_eq!(Caller::default().role.get(), Role::Anonymous);
     }
 }

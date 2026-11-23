@@ -29,7 +29,8 @@ URL and host rules (`APPRISE_ATTACH_*_URL`) are separated by spaces or
 commas. A rule is a host (`*.example.com`, `cdn.net:8080`), a URL with an
 optional path prefix (`https://example.com/files/`, `example.com/files/`),
 or `internal` for every address that is not public (loopback, private,
-link-local). `*` matches any run of characters, `?` one.
+link-local). `*` matches any run of characters, `?` one. Each redirect of a
+download is checked against the same rules.
 
 Limits: a request body up to `APPRISE_ATTACH_SIZE` plus 1 MiB (at least 8 MiB; `413`
 beyond), 256 MiB of request bodies

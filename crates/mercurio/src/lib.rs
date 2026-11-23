@@ -403,6 +403,16 @@ pub mod __private {
     pub(crate) use crate::re::Regex;
     pub use crate::time::utc_parts;
     pub use crate::url::{parse_url_unverified, unquote, unquote_plus};
+
+    /// Where a redirect from `url` to its `Location` goes, without credentials, and whether it keeps the origin.
+    /// `None` when either is not an `http(s)` URL.
+    #[cfg(any(feature = "transport-tokio", feature = "transport-blocking"))]
+    #[must_use]
+    pub fn redirect_target(url: &str, location: &str) -> Option<(String, bool)> {
+        let from = crate::http1::url::Url::parse(url).ok()?;
+        let next = from.join(location)?;
+        Some((next.href(), from.same_origin(&next)))
+    }
 }
 
 /// The Rust code blocks of the documentation book (`docs/book/src`) run as doc-tests, so `cargo test --doc` keeps the book's examples compiling. `build.rs` lists every page.

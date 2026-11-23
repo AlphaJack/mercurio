@@ -570,6 +570,62 @@ fn service_and_attachment_filters_and_webhook() {
     assert_eq!(rx.recv().unwrap()["message"], "x");
 }
 
+/// Answers each of `n` connections with a redirect to `location`.
+fn redirector(n: usize, location: String) -> String {
+    let l = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = l.local_addr().unwrap().to_string();
+    thread::spawn(move || {
+        for s in l.incoming().take(n) {
+            let mut s = s.unwrap();
+            let mut r = BufReader::new(s.try_clone().unwrap());
+            let mut line = String::new();
+            while r.read_line(&mut line).is_ok_and(|n| n > 2) {
+                line.clear();
+            }
+            write!(s, "HTTP/1.1 302 X\r\nLocation: {location}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").ok();
+        }
+    });
+    addr
+}
+
+#[test]
+fn default_filters_refuse_local_files_and_addresses() {
+    let dir = tmpdir("default-filters");
+    let s = start(&dir);
+    let (up, rx) = upstream(1, 200);
+    // `file://` is denied: a caller cannot write to the server's disk.
+    let out = dir.join("out.jsonl");
+    assert_eq!(form(&s.addr, "/notify", &format!("urls=file://{}&body=x", out.display())).0, 400);
+    assert!(!out.exists());
+    // `0.0.0.0` reaches the server itself, though no host rule names it.
+    let (files, downloads) = upstream(1, 200);
+    let port = files.rsplit(':').next().unwrap();
+    let att = format!("urls=json://{up}&body=x&attach=http://0.0.0.0:{port}/a.txt");
+    assert_eq!(form(&s.addr, "/notify", &att).0, 400);
+    assert!(downloads.try_recv().is_err());
+    assert_eq!(form(&s.addr, "/notify", &format!("urls=json://{up}&body=ok")).0, 200);
+    assert_eq!(rx.recv().unwrap()["message"], "ok");
+}
+
+#[test]
+fn attachment_redirects_are_checked_against_the_rules() {
+    let (files, downloads) = upstream(1, 200);
+    let hop = redirector(1, format!("http://{files}/secret.txt"));
+    let env = [("APPRISE_ATTACH_REJECT_URL", files.as_str())];
+    let s = start_with(&tmpdir("redirect-filter"), &env);
+    let (up, rx) = upstream(1, 200);
+    let att = format!("urls=json://{up}&body=x&attach=http://{hop}/a.txt");
+    assert_eq!(form(&s.addr, "/notify", &att).0, 400);
+    assert!(downloads.try_recv().is_err());
+    // An allowed redirect is still followed.
+    let (files, downloads) = upstream(1, 200);
+    let hop = redirector(1, format!("http://{files}/a.txt"));
+    let att = format!("urls=json://{up}&body=x&attach=http://{hop}/a.txt");
+    assert_eq!(form(&s.addr, "/notify", &att).0, 200);
+    assert!(downloads.recv().is_ok());
+    assert_eq!(rx.recv().unwrap()["message"], "x");
+}
+
 #[test]
 fn live_streams_log_levels_and_storage() {
     let dir = tmpdir("stream");

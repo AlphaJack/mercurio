@@ -235,7 +235,8 @@ impl Server {
     async fn attachments(&self, call: &Call<'_>, content: &mut Content) -> Result<Vec<mercurio::Attachment>, Fault> {
         let allowed = |u: &str| self.s.attach_urls.allowed(u);
         let rules = payload::AttachRules { size: self.s.attach_size, max: self.s.max_attachments, allowed: &allowed };
-        payload::attachments(content, &rules, self.transport.as_ref()).await.map_err(|e| {
+        let transport = filters::Guarded { inner: self.transport.as_ref(), allowed: &allowed };
+        payload::attachments(content, &rules, &transport).await.map_err(|e| {
             call.note("detail", format!("bad attachment: {e}"));
             call.fail(Fault::new(400, "Bad Attachment"))
         })

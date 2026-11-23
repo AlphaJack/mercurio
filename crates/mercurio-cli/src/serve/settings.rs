@@ -56,7 +56,7 @@ pub(crate) struct ServeArgs {
     #[arg(
         long,
         env = "APPRISE_DENY_SERVICES",
-        default_value = "windows,dbus,gnome,macosx,syslog",
+        default_value = "windows,dbus,gnome,macosx,syslog,file",
         value_name = "LIST"
     )]
     deny_services: String,
@@ -73,7 +73,12 @@ pub(crate) struct ServeArgs {
     #[arg(long, env = "APPRISE_ATTACH_ALLOW_URL", default_value = "*", value_name = "PATTERNS")]
     attach_allow_url: String,
     /// Attachment URLs that are always refused (checked first)
-    #[arg(long, env = "APPRISE_ATTACH_REJECT_URL", default_value = "127.0.* localhost*", value_name = "PATTERNS")]
+    #[arg(
+        long,
+        env = "APPRISE_ATTACH_REJECT_URL",
+        default_value = "internal 127.0.* localhost*",
+        value_name = "PATTERNS"
+    )]
     attach_reject_url: String,
     /// Deepest nested path a `?:a.b=dest` mapping rule may read
     #[arg(long, env = "APPRISE_WEBHOOK_MAPPING_MAX_DEPTH", default_value = "5", value_name = "N")]
