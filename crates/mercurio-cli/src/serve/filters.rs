@@ -2,6 +2,11 @@
 
 use std::collections::BTreeSet;
 use std::net::{IpAddr, ToSocketAddrs};
+use std::sync::Arc;
+use std::time::Duration;
+
+use mercurio::redact_url;
+use mercurio::transport::{AsyncTransport, BoxFuture, Env, FileOp, FileOutput, Request, Response};
 
 use serde_json::{Value, json};
 
@@ -175,14 +180,58 @@ impl UrlFilter {
     }
 }
 
+/// Redirects followed per download, as the transports do.
+const MAX_REDIRECTS: usize = 10;
+
+/// A transport for attachment downloads that follows redirects itself, checking each `Location` against the
+/// attachment rules: a public URL cannot redirect to a refused one.
+pub(super) struct Guarded<'a> {
+    pub inner: &'a dyn AsyncTransport,
+    pub allowed: &'a (dyn Fn(&str) -> bool + Sync),
+}
+
+impl AsyncTransport for Guarded<'_> {
+    fn http<'a>(&'a self, req: &'a Request) -> BoxFuture<'a, mercurio::Result<Response>> {
+        Box::pin(async move {
+            if !req.follow_redirects {
+                return self.inner.http(req).await;
+            }
+            let mut hop = Request { follow_redirects: false, ..req.clone() };
+            for _ in 0..MAX_REDIRECTS {
+                let res = self.inner.http(&hop).await?;
+                let next = matches!(res.status, 301 | 302 | 303 | 307 | 308)
+                    .then(|| res.header("location"))
+                    .flatten()
+                    .and_then(|l| mercurio::__private::redirect_target(&hop.url, l));
+                let Some((url, same_origin)) = next else { return Ok(res) };
+                if !(self.allowed)(&url) {
+                    return Err(mercurio::Error::Transport(format!("redirect to a blocked URL: {}", redact_url(&url))));
+                }
+                if !same_origin {
+                    hop.headers
+                        .retain(|(k, _)| !k.eq_ignore_ascii_case("authorization") && !k.eq_ignore_ascii_case("cookie"));
+                }
+                hop.url = url;
+            }
+            self.inner.http(&hop).await
+        })
+    }
+
+    fn file<'a>(&'a self, op: &'a FileOp) -> BoxFuture<'a, mercurio::Result<FileOutput>> {
+        self.inner.file(op)
+    }
+
+    fn sleep(&self, d: Duration) -> BoxFuture<'_, ()> {
+        self.inner.sleep(d)
+    }
+
+    fn env(&self) -> Arc<dyn Env> {
+        self.inner.env()
+    }
+}
+
 /// POST the result of a notification call to `APPRISE_WEBHOOK_URL`.
-pub(super) async fn send_webhook(
-    transport: &dyn mercurio::transport::AsyncTransport,
-    url: &str,
-    source: &str,
-    ok: bool,
-    logs: &[LogEntry],
-) {
+pub(super) async fn send_webhook(transport: &dyn AsyncTransport, url: &str, source: &str, ok: bool, logs: &[LogEntry]) {
     let lower = url.to_ascii_lowercase();
     if !(lower.starts_with("http://") || lower.starts_with("https://")) {
         log::warn!("The webhook result URL is not using the HTTP protocol");
@@ -198,9 +247,9 @@ pub(super) async fn send_webhook(
             let (u, p) = userinfo.split_once(':').map(|(u, p)| (u, Some(p))).unwrap_or((userinfo, None));
             let u = mercurio::__private::unquote(u);
             let p = p.map(mercurio::__private::unquote);
-            mercurio::transport::Request::post(format!("{scheme}://{host}{tail}")).basic_auth(&u, p.as_deref())
+            Request::post(format!("{scheme}://{host}{tail}")).basic_auth(&u, p.as_deref())
         }
-        None => mercurio::transport::Request::post(url.to_owned()),
+        None => Request::post(url.to_owned()),
     };
     req = req.header("User-Agent", format!("Mercurio/{}", env!("CARGO_PKG_VERSION"))).json(&body);
     match transport.http(&req).await {
