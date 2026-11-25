@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/AlphaJack/mercurio/compare/v0.2.5...v0.3.0) - 2026-11-25
+
+### Fixed
+
+#### Serve
+
+- Refuse file:// and internal attachment URLs by default ([#215](https://github.com/AlphaJack/mercurio/pull/215))
+
 ## [0.2.5](https://github.com/AlphaJack/mercurio/compare/v0.2.4...v0.2.5) - 2026-10-28
 
 ### Fixed
